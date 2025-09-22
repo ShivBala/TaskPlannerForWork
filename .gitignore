@@ -1,0 +1,27 @@
+# Temporary files
+*.tmp
+*.temp
+*~
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Generated log files - exclude all
+priority-logs/
+eta-logs/
+history/
+
+# Generated reports - exclude all
+reports/
+
+# Task data (generated/modified during runtime)
+task_progress_data.csv
+
+# Test files
+test_*.ps1
+comprehensive_test.ps1
+
+# Editor files
+*.swp
+*.swo
