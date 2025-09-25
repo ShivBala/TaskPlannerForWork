@@ -24,7 +24,7 @@ function Generate-OnePageReport {
     $HistoricalSnapshots = @()
     
     if (Test-Path $HistoryFolder) {
-        $HistoryFiles = Get-ChildItem $HistoryFolder -Filter "*.csv" | Sort-Object Name | Select-Object -Last 3
+        $HistoryFiles = Get-ChildItem $HistoryFolder -Filter "*.csv" | Sort-Object Name
         foreach ($HistoryFile in $HistoryFiles) {
             try {
                 $HistoryData = Import-Csv $HistoryFile.FullName
@@ -33,7 +33,7 @@ function Generate-OnePageReport {
                 
                 $HistoricalSnapshots += @{
                     Date = $ParsedDate
-                    DateString = $ParsedDate.ToString("MMM dd")
+                    DateString = $ParsedDate.ToString("MMM dd, HH:mm")
                     FileName = $HistoryFile.Name
                     Tasks = $HistoryData
                 }
@@ -347,6 +347,34 @@ function Generate-OnePageReport {
             font-weight: 500;
         }
         .play-button:hover { background: #218838; }
+        .step-button { 
+            width: 100%;
+            background: #007bff; 
+            color: white; 
+            border: none; 
+            padding: 8px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 11px; 
+            font-weight: 500; 
+            margin-bottom: 8px; 
+        }
+        .step-button:hover { background: #0056b3; }
+        .step-button:disabled { background: #adb5bd; cursor: not-allowed; }
+        .reset-button { 
+            width: 100%;
+            background: #6c757d; 
+            color: white; 
+            border: none; 
+            padding: 8px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 11px; 
+            font-weight: 500; 
+            margin-bottom: 8px; 
+        }
+        .reset-button:hover { background: #545b62; }
+        .reset-button:disabled { background: #adb5bd; cursor: not-allowed; }
         .employee-section {
             border-bottom: 1px solid #f1f3f4;
         }
@@ -585,6 +613,8 @@ function Generate-OnePageReport {
                 <div class="timeline-section">
                     <div class="filter-title">📈 Timeline</div>
                     <button class="play-button" onclick="playTimeline()" id="playButton">▶ Play Timeline</button>
+                    <button class="step-button" onclick="stepForward()" id="stepButton">⏭ Next Step</button>
+                    <button class="reset-button" onclick="resetTimeline()" id="resetButton">⏮ Start Over</button>
                     <div class="timeline-controls">
                         <input type="range" min="0" max="$(($HistoricalSnapshots.Count - 1))" value="$(($HistoricalSnapshots.Count - 1))" class="timeline-slider" id="timelineSlider" onchange="updateTimeline(this.value)">
                     </div>
@@ -667,7 +697,29 @@ function Generate-OnePageReport {
             const allEmployeesFromHistory = new Set();
             historicalSnapshots.forEach(snapshot => {
                 snapshot.tasks.forEach(task => {
-                    allEmployeesFromHistory.add(task.EmployeeName);
+                    // Normalize employee names to handle case inconsistencies
+                    let normalizedName = task.EmployeeName;
+                    
+                    // Handle case variations and normalize to proper case
+                    if (normalizedName && typeof normalizedName === 'string') {
+                        // Convert to lowercase for comparison, then to proper case
+                        const lowerName = normalizedName.toLowerCase().trim();
+                        
+                        if (lowerName === 'peter') {
+                            normalizedName = 'Peter';
+                        } else if (lowerName === 'vipul') {
+                            normalizedName = 'Vipul';
+                        } else if (lowerName === 'siva') {
+                            normalizedName = 'Siva';
+                        } else if (lowerName === 'sivakumar') {
+                            normalizedName = 'Sivakumar';
+                        } else {
+                            // Default: capitalize first letter
+                            normalizedName = normalizedName.charAt(0).toUpperCase() + normalizedName.slice(1).toLowerCase();
+                        }
+                    }
+                    
+                    allEmployeesFromHistory.add(normalizedName);
                 });
             });
             
@@ -767,10 +819,29 @@ function Generate-OnePageReport {
             // Group tasks by employee and show progress
             const tasksByEmployee = {};
             snapshot.tasks.forEach(task => {
-                if (!tasksByEmployee[task.EmployeeName]) {
-                    tasksByEmployee[task.EmployeeName] = [];
+                // Normalize employee names to match the filter normalization
+                let normalizedName = task.EmployeeName;
+                
+                if (normalizedName && typeof normalizedName === 'string') {
+                    const lowerName = normalizedName.toLowerCase().trim();
+                    
+                    if (lowerName === 'peter') {
+                        normalizedName = 'Peter';
+                    } else if (lowerName === 'vipul') {
+                        normalizedName = 'Vipul';
+                    } else if (lowerName === 'siva') {
+                        normalizedName = 'Siva';
+                    } else if (lowerName === 'sivakumar') {
+                        normalizedName = 'Sivakumar';
+                    } else {
+                        normalizedName = normalizedName.charAt(0).toUpperCase() + normalizedName.slice(1).toLowerCase();
+                    }
                 }
-                tasksByEmployee[task.EmployeeName].push(task);
+                
+                if (!tasksByEmployee[normalizedName]) {
+                    tasksByEmployee[normalizedName] = [];
+                }
+                tasksByEmployee[normalizedName].push(task);
             });
             
             // Process employees in alphabetical order for consistent display
@@ -830,6 +901,35 @@ function Generate-OnePageReport {
                 // Add the complete employee section to the evolution div
                 evolutionDiv.appendChild(employeeSection);
             });
+            
+            // Update button states based on current position
+            const stepButton = document.getElementById('stepButton');
+            const resetButton = document.getElementById('resetButton');
+            const slider = document.getElementById('timelineSlider');
+            const currentValue = parseInt(index);
+            const maxValue = historicalSnapshots.length - 1;
+            
+            // Step button: disabled at end, enabled otherwise
+            if (stepButton) {
+                if (currentValue >= maxValue) {
+                    stepButton.disabled = true;
+                    stepButton.textContent = '⏭ End of Timeline';
+                } else {
+                    stepButton.disabled = false;
+                    stepButton.textContent = '⏭ Next Step';
+                }
+            }
+            
+            // Reset button: disabled at start, enabled otherwise
+            if (resetButton) {
+                if (currentValue <= 0) {
+                    resetButton.disabled = true;
+                    resetButton.textContent = '⏮ At Start';
+                } else {
+                    resetButton.disabled = false;
+                    resetButton.textContent = '⏮ Start Over';
+                }
+            }
         }
         
         // Play timeline
@@ -863,11 +963,51 @@ function Generate-OnePageReport {
             }
         }
         
+        // Step forward timeline
+        function stepForward() {
+            const slider = document.getElementById('timelineSlider');
+            const stepButton = document.getElementById('stepButton');
+            const resetButton = document.getElementById('resetButton');
+            
+            if (isPlaying) {
+                clearInterval(playInterval);
+                isPlaying = false;
+                const playButton = document.getElementById('playButton');
+                if (playButton) playButton.textContent = '▶ Play Timeline';
+            }
+            
+            const currentValue = parseInt(slider.value);
+            if (currentValue < historicalSnapshots.length - 1) {
+                slider.value = currentValue + 1;
+                updateTimeline(slider.value);
+            }
+        }
+        
+        // Reset timeline to beginning
+        function resetTimeline() {
+            const slider = document.getElementById('timelineSlider');
+            const resetButton = document.getElementById('resetButton');
+            const stepButton = document.getElementById('stepButton');
+            const playButton = document.getElementById('playButton');
+            
+            if (isPlaying) {
+                clearInterval(playInterval);
+                isPlaying = false;
+                if (playButton) playButton.textContent = '▶ Play Timeline';
+            }
+            
+            // Reset to the beginning
+            slider.value = 0;
+            updateTimeline(0);
+        }
+        
         // Make functions globally available
         window.toggleEmployee = toggleEmployee;
         window.selectAllEmployees = selectAllEmployees;
         window.clearAllEmployees = clearAllEmployees;
         window.playTimeline = playTimeline;
+        window.stepForward = stepForward;
+        window.resetTimeline = resetTimeline;
         window.exportToPDF = exportToPDF;
         window.exportToWord = exportToWord;
         

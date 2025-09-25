@@ -46,14 +46,15 @@ function Generate-HTMLReport {
     
     # If no historical data exists, create simulated historical snapshots
     if ($HistoricalSnapshots.Count -eq 0) {
-        # Create 6 historical snapshots going back 2 weeks with meaningful progression
+        # Create 5 historical snapshots going back 2 weeks with meaningful progression
         $CurrentDate = Get-Date
         
-        # Define progression points with more distinct differences
-        $ProgressionStages = @(0.0, 0.25, 0.45, 0.65, 0.80, 1.0)
+        # Define progression points that lead realistically to current values
+        # The progression should end with values close to current, not start from current
+        $ProgressionStages = @(0.15, 0.35, 0.55, 0.75, 0.90) # Each stage closer to current values
         
-        for ($i = 0; $i -lt ($ProgressionStages.Count - 1); $i++) {
-            $DaysBack = ($ProgressionStages.Count - 2 - $i) * 2.5  # 2.5 days between each stage
+        for ($i = 0; $i -lt $ProgressionStages.Count; $i++) {
+            $DaysBack = ($ProgressionStages.Count - 1 - $i) * 2.5  # 2.5 days between each stage
             $HistoricalDate = $CurrentDate.AddDays(-$DaysBack)
             $ProgressMultiplier = $ProgressionStages[$i]
             
@@ -84,25 +85,27 @@ function Generate-HTMLReport {
                 if ($TaskCreatedDate -and $HistoricalDate -ge $TaskCreatedDate.AddDays(-1)) {
                     $CurrentProgress = [int]($Task.Progress -replace '%', '')
                     
-                    # Calculate historical progress with realistic variation
+                    # Calculate historical progress - should build UP to current values
                     if ($CurrentProgress -eq 0) {
                         # Tasks at 0% stay at 0% throughout history
                         $HistoricalProgress = 0
                     } elseif ($CurrentProgress -eq 100) {
-                        # Completed tasks: show realistic completion progression
-                        if ($i -ge 4) { $HistoricalProgress = 100 }
-                        elseif ($i -eq 3) { $HistoricalProgress = 90 }
-                        elseif ($i -eq 2) { $HistoricalProgress = 75 }
-                        elseif ($i -eq 1) { $HistoricalProgress = 45 }
-                        else { $HistoricalProgress = 15 }
+                        # Completed tasks: show progression to completion
+                        if ($i -ge 4) { $HistoricalProgress = 100 } # Latest snapshot
+                        elseif ($i -eq 3) { $HistoricalProgress = 95 }
+                        elseif ($i -eq 2) { $HistoricalProgress = 85 }
+                        elseif ($i -eq 1) { $HistoricalProgress = 70 }
+                        else { $HistoricalProgress = 45 } # Earliest snapshot
                     } else {
-                        # Active tasks: progressive increase
+                        # Active tasks: progressive increase toward current value
                         $BaseProgress = [Math]::Floor($CurrentProgress * $ProgressMultiplier)
-                        # Ensure minimum progress for very early stages
-                        if ($i -eq 0 -and $BaseProgress -lt 5 -and $CurrentProgress -gt 20) {
-                            $BaseProgress = 5
-                        }
-                        $HistoricalProgress = [Math]::Max(0, [Math]::Min($CurrentProgress - 5, $BaseProgress))
+                        
+                        # Ensure realistic progression - later stages should be closer to current
+                        # Add some variation but keep increasing trend
+                        $MinProgress = [Math]::Max(5, [Math]::Floor($CurrentProgress * 0.1))
+                        $MaxProgress = [Math]::Min($CurrentProgress - 2, [Math]::Floor($CurrentProgress * 0.95))
+                        
+                        $HistoricalProgress = [Math]::Max($MinProgress, [Math]::Min($MaxProgress, $BaseProgress))
                     }
                     
                     $SimulatedTask = $Task.PSObject.Copy()
@@ -121,10 +124,13 @@ function Generate-HTMLReport {
                 }
             }
             
+            # Use actual calendar dates for better user understanding
+            $DateLabel = $HistoricalDate.ToString("MMM dd, HH:mm")
+            
             $HistoricalSnapshots += @{
                 Date = $HistoricalDate
-                DateString = $HistoricalDate.ToString("MMM dd") + " (Week $($i + 1))"
-                FileName = "simulated_week_$($i + 1)"
+                DateString = $DateLabel
+                FileName = "historical_$(Get-Date -Date $HistoricalDate -Format 'yyyyMMdd_HHmm')"
                 Tasks = $SimulatedTasks
             }
         }
