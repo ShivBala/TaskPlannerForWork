@@ -693,6 +693,36 @@ function Update-TaskInCSV {
     }
 }
 
+function Parse-FlexibleDate {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$DateString
+    )
+    
+    if ([string]::IsNullOrWhiteSpace($DateString)) {
+        return $null
+    }
+    
+    # Try multiple date formats to handle various input formats
+    $dateFormats = @("dd/MM/yyyy", "d/M/yyyy", "dd/M/yyyy", "d/MM/yyyy", "MM/dd/yyyy", "M/d/yyyy")
+    
+    foreach ($format in $dateFormats) {
+        try {
+            return [DateTime]::ParseExact($DateString.Trim(), $format, $null)
+        } catch {
+            # Continue to next format
+        }
+    }
+    
+    # If all formats fail, try the default .NET parsing
+    try {
+        return [DateTime]::Parse($DateString)
+    } catch {
+        Write-Host "Warning: Could not parse date '$DateString'" -ForegroundColor Yellow
+        return $null
+    }
+}
+
 # Import the HTML report generator from external file
 . "./report-generator.ps1"
 
@@ -857,14 +887,12 @@ function Update-ETA {
     
     # Validate date format if provided
     if (-not [string]::IsNullOrWhiteSpace($NewETA)) {
-        try {
-            $ParsedDate = [DateTime]::ParseExact($NewETA, "dd/MM/yyyy", $null)
-            $NewETA = $ParsedDate.ToString("dd/MM/yyyy")
-        }
-        catch {
+        $ParsedDate = Parse-FlexibleDate -DateString $NewETA
+        if ($null -eq $ParsedDate) {
             Write-Host "❌ Invalid date format. Please use dd/mm/yyyy (e.g., 25/12/2025)" -ForegroundColor Red
             return
         }
+        $NewETA = $ParsedDate.ToString("dd/MM/yyyy")
     }
     
     # Update task using helper function
@@ -1144,17 +1172,8 @@ function Calculate-PersonCapacity {
         param($DateString)
         if ([string]::IsNullOrWhiteSpace($DateString)) { return $null }
         
-        try {
-            # Try dd/MM/yyyy format first
-            if ($DateString -match '^\d{1,2}/\d{1,2}/\d{4}$') {
-                return [DateTime]::ParseExact($DateString, "dd/MM/yyyy", $null)
-            }
-            # Try other common formats
-            return [DateTime]::Parse($DateString)
-        }
-        catch {
-            return $null
-        }
+        # Use the centralized flexible date parser
+        return Parse-FlexibleDate -DateString $DateString
     }
     
     $PersonName = $Person.Name

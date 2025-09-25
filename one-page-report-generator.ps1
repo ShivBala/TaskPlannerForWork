@@ -65,8 +65,25 @@ function Generate-OnePageReport {
     $HighPriorityTasks = $HighPriorityTasksList.Count
     
     $OverdueTasksList = $ActiveTasks | Where-Object { 
-        $_.ETA -and $_.ETA -ne "" -and $_.Status -ne "Completed" -and 
-        [DateTime]::ParseExact($_.ETA, "dd/MM/yyyy", $null) -lt (Get-Date)
+        if ($_.ETA -and $_.ETA -ne "" -and $_.Status -ne "Completed") {
+            try {
+                # Try multiple date formats to handle both d/M/yyyy and dd/MM/yyyy
+                $etaDate = $null
+                $dateFormats = @("dd/MM/yyyy", "d/M/yyyy", "dd/M/yyyy", "d/MM/yyyy")
+                foreach ($format in $dateFormats) {
+                    try {
+                        $etaDate = [DateTime]::ParseExact($_.ETA, $format, $null)
+                        break
+                    } catch {
+                        # Continue to next format
+                    }
+                }
+                return $etaDate -and $etaDate -lt (Get-Date)
+            } catch {
+                return $false
+            }
+        }
+        return $false
     }
     $OverdueTasks = $OverdueTasksList.Count
     

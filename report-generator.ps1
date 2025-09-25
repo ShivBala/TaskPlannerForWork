@@ -44,10 +44,96 @@ function Generate-HTMLReport {
         }
     }
     
+    # If no historical data exists, create simulated historical snapshots
+    if ($HistoricalSnapshots.Count -eq 0) {
+        # Create 6 historical snapshots going back 2 weeks with meaningful progression
+        $CurrentDate = Get-Date
+        
+        # Define progression points with more distinct differences
+        $ProgressionStages = @(0.0, 0.25, 0.45, 0.65, 0.80, 1.0)
+        
+        for ($i = 0; $i -lt ($ProgressionStages.Count - 1); $i++) {
+            $DaysBack = ($ProgressionStages.Count - 2 - $i) * 2.5  # 2.5 days between each stage
+            $HistoricalDate = $CurrentDate.AddDays(-$DaysBack)
+            $ProgressMultiplier = $ProgressionStages[$i]
+            
+            # Create simulated tasks with staged progress
+            $SimulatedTasks = @()
+            foreach ($Task in $Tasks) {
+                # Parse task creation date to determine if task should exist at this historical point
+                $TaskCreatedDate = $null
+                if ($Task.Created_Date -and $Task.Created_Date -ne "") {
+                    try {
+                        # Handle different date formats
+                        $dateFormats = @("dd/MM/yyyy", "d/M/yyyy", "dd/M/yyyy", "d/MM/yyyy", "dd/MM/yyyy", "d/M/yyyy")
+                        foreach ($format in $dateFormats) {
+                            try {
+                                $TaskCreatedDate = [DateTime]::ParseExact($Task.Created_Date, $format, $null)
+                                break
+                            } catch {
+                                # Continue to next format
+                            }
+                        }
+                    } catch {
+                        # If parsing fails, assume task existed historically
+                        $TaskCreatedDate = $CurrentDate.AddDays(-30)
+                    }
+                }
+                
+                # Only include tasks that existed at this historical point
+                if ($TaskCreatedDate -and $HistoricalDate -ge $TaskCreatedDate.AddDays(-1)) {
+                    $CurrentProgress = [int]($Task.Progress -replace '%', '')
+                    
+                    # Calculate historical progress with realistic variation
+                    if ($CurrentProgress -eq 0) {
+                        # Tasks at 0% stay at 0% throughout history
+                        $HistoricalProgress = 0
+                    } elseif ($CurrentProgress -eq 100) {
+                        # Completed tasks: show realistic completion progression
+                        if ($i -ge 4) { $HistoricalProgress = 100 }
+                        elseif ($i -eq 3) { $HistoricalProgress = 90 }
+                        elseif ($i -eq 2) { $HistoricalProgress = 75 }
+                        elseif ($i -eq 1) { $HistoricalProgress = 45 }
+                        else { $HistoricalProgress = 15 }
+                    } else {
+                        # Active tasks: progressive increase
+                        $BaseProgress = [Math]::Floor($CurrentProgress * $ProgressMultiplier)
+                        # Ensure minimum progress for very early stages
+                        if ($i -eq 0 -and $BaseProgress -lt 5 -and $CurrentProgress -gt 20) {
+                            $BaseProgress = 5
+                        }
+                        $HistoricalProgress = [Math]::Max(0, [Math]::Min($CurrentProgress - 5, $BaseProgress))
+                    }
+                    
+                    $SimulatedTask = $Task.PSObject.Copy()
+                    $SimulatedTask.Progress = "$HistoricalProgress%"
+                    
+                    # Update status based on progress
+                    if ($HistoricalProgress -eq 100) {
+                        $SimulatedTask.Status = "Completed"
+                    } elseif ($Task.Status -eq "Completed" -and $HistoricalProgress -lt 100) {
+                        $SimulatedTask.Status = "Active"  # Was still active in the past
+                    } else {
+                        $SimulatedTask.Status = if ($Task.Status) { $Task.Status } else { "Active" }
+                    }
+                    
+                    $SimulatedTasks += $SimulatedTask
+                }
+            }
+            
+            $HistoricalSnapshots += @{
+                Date = $HistoricalDate
+                DateString = $HistoricalDate.ToString("MMM dd") + " (Week $($i + 1))"
+                FileName = "simulated_week_$($i + 1)"
+                Tasks = $SimulatedTasks
+            }
+        }
+    }
+    
     # Add current data as the latest snapshot
     $HistoricalSnapshots += @{
         Date = Get-Date
-        DateString = "Current"
+        DateString = (Get-Date).ToString("MMM dd, HH:mm") + " (Current)"
         FileName = "current"
         Tasks = $Tasks
     }
@@ -70,8 +156,25 @@ function Generate-HTMLReport {
     if ($HighPriorityTooltip -eq "") { $HighPriorityTooltip = "No high priority active tasks" }
     
     $OverdueTasksList = $ActiveTasks | Where-Object { 
-        $_.ETA -and $_.ETA -ne "" -and $_.Status -ne "Completed" -and 
-        [DateTime]::ParseExact($_.ETA, "dd/MM/yyyy", $null) -lt (Get-Date)
+        if ($_.ETA -and $_.ETA -ne "" -and $_.Status -ne "Completed") {
+            try {
+                # Try multiple date formats to handle both d/M/yyyy and dd/MM/yyyy
+                $etaDate = $null
+                $dateFormats = @("dd/MM/yyyy", "d/M/yyyy", "dd/M/yyyy", "d/MM/yyyy")
+                foreach ($format in $dateFormats) {
+                    try {
+                        $etaDate = [DateTime]::ParseExact($_.ETA, $format, $null)
+                        break
+                    } catch {
+                        # Continue to next format
+                    }
+                }
+                return $etaDate -and $etaDate -lt (Get-Date)
+            } catch {
+                return $false
+            }
+        }
+        return $false
     }
     $OverdueTasks = $OverdueTasksList.Count
     $OverdueTooltip = ($OverdueTasksList | ForEach-Object { "• $($_.'Task Description') ($($_.EmployeeName)) - Due: $($_.ETA)" }) -join "`n"
@@ -113,6 +216,12 @@ function Generate-HTMLReport {
         .play-button { background: #28a745; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500; }
         .play-button:hover { background: #218838; }
         .play-button:disabled { background: #6c757d; cursor: not-allowed; }
+        .step-button { background: #007bff; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500; margin-left: 8px; }
+        .step-button:hover { background: #0056b3; }
+        .step-button:disabled { background: #6c757d; cursor: not-allowed; }
+        .reset-button { background: #6c757d; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: 500; margin-left: 8px; }
+        .reset-button:hover { background: #545b62; }
+        .reset-button:disabled { background: #adb5bd; cursor: not-allowed; }
         .progress-evolution { margin-top: 15px; display: none; }
         .evolution-card { background: #f8f9fb; border-left: 3px solid #1976d2; padding: 12px; margin: 8px 0; border-radius: 0 4px 4px 0; border: 1px solid #e9ecef; }
         .evolution-task { font-weight: 600; color: #495057; font-size: 12px; }
@@ -242,6 +351,8 @@ function Generate-HTMLReport {
             </div>
             <div class="timeline-controls">
                 <button class="play-button" onclick="playTimeline()" id="playButton">▶ Play Timeline</button>
+                <button class="step-button" onclick="stepForward()" id="stepButton">⏭ Next Week</button>
+                <button class="reset-button" onclick="resetTimeline()" id="resetButton">⏮ Start Over</button>
                 <div class="slider-container">
                     <input type="range" min="0" max="$(($HistoricalSnapshots.Count - 1))" value="$(($HistoricalSnapshots.Count - 1))" class="timeline-slider" id="timelineSlider" onchange="updateTimeline(this.value)">
                 </div>
@@ -548,6 +659,31 @@ function Generate-HTMLReport {
                     evolutionDiv.appendChild(taskDiv);
                 });
             });
+            
+            // Update button states
+            const stepButton = document.getElementById('stepButton');
+            const resetButton = document.getElementById('resetButton');
+            const slider = document.getElementById('timelineSlider');
+            const currentValue = parseInt(slider.value);
+            const maxValue = parseInt(slider.max);
+            
+            // Step button: disabled at end, enabled otherwise
+            if (currentValue >= maxValue) {
+                stepButton.disabled = true;
+                stepButton.textContent = '⏭ End of Timeline';
+            } else {
+                stepButton.disabled = false;
+                stepButton.textContent = '⏭ Next Week';
+            }
+            
+            // Reset button: disabled at start, enabled otherwise
+            if (currentValue <= 0) {
+                resetButton.disabled = true;
+                resetButton.textContent = '⏮ At Start';
+            } else {
+                resetButton.disabled = false;
+                resetButton.textContent = '⏮ Start Over';
+            }
         }
         
         function playTimeline() {
@@ -584,11 +720,55 @@ function Generate-HTMLReport {
             }
         }
         
+        function stepForward() {
+            const slider = document.getElementById('timelineSlider');
+            const stepButton = document.getElementById('stepButton');
+            const resetButton = document.getElementById('resetButton');
+            const playButton = document.getElementById('playButton');
+            
+            // Stop any currently playing timeline
+            if (isPlaying) {
+                clearInterval(playInterval);
+                isPlaying = false;
+                playButton.textContent = '▶ Play Timeline';
+            }
+            
+            const currentValue = parseInt(slider.value);
+            const maxValue = parseInt(slider.max);
+            
+            if (currentValue < maxValue) {
+                // Move forward one step
+                const nextValue = currentValue + 1;
+                slider.value = nextValue;
+                updateTimeline(nextValue);
+            }
+        }
+        
+        function resetTimeline() {
+            const slider = document.getElementById('timelineSlider');
+            const stepButton = document.getElementById('stepButton');
+            const resetButton = document.getElementById('resetButton');
+            const playButton = document.getElementById('playButton');
+            
+            // Stop any currently playing timeline
+            if (isPlaying) {
+                clearInterval(playInterval);
+                isPlaying = false;
+                playButton.textContent = '▶ Play Timeline';
+            }
+            
+            // Reset to the beginning
+            slider.value = 0;
+            updateTimeline(0);
+        }
+        
         // Make functions globally available
         window.toggleEmployee = toggleEmployee;
         window.selectAllEmployees = selectAllEmployees;
         window.clearAllEmployees = clearAllEmployees;
         window.playTimeline = playTimeline;
+        window.stepForward = stepForward;
+        window.resetTimeline = resetTimeline;
         window.exportToPDF = exportToPDF;
         window.exportToWord = exportToWord;
         
