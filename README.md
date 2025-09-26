@@ -1,6 +1,6 @@
-# Task Planner for Work
+# 📊 HTML Task Tracker with Excel Export System
 
-A comprehensive PowerShell-based task management system with intelligent priority conflict resolution, ETA tracking, and HTML reporting capabilities.
+A comprehensive PowerShell-based task management system with intelligent priority conflict resolution, ETA tracking, HTML reporting capabilities, and advanced Excel VBA integration.
 
 ## Features
 
@@ -13,7 +13,15 @@ A comprehensive PowerShell-based task management system with intelligent priorit
 - **Configurable Priority Range** (1-9) with effort allocation analysis
 - **Comprehensive Audit Logging** with history snapshots
 
-### 🕒 ETA Management
+### � Excel Export System (NEW!)
+- **Phase 1**: Complete data export to Excel-compatible formats (COMPLETE)
+- **Phase 2**: VBA framework with interactive timeline navigation (COMPLETE)  
+- **Timeline Navigation**: Step through 16 historical snapshots with keyboard shortcuts
+- **Auto-Play Mode**: Automated progression through timeline data
+- **Data Export**: 283 records ready for Excel VBA dashboards
+- **Case Normalization**: Handles inconsistent employee name formatting
+
+### �🕒 ETA Management
 - **Flexible ETA Updates** with date validation (dd/mm/yyyy format)
 - **ETA Clearing** capability
 - **Dedicated ETA Change Logging**
@@ -33,12 +41,27 @@ A comprehensive PowerShell-based task management system with intelligent priorit
 ### Prerequisites
 - PowerShell 7.0+
 - CSV files for data storage
+- Microsoft Excel (for VBA timeline features)
 
 ### Setup
 1. Clone this repository
 2. Copy `task_progress_data.csv.template` to `task_progress_data.csv`
 3. Ensure `people_and_capacity.csv` exists with employee data
 4. Run `./helper.ps1` to start the interactive shell
+
+### Excel Export Quick Start
+```powershell
+# Start interactive system
+./helper.ps1
+
+# Export data for Excel (Phase 1)
+excel     # or just 'e'
+
+# Create Excel VBA template (Phase 2)  
+template  # or just 't'
+
+# Follow setup instructions in ExcelTaskTemplate/SETUP_INSTRUCTIONS.md
+```
 
 **Note**: Generated files (logs, reports, task data) are excluded from Git to keep the repository clean.
 
@@ -62,6 +85,10 @@ upeta [name]                   # Short form
 # Generate reports
 report                         # HTML progress report
 onepage                        # One-page banking report
+
+# Excel Export System (NEW!)
+excel                          # Export data for Excel (or just 'e')
+template                       # Create Excel VBA template (or just 't')
 ```
 
 ## File Structure
@@ -76,10 +103,54 @@ onepage                        # One-page banking report
 ├── priority-logs/                  # Priority change audit logs (generated)
 ├── eta-logs/                       # ETA change audit logs (generated)
 ├── history/                        # Historical snapshots (generated)
-└── reports/                        # Generated HTML reports (generated)
+├── reports/                        # Generated HTML reports (generated)
+└── ExcelExport/                    # Excel integration system
+    ├── export_to_excel.ps1         # Data export engine
+    ├── create_excel_template.ps1    # Template creator (cross-platform)
+    ├── README.md                   # Complete Excel guide
+    └── Data/                       # Generated Excel files (generated)
 ```
 
 **Files marked as (generated) are excluded from Git and created during runtime.**
+
+## 📊 Excel Export System
+
+### Phase 1: Data Export (COMPLETE)
+Converts your task tracking data into Excel-ready formats:
+
+**Generated Files:**
+- `current_tasks.csv` (~2KB) - Latest task snapshot
+- `historical_snapshots.csv` (~45KB) - Complete historical progression  
+- `combined_timeline_data.csv` (~47KB) - **RECOMMENDED** for Excel VBA
+- `metadata.json` (~3KB) - Export statistics
+
+### Phase 2: VBA Template System (COMPLETE)
+Creates complete Excel framework with interactive timeline controls:
+
+**VBA Features:**
+- Timeline navigation through 16 snapshots
+- Auto-play mode (2-second intervals)
+- Keyboard shortcuts (Ctrl+Shift combinations)
+- Employee filtering framework
+- Progress tracking and visualization
+
+**Keyboard Controls:**
+- `Ctrl+Shift+I` - Initialize Timeline
+- `Ctrl+Shift+S` - Step Forward
+- `Ctrl+Shift+A` - Step Backward
+- `Ctrl+Shift+P` - Play/Pause Auto-advance
+- `Ctrl+Shift+G` - Go to Specific Snapshot
+- `Ctrl+Shift+R` - Reset Timeline
+
+### Excel Setup (5-15 minutes)
+1. **Export Data**: Run `excel` command in helper.ps1
+2. **Create Template**: Run `template` command
+3. **Setup Excel**: Follow `ExcelTaskTemplate/SETUP_INSTRUCTIONS.md`
+4. **Import Data**: Load CSV files into Excel
+5. **Add VBA**: Import provided VBA modules
+6. **Test**: Use keyboard shortcuts to navigate timeline
+
+**📋 Complete documentation available in `ExcelExport/README.md`**
 
 ## Core Functions
 

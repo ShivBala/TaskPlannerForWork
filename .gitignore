@@ -18,6 +18,10 @@ reports/
 # Task data (generated/modified during runtime)
 task_progress_data.csv
 
+# Excel Export generated data files
+ExcelExport/Data/
+ExcelTaskTemplate/
+
 # Test files
 test_*.ps1
 comprehensive_test.ps1

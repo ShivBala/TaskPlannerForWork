@@ -1,5 +1,9 @@
 # PowerShell Dynamic Function Dispatcher with Regex Mapping
 
+# Import Excel Export Module
+. "$PSScriptRoot/ExcelExport/export_to_excel.ps1"
+. "$PSScriptRoot/ExcelExport/create_excel_template.ps1"
+
 function Send-NetworkPing {
     param(
         [string]$TargetHost,
@@ -1730,6 +1734,24 @@ function Generate-CapacityPlanningReport {
     }
 }
 
+# Excel Export Wrapper Functions
+function Invoke-ExcelExportVerbose {
+    Export-TaskDataForExcel -Verbose
+}
+
+function New-ExcelTaskTemplate {
+    param([switch]$OpenAfterCreation)
+    
+    Write-Host "🚀 Creating Excel Template with VBA Framework - Phase 2..." -ForegroundColor Cyan
+    . "$PSScriptRoot/ExcelExport/create_excel_template.ps1"
+    
+    if ($OpenAfterCreation) {
+        New-ExcelTaskTemplate -OpenAfterCreation
+    } else {
+        New-ExcelTaskTemplate
+    }
+}
+
 # Function Map with Regex patterns and corresponding function calls
 $FunctionMap = @{
     
@@ -1779,6 +1801,24 @@ $FunctionMap = @{
     "^capacity$" = @{
         Function = "Generate-CapacityPlanningReport"
         Parameters = @()
+    }
+    
+    # Excel Export - Progressive regex for "excel", "export", "exportexcel"
+    "^e(?:x(?:c(?:e(?:l)?)?)?|x(?:p(?:o(?:r(?:t(?:e(?:x(?:c(?:e(?:l)?)?)?)?)?)?)?)?)?)?$" = @{
+        Function = "Export-TaskDataForExcel"
+        Parameters = @()
+    }
+    
+    # Excel Export with verbose - "excel verbose", "export verbose"
+    "^e(?:x(?:c(?:e(?:l)?)?)?|x(?:p(?:o(?:r(?:t)?)?)?)?)\s+v(?:e(?:r(?:b(?:o(?:s(?:e)?)?)?)?)?)?$" = @{
+        Function = "Invoke-ExcelExportVerbose"
+        Parameters = @()
+    }
+    
+    # Excel Template Creation - "template", "temp"
+    "^t(?:e(?:m(?:p(?:l(?:a(?:t(?:e)?)?)?)?)?)?)?$" = @{
+        Function = "New-ExcelTaskTemplate"
+        Parameters = @("-OpenAfterCreation")
     }
 }
 
