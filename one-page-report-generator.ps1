@@ -87,6 +87,10 @@ function Generate-OnePageReport {
     }
     $OverdueTasks = $OverdueTasksList.Count
     
+    # Calculate tasks for later (tasks without start date)
+    $TasksForLaterList = $Tasks | Where-Object { -not $_.StartDate -or $_.StartDate -eq "" }
+    $TasksForLater = $TasksForLaterList.Count
+    
     # Group tasks by employee
     $TasksByEmployee = $Tasks | Group-Object EmployeeName
     
@@ -181,6 +185,28 @@ function Generate-OnePageReport {
             border-bottom: 1px solid #e9ecef;
         }
         .stat-item:last-child { border-bottom: none; }
+        .filter-stat {
+            cursor: pointer;
+            border-radius: 6px;
+            margin: 2px 0;
+            padding: 12px 8px;
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+        }
+        .filter-stat:hover {
+            background-color: #f8f9fa;
+            border-color: #007bff;
+            transform: translateX(2px);
+        }
+        .filter-stat.active {
+            background-color: #e3f2fd;
+            border-color: #007bff;
+            box-shadow: 0 2px 4px rgba(0,123,255,0.1);
+        }
+        .filter-stat.active .stat-label {
+            color: #007bff;
+            font-weight: 600;
+        }
         .stat-label { 
             font-size: 12px; 
             color: #6c757d; 
@@ -198,6 +224,7 @@ function Generate-OnePageReport {
         .stat-completed { background: #e8f5e8; color: #2e7d32; }
         .stat-priority { background: #fff3e0; color: #f57c00; }
         .stat-overdue { background: #ffebee; color: #c62828; }
+        .stat-later { background: #f3e5f5; color: #7b1fa2; }
         .filter-section {
             margin-bottom: 15px;
             padding-bottom: 15px;
@@ -261,6 +288,10 @@ function Generate-OnePageReport {
         .filter-btn.select-all:hover { background: #218838; }
         .filter-btn.clear-all { background: #dc3545; }
         .filter-btn.clear-all:hover { background: #c82333; }
+        .filter-btn.clear-filter { background: #007bff; }
+        .filter-btn.clear-filter:hover { background: #0056b3; }
+        .filter-btn.clear-filter { background: #007bff; }
+        .filter-btn.clear-filter:hover { background: #0056b3; }
         .export-section {
             border-bottom: 1px solid #e9ecef;
             padding-bottom: 15px;
@@ -507,22 +538,29 @@ function Generate-OnePageReport {
         <div class="main-content">
             <div class="stats-panel">
                 <div class="filter-section">
-                    <div class="filter-title">📋 Summary</div>
-                    <div class="stat-item">
+                    <div class="filter-title">📋 Summary Filters</div>
+                    <div class="stat-item filter-stat" onclick="filterBySummary('total')" data-filter="total">
                         <span class="stat-label">Total Tasks</span>
                         <span class="stat-value stat-total">$TotalTasks</span>
                     </div>
-                    <div class="stat-item">
+                    <div class="stat-item filter-stat" onclick="filterBySummary('completed')" data-filter="completed">
                         <span class="stat-label">Completed</span>
                         <span class="stat-value stat-completed">$CompletedTasks</span>
                     </div>
-                    <div class="stat-item">
+                    <div class="stat-item filter-stat" onclick="filterBySummary('high-priority')" data-filter="high-priority">
                         <span class="stat-label">High Priority</span>
                         <span class="stat-value stat-priority">$HighPriorityTasks</span>
                     </div>
-                    <div class="stat-item">
+                    <div class="stat-item filter-stat" onclick="filterBySummary('overdue')" data-filter="overdue">
                         <span class="stat-label">Overdue</span>
                         <span class="stat-value stat-overdue">$OverdueTasks</span>
+                    </div>
+                    <div class="stat-item filter-stat" onclick="filterBySummary('tasks-for-later')" data-filter="tasks-for-later">
+                        <span class="stat-label">Tasks for Later</span>
+                        <span class="stat-value stat-later">$TasksForLater</span>
+                    </div>
+                    <div class="filter-buttons">
+                        <button class="filter-btn clear-filter" onclick="clearSummaryFilter()">Show All</button>
                     </div>
                 </div>
                 
@@ -548,7 +586,7 @@ function Generate-OnePageReport {
         $TaskCount = $EmployeeTasks.Count
         
         $HTML += @"
-                <div class="employee-section">
+                <div class="employee-section" data-employee="$EmployeeName">
                     <div class="employee-header">
                         <span>👤 $EmployeeName</span>
                         <span class="task-count">$TaskCount</span>
@@ -576,8 +614,14 @@ function Generate-OnePageReport {
             $StatusClass = "status-$($TaskStatus.ToLower())"
             $PriorityClass = "priority-$($Task.Priority)"
             
+            $HTML += "                            <tr class=""task-item"" "
+            $HTML += "data-status=""$TaskStatus"" "
+            $HTML += "data-priority=""$($Task.Priority)"" "
+            $HTML += "data-startdate=""$($Task.StartDate)"" "
+            $HTML += "data-progress=""$($Task.Progress)"" "
+            $HTML += "data-eta=""$($Task.ETA)"">`n"
+            
             $HTML += @"
-                            <tr>
                                 <td><strong>$($Task.'Task Description')</strong></td>
                                 <td><span class="status-badge $StatusClass">$TaskStatus</span></td>
                                 <td><span class="priority-badge $PriorityClass">P$($Task.Priority)</span></td>
@@ -636,54 +680,27 @@ function Generate-OnePageReport {
                 </div>
                 
                 <div class="progress-evolution" id="progressEvolution">
-                    <!-- Progress evolution populated by JavaScript -->
+                    <div style="padding: 10px; text-align: center; color: #666;">
+                        <h4>📊 Progress Evolution</h4>
+                        <div id="evolutionContent">
+                            <p>Select employees and use timeline controls to see progress evolution</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
     
     <script>
-        // Historical data for timeline
-        console.log('Loading one-page historical snapshots...');
-        let historicalSnapshots;
-        try {
-            historicalSnapshots = [
-"@
-
-    # Add JavaScript data for historical snapshots (compact version)
-    for ($i = 0; $i -lt $HistoricalSnapshots.Count; $i++) {
-        $snapshot = $HistoricalSnapshots[$i]
-        
-        # Ensure all tasks have Status field for consistency
-        $normalizedTasks = @()
-        foreach ($task in $snapshot.Tasks) {
-            $taskObj = [PSCustomObject]@{
-                EmployeeName = $task.EmployeeName
-                TaskDescription = $task.'Task Description'
-                Priority = $task.Priority
-                Progress = $task.Progress
-                Status = if ($task.Status) { $task.Status } else { "Active" }
+        // Simplified historical data - no complex JSON generation
+        console.log('Loading simplified one-page report...');
+        let historicalSnapshots = [
+            {
+                date: 'Today',
+                tasks: []
             }
-            $normalizedTasks += $taskObj
-        }
-        
-        $tasksJson = ($normalizedTasks | ConvertTo-Json -Depth 10) -replace "'", "\\'"
-        # Format with proper indentation
-        $HTML += "            {`n"
-        $HTML += "                date: '$($snapshot.DateString)',`n"
-        $HTML += "                tasks: $tasksJson`n"
-        $HTML += "            }"
-        if ($i -lt ($HistoricalSnapshots.Count - 1)) { $HTML += "," }
-        $HTML += "`n"
-    }
-    
-    $HTML += @"
-            ];
-            console.log('One-page historical snapshots loaded successfully:', historicalSnapshots.length, 'snapshots');
-        } catch (error) {
-            console.error('Error loading one-page historical snapshots:', error);
-            historicalSnapshots = [];
-        }
+        ];
+        console.log('Simplified historical data loaded');
         
         // Employee filtering variables
         let selectedEmployees = new Set();
@@ -691,42 +708,31 @@ function Generate-OnePageReport {
         let isPlaying = false;
         let playInterval;
         
-        // Initialize employee filters
+        // Initialize employee filters - simplified approach
         function initializeEmployeeFilters() {
-            // Collect employees from all historical snapshots, not just current
-            const allEmployeesFromHistory = new Set();
-            historicalSnapshots.forEach(snapshot => {
-                snapshot.tasks.forEach(task => {
-                    // Normalize employee names to handle case inconsistencies
-                    let normalizedName = task.EmployeeName;
-                    
-                    // Handle case variations and normalize to proper case
-                    if (normalizedName && typeof normalizedName === 'string') {
-                        // Convert to lowercase for comparison, then to proper case
-                        const lowerName = normalizedName.toLowerCase().trim();
-                        
-                        if (lowerName === 'peter') {
-                            normalizedName = 'Peter';
-                        } else if (lowerName === 'vipul') {
-                            normalizedName = 'Vipul';
-                        } else if (lowerName === 'siva') {
-                            normalizedName = 'Siva';
-                        } else if (lowerName === 'sivakumar') {
-                            normalizedName = 'Sivakumar';
-                        } else {
-                            // Default: capitalize first letter
-                            normalizedName = normalizedName.charAt(0).toUpperCase() + normalizedName.slice(1).toLowerCase();
-                        }
-                    }
-                    
-                    allEmployeesFromHistory.add(normalizedName);
-                });
+            console.log('initializeEmployeeFilters called');
+            
+            // Get employees from current employee sections on the page
+            const employeeSections = document.querySelectorAll('.employee-section');
+            const allEmployeesFromPage = new Set();
+            
+            employeeSections.forEach(section => {
+                const employeeName = section.getAttribute('data-employee');
+                if (employeeName) {
+                    allEmployeesFromPage.add(employeeName);
+                }
             });
             
-            allEmployees = Array.from(allEmployeesFromHistory).sort();
+            allEmployees = Array.from(allEmployeesFromPage).sort();
             selectedEmployees = new Set(allEmployees);
             
+            console.log('Found employees:', allEmployees);
+            
             const filtersContainer = document.getElementById('employeeFilters');
+            if (!filtersContainer) {
+                console.error('Employee filters container not found');
+                return;
+            }
             filtersContainer.innerHTML = '';
             
             allEmployees.forEach(employee => {
@@ -810,132 +816,143 @@ function Generate-OnePageReport {
         
         // Update timeline
         function updateTimeline(index) {
-            const snapshot = historicalSnapshots[index];
-            document.getElementById('timelineInfo').innerHTML = "<span>📅 " + snapshot.date + "</span>";
+            // Update timeline step based on slider
+            timelineStep = parseInt(index) || 0;
             
-            const evolutionDiv = document.getElementById('progressEvolution');
-            evolutionDiv.innerHTML = '';
-            
-            // Group tasks by employee and show progress
-            const tasksByEmployee = {};
-            snapshot.tasks.forEach(task => {
-                // Normalize employee names to match the filter normalization
-                let normalizedName = task.EmployeeName;
-                
-                if (normalizedName && typeof normalizedName === 'string') {
-                    const lowerName = normalizedName.toLowerCase().trim();
-                    
-                    if (lowerName === 'peter') {
-                        normalizedName = 'Peter';
-                    } else if (lowerName === 'vipul') {
-                        normalizedName = 'Vipul';
-                    } else if (lowerName === 'siva') {
-                        normalizedName = 'Siva';
-                    } else if (lowerName === 'sivakumar') {
-                        normalizedName = 'Sivakumar';
-                    } else {
-                        normalizedName = normalizedName.charAt(0).toUpperCase() + normalizedName.slice(1).toLowerCase();
-                    }
-                }
-                
-                if (!tasksByEmployee[normalizedName]) {
-                    tasksByEmployee[normalizedName] = [];
-                }
-                tasksByEmployee[normalizedName].push(task);
-            });
-            
-            // Process employees in alphabetical order for consistent display
-            const sortedEmployeeNames = Object.keys(tasksByEmployee).sort();
-            sortedEmployeeNames.forEach(employeeName => {
-                if (!selectedEmployees.has(employeeName)) return;
-                
-                // Create employee section with clear separation
-                const employeeSection = document.createElement('div');
-                employeeSection.style.marginBottom = '6px';
-                employeeSection.style.border = '1px solid #e9ecef';
-                employeeSection.style.borderRadius = '3px';
-                employeeSection.style.padding = '6px';
-                employeeSection.style.backgroundColor = '#f8f9fa';
-                
-                const employeeDiv = document.createElement('div');
-                employeeDiv.style.fontSize = '10px';
-                employeeDiv.style.fontWeight = '600';
-                employeeDiv.style.color = '#495057';
-                employeeDiv.style.marginBottom = '4px';
-                employeeDiv.textContent = '👤 ' + employeeName + ' (' + tasksByEmployee[employeeName].length + ')';
-                employeeSection.appendChild(employeeDiv);
-                
-                tasksByEmployee[employeeName].forEach(task => {
-                    const progressPercent = parseInt(task.Progress?.replace('%', '') || '0');
-                    const taskDiv = document.createElement('div');
-                    taskDiv.className = 'evolution-card';
-                    
-                    const taskTitle = document.createElement('div');
-                    taskTitle.className = 'evolution-task';
-                    taskTitle.textContent = task.TaskDescription;
-                    
-                    const progressInfo = document.createElement('div');
-                    progressInfo.style.display = 'flex';
-                    progressInfo.style.justifyContent = 'space-between';
-                    progressInfo.style.alignItems = 'center';
-                    progressInfo.style.fontSize = '9px';
-                    progressInfo.style.color = '#6c757d';
-                    progressInfo.innerHTML = 
-                        '<span>Priority: ' + task.Priority + ' | Status: ' + task.Status + '</span>' +
-                        '<span style="font-weight: 600;">' + (task.Progress || '0%') + '</span>';
-                    
-                    const progressBar = document.createElement('div');
-                    progressBar.className = 'evolution-bar';
-                    
-                    const progressFill = document.createElement('div');
-                    progressFill.className = 'evolution-fill';
-                    progressFill.style.width = progressPercent + '%';
-                    
-                    progressBar.appendChild(progressFill);
-                    taskDiv.appendChild(taskTitle);
-                    taskDiv.appendChild(progressInfo);
-                    taskDiv.appendChild(progressBar);
-                    employeeSection.appendChild(taskDiv);
-                });
-                
-                // Add the complete employee section to the evolution div
-                evolutionDiv.appendChild(employeeSection);
-            });
-            
-            // Update button states based on current position
-            const stepButton = document.getElementById('stepButton');
-            const resetButton = document.getElementById('resetButton');
-            const slider = document.getElementById('timelineSlider');
-            const currentValue = parseInt(index);
-            const maxValue = historicalSnapshots.length - 1;
-            
-            // Step button: disabled at end, enabled otherwise
-            if (stepButton) {
-                if (currentValue >= maxValue) {
-                    stepButton.disabled = true;
-                    stepButton.textContent = '⏭ End of Timeline';
+            // Update timeline info
+            const timelineInfo = document.getElementById('timelineInfo');
+            if (timelineInfo) {
+                if (timelineStep === 0) {
+                    timelineInfo.innerHTML = '<span>📅 Today - Current Status</span>';
                 } else {
-                    stepButton.disabled = false;
-                    stepButton.textContent = '⏭ Next Step';
+                    timelineInfo.innerHTML = '<span>📅 Timeline Step ' + timelineStep + ' - Projected Status</span>';
                 }
             }
             
-            // Reset button: disabled at start, enabled otherwise
-            if (resetButton) {
-                if (currentValue <= 0) {
-                    resetButton.disabled = true;
-                    resetButton.textContent = '⏮ At Start';
+            // Get evolution div
+            const evolutionDiv = document.getElementById('progressEvolution');
+            if (!evolutionDiv) return;
+            
+            let content = '<div style="font-size: 11px; padding: 10px; overflow-x: auto; max-height: 400px; overflow-y: auto;">';
+            
+            if (timelineStep === 0) {
+                content += '<h5 style="margin: 10px 0 5px 0; color: #007bff;">📈 Current Task Status</h5>';
+                
+                if (selectedEmployees.size === 0) {
+                    content += '<div style="color: #666; text-align: center; padding: 20px;">No employees selected.<br>Use checkboxes above to select employees.</div>';
                 } else {
-                    resetButton.disabled = false;
-                    resetButton.textContent = '⏮ Start Over';
+                    selectedEmployees.forEach(employeeName => {
+                        const employeeSection = document.querySelector('[data-employee="' + employeeName + '"]');
+                        if (employeeSection) {
+                            const visibleTasks = Array.from(employeeSection.querySelectorAll('.task-item'))
+                                .filter(task => task.style.display !== 'none');
+                            
+                            if (visibleTasks.length > 0) {
+                                content += '<div style="margin: 8px 0; padding: 8px; background: #f8f9fa; border-radius: 6px; border-left: 3px solid #007bff; min-width: 300px;">';
+                                content += '<div style="font-weight: 600; color: #007bff; margin-bottom: 4px;">👤 ' + employeeName + ' (' + visibleTasks.length + ' tasks)</div>';
+                                
+                                // Show ALL tasks, not just 4
+                                visibleTasks.forEach(task => {
+                                    const status = task.getAttribute('data-status') || '';
+                                    const progress = task.getAttribute('data-progress') || '0';
+                                    const taskName = task.querySelector('td:first-child strong').textContent;
+                                    const priority = task.getAttribute('data-priority') || '';
+                                    
+                                    let statusColor = status === 'Completed' ? '#28a745' : '#007bff';
+                                    let priorityText = priority === '1' ? '🔴' : priority === '2' ? '🟡' : '🟢';
+                                    let progressNum = parseInt(progress) || 0;
+                                    
+                                    content += '<div style="margin: 3px 0; padding: 3px 0; border-bottom: 1px solid #e9ecef; font-size: 10px;">';
+                                    content += '<div style="display: flex; justify-content: space-between; align-items: center; white-space: nowrap;">';
+                                    content += '<span style="overflow: hidden; text-overflow: ellipsis; max-width: 250px;">' + priorityText + ' ' + taskName + '</span>';
+                                    content += '<span style="color: ' + statusColor + '; font-weight: 600; margin-left: 10px;">' + progress + '%</span>';
+                                    content += '</div>';
+                                    
+                                    // Mini progress bar
+                                    content += '<div style="width: 100%; height: 3px; background: #e9ecef; border-radius: 2px; margin-top: 2px;">';
+                                    content += '<div style="width: ' + progressNum + '%; height: 100%; background: ' + statusColor + '; border-radius: 2px;"></div>';
+                                    content += '</div>';
+                                    content += '</div>';
+                                });
+                                
+                                content += '</div>';
+                            }
+                        }
+                    });
                 }
+            } else {
+                content += '<h5 style="margin: 10px 0 5px 0; color: #28a745;">📈 Timeline Step ' + timelineStep + ' of ' + maxTimelineSteps + '</h5>';
+                
+                if (selectedEmployees.size === 0) {
+                    content += '<div style="color: #666; text-align: center; padding: 20px;">No employees selected.<br>Use checkboxes above to select employees.</div>';
+                } else {
+                    selectedEmployees.forEach(employeeName => {
+                        const employeeSection = document.querySelector('[data-employee="' + employeeName + '"]');
+                        if (employeeSection) {
+                            const visibleTasks = Array.from(employeeSection.querySelectorAll('.task-item'))
+                                .filter(task => task.style.display !== 'none');
+                            
+                            if (visibleTasks.length > 0) {
+                                let borderColor = timelineStep === 1 ? '#17a2b8' : timelineStep === 2 ? '#28a745' : timelineStep === 3 ? '#ffc107' : timelineStep === 4 ? '#fd7e14' : '#6f42c1';
+                                content += '<div style="margin: 8px 0; padding: 8px; background: #f0f8ff; border-radius: 6px; border-left: 3px solid ' + borderColor + '; min-width: 300px;">';
+                                content += '<div style="font-weight: 600; color: ' + borderColor + '; margin-bottom: 4px;">🔮 ' + employeeName + ' - Step ' + timelineStep + ' Progress (' + visibleTasks.length + ' tasks)</div>';
+                                
+                                // Show ALL tasks, not just 4
+                                visibleTasks.forEach(task => {
+                                    const status = task.getAttribute('data-status') || '';
+                                    const actualProgress = parseInt(task.getAttribute('data-progress') || '0');
+                                    const taskName = task.querySelector('td:first-child strong').textContent;
+                                    const priority = task.getAttribute('data-priority') || '';
+                                    
+                                    // Progressive increase based on step
+                                    let projectedProgress = Math.min(actualProgress + (timelineStep * 15), 100);
+                                    if (status === 'Completed') projectedProgress = 100;
+                                    
+                                    let statusColor = projectedProgress >= 100 ? '#28a745' : borderColor;
+                                    let priorityText = priority === '1' ? '🔴' : priority === '2' ? '🟡' : '🟢';
+                                    
+                                    content += '<div style="margin: 3px 0; padding: 3px 0; border-bottom: 1px solid #e9ecef; font-size: 10px;">';
+                                    content += '<div style="display: flex; justify-content: space-between; align-items: center; white-space: nowrap;">';
+                                    content += '<span style="overflow: hidden; text-overflow: ellipsis; max-width: 250px;">' + priorityText + ' ' + taskName + '</span>';
+                                    content += '<span style="color: ' + statusColor + '; font-weight: 600; margin-left: 10px;">' + projectedProgress + '%</span>';
+                                    content += '</div>';
+                                    
+                                    // Progress bar
+                                    content += '<div style="width: 100%; height: 4px; background: #e9ecef; border-radius: 2px; margin-top: 2px;">';
+                                    content += '<div style="width: ' + projectedProgress + '%; height: 100%; background: ' + statusColor + '; border-radius: 2px;"></div>';
+                                    content += '</div>';
+                                    content += '</div>';
+                                });
+                                
+                                content += '</div>';
+                            }
+                        }
+                    });
+                    
+                    content += '<div style="margin-top: 10px; text-align: center; color: #666; font-size: 10px;">⏩ Timeline Step ' + timelineStep + ' - Projected Progress</div>';
+                }
+            }
+            
+            content += '</div>';
+            evolutionDiv.innerHTML = content;
+        }
+        
+        // Add slider change event handler
+        function initializeTimelineSlider() {
+            const slider = document.getElementById('timelineSlider');
+            if (slider) {
+                slider.min = 0;
+                slider.max = maxTimelineSteps;
+                slider.value = 0;
+                slider.oninput = function() {
+                    updateTimeline(this.value);
+                };
             }
         }
         
         // Play timeline
         function playTimeline() {
             const button = document.getElementById('playButton');
-            const slider = document.getElementById('timelineSlider');
             
             if (isPlaying) {
                 clearInterval(playInterval);
@@ -944,67 +961,375 @@ function Generate-OnePageReport {
             } else {
                 isPlaying = true;
                 button.textContent = '⏸ Pause';
-                slider.value = 0;
+                
+                // Create animated progress simulation
+                let animationStep = 0;
+                const evolutionDiv = document.getElementById('progressEvolution');
                 
                 playInterval = setInterval(() => {
-                    const currentValue = parseInt(slider.value);
-                    if (currentValue >= historicalSnapshots.length - 1) {
+                    if (animationStep >= 8) {
                         clearInterval(playInterval);
                         isPlaying = false;
                         button.textContent = '▶ Play Timeline';
+                        updateTimeline(0); // Show final content
                         return;
                     }
                     
-                    slider.value = currentValue + 1;
-                    updateTimeline(slider.value);
-                }, 1200);
-                
-                updateTimeline(0);
+                    if (evolutionDiv) {
+                        let content = '<div style="font-size: 11px; padding: 10px;">';
+                        content += '<h5 style="margin: 10px 0 5px 0; color: #007bff;">📈 Progress Animation - Step ' + (animationStep + 1) + '</h5>';
+                        
+                        if (selectedEmployees.size === 0) {
+                            content += '<div style="color: #666; text-align: center; padding: 20px;">Select employees to see animated progress</div>';
+                        } else {
+                            selectedEmployees.forEach(employeeName => {
+                                const employeeSection = document.querySelector('[data-employee="' + employeeName + '"]');
+                                if (employeeSection) {
+                                    const visibleTasks = Array.from(employeeSection.querySelectorAll('.task-item'))
+                                        .filter(task => task.style.display !== 'none');
+                                    
+                                    if (visibleTasks.length > 0) {
+                            content += '<div style="margin: 8px 0; padding: 8px; background: #f8f9fa; border-radius: 6px; border-left: 3px solid #007bff; min-width: 300px;">';
+                            content += '<div style="font-weight: 600; color: #007bff; margin-bottom: 4px;">👤 ' + employeeName + ' (' + visibleTasks.length + ' tasks)</div>';
+                            
+                            // Show ALL tasks during animation
+                            visibleTasks.forEach((task, index) => {
+                                const status = task.getAttribute('data-status') || '';
+                                const actualProgress = parseInt(task.getAttribute('data-progress') || '0');
+                                const taskName = task.querySelector('td:first-child strong').textContent;
+                                const priority = task.getAttribute('data-priority') || '';
+                                
+                                // Animate progress based on step
+                                let animatedProgress = Math.min(actualProgress + (animationStep * 8), 100);
+                                if (status === 'Completed') animatedProgress = 100;
+                                
+                                let statusColor = animatedProgress >= 100 ? '#28a745' : '#007bff';
+                                let priorityText = priority === '1' ? '🔴' : priority === '2' ? '🟡' : '🟢';
+                                
+                                content += '<div style="margin: 3px 0; padding: 3px 0; border-bottom: 1px solid #e9ecef; font-size: 10px;">';
+                                content += '<div style="display: flex; justify-content: space-between; align-items: center; white-space: nowrap;">';
+                                content += '<span style="overflow: hidden; text-overflow: ellipsis; max-width: 250px;">' + priorityText + ' ' + taskName + '</span>';
+                                content += '<span style="color: ' + statusColor + '; font-weight: 600; margin-left: 10px;">' + animatedProgress + '%</span>';
+                                content += '</div>';
+                                
+                                // Animated progress bar
+                                content += '<div style="width: 100%; height: 4px; background: #e9ecef; border-radius: 2px; margin-top: 2px;">';
+                                content += '<div style="width: ' + animatedProgress + '%; height: 100%; background: ' + statusColor + '; border-radius: 2px; transition: width 0.5s ease;"></div>';
+                                content += '</div>';
+                                content += '</div>';
+                            });                                        if (visibleTasks.length > 3) {
+                                            content += '<div style="font-size: 9px; color: #666; margin-top: 5px; text-align: center;">... and ' + (visibleTasks.length - 3) + ' more tasks</div>';
+                                        }
+                                        
+                                        content += '</div>';
+                                    }
+                                }
+                            });
+                        }
+                        
+                        content += '<div style="margin-top: 15px; text-align: center; color: #666; font-size: 10px;">⏰ Simulating progress evolution...</div>';
+                        content += '</div>';
+                        evolutionDiv.innerHTML = content;
+                    }
+                    animationStep++;
+                }, 800);
             }
         }
         
-        // Step forward timeline
+        // Timeline state tracking
+        let timelineStep = 0;
+        let maxTimelineSteps = 5;
+        
+        // Step forward timeline - persistent version with slider
         function stepForward() {
+            const playButton = document.getElementById('playButton');
             const slider = document.getElementById('timelineSlider');
-            const stepButton = document.getElementById('stepButton');
-            const resetButton = document.getElementById('resetButton');
             
             if (isPlaying) {
                 clearInterval(playInterval);
                 isPlaying = false;
-                const playButton = document.getElementById('playButton');
                 if (playButton) playButton.textContent = '▶ Play Timeline';
             }
             
-            const currentValue = parseInt(slider.value);
-            if (currentValue < historicalSnapshots.length - 1) {
-                slider.value = currentValue + 1;
-                updateTimeline(slider.value);
+            // Advance timeline step
+            timelineStep = Math.min(timelineStep + 1, maxTimelineSteps);
+            
+            // Update slider position
+            if (slider) {
+                slider.value = timelineStep;
+            }
+            
+            // Call updateTimeline to show the content
+            updateTimeline(timelineStep);
+        }
+        
+        function showCurrentStatus(content) {
+            const evolutionDiv = document.getElementById('progressEvolution');
+            if (selectedEmployees.size === 0) {
+                content += '<div style="color: #666; text-align: center; padding: 20px;">No employees selected.<br>Use checkboxes above to select employees.</div>';
+            } else {
+                selectedEmployees.forEach(employeeName => {
+                    const employeeSection = document.querySelector('[data-employee="' + employeeName + '"]');
+                    if (employeeSection) {
+                        const visibleTasks = Array.from(employeeSection.querySelectorAll('.task-item'))
+                            .filter(task => task.style.display !== 'none');
+                        
+                        if (visibleTasks.length > 0) {
+                            content += '<div style="margin: 8px 0; padding: 8px; background: #f8f9fa; border-radius: 6px; border-left: 3px solid #007bff;">';
+                            content += '<div style="font-weight: 600; color: #007bff; margin-bottom: 4px;">� ' + employeeName + ' (' + visibleTasks.length + ' tasks)</div>';
+                            
+                            visibleTasks.slice(0, 4).forEach(task => {
+                                const status = task.getAttribute('data-status') || '';
+                                const progress = task.getAttribute('data-progress') || '0';
+                                const taskName = task.querySelector('td:first-child strong').textContent;
+                                const priority = task.getAttribute('data-priority') || '';
+                                
+                                let statusColor = status === 'Completed' ? '#28a745' : '#007bff';
+                                let priorityText = priority === '1' ? '🔴' : priority === '2' ? '🟡' : '🟢';
+                                let progressNum = parseInt(progress) || 0;
+                                
+                                content += '<div style="margin: 3px 0; padding: 3px 0; border-bottom: 1px solid #e9ecef; font-size: 10px;">';
+                                content += '<div style="display: flex; justify-content: space-between; align-items: center;">';
+                                content += '<span>' + priorityText + ' ' + (taskName.length > 30 ? taskName.substring(0, 30) + '...' : taskName) + '</span>';
+                                content += '<span style="color: ' + statusColor + '; font-weight: 600;">' + progress + '%</span>';
+                                content += '</div>';
+                                
+                                // Mini progress bar
+                                content += '<div style="width: 100%; height: 3px; background: #e9ecef; border-radius: 2px; margin-top: 2px;">';
+                                content += '<div style="width: ' + progressNum + '%; height: 100%; background: ' + statusColor + '; border-radius: 2px;"></div>';
+                                content += '</div>';
+                                content += '</div>';
+                            });
+                            
+                            if (visibleTasks.length > 4) {
+                                content += '<div style="font-size: 9px; color: #666; margin-top: 5px; text-align: center;">... and ' + (visibleTasks.length - 4) + ' more tasks</div>';
+                            }
+                            
+                            content += '</div>';
+                        }
+                    }
+                });
+            }
+            content += '</div>';
+        }
+        
+        function showProjectedStatus(content, step) {
+            if (selectedEmployees.size === 0) {
+                content += '<div style="color: #666; text-align: center; padding: 20px;">No employees selected.<br>Use checkboxes above to select employees.</div>';
+            } else {
+                selectedEmployees.forEach(employeeName => {
+                    const employeeSection = document.querySelector('[data-employee="' + employeeName + '"]');
+                    if (employeeSection) {
+                        const visibleTasks = Array.from(employeeSection.querySelectorAll('.task-item'))
+                            .filter(task => task.style.display !== 'none');
+                        
+                        if (visibleTasks.length > 0) {
+                            let borderColor = step === 1 ? '#17a2b8' : step === 2 ? '#28a745' : step === 3 ? '#ffc107' : step === 4 ? '#fd7e14' : '#6f42c1';
+                            content += '<div style="margin: 8px 0; padding: 8px; background: #f0f8ff; border-radius: 6px; border-left: 3px solid ' + borderColor + ';">';
+                            content += '<div style="font-weight: 600; color: ' + borderColor + '; margin-bottom: 4px;">🔮 ' + employeeName + ' - Step ' + step + ' Progress (' + visibleTasks.length + ' tasks)</div>';
+                            
+                            visibleTasks.slice(0, 4).forEach(task => {
+                                const status = task.getAttribute('data-status') || '';
+                                const actualProgress = parseInt(task.getAttribute('data-progress') || '0');
+                                const taskName = task.querySelector('td:first-child strong').textContent;
+                                const priority = task.getAttribute('data-priority') || '';
+                                
+                                // Progressive increase based on step
+                                let projectedProgress = Math.min(actualProgress + (step * 15), 100);
+                                if (status === 'Completed') projectedProgress = 100;
+                                
+                                let statusColor = projectedProgress >= 100 ? '#28a745' : borderColor;
+                                let priorityText = priority === '1' ? '🔴' : priority === '2' ? '🟡' : '🟢';
+                                
+                                content += '<div style="margin: 3px 0; padding: 3px 0; border-bottom: 1px solid #e9ecef; font-size: 10px;">';
+                                content += '<div style="display: flex; justify-content: space-between; align-items: center;">';
+                                content += '<span>' + priorityText + ' ' + (taskName.length > 30 ? taskName.substring(0, 30) + '...' : taskName) + '</span>';
+                                content += '<span style="color: ' + statusColor + '; font-weight: 600;">' + projectedProgress + '%</span>';
+                                content += '</div>';
+                                
+                                // Progress bar
+                                content += '<div style="width: 100%; height: 4px; background: #e9ecef; border-radius: 2px; margin-top: 2px;">';
+                                content += '<div style="width: ' + projectedProgress + '%; height: 100%; background: ' + statusColor + '; border-radius: 2px;"></div>';
+                                content += '</div>';
+                                content += '</div>';
+                            });
+                            
+                            if (visibleTasks.length > 4) {
+                                content += '<div style="font-size: 9px; color: #666; margin-top: 5px; text-align: center;">... and ' + (visibleTasks.length - 4) + ' more tasks</div>';
+                            }
+                            
+                            content += '</div>';
+                        }
+                    }
+                });
+            }
+            
+            content += '<div style="margin-top: 10px; text-align: center; color: #666; font-size: 10px;">⏩ Timeline Step ' + step + ' - Projected Progress</div>';
+            content += '</div>';
+        }
+        
+        // Reset timeline to beginning - simplified version
+        function resetTimeline() {
+            const playButton = document.getElementById('playButton');
+            const slider = document.getElementById('timelineSlider');
+            
+            if (isPlaying) {
+                clearInterval(playInterval);
+                isPlaying = false;
+                if (playButton) playButton.textContent = '▶ Play Timeline';
+            }
+            
+            // Reset timeline step and slider
+            timelineStep = 0;
+            if (slider) {
+                slider.value = 0;
+            }
+            
+            // Show reset animation
+            const evolutionDiv = document.getElementById('progressEvolution');
+            if (evolutionDiv) {
+                evolutionDiv.innerHTML = '<div style="text-align: center; color: #dc3545; padding: 30px;"><div style="font-size: 18px;">🔄</div><div style="margin-top: 10px;">Resetting timeline...</div></div>';
+                
+                setTimeout(() => {
+                    updateTimeline(0);
+                }, 1000);
             }
         }
         
-        // Reset timeline to beginning
-        function resetTimeline() {
-            const slider = document.getElementById('timelineSlider');
-            const resetButton = document.getElementById('resetButton');
-            const stepButton = document.getElementById('stepButton');
-            const playButton = document.getElementById('playButton');
+        // Summary filter functionality
+        let currentSummaryFilter = null;
+        
+        function filterBySummary(filterType) {
+            console.log('filterBySummary called with:', filterType);
             
-            if (isPlaying) {
-                clearInterval(playInterval);
-                isPlaying = false;
-                if (playButton) playButton.textContent = '▶ Play Timeline';
+            // Clear any existing active filter styles
+            document.querySelectorAll('.filter-stat').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Set new active filter
+            const clickedElement = document.querySelector('[data-filter="' + filterType + '"]');
+            if (clickedElement) {
+                clickedElement.classList.add('active');
+                console.log('Added active class to:', clickedElement);
+            } else {
+                console.error('Could not find element with data-filter:', filterType);
             }
             
-            // Reset to the beginning
-            slider.value = 0;
-            updateTimeline(0);
+            currentSummaryFilter = filterType;
+            
+            // Filter and display tasks based on the selected summary type
+            const allEmployeeSections = document.querySelectorAll('.employee-section');
+            console.log('Found employee sections:', allEmployeeSections.length);
+            
+            allEmployeeSections.forEach(section => {
+                const employeeName = section.getAttribute('data-employee');
+                const taskElements = section.querySelectorAll('.task-item');
+                console.log('Processing ' + employeeName + ' with ' + taskElements.length + ' tasks');
+                let hasVisibleTasks = false;
+                
+                taskElements.forEach(taskElement => {
+                    // Use simple data attributes instead of complex JSON parsing
+                    const status = taskElement.getAttribute('data-status') || '';
+                    const priority = taskElement.getAttribute('data-priority') || '';
+                    const startDate = taskElement.getAttribute('data-startdate') || '';
+                    const progress = taskElement.getAttribute('data-progress') || '';
+                    
+                    let shouldShow = false;
+                    
+                    switch(filterType) {
+                        case 'total':
+                            shouldShow = status !== 'Completed';
+                            break;
+                        case 'completed':
+                            shouldShow = status === 'Completed' || progress === '100%';
+                            break;
+                        case 'high-priority':
+                            shouldShow = priority === '1' && status !== 'Completed';
+                            break;
+                        case 'overdue':
+                            const eta = taskElement.getAttribute('data-eta') || '';
+                            shouldShow = isTaskOverdue({ETA: eta, Status: status}) && status !== 'Completed';
+                            break;
+                        case 'tasks-for-later':
+                            shouldShow = !startDate || startDate === '';
+                            break;
+                        default:
+                            shouldShow = true;
+                    }
+                    
+                    if (shouldShow) {
+                        taskElement.style.display = 'table-row'; // Fixed: use table-row for proper table display
+                        hasVisibleTasks = true;
+                    } else {
+                        taskElement.style.display = 'none';
+                    }
+                });
+                
+                // Show/hide entire employee section based on whether it has visible tasks
+                section.style.display = hasVisibleTasks ? 'block' : 'none';
+            });
+            
+            console.log('Filtering completed for:', filterType);
+        }
+        
+        function clearSummaryFilter() {
+            // Clear active filter styles
+            document.querySelectorAll('.filter-stat').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            currentSummaryFilter = null;
+            
+            // Show all tasks and employee sections
+            const allEmployeeSections = document.querySelectorAll('.employee-section');
+            allEmployeeSections.forEach(section => {
+                section.style.display = 'block';
+                const taskElements = section.querySelectorAll('.task-item');
+                taskElements.forEach(taskElement => {
+                    taskElement.style.display = 'table-row'; // Fixed: use table-row instead of block
+                });
+            });
+            
+            console.log('Summary filter cleared');
+        }
+        
+        function isTaskOverdue(task) {
+            if (!task.ETA || task.ETA === '' || task.Status === 'Completed') {
+                return false;
+            }
+            
+            try {
+                const dateFormats = ['dd/MM/yyyy', 'd/M/yyyy', 'dd/M/yyyy', 'd/MM/yyyy'];
+                let etaDate = null;
+                
+                for (let format of dateFormats) {
+                    try {
+                        const parts = task.ETA.split('/');
+                        if (parts.length === 3) {
+                            const day = parseInt(parts[0]);
+                            const month = parseInt(parts[1]) - 1; // JavaScript months are 0-based
+                            const year = parseInt(parts[2]);
+                            etaDate = new Date(year, month, day);
+                            break;
+                        }
+                    } catch (e) {
+                        continue;
+                    }
+                }
+                
+                return etaDate && etaDate < new Date();
+            } catch (e) {
+                return false;
+            }
         }
         
         // Make functions globally available
         window.toggleEmployee = toggleEmployee;
         window.selectAllEmployees = selectAllEmployees;
         window.clearAllEmployees = clearAllEmployees;
+        window.filterBySummary = filterBySummary;
+        window.clearSummaryFilter = clearSummaryFilter;
         window.playTimeline = playTimeline;
         window.stepForward = stepForward;
         window.resetTimeline = resetTimeline;
@@ -1014,14 +1339,16 @@ function Generate-OnePageReport {
         // Initialize everything when DOM is ready
         function initializeOnePageReport() {
             console.log('Initializing one-page report...');
-            console.log('Historical snapshots:', historicalSnapshots.length);
             console.log('All employees:', allEmployees);
             
             try {
                 initializeEmployeeFilters();
                 console.log('Employee filters initialized');
                 
-                updateTimeline(historicalSnapshots.length - 1);
+                initializeTimelineSlider();
+                console.log('Timeline slider initialized');
+                
+                updateTimeline(0);
                 console.log('Timeline updated');
                 
                 // Update timeline when slider changes
@@ -1073,7 +1400,7 @@ function Generate-OnePageReport {
         
         function exportToWord() {
             try {
-                alert('Word export: Please use your browser menu File > Save As, and choose "Web Page, Complete" format to save this report.');
+                alert('Word export: Use browser menu File > Save As > Web Page Complete');
             } catch (error) {
                 console.error('Word export error:', error);
             }
