@@ -2,6 +2,11 @@
 # Professional, compact design suitable for banking environments
 
 function Generate-OnePageReport {
+    param(
+        [Parameter(Mandatory=$false)]
+        [string]$FilterEmployee = $null
+    )
+    
     $TaskFile = "./task_progress_data.csv"
     if (-not (Test-Path $TaskFile)) {
         Write-Host "No task data found to generate report!" -ForegroundColor Red
@@ -9,6 +14,19 @@ function Generate-OnePageReport {
     }
     
     $Tasks = Import-Csv $TaskFile
+    
+    # Apply employee filter if specified
+    if ($FilterEmployee) {
+        $Tasks = $Tasks | Where-Object { $_.EmployeeName -eq $FilterEmployee }
+        Write-Host "🔍 Filtering tasks for employee: $FilterEmployee" -ForegroundColor Yellow
+        Write-Host "📊 Found $($Tasks.Count) tasks for $FilterEmployee" -ForegroundColor Cyan
+        
+        if ($Tasks.Count -eq 0) {
+            Write-Host "❌ No tasks found for employee: $FilterEmployee" -ForegroundColor Red
+            return
+        }
+    }
+    
     $ReportDate = Get-Date -Format "MMMM dd, yyyy 'at' HH:mm"
     
     # Create reports folder if it doesn't exist
@@ -17,7 +35,13 @@ function Generate-OnePageReport {
         New-Item -ItemType Directory -Path $ReportsFolder -Force | Out-Null
     }
     
-    $ReportFileName = Join-Path $ReportsFolder "OnePage_Task_Report_$(Get-Date -Format 'yyyy-MM-dd_HH-mm').html"
+    # Generate filename based on whether it's filtered or not
+    if ($FilterEmployee) {
+        $SafeEmployeeName = $FilterEmployee -replace '[^\w\-_]', '_'
+        $ReportFileName = Join-Path $ReportsFolder "OnePage_${SafeEmployeeName}_$(Get-Date -Format 'yyyy-MM-dd_HH-mm').html"
+    } else {
+        $ReportFileName = Join-Path $ReportsFolder "OnePage_Task_Report_$(Get-Date -Format 'yyyy-MM-dd_HH-mm').html"
+    }
     
     # Load historical data for compact timeline
     $HistoryFolder = "./history"

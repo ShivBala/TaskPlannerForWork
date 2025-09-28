@@ -1392,6 +1392,195 @@ function Generate-CapacityPlanningReport {
             color: #2c3e50;
         }
         
+        /* Availability Rankings Styles */
+        .availability-rankings {
+            margin: 20px 0;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+            border: 1px solid #e9ecef;
+        }
+        
+        .availability-rankings h2 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 18px;
+        }
+        
+        .ranking-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 200px));
+            gap: 12px;
+            justify-content: center;
+        }
+        
+        .ranking-card {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #e9ecef;
+            transition: all 0.2s ease;
+            max-width: 180px;
+        }
+        
+        .ranking-card:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        
+        .ranking-card.immediate {
+            border-color: #28a745;
+            background: #f8fff9;
+        }
+        
+        .ranking-card.first {
+            border-color: #ffc107;
+            background: #fffdf5;
+        }
+        
+        .ranking-card.second {
+            border-color: #6c757d;
+            background: #f8f9fa;
+        }
+        
+        .ranking-card.third {
+            border-color: #fd7e14;
+            background: #fff8f5;
+        }
+        
+        .ranking-card h3 {
+            margin: 0 0 6px 0;
+            font-size: 12px;
+            color: #495057;
+        }
+        
+        .ranking-value {
+            font-size: 15px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+        
+        .ranking-subtitle {
+            font-size: 10px;
+            color: #6c757d;
+            font-style: italic;
+        }
+        
+        /* Today Button and Modal Styles */
+        .today-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .today-btn:hover {
+            background: #0056b3;
+        }
+        
+        .task-modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 80%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #e9ecef;
+            padding-bottom: 10px;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #6c757d;
+        }
+        
+        .task-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .task-item-modal {
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 12px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+        }
+        
+        .task-priority-high {
+            border-left-color: #dc3545;
+        }
+        
+        .task-priority-medium {
+            border-left-color: #ffc107;
+        }
+        
+        .task-priority-low {
+            border-left-color: #28a745;
+        }
+        
+        .task-title {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+        
+        .task-details {
+            font-size: 12px;
+            color: #6c757d;
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .task-progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #e9ecef;
+            border-radius: 3px;
+            margin-top: 6px;
+            overflow: hidden;
+        }
+        
+        .task-progress-fill {
+            height: 100%;
+            background: #28a745;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+        
         .capacity-table {
             width: 100%;
             border-collapse: collapse;
@@ -1560,7 +1749,23 @@ function Generate-CapacityPlanningReport {
     $TotalPeople = $CapacityData.Count
     $AvgWeek1Available = ($CapacityData | Measure-Object -Property Week1Available -Average).Average
     $AvgWeek2Available = ($CapacityData | Measure-Object -Property Week2Available -Average).Average
-    $MostAvailable = ($CapacityData | Sort-Object Week1Available -Descending | Select-Object -First 1).Name
+    $AvgWeek3Available = ($CapacityData | Measure-Object -Property Week3Available -Average).Average
+    $AvgWeek4Available = ($CapacityData | Measure-Object -Property Week4Available -Average).Average
+    
+    # Calculate most available person based on overall average availability across all weeks
+    $CapacityWithOverallAvg = $CapacityData | ForEach-Object {
+        $OverallAvg = ($_.Week1Available + $_.Week2Available + $_.Week3Available + $_.Week4Available) / 4
+        $_ | Add-Member -NotePropertyName "OverallAvgAvailable" -NotePropertyValue $OverallAvg -PassThru
+    }
+    
+    # Rankings by overall availability
+    $AvailabilityRanking = $CapacityWithOverallAvg | Sort-Object OverallAvgAvailable -Descending
+    $MostAvailable = $AvailabilityRanking[0].Name
+    $SecondMostAvailable = if ($AvailabilityRanking.Count -gt 1) { $AvailabilityRanking[1].Name } else { "N/A" }
+    $ThirdMostAvailable = if ($AvailabilityRanking.Count -gt 2) { $AvailabilityRanking[2].Name } else { "N/A" }
+    
+    # Immediately available (highest Week 1 availability)
+    $ImmediatelyAvailable = ($CapacityData | Sort-Object Week1Available -Descending | Select-Object -First 1).Name
 
     $HTML += @"
                 <div class="summary-card">
@@ -1576,8 +1781,39 @@ function Generate-CapacityPlanningReport {
                     <div class="value">$([math]::Round($AvgWeek2Available, 1))h</div>
                 </div>
                 <div class="summary-card">
-                    <h3>Most Available</h3>
-                    <div class="value">$MostAvailable</div>
+                    <h3>Avg Available (Week 3)</h3>
+                    <div class="value">$([math]::Round($AvgWeek3Available, 1))h</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Avg Available (Week 4)</h3>
+                    <div class="value">$([math]::Round($AvgWeek4Available, 1))h</div>
+                </div>
+            </div>
+            
+            <!-- Availability Rankings Section -->
+            <div class="availability-rankings">
+                <h2>📊 Availability Rankings</h2>
+                <div class="ranking-cards">
+                    <div class="ranking-card immediate">
+                        <h3>🚀 Immediately Available</h3>
+                        <div class="ranking-value">$ImmediatelyAvailable</div>
+                        <div class="ranking-subtitle">Highest Week 1 availability</div>
+                    </div>
+                    <div class="ranking-card first">
+                        <h3>🥇 Most Available Overall</h3>
+                        <div class="ranking-value">$MostAvailable</div>
+                        <div class="ranking-subtitle">Best 4-week average</div>
+                    </div>
+                    <div class="ranking-card second">
+                        <h3>🥈 2nd Most Available</h3>
+                        <div class="ranking-value">$SecondMostAvailable</div>
+                        <div class="ranking-subtitle">Second best average</div>
+                    </div>
+                    <div class="ranking-card third">
+                        <h3>🥉 3rd Most Available</h3>
+                        <div class="ranking-value">$ThirdMostAvailable</div>
+                        <div class="ranking-subtitle">Third best average</div>
+                    </div>
                 </div>
             </div>
             
@@ -1586,6 +1822,7 @@ function Generate-CapacityPlanningReport {
                     <tr>
                         <th rowspan="2">Employee</th>
                         <th rowspan="2">Hours/Week</th>
+                        <th rowspan="2">Today</th>
                         <th colspan="3" class="week-header">Week 1 ($(Get-Date $Week1Start -Format "MMM dd") - $(Get-Date $Week1End -Format "MMM dd"))</th>
                         <th colspan="3" class="week-header">Week 2 ($(Get-Date $Week2Start -Format "MMM dd") - $(Get-Date $Week2End -Format "MMM dd"))</th>
                         <th colspan="3" class="week-header">Week 3 ($(Get-Date $Week3Start -Format "MMM dd") - $(Get-Date $Week3End -Format "MMM dd"))</th>
@@ -1631,6 +1868,7 @@ function Generate-CapacityPlanningReport {
                     <tr>
                         <td class="employee-name">$($Person.Name)</td>
                         <td>$($Person.HoursPerWeek)h</td>
+                        <td><button class="today-btn" onclick="showPersonTasks('$($Person.Name)')">Today</button></td>
                         <td>$($Person.Week1Used)h</td>
                         <td class="$Week1Class">$($Person.Week1Available)h</td>
                         <td class="task-list">$($Person.Week1Tasks)</td>
@@ -1672,8 +1910,17 @@ function Generate-CapacityPlanningReport {
             </div>
         </div>
     </div>
+"@
+
+    # Add JavaScript and modal functionality
+    $HTML += @"
     
+    <!-- DEBUG: JavaScript section started -->
     <script>
+        // Task data for modal functionality
+        const allTasks = [];
+        console.log('JavaScript loaded successfully');
+        
         function exportToCSV() {
             const rows = [];
             const table = document.querySelector('.capacity-table');
@@ -1706,7 +1953,357 @@ function Generate-CapacityPlanningReport {
             
             alert('📊 CSV export completed!');
         }
+        
+        // Modal functionality for task details
+        function showPersonTasks(personName) {
+            // Find person's tasks
+            const personTasks = allTasks.filter(task => 
+                task.EmployeeName && task.EmployeeName.toLowerCase() === personName.toLowerCase()
+            );
+            
+            // Sort by priority (1 -> 2 -> 3 -> 4) and then by due date
+            personTasks.sort((a, b) => {
+                const priorityA = parseInt(a.Priority) || 999;
+                const priorityB = parseInt(b.Priority) || 999;
+                if (priorityA !== priorityB) return priorityA - priorityB;
+                
+                // Then by due date (ETA)
+                const dueDateA = a.ETA ? new Date(a.ETA) : new Date('9999-12-31');
+                const dueDateB = b.ETA ? new Date(b.ETA) : new Date('9999-12-31');
+                return dueDateA - dueDateB;
+            });
+            
+            // Convert priority numbers to labels
+            const getPriorityLabel = (priority) => {
+                switch(priority) {
+                    case '1': return 'High';
+                    case '2': return 'Medium';
+                    case '3': return 'Low';
+                    case '4': return 'Very Low';
+                    default: return 'None';
+                }
+            };
+            
+            // Create modal content
+            let modalContent = `
+                <h3>📋 `+personName+`'s Current Tasks</h3>
+                <div class="task-summary">
+                    <span class="task-count">Total Tasks: `+personTasks.length+`</span>
+                    <span class="high-priority">High: `+personTasks.filter(t => t.Priority === '1').length+`</span>
+                    <span class="medium-priority">Medium: `+personTasks.filter(t => t.Priority === '2').length+`</span>
+                    <span class="low-priority">Low: `+personTasks.filter(t => t.Priority === '3' || t.Priority === '4').length+`</span>
+                </div>
+                <div class="task-list">`;
+            
+            if (personTasks.length === 0) {
+                modalContent += '<div class="no-tasks">🎉 No assigned tasks - fully available!</div>';
+            } else {
+                personTasks.forEach(task => {
+                    const priority = getPriorityLabel(task.Priority);
+                    const priorityClass = priority.toLowerCase().replace(' ', '-');
+                    const progress = parseInt(task.Progress) || 0;
+                    const startDate = task.StartDate ? new Date(task.StartDate).toLocaleDateString() : 'Not set';
+                    const dueDate = task.ETA ? new Date(task.ETA).toLocaleDateString() : 'Not set';
+                    
+                    // Calculate days until due
+                    let dueDateInfo = '';
+                    if (task.ETA) {
+                        const today = new Date();
+                        const due = new Date(task.ETA);
+                        const diffTime = due - today;
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        
+                        if (diffDays < 0) {
+                            dueDateInfo = `<span class="overdue">⚠️ `+Math.abs(diffDays)+` days overdue</span>`;
+                        } else if (diffDays <= 3) {
+                            dueDateInfo = `<span class="urgent">🔥 Due in `+diffDays+` days</span>`;
+                        } else {
+                            dueDateInfo = `<span class="normal">📅 `+diffDays+` days remaining</span>`;
+                        }
+                    }
+                    
+                    modalContent += `
+                        <div class="task-item `+priorityClass+`">
+                            <div class="task-header">
+                                <span class="task-title">`+(task['Task Description'] || 'Unnamed Task')+`</span>
+                                <span class="task-priority priority-`+priorityClass+`">`+priority+`</span>
+                            </div>
+                            <div class="task-dates">
+                                <span>📅 Start: `+startDate+`</span>
+                                <span>🎯 Due: `+dueDate+`</span>
+                                `+dueDateInfo+`
+                            </div>
+                            <div class="task-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: `+progress+`%"></div>
+                                </div>
+                                <span class="progress-text">`+progress+`% complete</span>
+                            </div>
+                        </div>`;
+                });
+            }
+            
+            modalContent += '</div>';
+            
+            // Show modal
+            document.getElementById('taskModalContent').innerHTML = modalContent;
+            document.getElementById('taskModal').style.display = 'flex';
+        }
+        
+        function closeModal() {
+            document.getElementById('taskModal').style.display = 'none';
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('taskModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
     </script>
+    
+    <!-- Task Details Modal -->
+    <div id="taskModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <div id="taskModalContent">
+                <!-- Task details will be inserted here -->
+            </div>
+        </div>
+    </div>
+"@
+
+    # Add JavaScript and modal functionality  
+    $HTML += @"
+    
+    <!-- DEBUG: JavaScript section started -->
+    <script>
+        // Task data for modal functionality
+        const allTasks = [];
+        console.log('JavaScript loaded successfully');
+        
+        function exportToCSV() {
+            const rows = [];
+            const table = document.querySelector('.capacity-table');
+            
+            // Headers
+            rows.push(['Employee', 'Hours/Week', 'Week1_Used', 'Week1_Available', 'Week1_Tasks',
+                      'Week2_Used', 'Week2_Available', 'Week2_Tasks', 'Week3_Used', 'Week3_Available', 
+                      'Week3_Tasks', 'Week4_Used', 'Week4_Available', 'Week4_Tasks']);
+            
+            // Data rows
+            const dataRows = table.querySelectorAll('tbody tr');
+            dataRows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                const rowData = [];
+                cells.forEach((cell, index) => {
+                    if (index < cells.length - 1) { // Skip the "Today" button column
+                        rowData.push(cell.textContent.trim());
+                    }
+                });
+                if (rowData.length > 0) {
+                    rows.push(rowData);
+                }
+            });
+            
+            // Create CSV
+            const csvContent = rows.map(row => 
+                row.map(cell => \`"\${cell.replace(/"/g, '""')}"\`).join(',')
+            ).join('\\n');
+            
+            // Download
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'capacity_planning_$((Get-Date).ToString("yyyy-MM-dd")).csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+            
+            alert('📊 CSV export completed!');
+        }
+        
+        // Generate filtered one-page report for specific person
+        function openPersonReport(personName) {
+            // Show loading message
+            const loadingMsg = document.createElement('div');
+            loadingMsg.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 10000; font-family: Arial, sans-serif; max-width: 500px;';
+            loadingMsg.innerHTML = \`
+                <div style="text-align: center;">
+                    <div style="font-size: 18px; margin-bottom: 15px;">📋 Generate Filtered Report</div>
+                    <div style="color: #666; margin-bottom: 15px;">To generate a one-page report filtered for <strong>\${personName}</strong>:</div>
+                    <div style="background: #f5f5f5; padding: 15px; border-radius: 4px; font-family: monospace; margin-bottom: 15px; font-size: 12px;">
+                        pwsh -Command ". ./helper.ps1; 'filtered \${personName}'; 'exit'"
+                    </div>
+                    <div style="font-size: 12px; color: #999; margin-bottom: 20px;">Copy and run this command in your terminal</div>
+                    <button onclick="document.body.removeChild(this.parentElement.parentElement)" style="background: #007cba; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Close</button>
+                </div>
+            \`;
+            document.body.appendChild(loadingMsg);
+        }
+            const rows = [];
+            const table = document.querySelector('.capacity-table');
+            
+            // Headers
+            rows.push(['Employee', 'Hours/Week', 'Week1_Used', 'Week1_Available', 'Week1_Tasks',
+                      'Week2_Used', 'Week2_Available', 'Week2_Tasks', 'Week3_Used', 'Week3_Available', 
+                      'Week3_Tasks', 'Week4_Used', 'Week4_Available', 'Week4_Tasks']);
+            
+            // Data rows
+            const dataRows = table.querySelectorAll('tbody tr');
+            dataRows.forEach(row => {
+                const cells = row.querySelectorAll('td');
+                const rowData = [];
+                cells.forEach((cell, index) => {
+                    if (index < cells.length - 1) { // Skip the "Today" button column
+                        rowData.push(cell.textContent.trim());
+                    }
+                });
+                if (rowData.length > 0) {
+                    rows.push(rowData);
+                }
+            });
+            
+            // Create CSV
+            const csvContent = rows.map(row => 
+                row.map(cell => `"${cell.replace(/"/g, '""')}"`).join(',')
+            ).join('\\n');
+            
+            // Download
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'capacity_planning_$((Get-Date).ToString("yyyy-MM-dd")).csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+            
+            alert('📊 CSV export completed!');
+        }
+        
+        // Modal functionality for task details
+        function showPersonTasks(personName) {
+            // Find person's tasks
+            const personTasks = allTasks.filter(task => 
+                task.EmployeeName && task.EmployeeName.toLowerCase() === personName.toLowerCase()
+            );
+            
+            // Sort by priority (1 -> 2 -> 3 -> 4) and then by due date
+            personTasks.sort((a, b) => {
+                const priorityA = parseInt(a.Priority) || 999;
+                const priorityB = parseInt(b.Priority) || 999;
+                if (priorityA !== priorityB) return priorityA - priorityB;
+                
+                // Then by due date (ETA)
+                const dueDateA = a.ETA ? new Date(a.ETA) : new Date('9999-12-31');
+                const dueDateB = b.ETA ? new Date(b.ETA) : new Date('9999-12-31');
+                return dueDateA - dueDateB;
+            });
+            
+            // Convert priority numbers to labels
+            const getPriorityLabel = (priority) => {
+                switch(priority) {
+                    case '1': return 'High';
+                    case '2': return 'Medium';
+                    case '3': return 'Low';
+                    case '4': return 'Very Low';
+                    default: return 'None';
+                }
+            };
+            
+            // Create modal content
+            let modalContent = `
+                <h3>📋 `+personName+`'s Current Tasks</h3>
+                <div class="task-summary">
+                    <span class="task-count">Total Tasks: `+personTasks.length+`</span>
+                    <span class="high-priority">High: `+personTasks.filter(t => t.Priority === '1').length+`</span>
+                    <span class="medium-priority">Medium: `+personTasks.filter(t => t.Priority === '2').length+`</span>
+                    <span class="low-priority">Low: `+personTasks.filter(t => t.Priority === '3' || t.Priority === '4').length+`</span>
+                </div>
+                <div class="task-list">`;
+            
+            if (personTasks.length === 0) {
+                modalContent += '<div class="no-tasks">🎉 No assigned tasks - fully available!</div>';
+            } else {
+                personTasks.forEach(task => {
+                    const priority = getPriorityLabel(task.Priority);
+                    const priorityClass = priority.toLowerCase().replace(' ', '-');
+                    const progress = parseInt(task.Progress) || 0;
+                    const startDate = task.StartDate ? new Date(task.StartDate).toLocaleDateString() : 'Not set';
+                    const dueDate = task.ETA ? new Date(task.ETA).toLocaleDateString() : 'Not set';
+                    
+                    // Calculate days until due
+                    let dueDateInfo = '';
+                    if (task.ETA) {
+                        const today = new Date();
+                        const due = new Date(task.ETA);
+                        const diffTime = due - today;
+                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        
+                        if (diffDays < 0) {
+                            dueDateInfo = `<span class="overdue">⚠️ `+Math.abs(diffDays)+` days overdue</span>`;
+                        } else if (diffDays <= 3) {
+                            dueDateInfo = `<span class="urgent">🔥 Due in `+diffDays+` days</span>`;
+                        } else {
+                            dueDateInfo = `<span class="normal">📅 `+diffDays+` days remaining</span>`;
+                        }
+                    }
+                    
+                    modalContent += `
+                        <div class="task-item `+priorityClass+`">
+                            <div class="task-header">
+                                <span class="task-title">`+(task['Task Description'] || 'Unnamed Task')+`</span>
+                                <span class="task-priority priority-`+priorityClass+`">`+priority+`</span>
+                            </div>
+                            <div class="task-dates">
+                                <span>📅 Start: `+startDate+`</span>
+                                <span>🎯 Due: `+dueDate+`</span>
+                                `+dueDateInfo+`
+                            </div>
+                            <div class="task-progress">
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: `+progress+`%"></div>
+                                </div>
+                                <span class="progress-text">`+progress+`% complete</span>
+                            </div>
+                        </div>`;
+                });
+            }
+            
+            modalContent += '</div>';
+            
+            // Show modal
+            document.getElementById('taskModalContent').innerHTML = modalContent;
+            document.getElementById('taskModal').style.display = 'flex';
+        }
+        
+        function closeModal() {
+            document.getElementById('taskModal').style.display = 'none';
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('taskModal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        }
+    </script>
+    
+    <!-- Task Details Modal -->
+    <div id="taskModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span class="close" onclick="closeModal()">&times;</span>
+            </div>
+            <div id="taskModalContent">
+                <!-- Task details will be inserted here -->
+            </div>
+        </div>
+    </div>
 </body>
 </html>
 "@
@@ -1731,6 +2328,38 @@ function Generate-CapacityPlanningReport {
     }
     catch {
         Write-Host "📋 Please manually open: $ReportFileName" -ForegroundColor Yellow
+    }
+}
+
+# Generate filtered one-page report for specific employee
+function Generate-FilteredOnePageReport {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string]$EmployeeName
+    )
+    
+    Write-Host "🎯 Generating filtered one-page report for: $EmployeeName" -ForegroundColor Cyan
+    
+    # Check if one-page-report-generator.ps1 exists
+    $OnePageScript = "./one-page-report-generator.ps1"
+    if (-not (Test-Path $OnePageScript)) {
+        Write-Host "❌ One-page report generator not found: $OnePageScript" -ForegroundColor Red
+        return
+    }
+    
+    try {
+        # Load and execute the one-page report generator with employee filter
+        . $OnePageScript
+        $ReportFileName = Generate-OnePageReport -FilterEmployee $EmployeeName
+        
+        Write-Host "✅ Filtered report generated successfully!" -ForegroundColor Green
+        Write-Host "📁 Report location: $ReportFileName" -ForegroundColor Blue
+        
+        return $ReportFileName
+    }
+    catch {
+        Write-Host "❌ Error generating filtered report: $($_.Exception.Message)" -ForegroundColor Red
+        return $null
     }
 }
 
@@ -1801,6 +2430,12 @@ $FunctionMap = @{
     "^capacity$" = @{
         Function = "Generate-CapacityPlanningReport"
         Parameters = @()
+    }
+    
+    # Generate Filtered One-Page Report for specific employee
+    "^filtered\s+(.+)$" = @{
+        Function = "Generate-FilteredOnePageReport"
+        Parameters = @("EmployeeName")
     }
     
     # Excel Export - Progressive regex for "excel", "export", "exportexcel"
