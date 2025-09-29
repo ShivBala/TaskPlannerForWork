@@ -1168,7 +1168,13 @@ function Calculate-PersonCapacity {
         [DateTime]$Week4Start,
         
         [Parameter(Mandatory=$true)]
-        [DateTime]$Week4End
+        [DateTime]$Week4End,
+        
+        [Parameter(Mandatory=$true)]
+        [DateTime]$Week5Start,
+        
+        [Parameter(Mandatory=$true)]
+        [DateTime]$Week5End
     )
     
     # Function to parse date (handle multiple formats)
@@ -1190,8 +1196,8 @@ function Calculate-PersonCapacity {
     }
     
     # Initialize weekly commitments
-    $Week1Hours = 0; $Week2Hours = 0; $Week3Hours = 0; $Week4Hours = 0
-    $Week1Tasks = @(); $Week2Tasks = @(); $Week3Tasks = @(); $Week4Tasks = @()
+    $Week1Hours = 0; $Week2Hours = 0; $Week3Hours = 0; $Week4Hours = 0; $Week5Hours = 0
+    $Week1Tasks = @(); $Week2Tasks = @(); $Week3Tasks = @(); $Week4Tasks = @(); $Week5Tasks = @()
     
     foreach ($Task in $PersonTasks) {
         $StartDate = Parse-Date $Task.StartDate
@@ -1220,6 +1226,10 @@ function Calculate-PersonCapacity {
                 $Week4Hours += [math]::Min($EstimatedHoursRemaining * 0.1, $HoursPerWeek * 0.2)
                 $Week4Tasks += $Task.'Task Description'
             }
+            if ($StartDate -le $Week5End -and (!$ETADate -or $ETADate -ge $Week5Start)) {
+                $Week5Hours += [math]::Min($EstimatedHoursRemaining * 0.05, $HoursPerWeek * 0.1)
+                $Week5Tasks += $Task.'Task Description'
+            }
         }
     }
     
@@ -1228,6 +1238,7 @@ function Calculate-PersonCapacity {
     $Week2Hours = [math]::Min($Week2Hours, $HoursPerWeek)
     $Week3Hours = [math]::Min($Week3Hours, $HoursPerWeek)
     $Week4Hours = [math]::Min($Week4Hours, $HoursPerWeek)
+    $Week5Hours = [math]::Min($Week5Hours, $HoursPerWeek)
     
     # Return capacity data object
     return [PSCustomObject]@{
@@ -1245,6 +1256,9 @@ function Calculate-PersonCapacity {
         Week4Used = [math]::Round($Week4Hours, 1)
         Week4Available = [math]::Round($HoursPerWeek - $Week4Hours, 1)
         Week4Tasks = ($Week4Tasks -join ", ")
+        Week5Used = [math]::Round($Week5Hours, 1)
+        Week5Available = [math]::Round($HoursPerWeek - $Week5Hours, 1)
+        Week5Tasks = ($Week5Tasks -join ", ")
     }
 }
 
@@ -1276,18 +1290,21 @@ function Generate-CapacityPlanningReport {
     $ReportDate = Get-Date -Format "MMMM dd, yyyy 'at' HH:mm"
     $CurrentDate = Get-Date
     
-    # Calculate NEXT 4 weeks (starting from next Monday)
-    $NextMonday = $CurrentDate.AddDays((7 - [int]$CurrentDate.DayOfWeek + 1) % 7)
-    if ($NextMonday -le $CurrentDate) { $NextMonday = $NextMonday.AddDays(7) }
+    # Calculate 5 weeks starting from current date (including partial current week)
+    # Find the start of current week (Monday)
+    $DaysFromMonday = ([int]$CurrentDate.DayOfWeek + 6) % 7  # Convert to Monday = 0
+    $CurrentWeekStart = $CurrentDate.AddDays(-$DaysFromMonday).Date
     
-    $Week1Start = $NextMonday
-    $Week1End = $NextMonday.AddDays(6)
-    $Week2Start = $NextMonday.AddDays(7)
-    $Week2End = $NextMonday.AddDays(13)
-    $Week3Start = $NextMonday.AddDays(14)
-    $Week3End = $NextMonday.AddDays(20)
-    $Week4Start = $NextMonday.AddDays(21)
-    $Week4End = $NextMonday.AddDays(27)
+    $Week1Start = $CurrentWeekStart
+    $Week1End = $CurrentWeekStart.AddDays(6)
+    $Week2Start = $CurrentWeekStart.AddDays(7)
+    $Week2End = $CurrentWeekStart.AddDays(13)
+    $Week3Start = $CurrentWeekStart.AddDays(14)
+    $Week3End = $CurrentWeekStart.AddDays(20)
+    $Week4Start = $CurrentWeekStart.AddDays(21)
+    $Week4End = $CurrentWeekStart.AddDays(27)
+    $Week5Start = $CurrentWeekStart.AddDays(28)
+    $Week5End = $CurrentWeekStart.AddDays(34)
     
     # Calculate capacity for each person using dedicated function
     $CapacityData = @()
@@ -1296,10 +1313,18 @@ function Generate-CapacityPlanningReport {
             -Week1Start $Week1Start -Week1End $Week1End `
             -Week2Start $Week2Start -Week2End $Week2End `
             -Week3Start $Week3Start -Week3End $Week3End `
-            -Week4Start $Week4Start -Week4End $Week4End
+            -Week4Start $Week4Start -Week4End $Week4End `
+            -Week5Start $Week5Start -Week5End $Week5End
             
         $CapacityData += $PersonCapacity
     }
+    
+    # Calculate weekly rankings (top 3 most available people for each week)
+    $Week1Rankings = $CapacityData | Sort-Object Week1Available -Descending | Select-Object -First 3
+    $Week2Rankings = $CapacityData | Sort-Object Week2Available -Descending | Select-Object -First 3
+    $Week3Rankings = $CapacityData | Sort-Object Week3Available -Descending | Select-Object -First 3
+    $Week4Rankings = $CapacityData | Sort-Object Week4Available -Descending | Select-Object -First 3
+    $Week5Rankings = $CapacityData | Sort-Object Week5Available -Descending | Select-Object -First 3
     
     # Generate HTML
     $HTML = @"
@@ -1648,7 +1673,25 @@ function Generate-CapacityPlanningReport {
         .week-header {
             background: #34495e !important;
             color: white !important;
+            position: relative;
         }
+        
+        .week-rankings {
+            font-size: 8px;
+            line-height: 1;
+            margin-top: 2px;
+            color: #ecf0f1;
+            opacity: 0.9;
+        }
+        
+        .week-rankings .rank {
+            display: block;
+            margin: 1px 0;
+        }
+        
+        .week-rankings .rank-1 { color: #f1c40f; font-weight: bold; }
+        .week-rankings .rank-2 { color: #bdc3c7; }
+        .week-rankings .rank-3 { color: #e67e22; }
         
         .legend {
             margin-top: 10px;
@@ -1751,10 +1794,11 @@ function Generate-CapacityPlanningReport {
     $AvgWeek2Available = ($CapacityData | Measure-Object -Property Week2Available -Average).Average
     $AvgWeek3Available = ($CapacityData | Measure-Object -Property Week3Available -Average).Average
     $AvgWeek4Available = ($CapacityData | Measure-Object -Property Week4Available -Average).Average
+    $AvgWeek5Available = ($CapacityData | Measure-Object -Property Week5Available -Average).Average
     
     # Calculate most available person based on overall average availability across all weeks
     $CapacityWithOverallAvg = $CapacityData | ForEach-Object {
-        $OverallAvg = ($_.Week1Available + $_.Week2Available + $_.Week3Available + $_.Week4Available) / 4
+        $OverallAvg = ($_.Week1Available + $_.Week2Available + $_.Week3Available + $_.Week4Available + $_.Week5Available) / 5
         $_ | Add-Member -NotePropertyName "OverallAvgAvailable" -NotePropertyValue $OverallAvg -PassThru
     }
     
@@ -1787,6 +1831,10 @@ function Generate-CapacityPlanningReport {
                 <div class="summary-card">
                     <h3>Avg Available (Week 4)</h3>
                     <div class="value">$([math]::Round($AvgWeek4Available, 1))h</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Avg Available (Week 5)</h3>
+                    <div class="value">$([math]::Round($AvgWeek5Available, 1))h</div>
                 </div>
             </div>
             
@@ -1823,12 +1871,51 @@ function Generate-CapacityPlanningReport {
                         <th rowspan="2">Employee</th>
                         <th rowspan="2">Hours/Week</th>
                         <th rowspan="2">Today</th>
-                        <th colspan="3" class="week-header">Week 1 ($(Get-Date $Week1Start -Format "MMM dd") - $(Get-Date $Week1End -Format "MMM dd"))</th>
-                        <th colspan="3" class="week-header">Week 2 ($(Get-Date $Week2Start -Format "MMM dd") - $(Get-Date $Week2End -Format "MMM dd"))</th>
-                        <th colspan="3" class="week-header">Week 3 ($(Get-Date $Week3Start -Format "MMM dd") - $(Get-Date $Week3End -Format "MMM dd"))</th>
-                        <th colspan="3" class="week-header">Week 4 ($(Get-Date $Week4Start -Format "MMM dd") - $(Get-Date $Week4End -Format "MMM dd"))</th>
+                        <th colspan="3" class="week-header">
+                            Week 1 ($(Get-Date $Week1Start -Format "MMM dd") - $(Get-Date $Week1End -Format "MMM dd"))
+                            <div class="week-rankings">
+                                <span class="rank rank-1">🥇 $($Week1Rankings[0].Name) ($($Week1Rankings[0].Week1Available)h)</span>
+                                <span class="rank rank-2">🥈 $($Week1Rankings[1].Name) ($($Week1Rankings[1].Week1Available)h)</span>
+                                <span class="rank rank-3">🥉 $($Week1Rankings[2].Name) ($($Week1Rankings[2].Week1Available)h)</span>
+                            </div>
+                        </th>
+                        <th colspan="3" class="week-header">
+                            Week 2 ($(Get-Date $Week2Start -Format "MMM dd") - $(Get-Date $Week2End -Format "MMM dd"))
+                            <div class="week-rankings">
+                                <span class="rank rank-1">🥇 $($Week2Rankings[0].Name) ($($Week2Rankings[0].Week2Available)h)</span>
+                                <span class="rank rank-2">🥈 $($Week2Rankings[1].Name) ($($Week2Rankings[1].Week2Available)h)</span>
+                                <span class="rank rank-3">🥉 $($Week2Rankings[2].Name) ($($Week2Rankings[2].Week2Available)h)</span>
+                            </div>
+                        </th>
+                        <th colspan="3" class="week-header">
+                            Week 3 ($(Get-Date $Week3Start -Format "MMM dd") - $(Get-Date $Week3End -Format "MMM dd"))
+                            <div class="week-rankings">
+                                <span class="rank rank-1">🥇 $($Week3Rankings[0].Name) ($($Week3Rankings[0].Week3Available)h)</span>
+                                <span class="rank rank-2">🥈 $($Week3Rankings[1].Name) ($($Week3Rankings[1].Week3Available)h)</span>
+                                <span class="rank rank-3">🥉 $($Week3Rankings[2].Name) ($($Week3Rankings[2].Week3Available)h)</span>
+                            </div>
+                        </th>
+                        <th colspan="3" class="week-header">
+                            Week 4 ($(Get-Date $Week4Start -Format "MMM dd") - $(Get-Date $Week4End -Format "MMM dd"))
+                            <div class="week-rankings">
+                                <span class="rank rank-1">🥇 $($Week4Rankings[0].Name) ($($Week4Rankings[0].Week4Available)h)</span>
+                                <span class="rank rank-2">🥈 $($Week4Rankings[1].Name) ($($Week4Rankings[1].Week4Available)h)</span>
+                                <span class="rank rank-3">🥉 $($Week4Rankings[2].Name) ($($Week4Rankings[2].Week4Available)h)</span>
+                            </div>
+                        </th>
+                        <th colspan="3" class="week-header">
+                            Week 5 ($(Get-Date $Week5Start -Format "MMM dd") - $(Get-Date $Week5End -Format "MMM dd"))
+                            <div class="week-rankings">
+                                <span class="rank rank-1">🥇 $($Week5Rankings[0].Name) ($($Week5Rankings[0].Week5Available)h)</span>
+                                <span class="rank rank-2">🥈 $($Week5Rankings[1].Name) ($($Week5Rankings[1].Week5Available)h)</span>
+                                <span class="rank rank-3">🥉 $($Week5Rankings[2].Name) ($($Week5Rankings[2].Week5Available)h)</span>
+                            </div>
+                        </th>
                     </tr>
                     <tr>
+                        <th>Used</th>
+                        <th>Available</th>
+                        <th>Tasks</th>
                         <th>Used</th>
                         <th>Available</th>
                         <th>Tasks</th>
@@ -1864,6 +1951,10 @@ function Generate-CapacityPlanningReport {
                      elseif ($Person.Week4Available -ge ($Person.HoursPerWeek * 0.3)) { "moderate" } 
                      else { "busy" }
 
+        $Week5Class = if ($Person.Week5Available -ge ($Person.HoursPerWeek * 0.7)) { "available" } 
+                     elseif ($Person.Week5Available -ge ($Person.HoursPerWeek * 0.3)) { "moderate" } 
+                     else { "busy" }
+
         $HTML += @"
                     <tr>
                         <td class="employee-name">$($Person.Name)</td>
@@ -1881,6 +1972,9 @@ function Generate-CapacityPlanningReport {
                         <td>$($Person.Week4Used)h</td>
                         <td class="$Week4Class">$($Person.Week4Available)h</td>
                         <td class="task-list">$($Person.Week4Tasks)</td>
+                        <td>$($Person.Week5Used)h</td>
+                        <td class="$Week5Class">$($Person.Week5Available)h</td>
+                        <td class="task-list">$($Person.Week5Tasks)</td>
                     </tr>
 "@
     }
