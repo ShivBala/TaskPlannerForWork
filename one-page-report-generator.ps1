@@ -1441,17 +1441,23 @@ function Generate-OnePageReport {
     Write-Host "📄 File: $ReportFileName" -ForegroundColor Cyan
     Write-Host "📊 Compact Dashboard: $TotalTasks Tasks | $CompletedTasks Completed | $HighPriorityTasks High Priority | $OverdueTasks Overdue" -ForegroundColor White
     
-    # Try to open the report in default browser
-    try {
-        if ($IsMacOS -or (Get-Command "open" -ErrorAction SilentlyContinue)) {
-            Start-Process "open" $ReportFileName
-            Write-Host "🌐 One-page report opened in your default browser!" -ForegroundColor Yellow
-        } else {
-            Write-Host "💡 Open '$ReportFileName' in your browser to view the compact dashboard" -ForegroundColor Yellow
-        }
-    } catch {
+   try {
+    $platform = [System.Environment]::OSVersion.Platform
+    Write-Host "🖥️ Detected platform: $platform" -ForegroundColor Cyan
+
+    if ($platform -eq "Unix" -or $platform -eq "MacOSX" -or (Get-Command "open" -ErrorAction SilentlyContinue)) {
+        Start-Process "open" $ReportFileName
+        Write-Host "🌐 One-page report opened in your default browser!" -ForegroundColor Yellow
+    } elseif ($platform -eq "Win32NT") {
+        Start-Process $ReportFileName
+        Write-Host "🌐 One-page report opened in your default browser!" -ForegroundColor Yellow
+    } else {
         Write-Host "💡 Open '$ReportFileName' in your browser to view the compact dashboard" -ForegroundColor Yellow
     }
+} catch {
+    Write-Host "💡 Open '$ReportFileName' in your browser to view the compact dashboard" -ForegroundColor Yellow
+}
+
 }
 
 # Function is available for dot-sourcing
