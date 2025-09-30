@@ -1,4 +1,4 @@
-Name,HoursPerWeek
-Vipul,25
-Siva,25
-Peter,25
+Name,hours_per_w1,hours_per_w2,hours_per_w3,hours_per_w4,hours_per_w5
+Vipul,25,25,25,25,25
+Siva,25,30,20,25,15
+Peter,40,40,0,40,40

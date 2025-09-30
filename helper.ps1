@@ -1187,7 +1187,11 @@ function Calculate-PersonCapacity {
     }
     
     $PersonName = $Person.Name
-    $HoursPerWeek = [int]$Person.HoursPerWeek
+    $Week1MaxHours = [int]$Person.hours_per_w1
+    $Week2MaxHours = [int]$Person.hours_per_w2
+    $Week3MaxHours = [int]$Person.hours_per_w3
+    $Week4MaxHours = [int]$Person.hours_per_w4
+    $Week5MaxHours = [int]$Person.hours_per_w5
     
     # Get active tasks for this person
     $PersonTasks = $Tasks | Where-Object { 
@@ -1205,59 +1209,64 @@ function Calculate-PersonCapacity {
         $Progress = [int]($Task.Progress -replace '%', '')
         
         if ($StartDate) {
-            # Estimate remaining effort (simple heuristic - to be improved)
+            # Estimate remaining effort using average capacity across weeks
             $RemainingProgress = 100 - $Progress
-            $EstimatedHoursRemaining = ($RemainingProgress / 100) * ($HoursPerWeek * 2) # Assume 2-week tasks on average
+            $AvgWeeklyHours = ($Week1MaxHours + $Week2MaxHours + $Week3MaxHours + $Week4MaxHours + $Week5MaxHours) / 5
+            $EstimatedHoursRemaining = ($RemainingProgress / 100) * ($AvgWeeklyHours * 2) # Assume 2-week tasks on average
             
             # Distribute across weeks (simplified distribution - to be improved)
             if ($StartDate -le $Week1End) {
-                $Week1Hours += [math]::Min($EstimatedHoursRemaining * 0.4, $HoursPerWeek * 0.8)
+                $Week1Hours += [math]::Min($EstimatedHoursRemaining * 0.4, $Week1MaxHours * 0.8)
                 $Week1Tasks += $Task.'Task Description'
             }
             if ($StartDate -le $Week2End -and (!$ETADate -or $ETADate -ge $Week2Start)) {
-                $Week2Hours += [math]::Min($EstimatedHoursRemaining * 0.3, $HoursPerWeek * 0.6)
+                $Week2Hours += [math]::Min($EstimatedHoursRemaining * 0.3, $Week2MaxHours * 0.6)
                 $Week2Tasks += $Task.'Task Description'
             }
             if ($StartDate -le $Week3End -and (!$ETADate -or $ETADate -ge $Week3Start)) {
-                $Week3Hours += [math]::Min($EstimatedHoursRemaining * 0.2, $HoursPerWeek * 0.4)
+                $Week3Hours += [math]::Min($EstimatedHoursRemaining * 0.2, $Week3MaxHours * 0.4)
                 $Week3Tasks += $Task.'Task Description'
             }
             if ($StartDate -le $Week4End -and (!$ETADate -or $ETADate -ge $Week4Start)) {
-                $Week4Hours += [math]::Min($EstimatedHoursRemaining * 0.1, $HoursPerWeek * 0.2)
+                $Week4Hours += [math]::Min($EstimatedHoursRemaining * 0.1, $Week4MaxHours * 0.2)
                 $Week4Tasks += $Task.'Task Description'
             }
             if ($StartDate -le $Week5End -and (!$ETADate -or $ETADate -ge $Week5Start)) {
-                $Week5Hours += [math]::Min($EstimatedHoursRemaining * 0.05, $HoursPerWeek * 0.1)
+                $Week5Hours += [math]::Min($EstimatedHoursRemaining * 0.05, $Week5MaxHours * 0.1)
                 $Week5Tasks += $Task.'Task Description'
             }
         }
     }
     
-    # Cap at maximum hours per week
-    $Week1Hours = [math]::Min($Week1Hours, $HoursPerWeek)
-    $Week2Hours = [math]::Min($Week2Hours, $HoursPerWeek)
-    $Week3Hours = [math]::Min($Week3Hours, $HoursPerWeek)
-    $Week4Hours = [math]::Min($Week4Hours, $HoursPerWeek)
-    $Week5Hours = [math]::Min($Week5Hours, $HoursPerWeek)
+    # Cap at maximum hours per week (using individual week maximums)
+    $Week1Hours = [math]::Min($Week1Hours, $Week1MaxHours)
+    $Week2Hours = [math]::Min($Week2Hours, $Week2MaxHours)
+    $Week3Hours = [math]::Min($Week3Hours, $Week3MaxHours)
+    $Week4Hours = [math]::Min($Week4Hours, $Week4MaxHours)
+    $Week5Hours = [math]::Min($Week5Hours, $Week5MaxHours)
     
     # Return capacity data object
     return [PSCustomObject]@{
         Name = $PersonName
-        HoursPerWeek = $HoursPerWeek
+        Week1MaxHours = $Week1MaxHours
+        Week2MaxHours = $Week2MaxHours
+        Week3MaxHours = $Week3MaxHours
+        Week4MaxHours = $Week4MaxHours
+        Week5MaxHours = $Week5MaxHours
         Week1Used = [math]::Round($Week1Hours, 1)
-        Week1Available = [math]::Round($HoursPerWeek - $Week1Hours, 1)
+        Week1Available = [math]::Round($Week1MaxHours - $Week1Hours, 1)
         Week1Tasks = ($Week1Tasks -join ", ")
         Week2Used = [math]::Round($Week2Hours, 1)
-        Week2Available = [math]::Round($HoursPerWeek - $Week2Hours, 1)
+        Week2Available = [math]::Round($Week2MaxHours - $Week2Hours, 1)
         Week2Tasks = ($Week2Tasks -join ", ")
         Week3Used = [math]::Round($Week3Hours, 1)
-        Week3Available = [math]::Round($HoursPerWeek - $Week3Hours, 1)
+        Week3Available = [math]::Round($Week3MaxHours - $Week3Hours, 1)
         Week3Tasks = ($Week3Tasks -join ", ")
         Week4Used = [math]::Round($Week4Hours, 1)
-        Week4Available = [math]::Round($HoursPerWeek - $Week4Hours, 1)
+        Week4Available = [math]::Round($Week4MaxHours - $Week4Hours, 1)
         Week4Tasks = ($Week4Tasks -join ", ")
         Week5Used = [math]::Round($Week5Hours, 1)
-        Week5Available = [math]::Round($HoursPerWeek - $Week5Hours, 1)
+        Week5Available = [math]::Round($Week5MaxHours - $Week5Hours, 1)
         Week5Tasks = ($Week5Tasks -join ", ")
     }
 }
@@ -1934,31 +1943,34 @@ function Generate-CapacityPlanningReport {
 "@
 
     foreach ($Person in $CapacityData) {
-        # Determine availability classes
-        $Week1Class = if ($Person.Week1Available -ge ($Person.HoursPerWeek * 0.7)) { "available" } 
-                     elseif ($Person.Week1Available -ge ($Person.HoursPerWeek * 0.3)) { "moderate" } 
+        # Calculate average hours per week for display
+        $AvgHoursPerWeek = ($Person.Week1MaxHours + $Person.Week2MaxHours + $Person.Week3MaxHours + $Person.Week4MaxHours + $Person.Week5MaxHours) / 5
+        
+        # Determine availability classes using individual week max hours
+        $Week1Class = if ($Person.Week1Available -ge ($Person.Week1MaxHours * 0.7)) { "available" } 
+                     elseif ($Person.Week1Available -ge ($Person.Week1MaxHours * 0.3)) { "moderate" } 
                      else { "busy" }
         
-        $Week2Class = if ($Person.Week2Available -ge ($Person.HoursPerWeek * 0.7)) { "available" } 
-                     elseif ($Person.Week2Available -ge ($Person.HoursPerWeek * 0.3)) { "moderate" } 
+        $Week2Class = if ($Person.Week2Available -ge ($Person.Week2MaxHours * 0.7)) { "available" } 
+                     elseif ($Person.Week2Available -ge ($Person.Week2MaxHours * 0.3)) { "moderate" } 
                      else { "busy" }
         
-        $Week3Class = if ($Person.Week3Available -ge ($Person.HoursPerWeek * 0.7)) { "available" } 
-                     elseif ($Person.Week3Available -ge ($Person.HoursPerWeek * 0.3)) { "moderate" } 
+        $Week3Class = if ($Person.Week3Available -ge ($Person.Week3MaxHours * 0.7)) { "available" } 
+                     elseif ($Person.Week3Available -ge ($Person.Week3MaxHours * 0.3)) { "moderate" } 
                      else { "busy" }
         
-        $Week4Class = if ($Person.Week4Available -ge ($Person.HoursPerWeek * 0.7)) { "available" } 
-                     elseif ($Person.Week4Available -ge ($Person.HoursPerWeek * 0.3)) { "moderate" } 
+        $Week4Class = if ($Person.Week4Available -ge ($Person.Week4MaxHours * 0.7)) { "available" } 
+                     elseif ($Person.Week4Available -ge ($Person.Week4MaxHours * 0.3)) { "moderate" } 
                      else { "busy" }
 
-        $Week5Class = if ($Person.Week5Available -ge ($Person.HoursPerWeek * 0.7)) { "available" } 
-                     elseif ($Person.Week5Available -ge ($Person.HoursPerWeek * 0.3)) { "moderate" } 
+        $Week5Class = if ($Person.Week5Available -ge ($Person.Week5MaxHours * 0.7)) { "available" } 
+                     elseif ($Person.Week5Available -ge ($Person.Week5MaxHours * 0.3)) { "moderate" } 
                      else { "busy" }
 
         $HTML += @"
                     <tr>
                         <td class="employee-name">$($Person.Name)</td>
-                        <td>$($Person.HoursPerWeek)h</td>
+                        <td>$([math]::Round($AvgHoursPerWeek, 1))h avg</td>
                         <td><button class="today-btn" onclick="showPersonTasks('$($Person.Name)')">Today</button></td>
                         <td>$($Person.Week1Used)h</td>
                         <td class="$Week1Class">$($Person.Week1Available)h</td>
