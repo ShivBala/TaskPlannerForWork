@@ -233,6 +233,61 @@
             padding: 4px;
             font-weight: normal;
         }
+        
+        /* Timeline Styles */
+        .timeline-marker {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 1px;
+        }
+        
+        .timeline-marker::after {
+            content: attr(data-label);
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .timeline-marker:hover::after {
+            opacity: 1;
+        }
+        
+        .timeline-delayed {
+            background: linear-gradient(45deg, #ef4444 0%, #dc2626 100%);
+        }
+        
+        .timeline-ontime {
+            background: linear-gradient(45deg, #10b981 0%, #059669 100%);
+        }
+        
+        .timeline-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        .timeline-legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
         .tooltip-container {
             position: relative;
             cursor: pointer;
@@ -376,7 +431,33 @@
                     </div>
                 </div>
                 
-                <h2 class="text-xl font-semibold mb-4 text-indigo-700 flex items-center">
+                <!-- Visual Timeline Display -->
+                <div class="mt-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 border border-gray-200 rounded-lg">
+                    <h3 class="text-lg font-semibold mb-3 text-gray-800 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        📈 Project Timeline
+                    </h3>
+                    <div id="timeline-container" class="relative">
+                        <div id="timeline-info" class="text-sm text-gray-600 mb-3">
+                            📅 <span id="timeline-start-date">No tasks defined</span> → 
+                            🏁 <span id="timeline-end-date">No tasks defined</span> 
+                            (<span id="timeline-duration">0 days</span>)
+                        </div>
+                        <div id="timeline-bar" class="relative bg-gray-200 h-8 rounded-lg overflow-hidden">
+                            <div id="timeline-progress" class="h-full bg-gradient-to-r from-blue-400 to-green-400 transition-all duration-500" style="width: 0%"></div>
+                            <div id="timeline-markers" class="absolute inset-0 flex items-center px-2">
+                                <!-- Task markers will be populated here -->
+                            </div>
+                        </div>
+                        <div id="timeline-legend" class="flex flex-wrap gap-2 mt-3 text-xs">
+                            <!-- Legend items will be populated here -->
+                        </div>
+                    </div>
+                </div>
+                
+                <h2 class="text-xl font-semibold mb-4 text-indigo-700 flex items-center mt-6">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
@@ -792,6 +873,126 @@
         function calculateProjection() {
             const projectedTickets = getProjectedTickets();
             renderTickets(projectedTickets);
+            renderTimeline(projectedTickets);
+        }
+        
+        function renderTimeline(projectedTickets) {
+            const timelineStartDateEl = document.getElementById('timeline-start-date');
+            const timelineEndDateEl = document.getElementById('timeline-end-date');
+            const timelineDurationEl = document.getElementById('timeline-duration');
+            const timelineProgressEl = document.getElementById('timeline-progress');
+            const timelineMarkersEl = document.getElementById('timeline-markers');
+            const timelineLegendEl = document.getElementById('timeline-legend');
+            
+            if (projectedTickets.length === 0) {
+                timelineStartDateEl.textContent = 'No tasks defined';
+                timelineEndDateEl.textContent = 'No tasks defined';
+                timelineDurationEl.textContent = '0 days';
+                timelineProgressEl.style.width = '0%';
+                timelineMarkersEl.innerHTML = '';
+                timelineLegendEl.innerHTML = '';
+                return;
+            }
+            
+            // Calculate timeline bounds
+            const projectStartDate = getEffectiveStartDate();
+            let projectEndDate = new Date(projectStartDate);
+            let latestEndDate = new Date(projectStartDate);
+            let hasDelayedTasks = false;
+            
+            // Find the latest completion date
+            projectedTickets.forEach(ticket => {
+                if (ticket.endDate && ticket.endDate !== 'N/A' && !ticket.endDate.includes('>')) {
+                    try {
+                        const endDate = new Date(ticket.endDate + ', ' + new Date().getFullYear());
+                        if (!isNaN(endDate.getTime()) && endDate > latestEndDate) {
+                            latestEndDate = endDate;
+                        }
+                    } catch (e) {
+                        console.warn('Could not parse end date:', ticket.endDate);
+                    }
+                } else if (ticket.isDelayed || ticket.endDate.includes('>')) {
+                    hasDelayedTasks = true;
+                    // For delayed tasks, assume they extend beyond 5 weeks
+                    const delayedDate = new Date(projectStartDate);
+                    delayedDate.setDate(delayedDate.getDate() + 35); // 5 weeks
+                    if (delayedDate > latestEndDate) {
+                        latestEndDate = delayedDate;
+                    }
+                }
+            });
+            
+            projectEndDate = latestEndDate;
+            
+            // Calculate duration
+            const durationDays = Math.ceil((projectEndDate - projectStartDate) / (1000 * 60 * 60 * 24));
+            const durationWeeks = Math.ceil(durationDays / 7);
+            
+            // Update timeline info
+            timelineStartDateEl.textContent = formatDate(projectStartDate.toISOString().split('T')[0]);
+            timelineEndDateEl.textContent = formatDate(projectEndDate.toISOString().split('T')[0]);
+            timelineDurationEl.textContent = `${durationDays} days (${durationWeeks} weeks)`;
+            
+            // Update progress bar based on timeline health
+            const progressPercentage = hasDelayedTasks ? 100 : Math.min(100, (durationDays / 35) * 100); // 35 days = 5 weeks
+            timelineProgressEl.style.width = `${progressPercentage}%`;
+            
+            if (hasDelayedTasks || durationWeeks > 5) {
+                timelineProgressEl.className = 'h-full timeline-delayed transition-all duration-500';
+            } else {
+                timelineProgressEl.className = 'h-full timeline-ontime transition-all duration-500';
+            }
+            
+            // Add task markers
+            timelineMarkersEl.innerHTML = '';
+            projectedTickets.forEach((ticket, index) => {
+                if (ticket.endDate && ticket.endDate !== 'N/A' && !ticket.endDate.includes('>')) {
+                    try {
+                        const endDate = new Date(ticket.endDate + ', ' + new Date().getFullYear());
+                        if (!isNaN(endDate.getTime())) {
+                            const dayFromStart = Math.ceil((endDate - projectStartDate) / (1000 * 60 * 60 * 24));
+                            const positionPercentage = Math.min(100, Math.max(0, (dayFromStart / durationDays) * 100));
+                            
+                            const marker = document.createElement('div');
+                            marker.className = 'timeline-marker';
+                            marker.style.left = `${positionPercentage}%`;
+                            marker.setAttribute('data-label', `Task #${ticket.id}: ${ticket.endDate}`);
+                            marker.style.background = ticket.isDelayed ? '#ef4444' : '#10b981';
+                            marker.style.zIndex = '10';
+                            
+                            timelineMarkersEl.appendChild(marker);
+                        }
+                    } catch (e) {
+                        console.warn('Could not parse end date for marker:', ticket.endDate);
+                    }
+                } else if (ticket.isDelayed || ticket.endDate.includes('>')) {
+                    // Add a marker for delayed tasks at the end
+                    const marker = document.createElement('div');
+                    marker.className = 'timeline-marker';
+                    marker.style.left = '95%';
+                    marker.setAttribute('data-label', `Task #${ticket.id}: Delayed`);
+                    marker.style.background = '#ef4444';
+                    marker.style.zIndex = '10';
+                    
+                    timelineMarkersEl.appendChild(marker);
+                }
+            });
+            
+            // Update legend
+            timelineLegendEl.innerHTML = `
+                <div class="timeline-legend-item">
+                    <div class="timeline-legend-dot bg-green-500"></div>
+                    <span>On Schedule</span>
+                </div>
+                <div class="timeline-legend-item">
+                    <div class="timeline-legend-dot bg-red-500"></div>
+                    <span>Delayed/Over 5 weeks</span>
+                </div>
+                <div class="timeline-legend-item">
+                    <div class="timeline-legend-dot bg-gray-400"></div>
+                    <span>Hover markers for details</span>
+                </div>
+            `;
         }
 
         // --- RENDERING FUNCTIONS ---
@@ -1586,7 +1787,7 @@ ${ticket.explanation}
             calculateEffortMap();
             renderEffortMap();
             renderPeople();
-            calculateProjection();
+            calculateProjection(); // This now includes timeline rendering
         }
 
         // Start the application
