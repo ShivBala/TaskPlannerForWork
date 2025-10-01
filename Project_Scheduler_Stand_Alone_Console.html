@@ -755,6 +755,13 @@
                             <select id="new-ticket-size" class="enterprise-input w-full md:w-32">
                                 <!-- Options populated dynamically by JavaScript -->
                             </select>
+                            <select id="new-ticket-priority" class="enterprise-input w-full md:w-24" title="Priority">
+                                <option value="P3">P3</option>
+                                <option value="P1">P1</option>
+                                <option value="P2">P2</option>
+                                <option value="P4">P4</option>
+                                <option value="P5">P5</option>
+                            </select>
                             <div class="w-full md:w-48 min-h-[35px]">
                                 <div class="text-xs text-gray-600 mb-1">Assign to:</div>
                                 <div id="new-ticket-assigned" class="flex flex-wrap gap-1 p-2 border border-gray-300 rounded-md bg-white min-h-[35px] items-start">
@@ -782,6 +789,7 @@
                                         <span id="start-date-column-header">Start Date</span>
                                     </th>
                                     <th class="px-2 py-2 text-left">Size</th>
+                                    <th class="px-2 py-2 text-left">Priority</th>
                                     <th class="px-2 py-2 text-left">Assigned</th>
                                     <th class="px-2 py-2 text-left tooltip-container">End Date
                                         <div class="tooltip-text">
@@ -1684,6 +1692,12 @@
                     return `<option value="${key}" ${isSelected ? 'selected' : ''}>${size.name} (${key})</option>`;
                 }).join('');
 
+                // Create priority dropdown options
+                const priorityOptions = ['P1', 'P2', 'P3', 'P4', 'P5'].map(priority => {
+                    const isSelected = (ticket.priority || 'P3') === priority;
+                    return `<option value="${priority}" ${isSelected ? 'selected' : ''}>${priority}</option>`;
+                }).join('');
+
                 const completionDateClass = ticket.isDelayed ? 'bg-red-100 text-red-700 font-bold p-1 rounded' : 'text-green-600 font-semibold';
                 
                 // Determine displayed start date
@@ -1716,6 +1730,15 @@
                             title="Change task size"
                         >
                             ${sizeOptions}
+                        </select>
+                    </td>
+                    <td class="px-3 py-2 whitespace-nowrap text-sm font-medium">
+                        <select 
+                            class="w-full p-1 border border-gray-300 rounded-lg text-xs bg-white text-purple-600 font-medium"
+                            onchange="handlePriorityChange(this, ${ticket.id})"
+                            title="Change task priority"
+                        >
+                            ${priorityOptions}
                         </select>
                     </td>
                     <td class="px-3 py-2 text-sm text-gray-500 w-1/4">
@@ -1753,7 +1776,7 @@
             }
 
             // 1. Generate the CSV content
-            let csvContent = "Ticket ID,Description,Start Date,Size,Person Days,Total Hours,Assigned Team,Projected End Date,Detailed Explanation\n";
+            let csvContent = "Ticket ID,Description,Start Date,Size,Priority,Person Days,Total Hours,Assigned Team,Projected End Date,Detailed Explanation\n";
 
             projectedTickets.forEach(ticket => {
                 const totalHours = effortMap[ticket.size] || 0;
@@ -1767,6 +1790,7 @@
                     escapeCSV(ticket.description),
                     formatDate(ticket.startDate),
                     ticket.size,
+                    ticket.priority || 'P3',
                     personDays,
                     totalHours,
                     escapeCSV(ticket.assigned.join('; ')),
@@ -1855,10 +1879,11 @@
             
             // Tickets section
             csvContent += "SECTION,TICKETS\n";
-            csvContent += "ID,Description,Start Date,Size,Assigned Team\n";
+            csvContent += "ID,Description,Start Date,Size,Priority,Assigned Team\n";
             configData.tickets.forEach(ticket => {
                 const assignedTeam = ticket.assigned.join(';');
-                csvContent += `${ticket.id},"${ticket.description.replace(/"/g, '""')}",${ticket.startDate},${ticket.size},"${assignedTeam}"\n`;
+                const priority = ticket.priority || 'P3';
+                csvContent += `${ticket.id},"${ticket.description.replace(/"/g, '""')}",${ticket.startDate},${ticket.size},${priority},"${assignedTeam}"\n`;
             });
             
             // Download the configuration file
@@ -1979,13 +2004,14 @@
                         });
                     }
                     else if (currentSection === 'TICKETS') {
-                        const [id, description, startDate, size, assignedTeam] = parseCSVLine(line);
+                        const [id, description, startDate, size, priority, assignedTeam] = parseCSVLine(line);
                         const assigned = assignedTeam ? assignedTeam.split(';').filter(name => name.trim()) : [];
                         importedData.tickets.push({
                             id: parseInt(id),
                             description: description,
                             startDate: startDate,
                             size: size,
+                            priority: priority || 'P3',
                             assigned: assigned
                         });
                     }
@@ -2173,7 +2199,7 @@
             const previewText = previewTasks.join('\n');
             const moreText = newTasks.length > 5 ? `\n... and ${newTasks.length - 5} more tasks` : '';
             
-            const confirmMessage = `📋 Import ${newTasks.length} Tasks\n\nPreview:\n${previewText}${moreText}\n\n✅ Default settings will be applied:\n• Size: Medium (M)\n• Start Date: Next Monday\n• Assigned: Unassigned\n\nContinue with import?`;
+            const confirmMessage = `📋 Import ${newTasks.length} Tasks\n\nPreview:\n${previewText}${moreText}\n\n✅ Default settings will be applied:\n• Size: Medium (M)\n• Priority: P3\n• Start Date: Next Monday\n• Assigned: Unassigned\n\nContinue with import?`;
             
             if (!confirm(confirmMessage)) {
                 return;
@@ -2181,6 +2207,7 @@
             
             // Apply default settings for new tasks
             const defaultSize = 'M'; // Medium
+            const defaultPriority = 'P3'; // Default priority
             const defaultStartDate = getNextMonday(new Date()).toISOString().split('T')[0];
             const defaultAssigned = []; // Unassigned
             
@@ -2206,6 +2233,7 @@
                     description: taskName,
                     startDate: defaultStartDate,
                     size: defaultSize,
+                    priority: defaultPriority,
                     assigned: [...defaultAssigned]
                 });
                 
@@ -2227,7 +2255,7 @@
                 if (skippedCount > 0) {
                     message += `\n• ${skippedCount} duplicates skipped`;
                 }
-                message += `\n\n📝 All tasks set to:\n• Size: Medium (M)\n• Start Date: ${formatDate(defaultStartDate)}\n• Status: Unassigned\n\nYou can now edit individual tasks as needed.`;
+                message += `\n\n📝 All tasks set to:\n• Size: Medium (M)\n• Priority: P3\n• Start Date: ${formatDate(defaultStartDate)}\n• Status: Unassigned\n\nYou can now edit individual tasks as needed.`;
                 
                 alert(message);
             } else {
@@ -2508,6 +2536,7 @@
             const descInput = document.getElementById('new-ticket-desc');
             const startDateInput = document.getElementById('new-ticket-start-date');
             const sizeSelect = document.getElementById('new-ticket-size');
+            const prioritySelect = document.getElementById('new-ticket-priority');
             const assignedContainer = document.getElementById('new-ticket-assigned');
 
             const description = descInput.value.trim();
@@ -2522,6 +2551,7 @@
             }
             
             const size = sizeSelect.value;
+            const priority = prioritySelect.value;
             const assigned = Array.from(assignedContainer.querySelectorAll('input[type="checkbox"]:checked')).map(checkbox => checkbox.value);
 
             if (!description) {
@@ -2534,12 +2564,14 @@
                 description: description,
                 startDate: startDate,
                 size: size,
+                priority: priority,
                 assigned: assigned
             });
 
             descInput.value = '';
             startDateInput.value = '';
             sizeSelect.value = 'L';
+            prioritySelect.value = 'P3'; // Reset to default priority
             // Clear all checkboxes
             assignedContainer.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
 
@@ -2629,6 +2661,29 @@
                 
                 // Optional: Show a brief notification
                 console.log(`📊 Ticket #${ticketId} size changed from ${oldSize} to ${newSize} - recalculating...`);
+            }
+        }
+
+        window.handlePriorityChange = (selectElement, ticketId) => {
+            const newPriority = selectElement.value;
+            
+            // Find and update the ticket
+            const ticket = tickets.find(t => t.id === ticketId);
+            if (ticket) {
+                const oldPriority = ticket.priority || 'P3';
+                ticket.priority = newPriority;
+                
+                // Provide visual feedback
+                selectElement.style.background = '#e0e7ff'; // Light purple background
+                setTimeout(() => {
+                    selectElement.style.background = 'white';
+                }, 500);
+                
+                // Save to storage (no need to recalculate as priority doesn't affect timeline)
+                saveToLocalStorage();
+                
+                // Optional: Show a brief notification
+                console.log(`⭐ Ticket #${ticketId} priority changed from ${oldPriority} to ${newPriority}`);
             }
         }
 
@@ -2742,9 +2797,9 @@ ${ticket.explanation}
             const followingMonday = new Date(nextMonday.getTime() + 7 * 24 * 60 * 60 * 1000);
             
             tickets = [
-                { id: 1, description: 'Design System Migration', size: 'XL', assigned: ['Vipul', 'Peter'], startDate: nextMonday.toISOString().split('T')[0] },
-                { id: 2, description: 'Fix payment gateway bug', size: 'S', assigned: ['Sameet'], startDate: nextMonday.toISOString().split('T')[0] },
-                { id: 3, description: 'Build new reporting dashboard', size: 'XXL', assigned: ['Sharanya', 'Divya'], startDate: followingMonday.toISOString().split('T')[0] }
+                { id: 1, description: 'Design System Migration', size: 'XL', priority: 'P1', assigned: ['Vipul', 'Peter'], startDate: nextMonday.toISOString().split('T')[0] },
+                { id: 2, description: 'Fix payment gateway bug', size: 'S', priority: 'P2', assigned: ['Sameet'], startDate: nextMonday.toISOString().split('T')[0] },
+                { id: 3, description: 'Build new reporting dashboard', size: 'XXL', priority: 'P3', assigned: ['Sharanya', 'Divya'], startDate: followingMonday.toISOString().split('T')[0] }
             ];
             currentTicketId = 4;
             saveToLocalStorage(); 
@@ -2753,6 +2808,20 @@ ${ticket.explanation}
         function initializeScheduler() {
             if (!loadFromLocalStorage()) {
                 initializeDefaultData();
+            }
+            
+            // Migration: Add priority to existing tasks that don't have it
+            let migrationNeeded = false;
+            tickets.forEach(ticket => {
+                if (!ticket.priority) {
+                    ticket.priority = 'P3'; // Default priority
+                    migrationNeeded = true;
+                }
+            });
+            
+            if (migrationNeeded) {
+                saveToLocalStorage();
+                console.log('📊 Migrated existing tasks to include priority field');
             }
             
             // Set default start date to next Monday
