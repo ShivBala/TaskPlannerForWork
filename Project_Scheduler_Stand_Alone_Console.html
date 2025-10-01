@@ -283,6 +283,12 @@
                 </svg>
                 Export to CSV
             </button>
+            <button onclick="resetToDefaults()" class="ml-2 bg-red-600 text-white p-2 rounded-lg hover:bg-red-700 transition duration-150 flex-shrink-0 flex items-center shadow-md">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Reset
+            </button>
         </div>
         
         <p id="auth-status" class="text-xs text-gray-500 mb-4">Data saved locally in browser storage.</p>
@@ -299,7 +305,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20v-2c0-.656-.126-1.283-.356-1.857M17 20H7m0 0v-2c0-.656.126-1.283.356-1.857M7 20h4m0-9a3 3 0 100 6 3 3 0 000-6zm-4 3a2 2 0 11-4 0 2 2 0 014 0zm10 0a2 2 0 11-4 0 2 2 0 014 0zm7-3a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
-                    Team Availability (Next 5 Weeks)
+                    <span id="availability-header">Team Availability (Next 5 Weeks)</span>
                 </h2>
                 <div id="people-list">
                     <!-- People cards will be rendered here -->
@@ -377,6 +383,24 @@
                     Ticket Management
                 </h2>
 
+                <!-- Common Start Date Control -->
+                <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div class="flex items-center gap-4 mb-3">
+                        <label class="flex items-center cursor-pointer">
+                            <input type="checkbox" id="use-common-start-date" onchange="toggleCommonStartDate()" 
+                                   class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <span class="ml-2 text-sm font-medium text-blue-800">📅 Start all tasks together</span>
+                        </label>
+                        <input type="date" id="common-start-date" disabled 
+                               class="p-2 border border-blue-300 rounded-lg text-sm bg-gray-100" 
+                               title="Common start date for all tasks"
+                               onchange="updateAllTaskStartDates()">
+                    </div>
+                    <div class="text-xs text-blue-600">
+                        💡 When enabled, all tasks will use the same start date. When disabled, team availability is calculated from the earliest individual task start date.
+                    </div>
+                </div>
+
                 <div class="mt-6">
                     <h3 class="font-semibold text-lg mb-3">Add New Ticket</h3>
                     <div class="flex flex-col md:flex-row gap-2">
@@ -391,7 +415,7 @@
                         <button onclick="addTicket()" class="w-full md:w-24 bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 transition duration-150 flex-shrink-0">Add</button>
                     </div>
                     <div class="text-xs text-gray-500 mt-1">
-                        💡 Start date determines when the task can begin. If empty, defaults to next Monday.
+                        💡 <span id="start-date-help">Individual start dates enabled. Team availability weeks are calculated from the earliest task start date.</span>
                     </div>
                 </div>
                 
@@ -404,7 +428,9 @@
                                 <tr>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Date</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        <span id="start-date-column-header">Start Date</span>
+                                    </th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider tooltip-container">Projected End Date
@@ -461,9 +487,52 @@
         
         let effortMap = {};
         let currentTicketId = 1;
+        let useCommonStartDate = false;
 
         // Date constants (used as the start of Week 1)
         const startDate = getNextMonday(new Date());
+        
+        // Get effective start date for calculations (either default, common, or earliest task date)
+        function getEffectiveStartDate() {
+            if (useCommonStartDate) {
+                const commonDate = document.getElementById('common-start-date')?.value;
+                if (commonDate) {
+                    const date = new Date(commonDate);
+                    // Find the Monday of the week containing this date
+                    return getMondayOfWeek(date);
+                }
+            } else {
+                // Find the earliest start date among all tasks
+                const earliestTaskDate = getEarliestTaskStartDate();
+                if (earliestTaskDate) {
+                    // Find the Monday of the week containing the earliest date
+                    return getMondayOfWeek(earliestTaskDate);
+                }
+            }
+            return startDate;
+        }
+        
+        // Get the Monday of the week containing the given date
+        function getMondayOfWeek(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust for Sunday being 0
+            const monday = new Date(d.setDate(diff));
+            monday.setHours(0, 0, 0, 0);
+            return monday;
+        }
+        
+        // Get the earliest start date from all defined tasks
+        function getEarliestTaskStartDate() {
+            if (tickets.length === 0) return null;
+            
+            const taskDates = tickets
+                .map(ticket => ticket.startDate ? new Date(ticket.startDate) : null)
+                .filter(date => date !== null)
+                .sort((a, b) => a - b);
+            
+            return taskDates.length > 0 ? taskDates[0] : null;
+        }
 
         // --- LOCAL STORAGE FUNCTIONS (Persistence) ---
 
@@ -475,6 +544,7 @@
                 ticketDays,
                 taskSizeDefinitions,
                 currentTicketId,
+                useCommonStartDate,
                 lastUpdated: new Date().toISOString()
             };
             try {
@@ -501,6 +571,7 @@
                         XXL: { name: 'XX-Large', days: 15, removable: false }
                     };
                     currentTicketId = data.currentTicketId || (tickets.length > 0 ? Math.max(...tickets.map(t => t.id)) + 1 : 1);
+                    useCommonStartDate = data.useCommonStartDate || false;
                     
                     // Sync ticketDays with taskSizeDefinitions
                     syncTaskSizes();
@@ -548,13 +619,26 @@
         }
         
         function formatWeekEndDate(weekIndex) {
-            const date = new Date(startDate);
+            const effectiveStart = getEffectiveStartDate();
+            const date = new Date(effectiveStart);
             date.setDate(date.getDate() + (weekIndex * 7) + 4); // +4 days for Friday
             return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
+        
+        function getWeekDateRange(weekIndex) {
+            const effectiveStart = getEffectiveStartDate();
+            const startDate = new Date(effectiveStart);
+            startDate.setDate(startDate.getDate() + (weekIndex * 7));
+            
+            const endDate = new Date(startDate);
+            endDate.setDate(endDate.getDate() + 4); // Friday
+            
+            return `${startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+        }
 
         function formatCompletionDate(startWeekIndex, remainingHours, totalWeeklyCapacity) {
-            const completionDate = new Date(startDate);
+            const effectiveStart = getEffectiveStartDate();
+            const completionDate = new Date(effectiveStart);
             let daysIntoWeek = 0;
 
             if (totalWeeklyCapacity > 0) {
@@ -606,8 +690,15 @@
                 }
 
                 // Calculate which week the task can start based on start date
-                const taskStartDate = new Date(ticket.startDate || startDate);
-                const weekStartDate = new Date(startDate);
+                let taskStartDate;
+                if (useCommonStartDate) {
+                    const commonDate = document.getElementById('common-start-date').value;
+                    taskStartDate = commonDate ? new Date(commonDate) : getEffectiveStartDate();
+                } else {
+                    taskStartDate = new Date(ticket.startDate || getEffectiveStartDate());
+                }
+                
+                const weekStartDate = getEffectiveStartDate();
                 const daysDiff = Math.max(0, Math.floor((taskStartDate - weekStartDate) / (1000 * 60 * 60 * 24)));
                 const startWeekIndex = Math.max(0, Math.floor(daysDiff / 7));
 
@@ -620,8 +711,14 @@
                 
                 let explanation = `Ticket Effort: ${totalEffortHours} hours (${ticket.size}, ${ticketDays[ticket.size]} person-days).\n`;
                 explanation += `Assigned: ${ticket.assigned.join(', ')} (${assignedCount} person(s)).\n`;
-                explanation += `Start Date: ${formatDate(ticket.startDate)} (Week ${startWeekIndex + 1}).\n`;
-                explanation += `Required Duration Hours (pooled): ${initialHours.toFixed(1)} hours.\n\n`;
+                if (useCommonStartDate) {
+                    const commonDate = document.getElementById('common-start-date').value;
+                    explanation += `Start Date: ${formatDate(commonDate)} (Week ${startWeekIndex + 1}) [Common Start Date].\n`;
+                } else {
+                    explanation += `Start Date: ${formatDate(ticket.startDate)} (Week ${startWeekIndex + 1}).\n`;
+                }
+                explanation += `Required Duration Hours (pooled): ${initialHours.toFixed(1)} hours.\n`;
+                explanation += `Planning baseline: Week 1 starts ${formatDate(weekStartDate.toISOString().split('T')[0])}.\n\n`;
 
                 let currentHoursToConsume = hoursRemaining;
 
@@ -636,7 +733,7 @@
                         capacityBreakdown[name] = personCapacity;
                     });
                     
-                    explanation += `--- Week ${w + 1} (ends ${formatWeekEndDate(w)}) ---\n`;
+                    explanation += `--- Week ${w + 1} (${getWeekDateRange(w)}) ---\n`;
                     explanation += `Pooled Capacity: ${pooledCapacityThisWeek.toFixed(1)} hours.\n`;
                     
                     if (pooledCapacityThisWeek <= 0) {
@@ -757,7 +854,40 @@
             }).join('');
         }
 
+        function updateAvailabilityHeader() {
+            const header = document.getElementById('availability-header');
+            if (useCommonStartDate) {
+                const commonDate = document.getElementById('common-start-date')?.value;
+                if (commonDate) {
+                    const formattedDate = formatDate(commonDate);
+                    header.textContent = `Team Availability (5 weeks from ${formattedDate})`;
+                } else {
+                    header.textContent = 'Team Availability (5 weeks from common start date)';
+                }
+            } else {
+                const earliestTaskDate = getEarliestTaskStartDate();
+                if (earliestTaskDate) {
+                    const formattedDate = formatDate(earliestTaskDate.toISOString().split('T')[0]);
+                    header.textContent = `Team Availability (5 weeks from ${formattedDate})`;
+                } else {
+                    header.textContent = 'Team Availability (Next 5 Weeks)';
+                }
+            }
+        }
+        
+        function updateStartDateColumnHeader() {
+            const header = document.getElementById('start-date-column-header');
+            if (useCommonStartDate) {
+                header.textContent = 'Start Date (Common)';
+            } else {
+                header.textContent = 'Start Date (Editable)';
+            }
+        }
+
         function renderPeople() {
+            // Update the header to reflect current mode
+            updateAvailabilityHeader();
+            
             const peopleList = document.getElementById('people-list');
             const assignDropdown = document.getElementById('new-ticket-assigned');
             peopleList.innerHTML = '';
@@ -784,6 +914,10 @@
                     `;
                 }
 
+                const weekRangeInfo = useCommonStartDate ? 
+                    ' (Based on common start date)' : 
+                    (getEarliestTaskStartDate() ? ' (Based on earliest task start date)' : '');
+                
                 card.innerHTML = `
                     <div class="flex justify-between items-start mb-2">
                         <span class="font-bold text-indigo-800">${person.name}</span>
@@ -796,6 +930,7 @@
                     <div class="flex gap-2 text-xs">
                         ${availabilityInputs}
                     </div>
+                    ${weekRangeInfo ? `<div class="text-xs text-blue-600 mt-1">${weekRangeInfo}</div>` : ''}
                 `;
                 peopleList.appendChild(card);
 
@@ -814,6 +949,9 @@
         function renderTickets(projectedTickets) {
             const tbody = document.getElementById('ticket-table-body');
             tbody.innerHTML = '';
+            
+            // Update column header based on current mode
+            updateStartDateColumnHeader();
             
             if (projectedTickets.length === 0) {
                 document.getElementById('no-tickets').classList.remove('hidden');
@@ -840,10 +978,29 @@
 
                 const completionDateClass = ticket.isDelayed ? 'bg-red-100 text-red-700 font-bold p-1 rounded' : 'text-green-600 font-semibold';
                 
+                // Determine displayed start date
+                let displayStartDate;
+                let startDateInput = '';
+                if (useCommonStartDate) {
+                    const commonDate = document.getElementById('common-start-date').value;
+                    displayStartDate = formatDate(commonDate) + ' 🔗';
+                    startDateInput = `<span class="text-gray-500 text-sm">${displayStartDate}</span>`;
+                } else {
+                    startDateInput = `
+                        <input 
+                            type="date" 
+                            value="${ticket.startDate || ''}" 
+                            onchange="handleStartDateChange(this, ${ticket.id})"
+                            class="w-full p-1 border border-gray-300 rounded-lg text-xs bg-white"
+                            title="Change task start date"
+                        >
+                    `;
+                }
+                
                 tr.innerHTML = `
                     <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">${ticket.id}</td>
                     <td class="px-3 py-2 text-sm text-gray-900 w-1/3">${ticket.description}</td>
-                    <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-600">${formatDate(ticket.startDate)}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-600">${startDateInput}</td>
                     <td class="px-3 py-2 whitespace-nowrap text-sm font-medium">
                         <select 
                             class="w-full p-1 border border-gray-300 rounded-lg text-xs bg-white text-indigo-600 font-medium"
@@ -926,7 +1083,84 @@
             link.click();
             document.body.removeChild(link);
         }
+        
+        window.resetToDefaults = () => {
+            if (confirm('This will reset all data to defaults with current dates. Are you sure?')) {
+                localStorage.removeItem(STORAGE_KEY);
+                initializeDefaultData();
+                
+                // Reset UI state
+                useCommonStartDate = false;
+                document.getElementById('use-common-start-date').checked = false;
+                
+                // Re-initialize
+                calculateEffortMap();
+                renderEffortMap();
+                renderPeople();
+                calculateProjection();
+                
+                alert('Data reset to defaults with current dates!');
+            }
+        }
 
+
+        // --- COMMON START DATE FUNCTIONS ---
+        
+        window.toggleCommonStartDate = () => {
+            const checkbox = document.getElementById('use-common-start-date');
+            const commonDateInput = document.getElementById('common-start-date');
+            const individualDateInput = document.getElementById('new-ticket-start-date');
+            const startDateHelp = document.getElementById('start-date-help');
+            
+            useCommonStartDate = checkbox.checked;
+            
+            if (useCommonStartDate) {
+                // Enable common start date, disable individual
+                commonDateInput.disabled = false;
+                commonDateInput.classList.remove('bg-gray-100');
+                commonDateInput.classList.add('bg-white');
+                
+                // Set default to next Monday if empty
+                if (!commonDateInput.value) {
+                    commonDateInput.value = getNextMonday(new Date()).toISOString().split('T')[0];
+                }
+                
+                individualDateInput.disabled = true;
+                individualDateInput.classList.add('bg-gray-100', 'text-gray-400');
+                
+                startDateHelp.innerHTML = 'Common start date is enabled - all tasks will use the same start date above. <strong>Team availability weeks are recalculated from this date.</strong>';
+                
+            } else {
+                // Disable common start date, enable individual
+                commonDateInput.disabled = true;
+                commonDateInput.classList.add('bg-gray-100');
+                commonDateInput.classList.remove('bg-white');
+                
+                individualDateInput.disabled = false;
+                individualDateInput.classList.remove('bg-gray-100', 'text-gray-400');
+                
+                startDateHelp.innerHTML = 'Individual start dates enabled. <strong>Team availability weeks are calculated from the earliest task start date.</strong>';
+            }
+            
+            // Refresh people display to show updated week dates
+            renderPeople();
+            
+            // Recalculate projections (this will also update the table)
+            calculateProjection();
+            saveToLocalStorage();
+        }
+        
+        window.updateAllTaskStartDates = () => {
+            if (useCommonStartDate) {
+                // Update header and refresh people display to show updated week dates
+                updateAvailabilityHeader();
+                renderPeople();
+                
+                // Recalculate when common start date changes
+                calculateProjection();
+                saveToLocalStorage();
+            }
+        }
 
         // --- DATA MODIFIERS (Trigger localStorage save and recalculation) ---
         
@@ -1123,7 +1357,16 @@
             const assignedSelect = document.getElementById('new-ticket-assigned');
 
             const description = descInput.value.trim();
-            const startDate = startDateInput.value || getNextMonday(new Date()).toISOString().split('T')[0];
+            
+            // Handle start date based on common start date setting
+            let startDate;
+            if (useCommonStartDate) {
+                const commonDate = document.getElementById('common-start-date').value;
+                startDate = commonDate || getNextMonday(new Date()).toISOString().split('T')[0];
+            } else {
+                startDate = startDateInput.value || getNextMonday(new Date()).toISOString().split('T')[0];
+            }
+            
             const size = sizeSelect.value;
             const assigned = Array.from(assignedSelect.selectedOptions).map(option => option.value);
 
@@ -1145,12 +1388,23 @@
             sizeSelect.value = 'L';
             Array.from(assignedSelect.options).forEach(opt => opt.selected = false);
 
+            // Refresh people display since earliest task date might have changed
+            if (!useCommonStartDate) {
+                renderPeople();
+            }
+            
             calculateProjection();
             saveToLocalStorage();
         }
 
         window.removeTicket = (id) => {
             tickets = tickets.filter(t => t.id !== id);
+            
+            // Refresh people display since earliest task date might have changed
+            if (!useCommonStartDate) {
+                renderPeople();
+            }
+            
             calculateProjection();
             saveToLocalStorage();
         }
@@ -1190,6 +1444,35 @@
                 
                 // Optional: Show a brief notification
                 console.log(`📊 Ticket #${ticketId} size changed from ${oldSize} to ${newSize} - recalculating...`);
+            }
+        }
+
+        window.handleStartDateChange = (inputElement, ticketId) => {
+            const newStartDate = inputElement.value;
+            
+            // Find and update the ticket
+            const ticket = tickets.find(t => t.id === ticketId);
+            if (ticket) {
+                const oldStartDate = ticket.startDate;
+                ticket.startDate = newStartDate;
+                
+                // Provide visual feedback
+                inputElement.style.background = '#dcfce7'; // Light green background
+                setTimeout(() => {
+                    inputElement.style.background = 'white';
+                }, 500);
+                
+                // Refresh people display since earliest task date might have changed
+                if (!useCommonStartDate) {
+                    renderPeople();
+                }
+                
+                // Recalculate and re-render immediately
+                calculateProjection();
+                saveToLocalStorage();
+                
+                // Optional: Show a brief notification
+                console.log(`📅 Ticket #${ticketId} start date changed from ${formatDate(oldStartDate)} to ${formatDate(newStartDate)} - recalculating...`);
             }
         }
 
@@ -1267,10 +1550,16 @@ ${ticket.explanation}
                 { name: 'Sharanya', availability: [25, 25, 25, 25, 25] },
                 { name: 'Divya', availability: [25, 25, 25, 25, 25] },
             ];
+            
+            // Use realistic current dates
+            const today = new Date();
+            const nextMonday = getNextMonday(new Date());
+            const followingMonday = new Date(nextMonday.getTime() + 7 * 24 * 60 * 60 * 1000);
+            
             tickets = [
-                { id: 1, description: 'Design System Migration', size: 'XL', assigned: ['Vipul', 'Peter'], startDate: getNextMonday(new Date()).toISOString().split('T')[0] },
-                { id: 2, description: 'Fix payment gateway bug', size: 'S', assigned: ['Sameet'], startDate: getNextMonday(new Date()).toISOString().split('T')[0] },
-                { id: 3, description: 'Build new reporting dashboard', size: 'XXL', assigned: ['Sharanya', 'Divya'], startDate: new Date(getNextMonday(new Date()).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] }
+                { id: 1, description: 'Design System Migration', size: 'XL', assigned: ['Vipul', 'Peter'], startDate: nextMonday.toISOString().split('T')[0] },
+                { id: 2, description: 'Fix payment gateway bug', size: 'S', assigned: ['Sameet'], startDate: nextMonday.toISOString().split('T')[0] },
+                { id: 3, description: 'Build new reporting dashboard', size: 'XXL', assigned: ['Sharanya', 'Divya'], startDate: followingMonday.toISOString().split('T')[0] }
             ];
             currentTicketId = 4;
             saveToLocalStorage(); 
@@ -1284,6 +1573,14 @@ ${ticket.explanation}
             // Set default start date to next Monday
             const defaultStartDate = getNextMonday(new Date()).toISOString().split('T')[0];
             document.getElementById('new-ticket-start-date').value = defaultStartDate;
+            document.getElementById('common-start-date').value = defaultStartDate;
+            
+            // Restore common start date state
+            const checkbox = document.getElementById('use-common-start-date');
+            checkbox.checked = useCommonStartDate;
+            if (useCommonStartDate) {
+                toggleCommonStartDate();
+            }
             
             // Initial render
             calculateEffortMap();
