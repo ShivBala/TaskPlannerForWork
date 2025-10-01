@@ -1189,7 +1189,7 @@
                 let finalCapacity = 0;
                 let pooledCapacityThisWeek = 0; 
                 
-                let explanation = `Ticket Effort: ${totalEffortHours} hours (${ticket.size}, ${ticketDays[ticket.size]} person-days).\n`;
+                let explanation = `Ticket Effort: ${totalEffortHours} hours (${ticket.size}, ${taskSizeDefinitions[ticket.size].days} person-days).\n`;
                 explanation += `Assigned: ${ticket.assigned.join(', ')} (${assignedCount} person(s)).\n`;
                 if (useCommonStartDate) {
                     const commonDate = document.getElementById('common-start-date').value;
@@ -1843,7 +1843,7 @@
 
             projectedTickets.forEach(ticket => {
                 const totalHours = effortMap[ticket.size] || 0;
-                const personDays = ticketDays[ticket.size] || 0;
+                const personDays = taskSizeDefinitions[ticket.size]?.days || 0;
 
                 // Escape double quotes and ensure data is wrapped in quotes
                 const escapeCSV = (value) => `"${String(value).replace(/"/g, '""')}"`;
