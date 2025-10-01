@@ -3,36 +3,63 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team Capacity & Ticket Scheduler (Standalone)</title>
+    <title>Enterprise Project Scheduler</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Custom styles for better readability and console feel */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f7f9fc;
-        }
-        .container {
-            max-width: 1400px;
-        }
-        .input-card, .output-card {
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
-            transition: transform 0.2s;
+        /* Banking/Enterprise Theme */
+        :root {
+            --primary-color: #1e3a8a; /* Deep blue */
+            --secondary-color: #374151; /* Dark gray */
+            --accent-color: #059669; /* Professional green */
+            --warning-color: #d97706; /* Amber */
+            --danger-color: #dc2626; /* Red */
+            --background-color: #f8fafc; /* Light gray */
+            --card-background: #ffffff;
+            --border-color: #e5e7eb;
         }
         
-        /* Enhanced Task Sizing Styles */
-        .task-size-manager {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        /* Custom styles for enterprise feel */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            color: var(--secondary-color);
+        }
+        
+        .enterprise-container {
+            max-width: 1600px;
+        }
+        
+        .input-card, .output-card {
+            background: var(--card-background);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s ease;
+        }
+        
+        .input-card:hover, .output-card:hover {
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        }
+        
+        .enterprise-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #1e40af 100%);
             color: white;
-            border-radius: 12px;
-            padding: 20px;
-            margin-bottom: 20px;
+            border-bottom: 3px solid var(--accent-color);
+        }
+        
+        /* Compact Enterprise Task Sizing */
+        .task-size-manager {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #1e40af 100%);
+            color: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
         }
         
         .task-size-card {
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 10px;
+            border-radius: 6px;
+            padding: 8px;
+            margin-bottom: 8px;
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.2);
             transition: all 0.3s ease;
@@ -40,46 +67,47 @@
         
         .task-size-card:hover {
             background: rgba(255, 255, 255, 0.15);
-            transform: translateY(-2px);
+            transform: translateY(-1px);
         }
         
         .size-input-enhanced {
             background: rgba(255, 255, 255, 0.9);
             border: none;
-            border-radius: 6px;
-            padding: 8px 12px;
-            color: #2c3e50;
+            border-radius: 4px;
+            padding: 6px 10px;
+            color: var(--secondary-color);
             font-weight: 600;
             text-align: center;
-            width: 80px;
+            width: 70px;
+            font-size: 11px;
         }
         
         .size-controls {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: wrap;
         }
         
         .size-label-enhanced {
             font-weight: bold;
-            font-size: 14px;
-            min-width: 60px;
+            font-size: 12px;
+            min-width: 50px;
         }
         
         .size-metrics {
-            font-size: 12px;
+            font-size: 10px;
             opacity: 0.9;
-            margin-top: 4px;
+            margin-top: 3px;
         }
         
         .preset-btn {
             background: rgba(255, 255, 255, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.3);
             color: white;
-            padding: 6px 12px;
-            border-radius: 6px;
-            font-size: 12px;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 11px;
             cursor: pointer;
             transition: all 0.3s ease;
         }
@@ -91,20 +119,26 @@
         
         .custom-size-form {
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 15px;
-            margin-top: 15px;
+            border-radius: 6px;
+            padding: 12px;
+            margin-top: 12px;
             border: 1px dashed rgba(255, 255, 255, 0.3);
         }
         
-        /* Modal Styles for Calculation Details */
+        /* Enterprise Timeline Styles */
+        .timeline-container {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 1px solid #bae6fd;
+        }
+        
+        /* Modal Styles for Banking */
         .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(30, 58, 138, 0.4);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -120,9 +154,9 @@
         }
         
         .modal-content {
-            background: white;
-            border-radius: 12px;
-            padding: 24px;
+            background: var(--card-background);
+            border-radius: 8px;
+            padding: 20px;
             max-width: 600px;
             max-height: 80vh;
             overflow-y: auto;
@@ -131,6 +165,7 @@
             transition: transform 0.3s ease;
             margin: 20px;
             width: calc(100% - 40px);
+            border: 2px solid var(--primary-color);
         }
         
         @media (min-width: 640px) {
@@ -145,26 +180,26 @@
         }
         
         .modal-header {
-            border-bottom: 1px solid #e5e7eb;
-            padding-bottom: 16px;
-            margin-bottom: 20px;
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 12px;
+            margin-bottom: 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
         
         .modal-title {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
-            color: #1f2937;
+            color: var(--primary-color);
         }
         
         .modal-close {
             background: none;
             border: none;
-            font-size: 24px;
+            font-size: 20px;
             cursor: pointer;
-            color: #6b7280;
+            color: var(--secondary-color);
             padding: 4px;
             border-radius: 4px;
             transition: background-color 0.2s;
@@ -176,61 +211,61 @@
         
         .calculation-details {
             font-family: 'Courier New', monospace;
-            font-size: 13px;
-            line-height: 1.6;
+            font-size: 12px;
+            line-height: 1.5;
             white-space: pre-wrap;
             background: #f8fafc;
-            padding: 16px;
-            border-radius: 8px;
-            border-left: 4px solid #3b82f6;
-            max-height: 400px;
+            padding: 12px;
+            border-radius: 6px;
+            border-left: 4px solid var(--primary-color);
+            max-height: 350px;
             overflow-y: auto;
         }
         
         .details-btn {
-            background: #3b82f6;
+            background: var(--primary-color);
             color: white;
             border: none;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
+            padding: 3px 6px;
+            border-radius: 3px;
+            font-size: 10px;
             cursor: pointer;
-            margin-left: 8px;
+            margin-left: 6px;
             transition: background-color 0.2s;
         }
         
         .details-btn:hover {
-            background: #2563eb;
+            background: #1e40af;
         }
         
-        /* Size Dropdown Styling */
+        /* Size Dropdown Banking Style */
         .size-dropdown {
-            border: 1px solid #d1d5db;
-            border-radius: 6px;
-            padding: 4px 8px;
-            font-size: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 3px 6px;
+            font-size: 11px;
             font-weight: 600;
-            color: #4f46e5;
+            color: var(--primary-color);
             background: white;
             cursor: pointer;
             transition: all 0.2s ease;
             width: 100%;
-            min-width: 80px;
+            min-width: 70px;
         }
         
         .size-dropdown:hover {
-            border-color: #4f46e5;
-            box-shadow: 0 0 0 1px #4f46e5;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 1px var(--primary-color);
         }
         
         .size-dropdown:focus {
             outline: none;
-            border-color: #4f46e5;
-            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(30, 58, 138, 0.2);
         }
         
         .size-dropdown option {
-            padding: 4px;
+            padding: 3px;
             font-weight: normal;
         }
         
@@ -266,56 +301,61 @@
         }
         
         .timeline-delayed {
-            background: linear-gradient(45deg, #ef4444 0%, #dc2626 100%);
+            background: linear-gradient(45deg, var(--danger-color) 0%, #b91c1c 100%);
         }
         
         .timeline-ontime {
-            background: linear-gradient(45deg, #10b981 0%, #059669 100%);
+            background: linear-gradient(45deg, var(--accent-color) 0%, #047857 100%);
         }
         
         .timeline-legend-item {
             display: flex;
             align-items: center;
             gap: 4px;
-            padding: 2px 8px;
-            background: rgba(255, 255, 255, 0.7);
-            border-radius: 12px;
+            padding: 2px 6px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
             border: 1px solid rgba(0, 0, 0, 0.1);
+            font-size: 11px;
         }
         
         .timeline-legend-dot {
-            width: 8px;
-            height: 8px;
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
         }
+        
         .tooltip-container {
             position: relative;
             cursor: pointer;
         }
+        
         .tooltip-text {
             visibility: hidden;
-            width: 300px;
-            background-color: #1f2937;
+            width: 280px;
+            background-color: var(--secondary-color);
             color: #fff;
             text-align: left;
             border-radius: 6px;
-            padding: 10px;
+            padding: 8px;
             position: absolute;
             z-index: 10;
-            bottom: 125%; /* Position above the element */
+            bottom: 125%;
             left: 50%;
-            margin-left: -150px;
+            margin-left: -140px;
             opacity: 0;
             transition: opacity 0.3s;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             pointer-events: none;
-            white-space: pre-wrap; /* Allows line breaks in the explanation */
+            white-space: pre-wrap;
         }
+        
         .tooltip-container:hover .tooltip-text {
             visibility: visible;
             opacity: 1;
         }
-        /* Style for the select dropdowns */
+        
+        /* Select dropdowns */
         .select-multiple {
             appearance: none;
             -webkit-appearance: none;
@@ -325,28 +365,130 @@
             background-position: right 0.5rem center;
             background-size: 1.5em;
         }
+        
+        /* Compact spacing */
+        .compact-spacing {
+            gap: 12px;
+        }
+        
+        .compact-card {
+            padding: 12px;
+        }
+        
+        /* Enterprise buttons */
+        .btn-enterprise {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 13px;
+        }
+        
+        .btn-enterprise:hover {
+            background: #1e40af;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-secondary {
+            background: var(--secondary-color);
+        }
+        
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+        
+        .btn-success {
+            background: var(--accent-color);
+        }
+        
+        .btn-success:hover {
+            background: #047857;
+        }
+        
+        .btn-danger {
+            background: var(--danger-color);
+        }
+        
+        .btn-danger:hover {
+            background: #b91c1c;
+        }
+        
+        /* Compact table styles */
+        .enterprise-table {
+            font-size: 12px;
+        }
+        
+        .enterprise-table th {
+            padding: 8px 12px;
+            background: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 0.5px;
+        }
+        
+        .enterprise-table td {
+            padding: 6px 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        
+        .enterprise-table tr:hover {
+            background: rgba(30, 58, 138, 0.03);
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
 
-    <div id="app" class="container mx-auto">
-        <div class="flex justify-between items-center mb-6 border-b pb-2">
-            <h1 class="text-3xl font-extrabold text-gray-900">Project Delivery Console</h1>
-            <button onclick="exportData()" class="ml-4 bg-gray-600 text-white p-2 rounded-lg hover:bg-gray-700 transition duration-150 flex-shrink-0 flex items-center shadow-md">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                Export to CSV
-            </button>
-            <button onclick="resetToDefaults()" class="ml-2 bg-red-600 text-white p-2 rounded-lg hover:bg-red-700 transition duration-150 flex-shrink-0 flex items-center shadow-md">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Reset
-            </button>
+    <div id="app" class="enterprise-container mx-auto">
+        <div class="enterprise-header flex justify-between items-center mb-4 p-4 rounded-lg">
+            <h1 class="text-2xl font-bold">Enterprise Project Delivery Console</h1>
+            <div class="flex gap-2">
+                <button onclick="exportConfiguration()" class="btn-enterprise flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    Export Config
+                </button>
+                <button onclick="triggerImport()" class="btn-enterprise flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                    </svg>
+                    Import Config
+                </button>
+                <button onclick="triggerTaskImport()" class="btn-enterprise flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Import Tasks
+                </button>
+                <button onclick="exportData()" class="btn-enterprise flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    Export Schedule
+                </button>
+                <button onclick="resetToDefaults()" class="btn-danger flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                    Reset
+                </button>
+            </div>
         </div>
         
-        <p id="auth-status" class="text-xs text-gray-500 mb-4">Data saved locally in browser storage.</p>
+        <p id="auth-status" class="text-xs text-gray-600 mb-3">📊 Enterprise data management - All information stored securely in browser storage.</p>
+        
+        <!-- Hidden file input for configuration import -->
+        <input type="file" id="import-config-file" accept=".csv" style="display: none;" onchange="handleConfigImport(event)">
+        
+        <!-- Hidden file input for task bulk import -->
+        <input type="file" id="import-tasks-file" accept=".csv" style="display: none;" onchange="handleTaskImport(event)">
         
         <div id="loading-spinner" class="text-center p-10 hidden">
             <!-- Spinner removed as local loading is instant -->
@@ -355,179 +497,183 @@
         <div id="main-content" class="grid lg:grid-cols-3 gap-6 mb-8">
             
             <!-- People and Availability Configuration -->
-            <div class="lg:col-span-1 input-card bg-white p-6 rounded-xl shadow-lg h-full">
-                <h2 class="text-xl font-semibold mb-4 text-indigo-700 flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div class="lg:col-span-1 input-card enterprise-table p-4 rounded-lg h-full">
+                <h2 class="text-lg font-semibold mb-3 text-primary-dark flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20v-2c0-.656-.126-1.283-.356-1.857M17 20H7m0 0v-2c0-.656.126-1.283.356-1.857M7 20h4m0-9a3 3 0 100 6 3 3 0 000-6zm-4 3a2 2 0 11-4 0 2 2 0 014 0zm10 0a2 2 0 11-4 0 2 2 0 014 0zm7-3a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
-                    <span id="availability-header">Team Availability (Next 5 Weeks)</span>
+                    <span id="availability-header">Team Resources (5 Weeks)</span>
                 </h2>
-                <div id="people-list">
+                <div id="people-list" class="compact-spacing">
                     <!-- People cards will be rendered here -->
                 </div>
-                <div class="mt-4">
-                    <input type="text" id="new-person-name" placeholder="New team member name" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
-                    <button onclick="addPerson()" class="mt-2 w-full bg-indigo-500 text-white p-2 rounded-lg hover:bg-indigo-600 transition duration-150">Add Member</button>
+                <div class="mt-3 compact-spacing">
+                    <input type="text" id="new-person-name" placeholder="Team member name" class="enterprise-input w-full">
+                    <button onclick="addPerson()" class="btn-enterprise w-full mt-2">Add Member</button>
                 </div>
             </div>
 
             <!-- Effort Mapping and Control -->
-            <div class="lg:col-span-2 input-card bg-white p-6 rounded-xl shadow-lg">
+            <div class="lg:col-span-2 input-card enterprise-table p-4 rounded-lg">
                 
                 <!-- Enhanced Task Sizing Management -->
                 <div class="task-size-manager">
-                    <h2 class="text-xl font-bold mb-4 flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <h2 class="text-lg font-bold mb-3 flex items-center text-primary-dark">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                         </svg>
-                        📏 Task Sizing Configuration
+                        📏 Task Configuration
                     </h2>
                     
-                    <div class="mb-4 flex items-center gap-4 flex-wrap">
-                        <div class="flex items-center gap-2">
-                            <label class="text-sm font-medium">Hours per Day:</label>
-                            <input type="number" id="hours-per-day" value="8" min="1" max="24" 
-                                   onchange="updateEffortMapping(event.target.value)" 
-                                   class="size-input-enhanced w-16">
+                    <div class="compact-spacing">
+                        <div class="mb-3 flex items-center gap-4 flex-wrap">
+                            <div class="flex items-center gap-2">
+                                <label class="text-sm font-medium">Hours/Day:</label>
+                                <input type="number" id="hours-per-day" value="8" min="1" max="24" 
+                                       onchange="updateEffortMapping(event.target.value)" 
+                                       class="enterprise-input w-16">
+                            </div>
+                            <div class="text-sm text-gray-600">
+                                Total = Days × <span id="hours-per-day-display">8</span>h
+                            </div>
                         </div>
-                        <div class="text-sm opacity-90">
-                            Total hours = Days × <span id="hours-per-day-display">8</span> HPD
+                        
+                        <div id="task-size-cards" class="grid md:grid-cols-3 lg:grid-cols-5 gap-2 mb-3">
+                            <!-- Enhanced task size cards will be rendered here -->
                         </div>
-                    </div>
-                    
-                    <div id="task-size-cards" class="grid md:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
-                        <!-- Enhanced task size cards will be rendered here -->
-                    </div>
-                    
-                    <div class="flex gap-2 mb-4 flex-wrap">
-                        <button onclick="applyPreset('agile')" class="preset-btn">🏃 Agile Team</button>
-                        <button onclick="applyPreset('enterprise')" class="preset-btn">🏢 Enterprise</button>
-                        <button onclick="applyPreset('startup')" class="preset-btn">🚀 Startup</button>
-                        <button onclick="applyPreset('conservative')" class="preset-btn">🛡️ Conservative</button>
-                        <button onclick="showCustomSizeForm()" class="preset-btn">➕ Add Custom Size</button>
-                    </div>
-                    
-                    <div id="custom-size-form" class="custom-size-form hidden">
-                        <h4 class="font-semibold mb-3">Add Custom Task Size</h4>
-                        <div class="flex gap-3 items-end flex-wrap">
-                            <div>
-                                <label class="block text-sm mb-1">Size Key (e.g., XS)</label>
-                                <input type="text" id="new-size-key" placeholder="XS" maxlength="4" 
-                                       class="size-input-enhanced w-20">
+                        
+                        <div class="flex gap-2 mb-3 flex-wrap text-xs">
+                            <button onclick="applyPreset('agile')" class="btn-enterprise">🏃 Agile</button>
+                            <button onclick="applyPreset('enterprise')" class="btn-enterprise">🏢 Enterprise</button>
+                            <button onclick="applyPreset('startup')" class="btn-enterprise">🚀 Startup</button>
+                            <button onclick="applyPreset('conservative')" class="btn-enterprise">🛡️ Conservative</button>
+                            <button onclick="showCustomSizeForm()" class="btn-enterprise">➕ Custom</button>
+                        </div>
+                        
+                        <div id="custom-size-form" class="custom-size-form hidden">
+                            <h4 class="font-semibold mb-2 text-sm">Add Custom Task Size</h4>
+                            <div class="flex gap-2 items-end flex-wrap">
+                                <div>
+                                    <label class="block text-xs mb-1">Key</label>
+                                    <input type="text" id="new-size-key" placeholder="XS" maxlength="4" 
+                                           class="enterprise-input w-16">
+                                </div>
+                                <div>
+                                    <label class="block text-xs mb-1">Name</label>
+                                    <input type="text" id="new-size-name" placeholder="Extra Small" 
+                                           class="enterprise-input w-24">
+                                </div>
+                                <div>
+                                    <label class="block text-xs mb-1">Days</label>
+                                    <input type="number" id="new-size-days" placeholder="0.5" min="0.1" max="50" step="0.5" 
+                                           class="enterprise-input w-16">
+                                </div>
+                                <button onclick="addCustomSize()" class="btn-enterprise">Add</button>
+                                <button onclick="hideCustomSizeForm()" class="btn-danger">Cancel</button>
                             </div>
-                            <div>
-                                <label class="block text-sm mb-1">Display Name</label>
-                                <input type="text" id="new-size-name" placeholder="Extra Small" 
-                                       class="size-input-enhanced w-32">
-                            </div>
-                            <div>
-                                <label class="block text-sm mb-1">Days</label>
-                                <input type="number" id="new-size-days" placeholder="0.5" min="0.1" max="50" step="0.5" 
-                                       class="size-input-enhanced w-20">
-                            </div>
-                            <button onclick="addCustomSize()" class="preset-btn bg-green-600 hover:bg-green-700">Add</button>
-                            <button onclick="hideCustomSizeForm()" class="preset-btn bg-gray-600 hover:bg-gray-700">Cancel</button>
                         </div>
                     </div>
                 </div>
                 
                 <!-- Visual Timeline Display -->
-                <div class="mt-6 p-4 bg-gradient-to-r from-green-50 to-blue-50 border border-gray-200 rounded-lg">
-                    <h3 class="text-lg font-semibold mb-3 text-gray-800 flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div class="mt-4 p-3 enterprise-timeline border rounded-lg">
+                    <h3 class="text-md font-semibold mb-2 text-primary-dark flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                         </svg>
                         📈 Project Timeline
                     </h3>
                     <div id="timeline-container" class="relative">
-                        <div id="timeline-info" class="text-sm text-gray-600 mb-3">
+                        <div id="timeline-info" class="text-sm text-gray-600 mb-2">
                             📅 <span id="timeline-start-date">No tasks defined</span> → 
                             🏁 <span id="timeline-end-date">No tasks defined</span> 
                             (<span id="timeline-duration">0 days</span>)
                         </div>
-                        <div id="timeline-bar" class="relative bg-gray-200 h-8 rounded-lg overflow-hidden">
+                        <div id="timeline-bar" class="relative bg-gray-200 h-6 rounded-lg overflow-hidden">
                             <div id="timeline-progress" class="h-full bg-gradient-to-r from-blue-400 to-green-400 transition-all duration-500" style="width: 0%"></div>
                             <div id="timeline-markers" class="absolute inset-0 flex items-center px-2">
                                 <!-- Task markers will be populated here -->
                             </div>
                         </div>
-                        <div id="timeline-legend" class="flex flex-wrap gap-2 mt-3 text-xs">
+                        <div id="timeline-legend" class="flex flex-wrap gap-2 mt-2 text-xs">
                             <!-- Legend items will be populated here -->
                         </div>
                     </div>
                 </div>
                 
-                <h2 class="text-xl font-semibold mb-4 text-indigo-700 flex items-center mt-6">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <h2 class="text-lg font-semibold mb-3 text-primary-dark flex items-center mt-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    Ticket Management
+                    Task Management
                 </h2>
 
                 <!-- Common Start Date Control -->
-                <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <div class="flex items-center gap-4 mb-3">
+                <div class="mb-4 p-3 enterprise-card border rounded-lg">
+                    <div class="flex items-center gap-4 mb-2">
                         <label class="flex items-center cursor-pointer">
                             <input type="checkbox" id="use-common-start-date" onchange="toggleCommonStartDate()" 
                                    class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                            <span class="ml-2 text-sm font-medium text-blue-800">📅 Start all tasks together</span>
+                            <span class="ml-2 text-sm font-medium text-primary-dark">📅 Unified Start Date</span>
                         </label>
                         <input type="date" id="common-start-date" disabled 
-                               class="p-2 border border-blue-300 rounded-lg text-sm bg-gray-100" 
+                               class="enterprise-input text-sm" 
                                title="Common start date for all tasks"
                                onchange="updateAllTaskStartDates()">
                     </div>
-                    <div class="text-xs text-blue-600">
-                        💡 When enabled, all tasks will use the same start date. When disabled, team availability is calculated from the earliest individual task start date.
+                    <div class="text-xs text-gray-600">
+                        💡 Synchronizes all task start dates for streamlined project planning
                     </div>
                 </div>
 
-                <div class="mt-6">
-                    <h3 class="font-semibold text-lg mb-3">Add New Ticket</h3>
-                    <div class="flex flex-col md:flex-row gap-2">
-                        <input type="text" id="new-ticket-desc" placeholder="Ticket Description" class="flex-grow p-2 border border-gray-300 rounded-lg">
-                        <input type="date" id="new-ticket-start-date" class="w-full md:w-36 p-2 border border-gray-300 rounded-lg text-sm" title="Start Date">
-                        <select id="new-ticket-size" class="w-full md:w-32 p-2 border border-gray-300 rounded-lg">
-                            <!-- Options populated dynamically by JavaScript -->
-                        </select>
-                        <select id="new-ticket-assigned" multiple class="select-multiple w-full md:w-48 p-2 border border-gray-300 rounded-lg h-auto min-h-[40px] text-sm">
-                            <!-- Options populated by JS -->
-                        </select>
-                        <button onclick="addTicket()" class="w-full md:w-24 bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 transition duration-150 flex-shrink-0">Add</button>
-                    </div>
-                    <div class="text-xs text-gray-500 mt-1">
-                        💡 <span id="start-date-help">Individual start dates enabled. Team availability weeks are calculated from the earliest task start date.</span>
+                <div class="mt-4">
+                    <h3 class="font-semibold text-md mb-2">Add New Task</h3>
+                    <div class="compact-spacing">
+                        <div class="flex flex-col md:flex-row gap-2">
+                            <input type="text" id="new-ticket-desc" placeholder="Task Description" class="enterprise-input flex-grow">
+                            <input type="date" id="new-ticket-start-date" class="enterprise-input w-full md:w-36" title="Start Date">
+                            <select id="new-ticket-size" class="enterprise-input w-full md:w-32">
+                                <!-- Options populated dynamically by JavaScript -->
+                            </select>
+                            <select id="new-ticket-assigned" multiple class="enterprise-input w-full md:w-48 min-h-[35px]">
+                                <!-- Options populated by JS -->
+                            </select>
+                            <button onclick="addTicket()" class="btn-enterprise w-full md:w-20 flex-shrink-0">Add</button>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">
+                            💡 <span id="start-date-help">Individual start dates enabled. Team availability calculated from earliest task.</span>
+                        </div>
                     </div>
                 </div>
                 
-                <!-- Ticket List and Projection -->
-                <div class="mt-6">
-                    <h3 class="text-xl font-semibold mb-3 text-indigo-700">Ticket List & Schedule</h3>
-                    <div class="overflow-x-auto rounded-lg border border-gray-200">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
+                <!-- Task List and Projection -->
+                <div class="mt-4">
+                    <h3 class="text-lg font-semibold mb-2 text-primary-dark">Task Schedule</h3>
+                    <div class="overflow-x-auto rounded-lg border">
+                        <table class="enterprise-table min-w-full divide-y">
+                            <thead>
                                 <tr>
-                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th class="px-2 py-2 text-left">ID</th>
+                                    <th class="px-2 py-2 text-left">Description</th>
+                                    <th class="px-2 py-2 text-left">
                                         <span id="start-date-column-header">Start Date</span>
                                     </th>
-                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
-                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned</th>
-                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider tooltip-container">Projected End Date
+                                    <th class="px-2 py-2 text-left">Size</th>
+                                    <th class="px-2 py-2 text-left">Assigned</th>
+                                    <th class="px-2 py-2 text-left tooltip-container">End Date
                                         <div class="tooltip-text">
-                                            This date is calculated based on the start date, combined weekly availability of the assigned team members, and the ticket's total effort hours.
+                                            Calculated from start date, team availability, and effort hours.
                                         </div>
                                     </th>
-                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                    <th class="px-2 py-2 text-left">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody id="ticket-table-body" class="bg-white divide-y divide-gray-200">
+                            <tbody id="ticket-table-body" class="divide-y">
                                 <!-- Tickets will be rendered here -->
                             </tbody>
                         </table>
                     </div>
-                    <p id="no-tickets" class="text-center py-4 text-gray-500 hidden">No tickets added yet. Start by adding a task!</p>
+                    <p id="no-tickets" class="text-center py-3 text-gray-500 hidden">No tasks defined. Add a task to begin!</p>
                 </div>
             </div>
         </div>
@@ -1283,6 +1429,431 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        }
+
+        // --- COMPREHENSIVE CONFIGURATION EXPORT/IMPORT ---
+
+        window.exportConfiguration = () => {
+            const timestamp = new Date().toISOString().slice(0, 19).replace('T', '_').replace(/:/g, '-');
+            
+            // Create comprehensive configuration data
+            const configData = {
+                metadata: {
+                    exportDate: new Date().toISOString(),
+                    version: '2.0',
+                    description: 'Enterprise Project Scheduler Configuration Export'
+                },
+                settings: {
+                    hoursPerDay: hoursPerDay,
+                    useCommonStartDate: useCommonStartDate,
+                    commonStartDate: document.getElementById('common-start-date')?.value || '',
+                    currentTicketId: currentTicketId
+                },
+                taskSizeDefinitions: taskSizeDefinitions,
+                people: people,
+                tickets: tickets
+            };
+
+            // Convert to CSV format with multiple sections
+            let csvContent = '';
+            
+            // Metadata section
+            csvContent += "SECTION,METADATA\n";
+            csvContent += "Key,Value\n";
+            csvContent += `Export Date,${configData.metadata.exportDate}\n`;
+            csvContent += `Version,${configData.metadata.version}\n`;
+            csvContent += `Description,${configData.metadata.description}\n`;
+            csvContent += "\n";
+            
+            // Settings section
+            csvContent += "SECTION,SETTINGS\n";
+            csvContent += "Key,Value\n";
+            csvContent += `Hours Per Day,${configData.settings.hoursPerDay}\n`;
+            csvContent += `Use Common Start Date,${configData.settings.useCommonStartDate}\n`;
+            csvContent += `Common Start Date,${configData.settings.commonStartDate}\n`;
+            csvContent += `Current Ticket ID,${configData.settings.currentTicketId}\n`;
+            csvContent += "\n";
+            
+            // Task Size Definitions section
+            csvContent += "SECTION,TASK_SIZES\n";
+            csvContent += "Size Key,Name,Days,Removable\n";
+            Object.keys(configData.taskSizeDefinitions).forEach(key => {
+                const size = configData.taskSizeDefinitions[key];
+                csvContent += `${key},"${size.name}",${size.days},${size.removable}\n`;
+            });
+            csvContent += "\n";
+            
+            // People section
+            csvContent += "SECTION,PEOPLE\n";
+            csvContent += "Name,Week1,Week2,Week3,Week4,Week5\n";
+            configData.people.forEach(person => {
+                csvContent += `"${person.name}",${person.availability.join(',')}\n`;
+            });
+            csvContent += "\n";
+            
+            // Tickets section
+            csvContent += "SECTION,TICKETS\n";
+            csvContent += "ID,Description,Start Date,Size,Assigned Team\n";
+            configData.tickets.forEach(ticket => {
+                const assignedTeam = ticket.assigned.join(';');
+                csvContent += `${ticket.id},"${ticket.description.replace(/"/g, '""')}",${ticket.startDate},${ticket.size},"${assignedTeam}"\n`;
+            });
+            
+            // Download the configuration file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `project_config_${timestamp}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Show success message
+            alert(`✅ Configuration exported successfully!\n\nFile: project_config_${timestamp}.csv\n\nThis file contains:\n• All team member configurations\n• Task size definitions\n• All tickets and assignments\n• System settings\n\nUse "Import Config" to restore this configuration later.`);
+        }
+
+        window.triggerImport = () => {
+            const fileInput = document.getElementById('import-config-file');
+            fileInput.click();
+        }
+
+        window.handleConfigImport = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.name.endsWith('.csv')) {
+                alert('❌ Please select a CSV configuration file.');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const csvContent = e.target.result;
+                    importConfiguration(csvContent);
+                } catch (error) {
+                    alert(`❌ Error reading file: ${error.message}`);
+                }
+            };
+            reader.readAsText(file);
+            
+            // Clear the file input for repeated imports
+            event.target.value = '';
+        }
+
+        function importConfiguration(csvContent) {
+            const lines = csvContent.split('\n').map(line => line.trim()).filter(line => line);
+            
+            let currentSection = '';
+            let importedData = {
+                settings: {},
+                taskSizeDefinitions: {},
+                people: [],
+                tickets: []
+            };
+            
+            let skipHeader = false;
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                
+                // Check for section headers
+                if (line.startsWith('SECTION,')) {
+                    currentSection = line.split(',')[1];
+                    skipHeader = true;
+                    continue;
+                }
+                
+                // Skip column headers after section declaration
+                if (skipHeader) {
+                    skipHeader = false;
+                    continue;
+                }
+                
+                // Skip empty lines
+                if (!line) continue;
+                
+                // Parse based on current section
+                try {
+                    if (currentSection === 'SETTINGS') {
+                        const [key, value] = parseCSVLine(line);
+                        if (key === 'Hours Per Day') importedData.settings.hoursPerDay = parseInt(value);
+                        else if (key === 'Use Common Start Date') importedData.settings.useCommonStartDate = value === 'true';
+                        else if (key === 'Common Start Date') importedData.settings.commonStartDate = value;
+                        else if (key === 'Current Ticket ID') importedData.settings.currentTicketId = parseInt(value);
+                    }
+                    else if (currentSection === 'TASK_SIZES') {
+                        const [sizeKey, name, days, removable] = parseCSVLine(line);
+                        importedData.taskSizeDefinitions[sizeKey] = {
+                            name: name,
+                            days: parseFloat(days),
+                            removable: removable === 'true'
+                        };
+                    }
+                    else if (currentSection === 'PEOPLE') {
+                        const [name, w1, w2, w3, w4, w5] = parseCSVLine(line);
+                        importedData.people.push({
+                            name: name,
+                            availability: [parseInt(w1), parseInt(w2), parseInt(w3), parseInt(w4), parseInt(w5)]
+                        });
+                    }
+                    else if (currentSection === 'TICKETS') {
+                        const [id, description, startDate, size, assignedTeam] = parseCSVLine(line);
+                        const assigned = assignedTeam ? assignedTeam.split(';').filter(name => name.trim()) : [];
+                        importedData.tickets.push({
+                            id: parseInt(id),
+                            description: description,
+                            startDate: startDate,
+                            size: size,
+                            assigned: assigned
+                        });
+                    }
+                } catch (error) {
+                    console.warn(`Skipping invalid line in ${currentSection}: ${line}`);
+                }
+            }
+            
+            // Validate imported data
+            if (!validateImportedData(importedData)) {
+                alert('❌ Invalid configuration file. Please check the file format and try again.');
+                return;
+            }
+            
+            // Confirm import
+            const confirmMessage = `📋 Import Configuration\n\nFound:\n• ${Object.keys(importedData.taskSizeDefinitions).length} task size definitions\n• ${importedData.people.length} team members\n• ${importedData.tickets.length} tickets\n\n⚠️ This will replace ALL current data!\n\nContinue with import?`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            // Apply imported configuration
+            try {
+                // Apply settings
+                hoursPerDay = importedData.settings.hoursPerDay || 8;
+                useCommonStartDate = importedData.settings.useCommonStartDate || false;
+                currentTicketId = importedData.settings.currentTicketId || 1;
+                
+                // Apply configurations
+                taskSizeDefinitions = importedData.taskSizeDefinitions;
+                people = importedData.people;
+                tickets = importedData.tickets;
+                
+                // Update UI
+                document.getElementById('hours-per-day').value = hoursPerDay;
+                document.getElementById('use-common-start-date').checked = useCommonStartDate;
+                if (importedData.settings.commonStartDate) {
+                    document.getElementById('common-start-date').value = importedData.settings.commonStartDate;
+                }
+                
+                // Apply common start date logic
+                if (useCommonStartDate) {
+                    toggleCommonStartDate();
+                }
+                
+                // Sync and recalculate everything
+                syncTaskSizes();
+                calculateEffortMap();
+                renderEffortMap();
+                renderPeople();
+                calculateProjection();
+                saveToLocalStorage();
+                
+                alert(`✅ Configuration imported successfully!\n\n• ${Object.keys(taskSizeDefinitions).length} task sizes loaded\n• ${people.length} team members configured\n• ${tickets.length} tickets imported\n\nAll data has been restored and calculations updated.`);
+                
+            } catch (error) {
+                alert(`❌ Error applying configuration: ${error.message}\n\nPlease check your file and try again.`);
+            }
+        }
+
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"' && (i === 0 || line[i-1] === ',')) {
+                    inQuotes = true;
+                } else if (char === '"' && inQuotes && (i === line.length - 1 || line[i+1] === ',')) {
+                    inQuotes = false;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current.trim());
+            
+            return result;
+        }
+
+        function validateImportedData(data) {
+            // Basic validation
+            if (!data.settings || !data.taskSizeDefinitions || !data.people || !data.tickets) {
+                return false;
+            }
+            
+            // Validate people have required fields
+            for (const person of data.people) {
+                if (!person.name || !Array.isArray(person.availability) || person.availability.length !== 5) {
+                    return false;
+                }
+            }
+            
+            // Validate tickets have required fields
+            for (const ticket of data.tickets) {
+                if (!ticket.id || !ticket.description || !ticket.size || !Array.isArray(ticket.assigned)) {
+                    return false;
+                }
+            }
+            
+            return true;
+        }
+
+        // --- BULK TASK IMPORT ---
+
+        window.triggerTaskImport = () => {
+            const fileInput = document.getElementById('import-tasks-file');
+            fileInput.click();
+        }
+
+        window.handleTaskImport = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.name.endsWith('.csv')) {
+                alert('❌ Please select a CSV file with tasks.');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const csvContent = e.target.result;
+                    importTasksFromCSV(csvContent);
+                } catch (error) {
+                    alert(`❌ Error reading file: ${error.message}`);
+                }
+            };
+            reader.readAsText(file);
+            
+            // Clear the file input for repeated imports
+            event.target.value = '';
+        }
+
+        function importTasksFromCSV(csvContent) {
+            const lines = csvContent.split('\n').map(line => line.trim()).filter(line => line);
+            
+            if (lines.length === 0) {
+                alert('❌ The CSV file appears to be empty.');
+                return;
+            }
+            
+            // Parse tasks from CSV
+            const newTasks = [];
+            let hasHeader = false;
+            
+            // Check if first line is a header (contains "task" or "description" etc.)
+            const firstLine = lines[0].toLowerCase();
+            if (firstLine.includes('task') || firstLine.includes('description') || firstLine.includes('name')) {
+                hasHeader = true;
+            }
+            
+            const startIndex = hasHeader ? 1 : 0;
+            
+            for (let i = startIndex; i < lines.length; i++) {
+                const line = lines[i];
+                if (!line) continue;
+                
+                // Handle CSV parsing (remove quotes if present)
+                let taskName = line.replace(/^"(.*)"$/, '$1').replace(/""/g, '"').trim();
+                
+                // Skip empty task names
+                if (!taskName) continue;
+                
+                // Validate task name length
+                if (taskName.length > 200) {
+                    console.warn(`Task name too long, truncating: ${taskName.substring(0, 50)}...`);
+                    taskName = taskName.substring(0, 200);
+                }
+                
+                newTasks.push(taskName);
+            }
+            
+            if (newTasks.length === 0) {
+                alert('❌ No valid tasks found in the CSV file.\n\nExpected format:\n• One task per line\n• Optional header row\n• Task names in first column');
+                return;
+            }
+            
+            // Show preview and confirm import
+            const previewTasks = newTasks.slice(0, 5);
+            const previewText = previewTasks.join('\n');
+            const moreText = newTasks.length > 5 ? `\n... and ${newTasks.length - 5} more tasks` : '';
+            
+            const confirmMessage = `📋 Import ${newTasks.length} Tasks\n\nPreview:\n${previewText}${moreText}\n\n✅ Default settings will be applied:\n• Size: Medium (M)\n• Start Date: Next Monday\n• Assigned: Unassigned\n\nContinue with import?`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            // Apply default settings for new tasks
+            const defaultSize = 'M'; // Medium
+            const defaultStartDate = getNextMonday(new Date()).toISOString().split('T')[0];
+            const defaultAssigned = []; // Unassigned
+            
+            // Add tasks to the system
+            let addedCount = 0;
+            let skippedCount = 0;
+            
+            newTasks.forEach(taskName => {
+                // Check for duplicate task descriptions
+                const isDuplicate = tickets.some(ticket => 
+                    ticket.description.toLowerCase() === taskName.toLowerCase()
+                );
+                
+                if (isDuplicate) {
+                    skippedCount++;
+                    console.warn(`Skipping duplicate task: ${taskName}`);
+                    return;
+                }
+                
+                // Add the task
+                tickets.push({
+                    id: currentTicketId++,
+                    description: taskName,
+                    startDate: defaultStartDate,
+                    size: defaultSize,
+                    assigned: [...defaultAssigned]
+                });
+                
+                addedCount++;
+            });
+            
+            // Update the system
+            if (addedCount > 0) {
+                // Refresh people display if not using common start date
+                if (!useCommonStartDate) {
+                    renderPeople();
+                }
+                
+                calculateProjection();
+                saveToLocalStorage();
+                
+                // Show success message
+                let message = `✅ Task Import Complete!\n\n• ${addedCount} tasks added successfully`;
+                if (skippedCount > 0) {
+                    message += `\n• ${skippedCount} duplicates skipped`;
+                }
+                message += `\n\n📝 All tasks set to:\n• Size: Medium (M)\n• Start Date: ${formatDate(defaultStartDate)}\n• Status: Unassigned\n\nYou can now edit individual tasks as needed.`;
+                
+                alert(message);
+            } else {
+                alert('❌ No tasks were added. All tasks may have been duplicates.');
+            }
         }
         
         window.resetToDefaults = () => {
