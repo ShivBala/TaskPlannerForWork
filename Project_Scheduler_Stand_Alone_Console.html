@@ -824,6 +824,35 @@
         </div>
     </div>
 
+    <!-- Team Workload Heat Map Section -->
+    <div class="container mx-auto px-4 py-6">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">📊 Team Workload Heat Map (Next 8 Weeks)</h2>
+                <p class="text-sm text-gray-600 mt-1">Visual overview of team capacity utilization based on individual availability</p>
+            </div>
+            <div class="card-content">
+                <div id="workload-heatmap" class="overflow-x-auto">
+                    <!-- Heat map will be rendered here -->
+                </div>
+                <div class="mt-4 flex flex-wrap gap-4 text-sm">
+                    <div class="flex items-center gap-2">
+                        <div class="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
+                        <span>0-60% Capacity (Available)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-4 h-4 bg-yellow-100 border border-yellow-300 rounded"></div>
+                        <span>61-90% Capacity (Busy)</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="w-4 h-4 bg-red-100 border border-red-300 rounded"></div>
+                        <span>91%+ Capacity (Overloaded)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // --- GLOBAL CONFIG & STATE ---
         const STORAGE_KEY = 'projectSchedulerDataV2';
@@ -980,18 +1009,51 @@
 
         function getNextMonday(date) {
             const d = new Date(date);
-            const day = d.getDay();
-            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-            const nextMonday = new Date(d.setDate(diff));
+            const currentDay = d.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+            
+            // Calculate days until next Monday
+            let daysUntilMonday;
+            if (currentDay === 0) { // Sunday
+                daysUntilMonday = 1;
+            } else if (currentDay === 1) { // Monday
+                // If it's Monday and it's still early (before 9 AM), use today
+                // Otherwise, use next Monday
+                daysUntilMonday = (d.getHours() < 9) ? 0 : 7;
+            } else { // Tuesday to Saturday
+                daysUntilMonday = 8 - currentDay; // Days to next Monday
+            }
+            
+            const nextMonday = new Date(d);
+            nextMonday.setDate(d.getDate() + daysUntilMonday);
             nextMonday.setHours(0, 0, 0, 0);
             
-            if (day === 1 && d.getHours() < 9) {
-                return nextMonday;
-            } else if (day === 1) {
-                return new Date(nextMonday.setDate(nextMonday.getDate() + 7));
-            } else {
-                return nextMonday;
+            return nextMonday;
+        }
+
+        function getDefaultTaskStartDate() {
+            const today = new Date();
+            const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+            const currentHour = today.getHours();
+            
+            // If it's a weekday (Monday-Thursday) and before 5 PM, use today
+            if (currentDay >= 1 && currentDay <= 4 && currentHour < 17) {
+                return today;
             }
+            
+            // If it's Friday and before noon, use today
+            if (currentDay === 5 && currentHour < 12) {
+                return today;
+            }
+            
+            // If it's a weekday after hours, use tomorrow
+            if (currentDay >= 1 && currentDay <= 4) {
+                const tomorrow = new Date(today);
+                tomorrow.setDate(today.getDate() + 1);
+                return tomorrow;
+            }
+            
+            // For Friday afternoon, weekend, use next Monday
+            return getNextMonday(today);
         }
         
         function formatDate(dateString) {
@@ -1215,6 +1277,7 @@
             const projectedTickets = getProjectedTickets();
             renderTickets(projectedTickets);
             renderTimeline(projectedTickets);
+            renderWorkloadHeatMap();
         }
         
         function renderTimeline(projectedTickets) {
@@ -2301,7 +2364,7 @@
                 
                 // Set default to next Monday if empty
                 if (!commonDateInput.value) {
-                    commonDateInput.value = getNextMonday(new Date()).toISOString().split('T')[0];
+                    commonDateInput.value = getDefaultTaskStartDate().toISOString().split('T')[0];
                 }
                 
                 individualDateInput.disabled = true;
@@ -2532,6 +2595,151 @@
             }
         }
 
+        // P1 Task Conflict Detection System
+        function checkP1TaskConflicts(employeeNames, taskStartDate, taskSize, excludeTaskId = null) {
+            if (!Array.isArray(employeeNames) || employeeNames.length === 0) {
+                return { hasConflicts: false, conflictedEmployees: [], availableEmployees: [] };
+            }
+
+            // Calculate the expected end date for the new task
+            const projectedTickets = getProjectedTickets();
+            
+            // Create a temporary task to get its projected end date
+            const tempTask = {
+                id: -1,
+                description: 'temp',
+                startDate: taskStartDate,
+                size: taskSize,
+                priority: 'P1',
+                assigned: employeeNames
+            };
+            
+            // Get projected end date for this temporary task
+            const tempProjected = projectedTickets.concat([tempTask]);
+            const recalculatedProjected = getProjectedTickets([tempTask]);
+            let tempTaskProjected = recalculatedProjected.find(t => t.id === -1);
+            
+            if (!tempTaskProjected || !tempTaskProjected.rawEndDate) {
+                // If we can't calculate end date, use a conservative 4-week estimate
+                const estimatedEndDate = new Date(taskStartDate);
+                estimatedEndDate.setDate(estimatedEndDate.getDate() + 28);
+                tempTaskProjected = { rawEndDate: estimatedEndDate };
+            }
+
+            const newTaskStart = new Date(taskStartDate);
+            const newTaskEnd = tempTaskProjected.rawEndDate;
+
+            const conflictedEmployees = [];
+            const availableEmployees = [];
+
+            // Check each employee for P1 conflicts
+            employeeNames.forEach(employeeName => {
+                let hasConflict = false;
+                
+                // Check all existing P1 tasks for this employee
+                const existingP1Tasks = tickets.filter(ticket => 
+                    ticket.priority === 'P1' && 
+                    ticket.assigned.includes(employeeName) &&
+                    ticket.id !== excludeTaskId // Exclude current task if editing
+                );
+
+                for (const existingTask of existingP1Tasks) {
+                    // Get projected end date for existing task
+                    const existingProjected = projectedTickets.find(pt => pt.id === existingTask.id);
+                    if (existingProjected && existingProjected.rawEndDate) {
+                        const existingStart = new Date(existingTask.startDate);
+                        const existingEnd = existingProjected.rawEndDate;
+
+                        // Check for date overlap
+                        const hasOverlap = (newTaskStart <= existingEnd && newTaskEnd >= existingStart);
+                        
+                        if (hasOverlap) {
+                            hasConflict = true;
+                            if (!conflictedEmployees.find(ce => ce.name === employeeName)) {
+                                conflictedEmployees.push({
+                                    name: employeeName,
+                                    conflictingTaskId: existingTask.id,
+                                    conflictingTaskDescription: existingTask.description,
+                                    conflictingTaskStart: existingTask.startDate
+                                });
+                            }
+                            break;
+                        }
+                    }
+                }
+
+                if (!hasConflict) {
+                    availableEmployees.push(employeeName);
+                }
+            });
+
+            // Find all employees who are not selected but have no P1 conflicts
+            const allEmployees = people.map(p => p.name);
+            const unselectedEmployees = allEmployees.filter(name => !employeeNames.includes(name));
+            
+            unselectedEmployees.forEach(employeeName => {
+                let hasConflict = false;
+                
+                const existingP1Tasks = tickets.filter(ticket => 
+                    ticket.priority === 'P1' && 
+                    ticket.assigned.includes(employeeName) &&
+                    ticket.id !== excludeTaskId
+                );
+
+                for (const existingTask of existingP1Tasks) {
+                    const existingProjected = projectedTickets.find(pt => pt.id === existingTask.id);
+                    if (existingProjected && existingProjected.rawEndDate) {
+                        const existingStart = new Date(existingTask.startDate);
+                        const existingEnd = existingProjected.rawEndDate;
+                        const hasOverlap = (newTaskStart <= existingEnd && newTaskEnd >= existingStart);
+                        
+                        if (hasOverlap) {
+                            hasConflict = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!hasConflict) {
+                    availableEmployees.push(employeeName);
+                }
+            });
+
+            return {
+                hasConflicts: conflictedEmployees.length > 0,
+                conflictedEmployees: conflictedEmployees,
+                availableEmployees: availableEmployees
+            };
+        }
+
+        function showP1ConflictWarning(conflictResult) {
+            const conflictedNames = conflictResult.conflictedEmployees.map(ce => ce.name);
+            const availableNames = conflictResult.availableEmployees;
+            
+            let message = '';
+            
+            if (conflictedNames.length === 1) {
+                const conflict = conflictResult.conflictedEmployees[0];
+                message = `Employee ${conflictedNames[0]} already has another P1 task assigned ("${conflict.conflictingTaskDescription}") starting ${formatDate(conflict.conflictingTaskStart)}.`;
+            } else {
+                const conflictDetails = conflictResult.conflictedEmployees.map(ce => 
+                    `${ce.name} ("${ce.conflictingTaskDescription}" from ${formatDate(ce.conflictingTaskStart)})`
+                ).join(', ');
+                message = `Employees ${conflictDetails} already have other P1 tasks assigned.`;
+            }
+            
+            if (availableNames.length > 0) {
+                message += `\n\nFollowing employees have no P1 tasks against them during this period - ${availableNames.join(', ')}. You can pick any of them.`;
+            } else {
+                message += `\n\nNo employees are available for P1 tasks during this period.`;
+            }
+            
+            message += `\n\n⚠️ Do you want to proceed anyway? This person will have multiple P1 tasks during overlapping periods.`;
+            
+            // Use confirm() instead of alert() to provide OK/Cancel options
+            return confirm(message);
+        }
+
         window.addTicket = () => {
             const descInput = document.getElementById('new-ticket-desc');
             const startDateInput = document.getElementById('new-ticket-start-date');
@@ -2545,9 +2753,9 @@
             let startDate;
             if (useCommonStartDate) {
                 const commonDate = document.getElementById('common-start-date').value;
-                startDate = commonDate || getNextMonday(new Date()).toISOString().split('T')[0];
+                startDate = commonDate || getDefaultTaskStartDate().toISOString().split('T')[0];
             } else {
-                startDate = startDateInput.value || getNextMonday(new Date()).toISOString().split('T')[0];
+                startDate = startDateInput.value || getDefaultTaskStartDate().toISOString().split('T')[0];
             }
             
             const size = sizeSelect.value;
@@ -2557,6 +2765,19 @@
             if (!description) {
                 alert("Ticket description cannot be empty.");
                 return;
+            }
+
+            // Check for P1 task conflicts if this is a P1 task with assigned employees
+            if (priority === 'P1' && assigned.length > 0) {
+                const conflictResult = checkP1TaskConflicts(assigned, startDate, size);
+                if (conflictResult.hasConflicts) {
+                    const userWantsToProceed = showP1ConflictWarning(conflictResult);
+                    if (!userWantsToProceed) {
+                        // User clicked Cancel, abort the task creation
+                        return;
+                    }
+                    // User clicked OK, continue with task creation
+                }
             }
 
             tickets.push({
@@ -2618,6 +2839,20 @@
             const ticket = tickets.find(t => t.id === ticketId);
             if (!ticket) return;
             
+            // Check for P1 conflicts if this is a P1 task and person is being assigned
+            if (isChecked && ticket.priority === 'P1') {
+                const conflictResult = checkP1TaskConflicts([personName], ticket.startDate, ticket.size, ticketId);
+                if (conflictResult.hasConflicts) {
+                    const userWantsToProceed = showP1ConflictWarning(conflictResult);
+                    if (!userWantsToProceed) {
+                        // User clicked Cancel, revert the checkbox state
+                        checkboxElement.checked = false;
+                        return;
+                    }
+                    // User clicked OK, continue with assignment
+                }
+            }
+            
             // Update the assignment array
             if (isChecked) {
                 // Add person if not already assigned
@@ -2671,6 +2906,21 @@
             const ticket = tickets.find(t => t.id === ticketId);
             if (ticket) {
                 const oldPriority = ticket.priority || 'P3';
+                
+                // Check for P1 conflicts if changing to P1 priority and ticket has assignments
+                if (newPriority === 'P1' && ticket.assigned.length > 0) {
+                    const conflictResult = checkP1TaskConflicts(ticket.assigned, ticket.startDate, ticket.size, ticketId);
+                    if (conflictResult.hasConflicts) {
+                        const userWantsToProceed = showP1ConflictWarning(conflictResult);
+                        if (!userWantsToProceed) {
+                            // User clicked Cancel, revert the priority change
+                            selectElement.value = oldPriority;
+                            return;
+                        }
+                        // User clicked OK, continue with priority change
+                    }
+                }
+                
                 ticket.priority = newPriority;
                 
                 // Provide visual feedback
@@ -2824,8 +3074,8 @@ ${ticket.explanation}
                 console.log('📊 Migrated existing tasks to include priority field');
             }
             
-            // Set default start date to next Monday
-            const defaultStartDate = getNextMonday(new Date()).toISOString().split('T')[0];
+            // Set default start date to a sensible default
+            const defaultStartDate = getDefaultTaskStartDate().toISOString().split('T')[0];
             document.getElementById('new-ticket-start-date').value = defaultStartDate;
             document.getElementById('common-start-date').value = defaultStartDate;
             
@@ -2845,6 +3095,186 @@ ${ticket.explanation}
             // Update hours per day display and input
             document.getElementById('hours-per-day').value = hoursPerDay;
             document.getElementById('hours-per-day-display').textContent = hoursPerDay;
+        }
+
+        // --- TEAM WORKLOAD HEAT MAP ---
+        function calculateWorkloadHeatMap() {
+            const projectedTickets = getProjectedTickets();
+            const heatMapData = [];
+            
+            // Get the start date for the heat map (earliest task or today)
+            let startDate = new Date();
+            if (projectedTickets.length > 0) {
+                const earliestTask = projectedTickets.reduce((earliest, task) => 
+                    new Date(task.startDate) < new Date(earliest.startDate) ? task : earliest
+                );
+                startDate = new Date(earliestTask.startDate);
+            }
+            
+            // Ensure we start from a Monday
+            while (startDate.getDay() !== 1) {
+                startDate.setDate(startDate.getDate() - 1);
+            }
+            
+            // Calculate for each person
+            people.forEach(person => {
+                const personData = {
+                    name: person.name,
+                    weeks: []
+                };
+                
+                // Calculate for next 8 weeks
+                for (let weekIndex = 0; weekIndex < 8; weekIndex++) {
+                    const weekStart = new Date(startDate);
+                    weekStart.setDate(startDate.getDate() + (weekIndex * 7));
+                    
+                    const weekEnd = new Date(weekStart);
+                    weekEnd.setDate(weekStart.getDate() + 6);
+                    
+                    // Get person's availability for this week
+                    const availability = person.availability && person.availability[weekIndex] !== undefined 
+                        ? person.availability[weekIndex] 
+                        : hoursPerDay * 5; // Default to full week if not defined
+                    
+                    // Calculate assigned hours for this week
+                    let assignedHours = 0;
+                    
+                    projectedTickets.forEach(ticket => {
+                        if (ticket.assigned.includes(person.name)) {
+                            const taskStart = new Date(ticket.startDate);
+                            const taskEnd = ticket.rawEndDate ? new Date(ticket.rawEndDate) : new Date(taskStart);
+                            
+                            // Check if task overlaps with this week
+                            if (taskStart <= weekEnd && taskEnd >= weekStart) {
+                                // Calculate overlap period
+                                const overlapStart = new Date(Math.max(taskStart.getTime(), weekStart.getTime()));
+                                const overlapEnd = new Date(Math.min(taskEnd.getTime(), weekEnd.getTime()));
+                                
+                                // Calculate business days in overlap period
+                                let businessDays = 0;
+                                const currentDate = new Date(overlapStart);
+                                while (currentDate <= overlapEnd) {
+                                    const dayOfWeek = currentDate.getDay();
+                                    if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday to Friday
+                                        businessDays++;
+                                    }
+                                    currentDate.setDate(currentDate.getDate() + 1);
+                                }
+                                
+                                // Calculate hours for this person for this task
+                                const totalTaskDays = taskSizeDefinitions[ticket.size]?.days || ticketDays[ticket.size] || 1;
+                                const hoursPerTaskDay = hoursPerDay;
+                                const totalTaskHours = totalTaskDays * hoursPerTaskDay;
+                                const hoursPerAssignee = totalTaskHours / Math.max(ticket.assigned.length, 1); // Prevent division by zero
+                                
+                                // Distribute hours across task duration
+                                const taskBusinessDays = Math.max(calculateBusinessDays(taskStart, taskEnd), 1); // Prevent division by zero
+                                const dailyHours = hoursPerAssignee / taskBusinessDays;
+                                
+                                // Ensure we have valid numbers
+                                if (!isNaN(dailyHours) && !isNaN(businessDays)) {
+                                    assignedHours += dailyHours * businessDays;
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Calculate utilization percentage with proper error handling
+                    let utilization = 0;
+                    if (availability > 0 && !isNaN(assignedHours) && !isNaN(availability)) {
+                        utilization = Math.round((assignedHours / availability) * 100);
+                    } else if (assignedHours > 0 && availability === 0) {
+                        utilization = 999; // Indicate overload when no capacity but has assignments
+                    }
+                    
+                    // Ensure utilization is a valid number
+                    if (isNaN(utilization) || !isFinite(utilization)) {
+                        utilization = 0;
+                    }
+                    
+                    // Determine color based on utilization
+                    let colorClass = 'bg-green-100 border-green-300 text-green-800';
+                    if (utilization === 999 || utilization > 90) {
+                        colorClass = 'bg-red-100 border-red-300 text-red-800';
+                    } else if (utilization > 60) {
+                        colorClass = 'bg-yellow-100 border-yellow-300 text-yellow-800';
+                    }
+                    
+                    personData.weeks.push({
+                        weekIndex: weekIndex + 1,
+                        weekStart: formatDate(weekStart),
+                        weekEnd: formatDate(weekEnd),
+                        availability: availability,
+                        assignedHours: Math.round(assignedHours * 10) / 10,
+                        utilization: utilization,
+                        colorClass: colorClass
+                    });
+                }
+                
+                heatMapData.push(personData);
+            });
+            
+            return heatMapData;
+        }
+        
+        function calculateBusinessDays(startDate, endDate) {
+            let businessDays = 0;
+            const currentDate = new Date(startDate);
+            while (currentDate <= endDate) {
+                const dayOfWeek = currentDate.getDay();
+                if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday to Friday
+                    businessDays++;
+                }
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            return businessDays;
+        }
+        
+        function renderWorkloadHeatMap() {
+            const heatMapData = calculateWorkloadHeatMap();
+            const container = document.getElementById('workload-heatmap');
+            
+            if (heatMapData.length === 0) {
+                container.innerHTML = '<p class="text-center py-4 text-gray-500">No team members defined. Add team members to see workload heat map.</p>';
+                return;
+            }
+            
+            // Create table
+            let html = '<table class="w-full border-collapse">';
+            
+            // Header row
+            html += '<thead><tr class="bg-gray-50">';
+            html += '<th class="border border-gray-300 px-3 py-2 text-left font-semibold">Team Member</th>';
+            for (let i = 1; i <= 8; i++) {
+                html += `<th class="border border-gray-300 px-3 py-2 text-center font-semibold">Week ${i}</th>`;
+            }
+            html += '</tr></thead>';
+            
+            // Data rows
+            html += '<tbody>';
+            heatMapData.forEach(person => {
+                html += '<tr>';
+                html += `<td class="border border-gray-300 px-3 py-2 font-medium">${person.name}</td>`;
+                
+                person.weeks.forEach(week => {
+                    const tooltip = `Week ${week.weekIndex} (${week.weekStart} - ${week.weekEnd})\\nAvailable: ${week.availability}h\\nAssigned: ${week.assignedHours}h\\nUtilization: ${week.utilization === 999 ? 'Overloaded' : week.utilization + '%'}`;
+                    
+                    // Format display value
+                    const displayValue = week.utilization === 999 ? 'OVR' : `${week.utilization}%`;
+                    
+                    html += `<td class="border border-gray-300 p-1">
+                        <div class="${week.colorClass} rounded px-2 py-1 text-center text-sm font-medium cursor-help"
+                             title="${tooltip}">
+                            ${displayValue}
+                        </div>
+                    </td>`;
+                });
+                
+                html += '</tr>';
+            });
+            html += '</tbody></table>';
+            
+            container.innerHTML = html;
         }
 
         // Start the application
