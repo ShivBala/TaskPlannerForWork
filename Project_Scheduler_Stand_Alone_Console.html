@@ -502,7 +502,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20v-2c0-.656-.126-1.283-.356-1.857M17 20H7m0 0v-2c0-.656.126-1.283.356-1.857M7 20h4m0-9a3 3 0 100 6 3 3 0 000-6zm-4 3a2 2 0 11-4 0 2 2 0 014 0zm10 0a2 2 0 11-4 0 2 2 0 014 0zm7-3a2 2 0 11-4 0 2 2 0 014 0z" />
                     </svg>
-                    <span id="availability-header">Team Resources (5 Weeks)</span>
+                    <span id="availability-header">Team Resources (8 Weeks)</span>
                 </h2>
                 <div id="people-list" class="compact-spacing">
                     <!-- People cards will be rendered here -->
@@ -528,13 +528,13 @@
                     <div class="compact-spacing">
                         <div class="mb-3 flex items-center gap-4 flex-wrap">
                             <div class="flex items-center gap-2">
-                                <label class="text-sm font-medium">Hours/Day:</label>
+                                <label class="text-base font-semibold text-white">Hours/Day:</label>
                                 <input type="number" id="hours-per-day" value="8" min="1" max="24" 
                                        onchange="updateEffortMapping(event.target.value)" 
-                                       class="enterprise-input w-16">
+                                       class="enterprise-input w-20 text-lg font-bold">
                             </div>
-                            <div class="text-sm text-gray-600">
-                                Total = Days × <span id="hours-per-day-display">8</span>h
+                            <div class="text-base font-medium text-blue-100 bg-blue-800 bg-opacity-50 px-2 py-1 rounded">
+                                Total = Days × <span id="hours-per-day-display" class="font-bold text-yellow-300">8</span>h
                             </div>
                         </div>
                         
@@ -728,14 +728,16 @@
                     // Find the Monday of the week containing this date
                     return getMondayOfWeek(date);
                 }
-            } else {
-                // Find the earliest start date among all tasks
-                const earliestTaskDate = getEarliestTaskStartDate();
-                if (earliestTaskDate) {
-                    // Find the Monday of the week containing the earliest date
-                    return getMondayOfWeek(earliestTaskDate);
-                }
             }
+            
+            // Always try to find the earliest start date among all tasks first
+            const earliestTaskDate = getEarliestTaskStartDate();
+            if (earliestTaskDate) {
+                // Find the Monday of the week containing the earliest date
+                return getMondayOfWeek(earliestTaskDate);
+            }
+            
+            // Only fall back to default startDate if no tasks exist
             return startDate;
         }
         
@@ -802,6 +804,10 @@
                     
                     // Sync ticketDays with taskSizeDefinitions
                     syncTaskSizes();
+                    
+                    // Migrate people availability arrays to 8 weeks if needed
+                    migratePeopleToEightWeeks();
+                    
                     return true;
                 }
             } catch (e) {
@@ -815,6 +821,28 @@
             Object.keys(taskSizeDefinitions).forEach(key => {
                 ticketDays[key] = taskSizeDefinitions[key].days;
             });
+        }
+        
+        function migratePeopleToEightWeeks() {
+            // Migrate existing people data to 8-week availability arrays
+            people.forEach(person => {
+                if (!person.availability) {
+                    // If no availability array, create default 8-week array
+                    person.availability = [25, 25, 25, 25, 25, 25, 25, 25];
+                } else if (person.availability.length < 8) {
+                    // If availability array is shorter than 8 weeks, extend it
+                    const lastValue = person.availability[person.availability.length - 1] || 25;
+                    while (person.availability.length < 8) {
+                        person.availability.push(lastValue); // Use last known value as default
+                    }
+                } else if (person.availability.length > 8) {
+                    // If somehow longer than 8, truncate (shouldn't happen but just in case)
+                    person.availability = person.availability.slice(0, 8);
+                }
+            });
+            
+            // Save the migrated data
+            saveToLocalStorage();
         }
 
         // --- UTILITY FUNCTIONS ---
@@ -886,6 +914,32 @@
             return completionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
         }
         
+        function getCompletionDateDetails(startWeekIndex, remainingHours, totalWeeklyCapacity) {
+            const effectiveStart = getEffectiveStartDate();
+            const completionDate = new Date(effectiveStart);
+            let daysIntoWeek = 0;
+
+            if (totalWeeklyCapacity > 0) {
+                const percentageUsed = remainingHours / totalWeeklyCapacity; 
+                daysIntoWeek = Math.ceil(percentageUsed * 5); 
+                daysIntoWeek = Math.min(daysIntoWeek, 5);
+            }
+
+            completionDate.setDate(completionDate.getDate() + (startWeekIndex * 7) + daysIntoWeek);
+            
+            let dayOfWeek = completionDate.getDay();
+            if (dayOfWeek === 6) { // Saturday
+                completionDate.setDate(completionDate.getDate() + 2);
+            } else if (dayOfWeek === 0) { // Sunday
+                completionDate.setDate(completionDate.getDate() + 1);
+            }
+
+            return {
+                formatted: completionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                rawDate: new Date(completionDate)
+            };
+        }
+        
         function calculateEffortMap() {
             effortMap = {};
             Object.keys(taskSizeDefinitions).forEach(key => {
@@ -949,8 +1003,8 @@
 
                 let currentHoursToConsume = hoursRemaining;
 
-                // Iterate through 5 weeks, starting from the appropriate week
-                for (let w = startWeekIndex; w < 5; w++) {
+                // Iterate through 8 weeks, starting from the appropriate week
+                for (let w = startWeekIndex; w < 8; w++) {
                     pooledCapacityThisWeek = 0;
                     const capacityBreakdown = {};
                     
@@ -995,19 +1049,23 @@
                 }
 
                 let endDate;
+                let rawEndDate = null;
                 let isDelayed = false;
 
                 if (completionWeekIndex !== -1) {
-                    endDate = formatCompletionDate(completionWeekIndex, finalCapacity, pooledCapacityThisWeek);
+                    const completionDetails = getCompletionDateDetails(completionWeekIndex, finalCapacity, pooledCapacityThisWeek);
+                    endDate = completionDetails.formatted;
+                    rawEndDate = completionDetails.rawDate;
                 } else {
-                    endDate = `> ${formatWeekEndDate(4)}`;
-                    explanation += '\nTask is projected to finish AFTER the 5-week window.';
+                    endDate = `> ${formatWeekEndDate(7)}`;
+                    explanation += '\nTask is projected to finish AFTER the 8-week window.';
                     isDelayed = true;
                 }
                 
                 return { 
                     ...ticket, 
-                    endDate: endDate, 
+                    endDate: endDate,
+                    rawEndDate: rawEndDate,
                     explanation: explanation,
                     isDelayed: isDelayed
                 };
@@ -1040,28 +1098,31 @@
                 return;
             }
             
-            // Calculate timeline bounds
-            const projectStartDate = getEffectiveStartDate();
+            // Calculate timeline bounds - start from the earliest actual task start date
+            let projectStartDate;
+            if (useCommonStartDate) {
+                const commonDate = document.getElementById('common-start-date')?.value;
+                projectStartDate = commonDate ? new Date(commonDate) : getEarliestTaskStartDate() || new Date();
+            } else {
+                projectStartDate = getEarliestTaskStartDate() || new Date();
+            }
+            
             let projectEndDate = new Date(projectStartDate);
             let latestEndDate = new Date(projectStartDate);
             let hasDelayedTasks = false;
             
             // Find the latest completion date
             projectedTickets.forEach(ticket => {
-                if (ticket.endDate && ticket.endDate !== 'N/A' && !ticket.endDate.includes('>')) {
-                    try {
-                        const endDate = new Date(ticket.endDate + ', ' + new Date().getFullYear());
-                        if (!isNaN(endDate.getTime()) && endDate > latestEndDate) {
-                            latestEndDate = endDate;
-                        }
-                    } catch (e) {
-                        console.warn('Could not parse end date:', ticket.endDate);
+                if (ticket.rawEndDate && !ticket.isDelayed) {
+                    // Use the raw date object for accurate timeline calculation
+                    if (ticket.rawEndDate > latestEndDate) {
+                        latestEndDate = ticket.rawEndDate;
                     }
-                } else if (ticket.isDelayed || ticket.endDate.includes('>')) {
+                } else if (ticket.isDelayed || (ticket.endDate && ticket.endDate.includes('>'))) {
                     hasDelayedTasks = true;
-                    // For delayed tasks, assume they extend beyond 5 weeks
+                    // For delayed tasks, assume they extend beyond 8 weeks
                     const delayedDate = new Date(projectStartDate);
-                    delayedDate.setDate(delayedDate.getDate() + 35); // 5 weeks
+                    delayedDate.setDate(delayedDate.getDate() + 56); // 8 weeks
                     if (delayedDate > latestEndDate) {
                         latestEndDate = delayedDate;
                     }
@@ -1075,12 +1136,12 @@
             const durationWeeks = Math.ceil(durationDays / 7);
             
             // Update timeline info
-            timelineStartDateEl.textContent = formatDate(projectStartDate.toISOString().split('T')[0]);
-            timelineEndDateEl.textContent = formatDate(projectEndDate.toISOString().split('T')[0]);
+            timelineStartDateEl.textContent = formatDate(projectStartDate.toLocaleDateString('en-CA')); // YYYY-MM-DD format
+            timelineEndDateEl.textContent = formatDate(projectEndDate.toLocaleDateString('en-CA')); // YYYY-MM-DD format
             timelineDurationEl.textContent = `${durationDays} days (${durationWeeks} weeks)`;
             
             // Update progress bar based on timeline health
-            const progressPercentage = hasDelayedTasks ? 100 : Math.min(100, (durationDays / 35) * 100); // 35 days = 5 weeks
+            const progressPercentage = hasDelayedTasks ? 100 : Math.min(100, (durationDays / 56) * 100); // 56 days = 8 weeks
             timelineProgressEl.style.width = `${progressPercentage}%`;
             
             if (hasDelayedTasks || durationWeeks > 5) {
@@ -1092,26 +1153,20 @@
             // Add task markers
             timelineMarkersEl.innerHTML = '';
             projectedTickets.forEach((ticket, index) => {
-                if (ticket.endDate && ticket.endDate !== 'N/A' && !ticket.endDate.includes('>')) {
-                    try {
-                        const endDate = new Date(ticket.endDate + ', ' + new Date().getFullYear());
-                        if (!isNaN(endDate.getTime())) {
-                            const dayFromStart = Math.ceil((endDate - projectStartDate) / (1000 * 60 * 60 * 24));
-                            const positionPercentage = Math.min(100, Math.max(0, (dayFromStart / durationDays) * 100));
-                            
-                            const marker = document.createElement('div');
-                            marker.className = 'timeline-marker';
-                            marker.style.left = `${positionPercentage}%`;
-                            marker.setAttribute('data-label', `Task #${ticket.id}: ${ticket.endDate}`);
-                            marker.style.background = ticket.isDelayed ? '#ef4444' : '#10b981';
-                            marker.style.zIndex = '10';
-                            
-                            timelineMarkersEl.appendChild(marker);
-                        }
-                    } catch (e) {
-                        console.warn('Could not parse end date for marker:', ticket.endDate);
-                    }
-                } else if (ticket.isDelayed || ticket.endDate.includes('>')) {
+                if (ticket.rawEndDate && !ticket.isDelayed) {
+                    // Use raw date for accurate positioning
+                    const dayFromStart = Math.ceil((ticket.rawEndDate - projectStartDate) / (1000 * 60 * 60 * 24));
+                    const positionPercentage = Math.min(100, Math.max(0, (dayFromStart / durationDays) * 100));
+                    
+                    const marker = document.createElement('div');
+                    marker.className = 'timeline-marker';
+                    marker.style.left = `${positionPercentage}%`;
+                    marker.setAttribute('data-label', `Task #${ticket.id}: ${ticket.endDate}`);
+                    marker.style.background = ticket.isDelayed ? '#ef4444' : '#10b981';
+                    marker.style.zIndex = '10';
+                    
+                    timelineMarkersEl.appendChild(marker);
+                } else if (ticket.isDelayed || (ticket.endDate && ticket.endDate.includes('>'))) {
                     // Add a marker for delayed tasks at the end
                     const marker = document.createElement('div');
                     marker.className = 'timeline-marker';
@@ -1132,7 +1187,7 @@
                 </div>
                 <div class="timeline-legend-item">
                     <div class="timeline-legend-dot bg-red-500"></div>
-                    <span>Delayed/Over 5 weeks</span>
+                    <span>Delayed/Over 8 weeks</span>
                 </div>
                 <div class="timeline-legend-item">
                     <div class="timeline-legend-dot bg-gray-400"></div>
@@ -1207,17 +1262,17 @@
                 const commonDate = document.getElementById('common-start-date')?.value;
                 if (commonDate) {
                     const formattedDate = formatDate(commonDate);
-                    header.textContent = `Team Availability (5 weeks from ${formattedDate})`;
+                    header.textContent = `Team Availability (8 weeks from ${formattedDate})`;
                 } else {
-                    header.textContent = 'Team Availability (5 weeks from common start date)';
+                    header.textContent = 'Team Availability (8 weeks from common start date)';
                 }
             } else {
                 const earliestTaskDate = getEarliestTaskStartDate();
                 if (earliestTaskDate) {
                     const formattedDate = formatDate(earliestTaskDate.toISOString().split('T')[0]);
-                    header.textContent = `Team Availability (5 weeks from ${formattedDate})`;
+                    header.textContent = `Team Availability (8 weeks from ${formattedDate})`;
                 } else {
-                    header.textContent = 'Team Availability (Next 5 Weeks)';
+                    header.textContent = 'Team Availability (Next 8 Weeks)';
                 }
             }
         }
@@ -1245,7 +1300,7 @@
                 card.className = 'p-3 mb-3 bg-indigo-50 rounded-lg border border-indigo-200';
                 
                 let availabilityInputs = '';
-                for (let w = 0; w < 5; w++) {
+                for (let w = 0; w < 8; w++) {
                     const weekEnd = formatWeekEndDate(w);
                     availabilityInputs += `
                         <div class="flex-1 min-w-[50px]">
@@ -1485,9 +1540,14 @@
             
             // People section
             csvContent += "SECTION,PEOPLE\n";
-            csvContent += "Name,Week1,Week2,Week3,Week4,Week5\n";
+            csvContent += "Name,Week1,Week2,Week3,Week4,Week5,Week6,Week7,Week8\n";
             configData.people.forEach(person => {
-                csvContent += `"${person.name}",${person.availability.join(',')}\n`;
+                // Ensure person has 8-week availability
+                const availability = [...person.availability];
+                while (availability.length < 8) {
+                    availability.push(25);
+                }
+                csvContent += `"${person.name}",${availability.slice(0, 8).join(',')}\n`;
             });
             csvContent += "\n";
             
@@ -1593,10 +1653,27 @@
                         };
                     }
                     else if (currentSection === 'PEOPLE') {
-                        const [name, w1, w2, w3, w4, w5] = parseCSVLine(line);
+                        const parsed = parseCSVLine(line);
+                        const name = parsed[0];
+                        
+                        // Handle both old 5-week and new 8-week format
+                        const availabilityValues = parsed.slice(1).map(val => parseInt(val) || 0);
+                        
+                        // Ensure we have exactly 8 weeks
+                        while (availabilityValues.length < 8) {
+                            // If missing weeks, use the last available value or 25 as default
+                            const lastValue = availabilityValues[availabilityValues.length - 1] || 25;
+                            availabilityValues.push(lastValue);
+                        }
+                        
+                        // If somehow more than 8, truncate
+                        if (availabilityValues.length > 8) {
+                            availabilityValues.length = 8;
+                        }
+                        
                         importedData.people.push({
                             name: name,
-                            availability: [parseInt(w1), parseInt(w2), parseInt(w3), parseInt(w4), parseInt(w5)]
+                            availability: availabilityValues
                         });
                     }
                     else if (currentSection === 'TICKETS') {
@@ -1699,7 +1776,7 @@
             
             // Validate people have required fields
             for (const person of data.people) {
-                if (!person.name || !Array.isArray(person.availability) || person.availability.length !== 5) {
+                if (!person.name || !Array.isArray(person.availability) || person.availability.length !== 8) {
                     return false;
                 }
             }
@@ -1942,6 +2019,9 @@
             
             hoursPerDay = newHours;
             
+            // Update the display span
+            document.getElementById('hours-per-day-display').textContent = newHours;
+            
             calculateEffortMap();
             renderTaskSizeCards(); // Updated to use new function
             calculateProjection();
@@ -2090,7 +2170,7 @@
 
             people.push({
                 name: name,
-                availability: [25, 25, 25, 25, 25] 
+                availability: [25, 25, 25, 25, 25, 25, 25, 25] 
             });
             
             nameInput.value = '';
@@ -2275,7 +2355,7 @@ ${ticket.explanation}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 💡 HOW TO READ this calculation:
-• Week numbers correspond to the planning horizon (5 weeks total)
+• Week numbers correspond to the planning horizon (8 weeks total)
 • Pooled Capacity = combined hours available from all assigned team members
 • Hours are distributed proportionally based on each person's availability
 • Task completes when all required hours are allocated
@@ -2316,11 +2396,11 @@ ${ticket.explanation}
         function initializeDefaultData() {
             console.log("Setting up default people data.");
             people = [
-                { name: 'Vipul', availability: [25, 25, 25, 25, 25] },
-                { name: 'Sameet', availability: [25, 25, 25, 25, 25] },
-                { name: 'Peter', availability: [25, 25, 25, 25, 25] },
-                { name: 'Sharanya', availability: [25, 25, 25, 25, 25] },
-                { name: 'Divya', availability: [25, 25, 25, 25, 25] },
+                { name: 'Vipul', availability: [25, 25, 25, 25, 25, 25, 25, 25] },
+                { name: 'Sameet', availability: [25, 25, 25, 25, 25, 25, 25, 25] },
+                { name: 'Peter', availability: [25, 25, 25, 25, 25, 25, 25, 25] },
+                { name: 'Sharanya', availability: [25, 25, 25, 25, 25, 25, 25, 25] },
+                { name: 'Divya', availability: [25, 25, 25, 25, 25, 25, 25, 25] },
             ];
             
             // Use realistic current dates
@@ -2359,6 +2439,10 @@ ${ticket.explanation}
             renderEffortMap();
             renderPeople();
             calculateProjection(); // This now includes timeline rendering
+            
+            // Update hours per day display and input
+            document.getElementById('hours-per-day').value = hoursPerDay;
+            document.getElementById('hours-per-day-display').textContent = hoursPerDay;
         }
 
         // Start the application
