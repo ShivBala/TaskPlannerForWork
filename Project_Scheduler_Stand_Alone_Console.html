@@ -131,6 +131,36 @@
             border: 1px solid #bae6fd;
         }
         
+        /* Custom scrollbar styles for timeline */
+        .timeline-scroll-container {
+            scrollbar-width: thin;
+            scrollbar-color: #6b7280 #f3f4f6;
+        }
+        
+        .timeline-scroll-container::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
+        
+        .timeline-scroll-container::-webkit-scrollbar-track {
+            background: #f3f4f6;
+            border-radius: 6px;
+        }
+        
+        .timeline-scroll-container::-webkit-scrollbar-thumb {
+            background: #6b7280;
+            border-radius: 6px;
+            border: 2px solid #f3f4f6;
+        }
+        
+        .timeline-scroll-container::-webkit-scrollbar-thumb:hover {
+            background: #4b5563;
+        }
+        
+        .timeline-scroll-container::-webkit-scrollbar-corner {
+            background: #f3f4f6;
+        }
+        
         /* Modal Styles for Banking */
         .modal-overlay {
             position: fixed;
@@ -272,32 +302,91 @@
         /* Timeline Styles */
         .timeline-marker {
             position: absolute;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: rgba(255, 255, 255, 0.8);
-            border-radius: 1px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100;
         }
         
-        .timeline-marker::after {
-            content: attr(data-label);
+        .timeline-marker:hover {
+            transform: translateY(-50%) scale(1.2);
+            z-index: 101;
+        }
+        
+        .timeline-marker.active {
+            transform: translateY(-50%) scale(1.4);
+            z-index: 102;
+        }
+        
+        /* Timeline Tooltip */
+        .timeline-tooltip {
             position: absolute;
-            top: -20px;
+            bottom: 150%;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.9);
             color: white;
-            padding: 2px 6px;
-            border-radius: 4px;
-            font-size: 10px;
-            white-space: nowrap;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            white-space: normal;
             pointer-events: none;
             opacity: 0;
-            transition: opacity 0.3s ease;
+            transition: all 0.3s ease;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            margin-bottom: 12px;
+            min-width: 350px;
+            max-width: 450px;
+            width: 400px;
+            text-align: left;
+            line-height: 1.4;
         }
         
-        .timeline-marker:hover::after {
+        .timeline-tooltip.visible {
             opacity: 1;
+            transform: translateX(-50%) translateY(-8px);
+        }
+        
+        .timeline-tooltip.tooltip-left.visible {
+            opacity: 1;
+            transform: translateX(0) translateY(-8px);
+        }
+        
+        .timeline-tooltip.tooltip-right.visible {
+            opacity: 1;
+            transform: translateX(0) translateY(-8px);
+        }
+        
+        .timeline-tooltip.tooltip-center.visible {
+            opacity: 1;
+            transform: translateX(-50%) translateY(-8px);
+        }
+        
+        .timeline-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 8px solid transparent;
+            border-top-color: rgba(0, 0, 0, 0.9);
+        }
+        
+        .timeline-tooltip.tooltip-left::after {
+            left: 20px;
+            transform: translateX(0);
+        }
+        
+        .timeline-tooltip.tooltip-right::after {
+            left: auto;
+            right: 20px;
+            transform: translateX(0);
         }
         
         .timeline-delayed {
@@ -583,16 +672,26 @@
                         </svg>
                         📈 Project Timeline
                     </h3>
-                    <div id="timeline-container" class="relative">
-                        <div id="timeline-info" class="text-sm text-gray-600 mb-2">
+                    <div id="timeline-container" class="relative" style="margin-top: 20px; margin-bottom: 20px;">
+                        <div id="timeline-info" class="text-sm text-gray-600 mb-4">
                             📅 <span id="timeline-start-date">No tasks defined</span> → 
                             🏁 <span id="timeline-end-date">No tasks defined</span> 
                             (<span id="timeline-duration">0 days</span>)
                         </div>
-                        <div id="timeline-bar" class="relative bg-gray-200 h-6 rounded-lg overflow-hidden">
-                            <div id="timeline-progress" class="h-full bg-gradient-to-r from-blue-400 to-green-400 transition-all duration-500" style="width: 0%"></div>
-                            <div id="timeline-markers" class="absolute inset-0 flex items-center px-2">
-                                <!-- Task markers will be populated here -->
+                        <div class="timeline-scroll-container border border-gray-300 rounded-lg p-4 bg-gray-50" style="height: 200px; overflow-x: auto; overflow-y: auto;">
+                            <div style="min-width: 1200px; min-height: 350px; display: flex; flex-direction: column; justify-content: flex-start; padding-top: 20px;">
+                                <div class="relative" style="margin-top: 160px; margin-bottom: 60px;">
+                                    <div id="timeline-bar" class="relative bg-gray-200 h-8 rounded-lg" style="width: 100%; min-width: 1200px; overflow: visible;">
+                                        <div id="timeline-progress" class="h-full bg-gradient-to-r from-blue-400 to-green-400 transition-all duration-500" style="width: 0%"></div>
+                                        <div id="timeline-markers" class="absolute inset-0 flex items-center px-2">
+                                            <!-- Task markers will be populated here -->
+                                        </div>
+                                        <!-- Week markers for better visualization -->
+                                        <div id="week-markers" class="absolute inset-0 pointer-events-none">
+                                            <!-- Week markers will be populated here -->
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div id="timeline-legend" class="flex flex-wrap gap-2 mt-2 text-xs">
@@ -635,9 +734,12 @@
                             <select id="new-ticket-size" class="enterprise-input w-full md:w-32">
                                 <!-- Options populated dynamically by JavaScript -->
                             </select>
-                            <select id="new-ticket-assigned" multiple class="enterprise-input w-full md:w-48 min-h-[35px]">
-                                <!-- Options populated by JS -->
-                            </select>
+                            <div class="w-full md:w-48 min-h-[35px]">
+                                <div class="text-xs text-gray-600 mb-1">Assign to:</div>
+                                <div id="new-ticket-assigned" class="flex flex-wrap gap-1 p-2 border border-gray-300 rounded-md bg-white min-h-[35px] items-start">
+                                    <!-- Checkboxes populated by JS -->
+                                </div>
+                            </div>
                             <button onclick="addTicket()" class="btn-enterprise w-full md:w-20 flex-shrink-0">Add</button>
                         </div>
                         <div class="text-xs text-gray-500 mt-1">
@@ -1150,7 +1252,11 @@
             const progressPercentage = hasDelayedTasks ? 100 : Math.min(100, (durationDays / 56) * 100); // 56 days = 8 weeks
             timelineProgressEl.style.width = `${progressPercentage}%`;
             
-            if (hasDelayedTasks || durationWeeks > 5) {
+            // Determine timeline health based on 8-week planning horizon
+            // Green: <= 6 weeks (good), Red: > 6 weeks or has delayed tasks (concerning)
+            const isOverSchedule = hasDelayedTasks || durationWeeks > 6;
+            
+            if (isOverSchedule) {
                 timelineProgressEl.className = 'h-full timeline-delayed transition-all duration-500';
             } else {
                 timelineProgressEl.className = 'h-full timeline-ontime transition-all duration-500';
@@ -1158,28 +1264,101 @@
             
             // Add task markers
             timelineMarkersEl.innerHTML = '';
+            
+            // Add week markers for better visualization
+            const weekMarkersEl = document.getElementById('week-markers');
+            if (weekMarkersEl) {
+                weekMarkersEl.innerHTML = '';
+                for (let week = 1; week <= 8; week++) {
+                    const weekPosition = (week / 8) * 100;
+                    const weekMarker = document.createElement('div');
+                    weekMarker.className = 'absolute top-0 bottom-0 w-px bg-gray-300 opacity-50';
+                    weekMarker.style.left = `${weekPosition}%`;
+                    weekMarker.setAttribute('data-label', `Week ${week}`);
+                    weekMarkersEl.appendChild(weekMarker);
+                    
+                    // Add week labels at the bottom
+                    const weekLabel = document.createElement('div');
+                    weekLabel.className = 'absolute text-xs text-gray-500';
+                    weekLabel.style.left = `${weekPosition}%`;
+                    weekLabel.style.bottom = '-20px';
+                    weekLabel.style.transform = 'translateX(-50%)';
+                    weekLabel.textContent = `W${week}`;
+                    weekMarkersEl.appendChild(weekLabel);
+                }
+            }
+            
             projectedTickets.forEach((ticket, index) => {
                 if (ticket.rawEndDate && !ticket.isDelayed) {
                     // Use raw date for accurate positioning
                     const dayFromStart = Math.ceil((ticket.rawEndDate - projectStartDate) / (1000 * 60 * 60 * 24));
-                    const positionPercentage = Math.min(100, Math.max(0, (dayFromStart / durationDays) * 100));
+                    // Position based on 8-week (56-day) timeline for consistent scaling
+                    const positionPercentage = Math.min(100, Math.max(0, (dayFromStart / 56) * 100));
                     
                     const marker = document.createElement('div');
                     marker.className = 'timeline-marker';
-                    marker.style.left = `${positionPercentage}%`;
-                    marker.setAttribute('data-label', `Task #${ticket.id}: ${ticket.endDate}`);
-                    marker.style.background = ticket.isDelayed ? '#ef4444' : '#10b981';
-                    marker.style.zIndex = '10';
+                    marker.style.left = `calc(${positionPercentage}% - 8px)`; // Center the 16px wide marker
+                    marker.style.position = 'relative'; // For tooltip positioning
+                    marker.setAttribute('data-ticket-id', ticket.id);
+                    marker.setAttribute('data-tooltip-text', `Task #${ticket.id}: ${ticket.description}\nDue: ${ticket.endDate}\nAssigned: ${ticket.assigned.join(', ') || 'Unassigned'}`);
+                    // Use white markers with colored border for better visibility on any background
+                    marker.style.background = '#ffffff';
+                    marker.style.border = '4px solid #10b981';
+                    marker.style.boxShadow = '0 3px 6px rgba(0,0,0,0.3)';
+                    
+                    // Create tooltip element
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'timeline-tooltip';
+                    tooltip.innerHTML = `
+                        <div style="margin-bottom: 4px;">
+                            <strong>Task #${ticket.id}:</strong> ${ticket.description}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                            <span><em>Due: ${ticket.endDate}</em></span>
+                            <span>Assigned: ${ticket.assigned.join(', ') || 'Unassigned'}</span>
+                        </div>
+                    `;
+                    marker.appendChild(tooltip);
+                    
+                    // Add click event handler
+                    marker.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        toggleTimelineTooltip(this);
+                    });
                     
                     timelineMarkersEl.appendChild(marker);
                 } else if (ticket.isDelayed || (ticket.endDate && ticket.endDate.includes('>'))) {
-                    // Add a marker for delayed tasks at the end
+                    // Add a marker for delayed tasks at the end (beyond 8 weeks)
                     const marker = document.createElement('div');
                     marker.className = 'timeline-marker';
-                    marker.style.left = '95%';
-                    marker.setAttribute('data-label', `Task #${ticket.id}: Delayed`);
-                    marker.style.background = '#ef4444';
-                    marker.style.zIndex = '10';
+                    marker.style.left = 'calc(98% - 8px)'; // Center the 16px wide marker
+                    marker.style.position = 'relative'; // For tooltip positioning
+                    marker.setAttribute('data-ticket-id', ticket.id);
+                    marker.setAttribute('data-tooltip-text', `Task #${ticket.id}: ${ticket.description}\nStatus: Delayed (>8 weeks)\nAssigned: ${ticket.assigned.join(', ') || 'Unassigned'}`);
+                    // Use white background with red border for delayed tasks
+                    marker.style.background = '#ffffff';
+                    marker.style.border = '4px solid #ef4444';
+                    marker.style.boxShadow = '0 3px 6px rgba(0,0,0,0.3)';
+                    
+                    // Create tooltip element
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'timeline-tooltip';
+                    tooltip.innerHTML = `
+                        <div style="margin-bottom: 4px;">
+                            <strong>Task #${ticket.id} (DELAYED):</strong> ${ticket.description}
+                        </div>
+                        <div style="display: flex; justify-content: space-between; font-size: 12px;">
+                            <span><em>Status: Over 8 weeks</em></span>
+                            <span>Assigned: ${ticket.assigned.join(', ') || 'Unassigned'}</span>
+                        </div>
+                    `;
+                    marker.appendChild(tooltip);
+                    
+                    // Add click event handler
+                    marker.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        toggleTimelineTooltip(this);
+                    });
                     
                     timelineMarkersEl.appendChild(marker);
                 }
@@ -1188,19 +1367,103 @@
             // Update legend
             timelineLegendEl.innerHTML = `
                 <div class="timeline-legend-item">
-                    <div class="timeline-legend-dot bg-green-500"></div>
-                    <span>On Schedule</span>
+                    <div class="timeline-legend-dot bg-white border-2 border-green-500"></div>
+                    <span>On Schedule (≤6 weeks)</span>
                 </div>
                 <div class="timeline-legend-item">
-                    <div class="timeline-legend-dot bg-red-500"></div>
-                    <span>Delayed/Over 8 weeks</span>
+                    <div class="timeline-legend-dot bg-white border-2 border-red-500"></div>
+                    <span>Over Schedule (>6 weeks)</span>
                 </div>
                 <div class="timeline-legend-item">
                     <div class="timeline-legend-dot bg-gray-400"></div>
-                    <span>Hover markers for details</span>
+                    <span>Click markers for task details</span>
+                </div>
+                <div class="timeline-legend-item">
+                    <div class="w-2 h-1 bg-gray-300"></div>
+                    <span>Week markers (8-week horizon)</span>
                 </div>
             `;
         }
+
+        // Timeline marker click handler
+        function toggleTimelineTooltip(marker) {
+            console.log('Marker clicked:', marker.getAttribute('data-ticket-id')); // Debug log
+            
+            // Close any other active tooltips first
+            document.querySelectorAll('.timeline-marker').forEach(otherMarker => {
+                if (otherMarker !== marker) {
+                    otherMarker.classList.remove('active');
+                    const otherTooltip = otherMarker.querySelector('.timeline-tooltip');
+                    if (otherTooltip) {
+                        otherTooltip.classList.remove('visible');
+                    }
+                }
+            });
+            
+            // Toggle the clicked marker and its tooltip
+            const tooltip = marker.querySelector('.timeline-tooltip');
+            const isActive = marker.classList.contains('active');
+            
+            if (isActive) {
+                // Close tooltip
+                marker.classList.remove('active');
+                if (tooltip) {
+                    tooltip.classList.remove('visible');
+                }
+            } else {
+                // Open tooltip with smart positioning
+                marker.classList.add('active');
+                if (tooltip) {
+                    // Get marker position relative to timeline container
+                    const timelineContainer = document.querySelector('.timeline-scroll-container');
+                    const markerRect = marker.getBoundingClientRect();
+                    const containerRect = timelineContainer.getBoundingClientRect();
+                    const markerLeft = markerRect.left - containerRect.left + timelineContainer.scrollLeft;
+                    const containerWidth = timelineContainer.clientWidth;
+                    const tooltipWidth = 400; // Our tooltip width
+                    
+                    // Reset positioning classes
+                    tooltip.classList.remove('tooltip-left', 'tooltip-right', 'tooltip-center');
+                    
+                    // Smart positioning logic
+                    if (markerLeft < tooltipWidth / 2) {
+                        // Marker is too far left - align tooltip to left edge
+                        tooltip.classList.add('tooltip-left');
+                        tooltip.style.left = '0px';
+                        tooltip.style.transform = 'translateX(0)';
+                    } else if (markerLeft > containerWidth - tooltipWidth / 2) {
+                        // Marker is too far right - align tooltip to right edge
+                        tooltip.classList.add('tooltip-right');
+                        tooltip.style.left = 'auto';
+                        tooltip.style.right = '0px';
+                        tooltip.style.transform = 'translateX(0)';
+                    } else {
+                        // Marker is in the middle - center tooltip normally
+                        tooltip.classList.add('tooltip-center');
+                        tooltip.style.left = '50%';
+                        tooltip.style.right = 'auto';
+                        tooltip.style.transform = 'translateX(-50%)';
+                    }
+                    
+                    tooltip.classList.add('visible');
+                }
+            }
+            
+            console.log('Marker active state:', marker.classList.contains('active')); // Debug log
+        }
+
+        // Close marker info when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.timeline-marker')) {
+                document.querySelectorAll('.timeline-marker').forEach(marker => {
+                    marker.classList.remove('active');
+                    const tooltip = marker.querySelector('.timeline-tooltip');
+                    if (tooltip) {
+                        tooltip.classList.remove('visible');
+                    }
+                });
+            }
+        });
 
         // --- RENDERING FUNCTIONS ---
 
@@ -1297,9 +1560,9 @@
             updateAvailabilityHeader();
             
             const peopleList = document.getElementById('people-list');
-            const assignDropdown = document.getElementById('new-ticket-assigned');
+            const assignContainer = document.getElementById('new-ticket-assigned');
             peopleList.innerHTML = '';
-            assignDropdown.innerHTML = '';
+            assignContainer.innerHTML = '';
 
             people.forEach((person, pIndex) => {
                 const card = document.createElement('div');
@@ -1342,16 +1605,15 @@
                 `;
                 peopleList.appendChild(card);
 
-                const option = document.createElement('option');
-                option.value = person.name;
-                option.textContent = person.name;
-                assignDropdown.appendChild(option);
+                // Create checkbox for "Add New Task" form
+                const checkboxWrapper = document.createElement('label');
+                checkboxWrapper.className = 'flex items-center space-x-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer';
+                checkboxWrapper.innerHTML = `
+                    <input type="checkbox" value="${person.name}" class="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-1">
+                    <span class="text-sm text-gray-700">${person.name}</span>
+                `;
+                assignContainer.appendChild(checkboxWrapper);
             });
-            
-            const ticketAssignmentSelect = document.getElementById('new-ticket-assigned');
-            if (ticketAssignmentSelect) {
-                Array.from(ticketAssignmentSelect.options).forEach(opt => opt.selected = false);
-            }
         }
 
         function renderTickets(projectedTickets) {
@@ -1371,10 +1633,21 @@
                 const tr = document.createElement('tr');
                 tr.className = 'hover:bg-gray-50';
 
-                // Rebuild the dropdown options to ensure current assignments are selected
-                const allOptions = people.map(p => {
-                    const isSelected = ticket.assigned.includes(p.name);
-                    return `<option value="${p.name}" ${isSelected ? 'selected' : ''}>${p.name}</option>`;
+                // Rebuild the assignment checkboxes
+                const assignmentCheckboxes = people.map(p => {
+                    const isChecked = ticket.assigned.includes(p.name);
+                    return `
+                        <label class="flex items-center space-x-1 text-xs whitespace-nowrap">
+                            <input 
+                                type="checkbox" 
+                                value="${p.name}" 
+                                ${isChecked ? 'checked' : ''}
+                                onchange="handleAssignmentCheckboxChange(this, ${ticket.id})"
+                                class="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                            >
+                            <span class="text-gray-700">${p.name}</span>
+                        </label>
+                    `;
                 }).join('');
 
                 // Create size dropdown options
@@ -1419,13 +1692,9 @@
                         </select>
                     </td>
                     <td class="px-3 py-2 text-sm text-gray-500 w-1/4">
-                        <select 
-                            multiple 
-                            class="select-multiple w-full p-1 border border-gray-300 rounded-lg text-xs h-auto min-h-[40px]"
-                            onchange="handleAssignmentChange(this, ${ticket.id})"
-                        >
-                            ${allOptions}
-                        </select>
+                        <div class="flex flex-wrap gap-1 min-h-[40px] items-center">
+                            ${assignmentCheckboxes}
+                        </div>
                     </td>
                     <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
                         <div class="flex items-center">
@@ -2212,7 +2481,7 @@
             const descInput = document.getElementById('new-ticket-desc');
             const startDateInput = document.getElementById('new-ticket-start-date');
             const sizeSelect = document.getElementById('new-ticket-size');
-            const assignedSelect = document.getElementById('new-ticket-assigned');
+            const assignedContainer = document.getElementById('new-ticket-assigned');
 
             const description = descInput.value.trim();
             
@@ -2226,7 +2495,7 @@
             }
             
             const size = sizeSelect.value;
-            const assigned = Array.from(assignedSelect.selectedOptions).map(option => option.value);
+            const assigned = Array.from(assignedContainer.querySelectorAll('input[type="checkbox"]:checked')).map(checkbox => checkbox.value);
 
             if (!description) {
                 alert("Ticket description cannot be empty.");
@@ -2244,7 +2513,8 @@
             descInput.value = '';
             startDateInput.value = '';
             sizeSelect.value = 'L';
-            Array.from(assignedSelect.options).forEach(opt => opt.selected = false);
+            // Clear all checkboxes
+            assignedContainer.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
 
             // Refresh people display since earliest task date might have changed
             if (!useCommonStartDate) {
@@ -2279,6 +2549,36 @@
         window.handleAssignmentChange = (selectElement, ticketId) => {
             const newAssignedArray = Array.from(selectElement.selectedOptions).map(o => o.value);
             window.updateTicketAssignment(ticketId, newAssignedArray);
+        }
+
+        window.handleAssignmentCheckboxChange = (checkboxElement, ticketId) => {
+            const personName = checkboxElement.value;
+            const isChecked = checkboxElement.checked;
+            
+            // Find the ticket
+            const ticket = tickets.find(t => t.id === ticketId);
+            if (!ticket) return;
+            
+            // Update the assignment array
+            if (isChecked) {
+                // Add person if not already assigned
+                if (!ticket.assigned.includes(personName)) {
+                    ticket.assigned.push(personName);
+                }
+            } else {
+                // Remove person from assignment
+                ticket.assigned = ticket.assigned.filter(name => name !== personName);
+            }
+            
+            // Provide visual feedback
+            checkboxElement.parentElement.style.background = '#dcfce7'; // Light green background
+            setTimeout(() => {
+                checkboxElement.parentElement.style.background = 'transparent';
+            }, 500);
+            
+            // Recalculate and re-render immediately
+            calculateProjection();
+            saveToLocalStorage();
         }
 
         window.handleSizeChange = (selectElement, ticketId) => {
