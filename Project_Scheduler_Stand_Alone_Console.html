@@ -1111,29 +1111,27 @@
         
         function getCompletionDateDetails(startWeekIndex, remainingHours, totalWeeklyCapacity) {
             const effectiveStart = getEffectiveStartDate();
-            const completionDate = new Date(effectiveStart);
-            let daysIntoWeek = 0;
-
-            if (totalWeeklyCapacity > 0) {
-                // Calculate how many calendar days are needed to complete the remaining hours
-                // at the current work pace (hoursPerDay)
-                const daysNeeded = remainingHours / hoursPerDay;
-                daysIntoWeek = Math.ceil(daysNeeded);
-                daysIntoWeek = Math.min(daysIntoWeek, 5); // Cap at 5 working days per week
-            }
-
-            completionDate.setDate(completionDate.getDate() + (startWeekIndex * 7) + daysIntoWeek);
+            const weekStartDate = new Date(effectiveStart);
+            weekStartDate.setDate(weekStartDate.getDate() + (startWeekIndex * 7));
             
-            let dayOfWeek = completionDate.getDay();
-            if (dayOfWeek === 6) { // Saturday
-                completionDate.setDate(completionDate.getDate() + 2);
-            } else if (dayOfWeek === 0) { // Sunday
-                completionDate.setDate(completionDate.getDate() + 1);
+            // Ensure we start on a business day
+            const actualStartDate = getNextBusinessDay(weekStartDate);
+            
+            if (totalWeeklyCapacity > 0) {
+                // Calculate business days needed based on the task size definition
+                const daysNeeded = Math.ceil(remainingHours / hoursPerDay);
+                const completionDate = addBusinessDays(actualStartDate, Math.max(1, daysNeeded - 1));
+                
+                return {
+                    formatted: completionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                    rawDate: new Date(completionDate)
+                };
             }
 
+            // Fallback if no capacity
             return {
-                formatted: completionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                rawDate: new Date(completionDate)
+                formatted: actualStartDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                rawDate: new Date(actualStartDate)
             };
         }
         
@@ -1178,6 +1176,9 @@
                     taskStartDate = new Date(ticket.startDate || getEffectiveStartDate());
                 }
                 
+                // Ensure task starts on a business day
+                taskStartDate = getNextBusinessDay(taskStartDate);
+                
                 const weekStartDate = getEffectiveStartDate();
                 const daysDiff = Math.max(0, Math.floor((taskStartDate - weekStartDate) / (1000 * 60 * 60 * 24)));
                 const startWeekIndex = Math.max(0, Math.floor(daysDiff / 7));
@@ -1193,9 +1194,9 @@
                 explanation += `Assigned: ${ticket.assigned.join(', ')} (${assignedCount} person(s)).\n`;
                 if (useCommonStartDate) {
                     const commonDate = document.getElementById('common-start-date').value;
-                    explanation += `Start Date: ${formatDate(commonDate)} (Week ${startWeekIndex + 1}) [Common Start Date].\n`;
+                    explanation += `Start Date: ${formatDate(taskStartDate.toISOString().split('T')[0])} (Week ${startWeekIndex + 1}) [Common Start Date].\n`;
                 } else {
-                    explanation += `Start Date: ${formatDate(ticket.startDate)} (Week ${startWeekIndex + 1}).\n`;
+                    explanation += `Start Date: ${formatDate(taskStartDate.toISOString().split('T')[0])} (Week ${startWeekIndex + 1}).\n`;
                 }
                 explanation += `Required Duration Hours (pooled): ${initialHours.toFixed(1)} hours.\n`;
                 explanation += `Planning baseline: Week 1 starts ${formatDate(weekStartDate.toISOString().split('T')[0])}.\n\n`;
@@ -1251,13 +1252,25 @@
                 let rawEndDate = null;
                 let isDelayed = false;
 
+                // For more accurate calculation, compute end date based on actual business days
+                const taskDurationInDays = taskSizeDefinitions[ticket.size].days;
+                const actualEndDate = addBusinessDays(taskStartDate, taskDurationInDays - 1);
+                
+                endDate = actualEndDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                rawEndDate = actualEndDate;
+                
+                // Update explanation with corrected completion
+                explanation += `\n--- BUSINESS DAY CALCULATION ---\n`;
+                explanation += `Task Duration: ${taskDurationInDays} business days\n`;
+                explanation += `Actual Start: ${taskStartDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}\n`;
+                explanation += `Actual End: ${actualEndDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}\n`;
+                
                 if (completionWeekIndex !== -1) {
+                    explanation += `\n--- LEGACY CAPACITY CALCULATION ---\n`;
                     const completionDetails = getCompletionDateDetails(completionWeekIndex, finalCapacity, pooledCapacityThisWeek);
-                    endDate = completionDetails.formatted;
-                    rawEndDate = completionDetails.rawDate;
+                    explanation += `Legacy calculation would show: ${completionDetails.formatted}\n`;
                 } else {
-                    endDate = `> ${formatWeekEndDate(7)}`;
-                    explanation += '\nTask is projected to finish AFTER the 8-week window.';
+                    explanation += '\nTask is projected to finish AFTER the 8-week window based on capacity.';
                     isDelayed = true;
                 }
                 
@@ -1611,6 +1624,32 @@
             
             // Update ticket size dropdown options
             updateTicketSizeDropdown();
+        }
+        
+        function updateTaskSizeDaysEnhanced(sizeKey, newDays) {
+            const days = parseFloat(newDays);
+            if (isNaN(days) || days <= 0) {
+                alert('Please enter a valid number of days');
+                return;
+            }
+            
+            // Update the task size definition
+            taskSizeDefinitions[sizeKey].days = days;
+            
+            // Sync with the old ticketDays object for compatibility
+            syncTaskSizes();
+            
+            // Recalculate effort map
+            calculateEffortMap();
+            
+            // Re-render the task size cards to update the display
+            renderTaskSizeCards();
+            
+            // Update projections and displays
+            updateTable();
+            
+            // Save to localStorage
+            saveData();
         }
         
         function updateTicketSizeDropdown() {
@@ -3228,6 +3267,34 @@ ${ticket.explanation}
                 currentDate.setDate(currentDate.getDate() + 1);
             }
             return businessDays;
+        }
+        
+        function addBusinessDays(startDate, businessDaysToAdd) {
+            const result = new Date(startDate);
+            let daysAdded = 0;
+            
+            while (daysAdded < businessDaysToAdd) {
+                result.setDate(result.getDate() + 1);
+                const dayOfWeek = result.getDay();
+                if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday to Friday
+                    daysAdded++;
+                }
+            }
+            
+            return result;
+        }
+        
+        function getNextBusinessDay(date) {
+            const result = new Date(date);
+            const dayOfWeek = result.getDay();
+            
+            if (dayOfWeek === 0) { // Sunday
+                result.setDate(result.getDate() + 1); // Move to Monday
+            } else if (dayOfWeek === 6) { // Saturday
+                result.setDate(result.getDate() + 2); // Move to Monday
+            }
+            
+            return result;
         }
         
         function renderWorkloadHeatMap() {
