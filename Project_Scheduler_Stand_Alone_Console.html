@@ -530,6 +530,27 @@
         .enterprise-table tr:hover {
             background: rgba(30, 58, 138, 0.03);
         }
+        
+        /* Enterprise Input Styling */
+        .enterprise-input {
+            background: var(--card-background);
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: var(--secondary-color);
+            font-weight: 500;
+            transition: all 0.2s ease;
+            outline: none;
+        }
+        
+        .enterprise-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.1);
+        }
+        
+        .enterprise-input:hover {
+            border-color: var(--primary-color);
+        }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -1248,10 +1269,6 @@
             timelineEndDateEl.textContent = formatDate(projectEndDate.toLocaleDateString('en-CA')); // YYYY-MM-DD format
             timelineDurationEl.textContent = `${durationDays} days (${durationWeeks} weeks)`;
             
-            // Update progress bar based on timeline health
-            const progressPercentage = hasDelayedTasks ? 100 : Math.min(100, (durationDays / 56) * 100); // 56 days = 8 weeks
-            timelineProgressEl.style.width = `${progressPercentage}%`;
-            
             // Determine timeline health based on 8-week planning horizon
             // Green: <= 6 weeks (good), Red: > 6 weeks or has delayed tasks (concerning)
             const isOverSchedule = hasDelayedTasks || durationWeeks > 6;
@@ -1264,6 +1281,9 @@
             
             // Add task markers
             timelineMarkersEl.innerHTML = '';
+            
+            // Track the furthest task position for progress bar alignment
+            let furthestTaskPosition = 0;
             
             // Add week markers for better visualization
             const weekMarkersEl = document.getElementById('week-markers');
@@ -1292,8 +1312,12 @@
                 if (ticket.rawEndDate && !ticket.isDelayed) {
                     // Use raw date for accurate positioning
                     const dayFromStart = Math.ceil((ticket.rawEndDate - projectStartDate) / (1000 * 60 * 60 * 24));
-                    // Position based on 8-week (56-day) timeline for consistent scaling
-                    const positionPercentage = Math.min(100, Math.max(0, (dayFromStart / 56) * 100));
+                    // Position based on actual project duration, but ensure it fits within the visual timeline
+                    const timelineScaleDays = Math.max(56, durationDays); // Use 8 weeks minimum, or actual duration if longer
+                    const positionPercentage = Math.min(100, Math.max(0, (dayFromStart / timelineScaleDays) * 100));
+                    
+                    // Track the furthest task position
+                    furthestTaskPosition = Math.max(furthestTaskPosition, positionPercentage);
                     
                     const marker = document.createElement('div');
                     marker.className = 'timeline-marker';
@@ -1363,6 +1387,9 @@
                     timelineMarkersEl.appendChild(marker);
                 }
             });
+            
+            // Update progress bar to end exactly at the furthest task marker
+            timelineProgressEl.style.width = `${furthestTaskPosition}%`;
             
             // Update legend
             timelineLegendEl.innerHTML = `
