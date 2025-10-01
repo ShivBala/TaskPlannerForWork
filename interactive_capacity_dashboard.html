@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎛️ Interactive Capacity Planning Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f7fa;
+            color: #2c3e50;
+            overflow-x: hidden;
+        }
+        
+        .dashboard-container {
+            display: flex;
+            height: 100vh;
+        }
+        
+        /* Control Panel Styles */
+        .control-panel {
+            width: 320px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+        }
+        
+        .control-panel h2 {
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 18px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .employee-section {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .employee-name {
+            font-weight: bold;
+            font-size: 16px;
+            margin-bottom: 12px;
+            color: #fff;
+            text-align: center;
+        }
+        
+        .week-control {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+        
+        .week-label {
+            width: 30px;
+            font-weight: bold;
+        }
+        
+        .week-slider {
+            flex: 1;
+            margin: 0 8px;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.3);
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        .week-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #ffffff;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .week-value {
+            width: 35px;
+            text-align: right;
+            font-weight: bold;
+        }
+        
+        .controls-section {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .controls-section h3 {
+            margin-bottom: 12px;
+            font-size: 14px;
+            text-align: center;
+        }
+        
+        .control-btn {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 8px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .control-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+        }
+        
+        /* Main Dashboard Styles */
+        .main-dashboard {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .dashboard-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        .dashboard-header h1 {
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .live-indicator {
+            color: #27ae60;
+            font-size: 14px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* Summary Cards */
+        .summary-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .summary-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .summary-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .summary-card h3 {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .summary-card .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        /* Capacity Table */
+        .table-container {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            overflow-x: auto;
+        }
+        
+        .capacity-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        
+        .capacity-table th {
+            background: #34495e;
+            color: white;
+            padding: 10px 8px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        
+        .capacity-table td {
+            padding: 8px;
+            text-align: center;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        .employee-name-cell {
+            background: #ecf0f1;
+            font-weight: bold;
+            text-align: left !important;
+        }
+        
+        .week-header {
+            background: #34495e !important;
+            color: white !important;
+            position: relative;
+        }
+        
+        .week-rankings {
+            font-size: 8px;
+            line-height: 1;
+            margin-top: 2px;
+            color: #ecf0f1;
+            opacity: 0.9;
+        }
+        
+        .week-rankings .rank {
+            display: block;
+            margin: 1px 0;
+        }
+        
+        .rank-1 { color: #f1c40f; font-weight: bold; }
+        .rank-2 { color: #bdc3c7; }
+        .rank-3 { color: #e67e22; }
+        
+        /* Availability Colors */
+        .available { background: #d5f4e6; color: #27ae60; font-weight: bold; }
+        .moderate { background: #fef9e7; color: #f39c12; font-weight: bold; }
+        .busy { background: #fadbd8; color: #e74c3c; font-weight: bold; }
+        
+        /* Task Size Controls */
+        .task-size-control {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+        
+        .size-label {
+            width: 50px;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        
+        .size-input {
+            flex: 1;
+            margin: 0 8px;
+            padding: 2px 4px;
+            border: none;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.9);
+            color: #2c3e50;
+            text-align: center;
+            font-size: 11px;
+        }
+        
+        .size-days {
+            width: 35px;
+            text-align: right;
+            font-weight: bold;
+            font-size: 10px;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .dashboard-container {
+                flex-direction: column;
+                height: auto;
+            }
+            
+            .control-panel {
+                width: 100%;
+                height: auto;
+                max-height: 50vh;
+            }
+            
+            .main-dashboard {
+                padding: 10px;
+            }
+            
+            .summary-section {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Control Panel -->
+        <div class="control-panel">
+            <h2>🎛️ Capacity Controls</h2>
+            
+            <div id="employee-controls">
+                <!-- Employee controls will be dynamically generated -->
+            </div>
+            
+            <div class="controls-section">
+                <h3>📏 Task Sizing</h3>
+                <div id="task-size-controls">
+                    <!-- Task size controls will be dynamically generated -->
+                </div>
+                <button class="control-btn" onclick="addTaskWithSize()">➕ Add Sized Task</button>
+            </div>
+            
+            <div class="controls-section">
+                <h3>🎲 Simulation</h3>
+                <button class="control-btn" onclick="addRandomTask()">➕ Add Random Task</button>
+                <button class="control-btn" onclick="clearAllTasks()">🗑️ Clear All Tasks</button>
+                <button class="control-btn" onclick="resetToDefaults()">🔄 Reset to Defaults</button>
+            </div>
+            
+            <div class="controls-section">
+                <h3>👤 Team Management</h3>
+                <button class="control-btn" onclick="addEmployee()">➕ Add Employee</button>
+                <button class="control-btn" onclick="exportData()">💾 Export Data</button>
+            </div>
+            
+            <div class="controls-section">
+                <h3>📅 Time Control</h3>
+                <button class="control-btn" onclick="shiftWeeksForward()">⏭️ Next Week</button>
+                <button class="control-btn" onclick="shiftWeeksBackward()">⏮️ Previous Week</button>
+            </div>
+        </div>
+        
+        <!-- Main Dashboard -->
+        <div class="main-dashboard">
+            <div class="dashboard-header">
+                <h1>📊 Interactive Capacity Planning</h1>
+                <div class="live-indicator">🔴 LIVE • Real-time Updates</div>
+            </div>
+            
+            <!-- Summary Cards -->
+            <div class="summary-section" id="summary-cards">
+                <!-- Summary cards will be dynamically generated -->
+            </div>
+            
+            <!-- Capacity Table -->
+            <div class="table-container">
+                <table class="capacity-table" id="capacity-table">
+                    <!-- Table will be dynamically generated -->
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== DATA MODELS =====
+        let employees = [
+            {
+                name: "Vipul",
+                hours_per_w1: 25,
+                hours_per_w2: 25,
+                hours_per_w3: 25,
+                hours_per_w4: 25,
+                hours_per_w5: 25
+            },
+            {
+                name: "Siva",
+                hours_per_w1: 25,
+                hours_per_w2: 30,
+                hours_per_w3: 20,
+                hours_per_w4: 25,
+                hours_per_w5: 15
+            },
+            {
+                name: "Peter",
+                hours_per_w1: 25,
+                hours_per_w2: 25,
+                hours_per_w3: 25,
+                hours_per_w4: 25,
+                hours_per_w5: 25
+            }
+        ];
+
+        // Task sizing configuration
+        let taskSizes = {
+            'XS': { name: 'XS', days: 0.5, color: '#3498db' },
+            'S': { name: 'Small', days: 1, color: '#2ecc71' },
+            'M': { name: 'Medium', days: 3, color: '#f39c12' },
+            'L': { name: 'Large', days: 5, color: '#e74c3c' },
+            'XL': { name: 'X-Large', days: 8, color: '#9b59b6' }
+        };
+
+        let tasks = [
+            { employeeName: "Vipul", taskDescription: "Frontend Redesign", priority: 1, startDate: "2025-09-15", eta: "2025-10-30", progress: 85, size: "L" },
+            { employeeName: "Vipul", taskDescription: "Mobile App", priority: 2, startDate: "2025-09-20", eta: "2025-11-15", progress: 60, size: "XL" },
+            { employeeName: "Vipul", taskDescription: "User Authentication", priority: 3, startDate: "2025-09-25", eta: "2025-10-20", progress: 40, size: "M" },
+            { employeeName: "Vipul", taskDescription: "Payment Integration", priority: 1, startDate: "2025-10-01", eta: "2025-11-01", progress: 25, size: "L" },
+            { employeeName: "Vipul", taskDescription: "Analytics Dashboard", priority: 4, startDate: "2025-10-05", eta: "2025-11-20", progress: 10, size: "M" },
+            
+            { employeeName: "Siva", taskDescription: "Code Review System", priority: 1, startDate: "2025-09-18", eta: "2025-10-25", progress: 70, size: "M" },
+            { employeeName: "Siva", taskDescription: "Deployment Pipeline", priority: 2, startDate: "2025-09-22", eta: "", progress: 50, size: "L" },
+            { employeeName: "Siva", taskDescription: "Monitoring Setup", priority: 3, startDate: "2025-09-28", eta: "2025-11-10", progress: 30, size: "M" },
+            { employeeName: "Siva", taskDescription: "Backup System", priority: 2, startDate: "2025-10-02", eta: "2025-10-30", progress: 15, size: "S" },
+            { employeeName: "Siva", taskDescription: "Load Balancer Config", priority: 4, startDate: "2025-10-08", eta: "2025-11-05", progress: 5, size: "S" },
+            
+            { employeeName: "Peter", taskDescription: "Database Migration", priority: 1, startDate: "2025-09-15", eta: "2025-10-30", progress: 85, size: "XL" },
+            { employeeName: "Peter", taskDescription: "API Documentation", priority: 3, startDate: "2025-09-18", eta: "2025-10-25", progress: 60, size: "M" },
+            { employeeName: "Peter", taskDescription: "Security Audit", priority: 2, startDate: "2025-09-20", eta: "2025-11-15", progress: 40, size: "L" },
+            { employeeName: "Peter", taskDescription: "Performance Testing", priority: 4, startDate: "2025-09-22", eta: "", progress: 25, size: "M" },
+            { employeeName: "Peter", taskDescription: "Client Portal", priority: 3, startDate: "2025-10-01", eta: "2025-11-01", progress: 10, size: "L" }
+        ];
+
+        // Current date and week calculations
+        const currentDate = new Date('2025-09-30');
+        let weekStartDate = getWeekStart(currentDate);
+
+        // ===== UTILITY FUNCTIONS =====
+        function getWeekStart(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday as start
+            return new Date(d.setDate(diff));
+        }
+
+        function getWeekDates() {
+            const weeks = [];
+            for (let i = 0; i < 5; i++) {
+                const start = new Date(weekStartDate);
+                start.setDate(weekStartDate.getDate() + (i * 7));
+                const end = new Date(start);
+                end.setDate(start.getDate() + 6);
+                weeks.push({
+                    start: start,
+                    end: end,
+                    label: `Week ${i + 1}`,
+                    dateRange: `${start.toLocaleDateString('en-US', {month: 'short', day: 'numeric'})} - ${end.toLocaleDateString('en-US', {month: 'short', day: 'numeric'})}`
+                });
+            }
+            return weeks;
+        }
+
+        function parseDate(dateString) {
+            if (!dateString) return null;
+            return new Date(dateString);
+        }
+
+        // ===== CAPACITY CALCULATION =====
+        function calculatePersonCapacity(person) {
+            const weeks = getWeekDates();
+            const personTasks = tasks.filter(task => 
+                task.employeeName.toLowerCase().includes(person.name.toLowerCase()) &&
+                task.progress < 100
+            );
+
+            const weeklyData = [];
+            
+            for (let weekIndex = 0; weekIndex < 5; weekIndex++) {
+                const weekNum = weekIndex + 1;
+                const maxHours = person[`hours_per_w${weekNum}`];
+                const week = weeks[weekIndex];
+                
+                let usedHours = 0;
+                let weekTasks = [];
+
+                personTasks.forEach(task => {
+                    const startDate = parseDate(task.startDate);
+                    const etaDate = parseDate(task.eta);
+                    
+                    if (startDate && startDate <= week.end) {
+                        const remainingProgress = 100 - task.progress;
+                        
+                        // Calculate hours based on task size
+                        const taskSize = taskSizes[task.size] || taskSizes['M']; // Default to Medium if size not found
+                        const totalTaskHours = taskSize.days * 8; // Assuming 8 hours per day
+                        const estimatedHoursRemaining = (remainingProgress / 100) * totalTaskHours;
+                        
+                        if (startDate <= week.end && (!etaDate || etaDate >= week.start)) {
+                            // Distribute task hours across weeks based on urgency and timeline
+                            const intensity = [0.4, 0.3, 0.2, 0.1, 0.05][weekIndex];
+                            const maxIntensity = [0.8, 0.6, 0.4, 0.2, 0.1][weekIndex];
+                            usedHours += Math.min(estimatedHoursRemaining * intensity, maxHours * maxIntensity);
+                            weekTasks.push(`${task.taskDescription} (${task.size})`);
+                        }
+                    }
+                });
+
+                usedHours = Math.min(usedHours, maxHours);
+                
+                weeklyData.push({
+                    week: weekNum,
+                    maxHours: maxHours,
+                    usedHours: Math.round(usedHours * 10) / 10,
+                    availableHours: Math.round((maxHours - usedHours) * 10) / 10,
+                    tasks: weekTasks,
+                    utilization: maxHours > 0 ? Math.round((usedHours / maxHours) * 100) : 0
+                });
+            }
+
+            return {
+                name: person.name,
+                avgHours: Math.round(((person.hours_per_w1 + person.hours_per_w2 + person.hours_per_w3 + person.hours_per_w4 + person.hours_per_w5) / 5) * 10) / 10,
+                weeklyData: weeklyData
+            };
+        }
+
+        function calculateAllCapacities() {
+            return employees.map(person => calculatePersonCapacity(person));
+        }
+
+        function getWeeklyRankings(capacities) {
+            const rankings = [];
+            for (let week = 1; week <= 5; week++) {
+                const weekRanking = capacities
+                    .map(person => ({
+                        name: person.name,
+                        available: person.weeklyData[week - 1].availableHours
+                    }))
+                    .sort((a, b) => b.available - a.available)
+                    .slice(0, 3);
+                rankings.push(weekRanking);
+            }
+            return rankings;
+        }
+
+        // ===== UI UPDATE FUNCTIONS =====
+        function updateCapacity(employeeName, week, newHours) {
+            const employee = employees.find(e => e.name === employeeName);
+            if (employee) {
+                employee[`hours_per_w${week}`] = parseInt(newHours);
+                refreshDashboard();
+            }
+        }
+
+        function generateEmployeeControls() {
+            const container = document.getElementById('employee-controls');
+            container.innerHTML = '';
+
+            employees.forEach(employee => {
+                const section = document.createElement('div');
+                section.className = 'employee-section';
+                
+                let controlsHTML = `<div class="employee-name">👤 ${employee.name}</div>`;
+                
+                for (let week = 1; week <= 5; week++) {
+                    const value = employee[`hours_per_w${week}`];
+                    controlsHTML += `
+                        <div class="week-control">
+                            <div class="week-label">W${week}:</div>
+                            <input type="range" class="week-slider" min="0" max="50" value="${value}" 
+                                   onchange="updateCapacity('${employee.name}', ${week}, this.value)">
+                            <div class="week-value" id="value-${employee.name}-w${week}">${value}h</div>
+                        </div>
+                    `;
+                }
+                
+                section.innerHTML = controlsHTML;
+                container.appendChild(section);
+            });
+        }
+
+        function updateSliderValues() {
+            employees.forEach(employee => {
+                for (let week = 1; week <= 5; week++) {
+                    const valueElement = document.getElementById(`value-${employee.name}-w${week}`);
+                    if (valueElement) {
+                        valueElement.textContent = `${employee[`hours_per_w${week}`]}h`;
+                    }
+                }
+            });
+        }
+
+        function generateTaskSizeControls() {
+            const container = document.getElementById('task-size-controls');
+            container.innerHTML = '';
+
+            Object.keys(taskSizes).forEach(sizeKey => {
+                const size = taskSizes[sizeKey];
+                const controlDiv = document.createElement('div');
+                controlDiv.className = 'task-size-control';
+                
+                controlDiv.innerHTML = `
+                    <div class="size-label" style="color: ${size.color};">${size.name}:</div>
+                    <input type="number" class="size-input" min="0.1" max="20" step="0.5" 
+                           value="${size.days}" 
+                           onchange="updateTaskSize('${sizeKey}', this.value)">
+                    <div class="size-days">${size.days}d</div>
+                `;
+                
+                container.appendChild(controlDiv);
+            });
+        }
+
+        function updateTaskSize(sizeKey, newDays) {
+            taskSizes[sizeKey].days = parseFloat(newDays);
+            
+            // Update display
+            const sizeElement = document.querySelector(`[onchange="updateTaskSize('${sizeKey}', this.value)"]`).parentNode.querySelector('.size-days');
+            if (sizeElement) {
+                sizeElement.textContent = `${newDays}d`;
+            }
+            
+            refreshDashboard();
+        }
+
+        function generateSummaryCards() {
+            const capacities = calculateAllCapacities();
+            const weeks = getWeekDates();
+            
+            let summaryHTML = `
+                <div class="summary-card">
+                    <h3>Team Members</h3>
+                    <div class="value">${employees.length}</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Active Tasks</h3>
+                    <div class="value">${tasks.filter(t => t.progress < 100).length}</div>
+                </div>
+            `;
+
+            for (let week = 1; week <= 5; week++) {
+                const avgAvailable = capacities.reduce((sum, person) => 
+                    sum + person.weeklyData[week - 1].availableHours, 0) / capacities.length;
+                
+                summaryHTML += `
+                    <div class="summary-card">
+                        <h3>Avg Available (${weeks[week - 1].label})</h3>
+                        <div class="value">${Math.round(avgAvailable * 10) / 10}h</div>
+                    </div>
+                `;
+            }
+
+            document.getElementById('summary-cards').innerHTML = summaryHTML;
+        }
+
+        function generateCapacityTable() {
+            const capacities = calculateAllCapacities();
+            const rankings = getWeeklyRankings(capacities);
+            const weeks = getWeekDates();
+
+            let tableHTML = `
+                <thead>
+                    <tr>
+                        <th rowspan="2">Employee</th>
+                        <th rowspan="2">Avg Hours</th>
+            `;
+
+            // Week headers with rankings
+            for (let week = 0; week < 5; week++) {
+                const ranking = rankings[week];
+                tableHTML += `
+                    <th colspan="3" class="week-header">
+                        ${weeks[week].label} (${weeks[week].dateRange})
+                        <div class="week-rankings">
+                            <span class="rank rank-1">🥇 ${ranking[0]?.name} (${ranking[0]?.available}h)</span>
+                            <span class="rank rank-2">🥈 ${ranking[1]?.name} (${ranking[1]?.available}h)</span>
+                            <span class="rank rank-3">🥉 ${ranking[2]?.name} (${ranking[2]?.available}h)</span>
+                        </div>
+                    </th>
+                `;
+            }
+
+            tableHTML += `
+                    </tr>
+                    <tr>
+            `;
+
+            // Sub-headers
+            for (let week = 0; week < 5; week++) {
+                tableHTML += `
+                    <th>Used</th>
+                    <th>Available</th>
+                    <th>Tasks</th>
+                `;
+            }
+
+            tableHTML += `
+                    </tr>
+                </thead>
+                <tbody>
+            `;
+
+            // Data rows
+            capacities.forEach(person => {
+                tableHTML += `
+                    <tr>
+                        <td class="employee-name-cell">${person.name}</td>
+                        <td>${person.avgHours}h avg</td>
+                `;
+
+                person.weeklyData.forEach(week => {
+                    const availabilityClass = week.availableHours >= (week.maxHours * 0.7) ? 'available' :
+                                             week.availableHours >= (week.maxHours * 0.3) ? 'moderate' : 'busy';
+                    
+                    tableHTML += `
+                        <td>${week.usedHours}h</td>
+                        <td class="${availabilityClass}">${week.availableHours}h</td>
+                        <td style="font-size: 10px; max-width: 150px; text-align: left;">${week.tasks.slice(0, 3).join(', ')}${week.tasks.length > 3 ? '...' : ''}</td>
+                    `;
+                });
+
+                tableHTML += `</tr>`;
+            });
+
+            tableHTML += `</tbody>`;
+            document.getElementById('capacity-table').innerHTML = tableHTML;
+        }
+
+        function refreshDashboard() {
+            updateSliderValues();
+            generateTaskSizeControls();
+            generateSummaryCards();
+            generateCapacityTable();
+        }
+
+        // ===== SIMULATION FUNCTIONS =====
+        function addTaskWithSize() {
+            const employeeName = prompt("👤 Employee name:", employees[0]?.name || "");
+            if (!employeeName) return;
+            
+            const taskDescription = prompt("📝 Task description:", "New Task");
+            if (!taskDescription) return;
+            
+            const sizeOptions = Object.keys(taskSizes).map(key => 
+                `${key} (${taskSizes[key].name} - ${taskSizes[key].days} days)`
+            ).join('\n');
+            
+            const sizeKey = prompt(`📏 Task size:\n${sizeOptions}\n\nEnter size (XS, S, M, L, XL):`, "M");
+            if (!sizeKey || !taskSizes[sizeKey]) {
+                alert("❌ Invalid task size. Using Medium (M) as default.");
+                return;
+            }
+            
+            const newTask = {
+                employeeName: employeeName,
+                taskDescription: taskDescription,
+                priority: Math.floor(Math.random() * 4) + 1,
+                startDate: "2025-10-01",
+                eta: "2025-11-01",
+                progress: 0,
+                size: sizeKey
+            };
+            
+            tasks.push(newTask);
+            refreshDashboard();
+            
+            const sizeInfo = taskSizes[sizeKey];
+            setTimeout(() => {
+                alert(`✅ Added ${sizeInfo.name} task (${sizeInfo.days} days): "${newTask.taskDescription}" to ${newTask.employeeName}`);
+            }, 100);
+        }
+
+        function addRandomTask() {
+            const randomEmployees = employees[Math.floor(Math.random() * employees.length)].name;
+            const randomTasks = [
+                "Bug Fix", "Feature Development", "Code Review", "Documentation", 
+                "Testing", "Deployment", "Research", "Client Meeting", "Training"
+            ];
+            const randomTask = randomTasks[Math.floor(Math.random() * randomTasks.length)];
+            const randomSizes = Object.keys(taskSizes);
+            const randomSize = randomSizes[Math.floor(Math.random() * randomSizes.length)];
+            
+            const newTask = {
+                employeeName: randomEmployees,
+                taskDescription: randomTask + " #" + Math.floor(Math.random() * 1000),
+                priority: Math.floor(Math.random() * 4) + 1,
+                startDate: "2025-10-01",
+                eta: "2025-11-01",
+                progress: Math.floor(Math.random() * 50),
+                size: randomSize
+            };
+            
+            tasks.push(newTask);
+            refreshDashboard();
+            
+            const sizeInfo = taskSizes[randomSize];
+            // Visual feedback
+            setTimeout(() => {
+                alert(`✅ Added ${sizeInfo.name} task: "${newTask.taskDescription}" to ${newTask.employeeName}`);
+            }, 100);
+        }
+
+        function clearAllTasks() {
+            if (confirm("🗑️ Clear all tasks? This will reset the workload simulation.")) {
+                tasks.length = 0;
+                refreshDashboard();
+            }
+        }
+
+        function resetToDefaults() {
+            if (confirm("🔄 Reset all capacity values to defaults?")) {
+                employees.forEach(employee => {
+                    if (employee.name === "Siva") {
+                        employee.hours_per_w1 = 25; employee.hours_per_w2 = 30; employee.hours_per_w3 = 20; 
+                        employee.hours_per_w4 = 25; employee.hours_per_w5 = 15;
+                    } else if (employee.name === "Peter") {
+                        employee.hours_per_w1 = 25; employee.hours_per_w2 = 25; employee.hours_per_w3 = 25; 
+                        employee.hours_per_w4 = 25; employee.hours_per_w5 = 25;
+                    } else {
+                        employee.hours_per_w1 = 25; employee.hours_per_w2 = 25; employee.hours_per_w3 = 25; 
+                        employee.hours_per_w4 = 25; employee.hours_per_w5 = 25;
+                    }
+                });
+                generateEmployeeControls();
+                refreshDashboard();
+            }
+        }
+
+        function addEmployee() {
+            const name = prompt("👤 Enter new employee name:");
+            if (name && name.trim()) {
+                employees.push({
+                    name: name.trim(),
+                    hours_per_w1: 25, hours_per_w2: 25, hours_per_w3: 25, 
+                    hours_per_w4: 25, hours_per_w5: 25
+                });
+                generateEmployeeControls();
+                refreshDashboard();
+            }
+        }
+
+        function exportData() {
+            const data = { employees, tasks, taskSizes, weekStartDate };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'capacity_data.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function shiftWeeksForward() {
+            weekStartDate.setDate(weekStartDate.getDate() + 7);
+            refreshDashboard();
+        }
+
+        function shiftWeeksBackward() {
+            weekStartDate.setDate(weekStartDate.getDate() - 7);
+            refreshDashboard();
+        }
+
+        // ===== INITIALIZATION =====
+        document.addEventListener('DOMContentLoaded', function() {
+            generateEmployeeControls();
+            generateTaskSizeControls();
+            refreshDashboard();
+            
+            // Add some visual feedback
+            console.log("🎛️ Interactive Capacity Dashboard Loaded!");
+            console.log("📊 Real-time capacity planning is now active");
+            console.log("📏 Task sizing controls available");
+        });
+    </script>
+</body>
+</html>

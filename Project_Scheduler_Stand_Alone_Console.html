@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Capacity & Ticket Scheduler (Standalone)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for better readability and console feel */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fc;
+        }
+        .container {
+            max-width: 1400px;
+        }
+        .input-card, .output-card {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s;
+        }
+        
+        /* Enhanced Task Sizing Styles */
+        .task-size-manager {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .task-size-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .task-size-card:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+        
+        .size-input-enhanced {
+            background: rgba(255, 255, 255, 0.9);
+            border: none;
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: #2c3e50;
+            font-weight: 600;
+            text-align: center;
+            width: 80px;
+        }
+        
+        .size-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .size-label-enhanced {
+            font-weight: bold;
+            font-size: 14px;
+            min-width: 60px;
+        }
+        
+        .size-metrics {
+            font-size: 12px;
+            opacity: 0.9;
+            margin-top: 4px;
+        }
+        
+        .preset-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .preset-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+        
+        .custom-size-form {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            border: 1px dashed rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Modal Styles for Calculation Details */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+            margin: 20px;
+            width: calc(100% - 40px);
+        }
+        
+        @media (min-width: 640px) {
+            .modal-content {
+                width: auto;
+                margin: 0;
+            }
+        }
+        
+        .modal-overlay.active .modal-content {
+            transform: scale(1);
+        }
+        
+        .modal-header {
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 16px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #6b7280;
+            padding: 4px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+        
+        .modal-close:hover {
+            background-color: #f3f4f6;
+        }
+        
+        .calculation-details {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid #3b82f6;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .details-btn {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            margin-left: 8px;
+            transition: background-color 0.2s;
+        }
+        
+        .details-btn:hover {
+            background: #2563eb;
+        }
+        
+        /* Size Dropdown Styling */
+        .size-dropdown {
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #4f46e5;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            min-width: 80px;
+        }
+        
+        .size-dropdown:hover {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 1px #4f46e5;
+        }
+        
+        .size-dropdown:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+        }
+        
+        .size-dropdown option {
+            padding: 4px;
+            font-weight: normal;
+        }
+        .tooltip-container {
+            position: relative;
+            cursor: pointer;
+        }
+        .tooltip-text {
+            visibility: hidden;
+            width: 300px;
+            background-color: #1f2937;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 10px;
+            position: absolute;
+            z-index: 10;
+            bottom: 125%; /* Position above the element */
+            left: 50%;
+            margin-left: -150px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            font-size: 0.85rem;
+            pointer-events: none;
+            white-space: pre-wrap; /* Allows line breaks in the explanation */
+        }
+        .tooltip-container:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        /* Style for the select dropdowns */
+        .select-multiple {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%236b7280'%3e%3cpath d='M7 7l3-3 3 3m0 6l-3 3-3-3' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1.5em;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div id="app" class="container mx-auto">
+        <div class="flex justify-between items-center mb-6 border-b pb-2">
+            <h1 class="text-3xl font-extrabold text-gray-900">Project Delivery Console</h1>
+            <button onclick="exportData()" class="ml-4 bg-gray-600 text-white p-2 rounded-lg hover:bg-gray-700 transition duration-150 flex-shrink-0 flex items-center shadow-md">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Export to CSV
+            </button>
+        </div>
+        
+        <p id="auth-status" class="text-xs text-gray-500 mb-4">Data saved locally in browser storage.</p>
+        
+        <div id="loading-spinner" class="text-center p-10 hidden">
+            <!-- Spinner removed as local loading is instant -->
+        </div>
+
+        <div id="main-content" class="grid lg:grid-cols-3 gap-6 mb-8">
+            
+            <!-- People and Availability Configuration -->
+            <div class="lg:col-span-1 input-card bg-white p-6 rounded-xl shadow-lg h-full">
+                <h2 class="text-xl font-semibold mb-4 text-indigo-700 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20v-2c0-.656-.126-1.283-.356-1.857M17 20H7m0 0v-2c0-.656.126-1.283.356-1.857M7 20h4m0-9a3 3 0 100 6 3 3 0 000-6zm-4 3a2 2 0 11-4 0 2 2 0 014 0zm10 0a2 2 0 11-4 0 2 2 0 014 0zm7-3a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    Team Availability (Next 5 Weeks)
+                </h2>
+                <div id="people-list">
+                    <!-- People cards will be rendered here -->
+                </div>
+                <div class="mt-4">
+                    <input type="text" id="new-person-name" placeholder="New team member name" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                    <button onclick="addPerson()" class="mt-2 w-full bg-indigo-500 text-white p-2 rounded-lg hover:bg-indigo-600 transition duration-150">Add Member</button>
+                </div>
+            </div>
+
+            <!-- Effort Mapping and Control -->
+            <div class="lg:col-span-2 input-card bg-white p-6 rounded-xl shadow-lg">
+                
+                <!-- Enhanced Task Sizing Management -->
+                <div class="task-size-manager">
+                    <h2 class="text-xl font-bold mb-4 flex items-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                        📏 Task Sizing Configuration
+                    </h2>
+                    
+                    <div class="mb-4 flex items-center gap-4 flex-wrap">
+                        <div class="flex items-center gap-2">
+                            <label class="text-sm font-medium">Hours per Day:</label>
+                            <input type="number" id="hours-per-day" value="8" min="1" max="24" 
+                                   onchange="updateEffortMapping(event.target.value)" 
+                                   class="size-input-enhanced w-16">
+                        </div>
+                        <div class="text-sm opacity-90">
+                            Total hours = Days × <span id="hours-per-day-display">8</span> HPD
+                        </div>
+                    </div>
+                    
+                    <div id="task-size-cards" class="grid md:grid-cols-3 lg:grid-cols-5 gap-3 mb-4">
+                        <!-- Enhanced task size cards will be rendered here -->
+                    </div>
+                    
+                    <div class="flex gap-2 mb-4 flex-wrap">
+                        <button onclick="applyPreset('agile')" class="preset-btn">🏃 Agile Team</button>
+                        <button onclick="applyPreset('enterprise')" class="preset-btn">🏢 Enterprise</button>
+                        <button onclick="applyPreset('startup')" class="preset-btn">🚀 Startup</button>
+                        <button onclick="applyPreset('conservative')" class="preset-btn">🛡️ Conservative</button>
+                        <button onclick="showCustomSizeForm()" class="preset-btn">➕ Add Custom Size</button>
+                    </div>
+                    
+                    <div id="custom-size-form" class="custom-size-form hidden">
+                        <h4 class="font-semibold mb-3">Add Custom Task Size</h4>
+                        <div class="flex gap-3 items-end flex-wrap">
+                            <div>
+                                <label class="block text-sm mb-1">Size Key (e.g., XS)</label>
+                                <input type="text" id="new-size-key" placeholder="XS" maxlength="4" 
+                                       class="size-input-enhanced w-20">
+                            </div>
+                            <div>
+                                <label class="block text-sm mb-1">Display Name</label>
+                                <input type="text" id="new-size-name" placeholder="Extra Small" 
+                                       class="size-input-enhanced w-32">
+                            </div>
+                            <div>
+                                <label class="block text-sm mb-1">Days</label>
+                                <input type="number" id="new-size-days" placeholder="0.5" min="0.1" max="50" step="0.5" 
+                                       class="size-input-enhanced w-20">
+                            </div>
+                            <button onclick="addCustomSize()" class="preset-btn bg-green-600 hover:bg-green-700">Add</button>
+                            <button onclick="hideCustomSizeForm()" class="preset-btn bg-gray-600 hover:bg-gray-700">Cancel</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <h2 class="text-xl font-semibold mb-4 text-indigo-700 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Ticket Management
+                </h2>
+
+                <div class="mt-6">
+                    <h3 class="font-semibold text-lg mb-3">Add New Ticket</h3>
+                    <div class="flex flex-col md:flex-row gap-2">
+                        <input type="text" id="new-ticket-desc" placeholder="Ticket Description" class="flex-grow p-2 border border-gray-300 rounded-lg">
+                        <input type="date" id="new-ticket-start-date" class="w-full md:w-36 p-2 border border-gray-300 rounded-lg text-sm" title="Start Date">
+                        <select id="new-ticket-size" class="w-full md:w-32 p-2 border border-gray-300 rounded-lg">
+                            <!-- Options populated dynamically by JavaScript -->
+                        </select>
+                        <select id="new-ticket-assigned" multiple class="select-multiple w-full md:w-48 p-2 border border-gray-300 rounded-lg h-auto min-h-[40px] text-sm">
+                            <!-- Options populated by JS -->
+                        </select>
+                        <button onclick="addTicket()" class="w-full md:w-24 bg-green-500 text-white p-2 rounded-lg hover:bg-green-600 transition duration-150 flex-shrink-0">Add</button>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">
+                        💡 Start date determines when the task can begin. If empty, defaults to next Monday.
+                    </div>
+                </div>
+                
+                <!-- Ticket List and Projection -->
+                <div class="mt-6">
+                    <h3 class="text-xl font-semibold mb-3 text-indigo-700">Ticket List & Schedule</h3>
+                    <div class="overflow-x-auto rounded-lg border border-gray-200">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start Date</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Size</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assigned</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider tooltip-container">Projected End Date
+                                        <div class="tooltip-text">
+                                            This date is calculated based on the start date, combined weekly availability of the assigned team members, and the ticket's total effort hours.
+                                        </div>
+                                    </th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ticket-table-body" class="bg-white divide-y divide-gray-200">
+                                <!-- Tickets will be rendered here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <p id="no-tickets" class="text-center py-4 text-gray-500 hidden">No tickets added yet. Start by adding a task!</p>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+
+    <!-- Modal for Calculation Details -->
+    <div id="calculation-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modal-title">Calculation Details</h3>
+                <button class="modal-close" onclick="closeCalculationModal()">&times;</button>
+            </div>
+            <div class="calculation-details" id="calculation-content">
+                <!-- Calculation details will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- GLOBAL CONFIG & STATE ---
+        const STORAGE_KEY = 'projectSchedulerDataV2';
+        let people = [];
+        let tickets = [];
+        let hoursPerDay = 8; 
+        let ticketDays = {
+            S: 1, M: 2, L: 5, XL: 10, XXL: 15
+        };
+        
+        // Enhanced task sizing with display names and presets
+        let taskSizeDefinitions = {
+            S: { name: 'Small', days: 1, removable: false },
+            M: { name: 'Medium', days: 2, removable: false },
+            L: { name: 'Large', days: 5, removable: false },
+            XL: { name: 'X-Large', days: 10, removable: false },
+            XXL: { name: 'XX-Large', days: 15, removable: false }
+        };
+        
+        let effortMap = {};
+        let currentTicketId = 1;
+
+        // Date constants (used as the start of Week 1)
+        const startDate = getNextMonday(new Date());
+
+        // --- LOCAL STORAGE FUNCTIONS (Persistence) ---
+
+        function saveToLocalStorage() {
+            const data = {
+                people,
+                tickets,
+                hoursPerDay,
+                ticketDays,
+                taskSizeDefinitions,
+                currentTicketId,
+                lastUpdated: new Date().toISOString()
+            };
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            } catch (e) {
+                console.error("Error saving to local storage:", e);
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const storedData = localStorage.getItem(STORAGE_KEY);
+                if (storedData) {
+                    const data = JSON.parse(storedData);
+                    people = data.people || [];
+                    tickets = data.tickets || [];
+                    hoursPerDay = data.hoursPerDay || 8;
+                    ticketDays = data.ticketDays || { S: 1, M: 2, L: 5, XL: 10, XXL: 15 };
+                    taskSizeDefinitions = data.taskSizeDefinitions || {
+                        S: { name: 'Small', days: 1, removable: false },
+                        M: { name: 'Medium', days: 2, removable: false },
+                        L: { name: 'Large', days: 5, removable: false },
+                        XL: { name: 'X-Large', days: 10, removable: false },
+                        XXL: { name: 'XX-Large', days: 15, removable: false }
+                    };
+                    currentTicketId = data.currentTicketId || (tickets.length > 0 ? Math.max(...tickets.map(t => t.id)) + 1 : 1);
+                    
+                    // Sync ticketDays with taskSizeDefinitions
+                    syncTaskSizes();
+                    return true;
+                }
+            } catch (e) {
+                console.error("Error loading from local storage:", e);
+            }
+            return false;
+        }
+        
+        function syncTaskSizes() {
+            // Ensure ticketDays and taskSizeDefinitions stay in sync
+            Object.keys(taskSizeDefinitions).forEach(key => {
+                ticketDays[key] = taskSizeDefinitions[key].days;
+            });
+        }
+
+        // --- UTILITY FUNCTIONS ---
+
+        function getNextMonday(date) {
+            const d = new Date(date);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            const nextMonday = new Date(d.setDate(diff));
+            nextMonday.setHours(0, 0, 0, 0);
+            
+            if (day === 1 && d.getHours() < 9) {
+                return nextMonday;
+            } else if (day === 1) {
+                return new Date(nextMonday.setDate(nextMonday.getDate() + 7));
+            } else {
+                return nextMonday;
+            }
+        }
+        
+        function formatDate(dateString) {
+            if (!dateString) return 'Not set';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric',
+                year: 'numeric'
+            });
+        }
+        
+        function formatWeekEndDate(weekIndex) {
+            const date = new Date(startDate);
+            date.setDate(date.getDate() + (weekIndex * 7) + 4); // +4 days for Friday
+            return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+
+        function formatCompletionDate(startWeekIndex, remainingHours, totalWeeklyCapacity) {
+            const completionDate = new Date(startDate);
+            let daysIntoWeek = 0;
+
+            if (totalWeeklyCapacity > 0) {
+                const percentageUsed = remainingHours / totalWeeklyCapacity; 
+                daysIntoWeek = Math.ceil(percentageUsed * 5); 
+                daysIntoWeek = Math.min(daysIntoWeek, 5);
+            }
+
+            completionDate.setDate(completionDate.getDate() + (startWeekIndex * 7) + daysIntoWeek);
+            
+            let dayOfWeek = completionDate.getDay();
+            if (dayOfWeek === 6) { // Saturday
+                completionDate.setDate(completionDate.getDate() + 2);
+            } else if (dayOfWeek === 0) { // Sunday
+                completionDate.setDate(completionDate.getDate() + 1);
+            }
+
+            return completionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        }
+        
+        function calculateEffortMap() {
+            effortMap = {};
+            Object.keys(taskSizeDefinitions).forEach(key => {
+                effortMap[key] = taskSizeDefinitions[key].days * hoursPerDay;
+            });
+        }
+
+        // --- CORE SCHEDULING LOGIC ---
+
+        function getProjectedTickets() {
+            if (people.length === 0 || tickets.length === 0) {
+                return tickets.map(t => ({ ...t, endDate: 'N/A', explanation: 'No people or no effort.', isDelayed: false }));
+            }
+
+            calculateEffortMap();
+
+            // Create a deep clone of availability for resource tracking
+            const availabilityTracker = people.reduce((acc, p) => {
+                acc[p.name] = [...p.availability];
+                return acc;
+            }, {});
+            
+            const projectedTickets = tickets.map(ticket => {
+                const totalEffortHours = effortMap[ticket.size] || 0;
+                const assignedCount = ticket.assigned.length;
+                
+                if (totalEffortHours === 0 || assignedCount === 0) {
+                    return { ...ticket, endDate: 'N/A', explanation: 'No effort defined or no one assigned.', isDelayed: false };
+                }
+
+                // Calculate which week the task can start based on start date
+                const taskStartDate = new Date(ticket.startDate || startDate);
+                const weekStartDate = new Date(startDate);
+                const daysDiff = Math.max(0, Math.floor((taskStartDate - weekStartDate) / (1000 * 60 * 60 * 24)));
+                const startWeekIndex = Math.max(0, Math.floor(daysDiff / 7));
+
+                let hoursRemaining = totalEffortHours / assignedCount; 
+                const initialHours = hoursRemaining;
+                
+                let completionWeekIndex = -1;
+                let finalCapacity = 0;
+                let pooledCapacityThisWeek = 0; 
+                
+                let explanation = `Ticket Effort: ${totalEffortHours} hours (${ticket.size}, ${ticketDays[ticket.size]} person-days).\n`;
+                explanation += `Assigned: ${ticket.assigned.join(', ')} (${assignedCount} person(s)).\n`;
+                explanation += `Start Date: ${formatDate(ticket.startDate)} (Week ${startWeekIndex + 1}).\n`;
+                explanation += `Required Duration Hours (pooled): ${initialHours.toFixed(1)} hours.\n\n`;
+
+                let currentHoursToConsume = hoursRemaining;
+
+                // Iterate through 5 weeks, starting from the appropriate week
+                for (let w = startWeekIndex; w < 5; w++) {
+                    pooledCapacityThisWeek = 0;
+                    const capacityBreakdown = {};
+                    
+                    ticket.assigned.forEach(name => {
+                        const personCapacity = availabilityTracker[name] ? availabilityTracker[name][w] || 0 : 0;
+                        pooledCapacityThisWeek += personCapacity;
+                        capacityBreakdown[name] = personCapacity;
+                    });
+                    
+                    explanation += `--- Week ${w + 1} (ends ${formatWeekEndDate(w)}) ---\n`;
+                    explanation += `Pooled Capacity: ${pooledCapacityThisWeek.toFixed(1)} hours.\n`;
+                    
+                    if (pooledCapacityThisWeek <= 0) {
+                        explanation += 'No capacity this week from assigned team members. Moving to next week.\n';
+                        continue;
+                    }
+                    
+                    if (currentHoursToConsume <= pooledCapacityThisWeek) {
+                        completionWeekIndex = w;
+                        finalCapacity = currentHoursToConsume;
+                        explanation += `Task completes this week, consuming ${currentHoursToConsume.toFixed(1)} hours of pooled capacity.\n`;
+                        
+                        let capacityUsed = currentHoursToConsume;
+                        ticket.assigned.forEach(name => {
+                            const personCapacity = capacityBreakdown[name];
+                            if (personCapacity > 0) {
+                                const proportion = personCapacity / pooledCapacityThisWeek;
+                                const timeToDeduct = capacityUsed * proportion;
+                                availabilityTracker[name][w] -= timeToDeduct;
+                                explanation += `  - ${name} contribution: ${timeToDeduct.toFixed(1)} hours (Remaining: ${availabilityTracker[name][w].toFixed(1)}).\n`;
+                            }
+                        });
+                        break;
+                    } else {
+                        currentHoursToConsume -= pooledCapacityThisWeek;
+                        explanation += `Full capacity consumed (${pooledCapacityThisWeek.toFixed(1)} hours). Remaining hours for task: ${currentHoursToConsume.toFixed(1)}.\n`;
+
+                        ticket.assigned.forEach(name => {
+                            availabilityTracker[name][w] = 0;
+                        });
+                    }
+                }
+
+                let endDate;
+                let isDelayed = false;
+
+                if (completionWeekIndex !== -1) {
+                    endDate = formatCompletionDate(completionWeekIndex, finalCapacity, pooledCapacityThisWeek);
+                } else {
+                    endDate = `> ${formatWeekEndDate(4)}`;
+                    explanation += '\nTask is projected to finish AFTER the 5-week window.';
+                    isDelayed = true;
+                }
+                
+                return { 
+                    ...ticket, 
+                    endDate: endDate, 
+                    explanation: explanation,
+                    isDelayed: isDelayed
+                };
+            });
+            
+            return projectedTickets;
+        }
+
+        function calculateProjection() {
+            const projectedTickets = getProjectedTickets();
+            renderTickets(projectedTickets);
+        }
+
+        // --- RENDERING FUNCTIONS ---
+
+        function renderEffortMap() {
+            calculateEffortMap(); 
+            
+            document.getElementById('hours-per-day-display').textContent = hoursPerDay;
+            document.getElementById('hours-per-day').value = hoursPerDay;
+
+            renderTaskSizeCards();
+        }
+        
+        function renderTaskSizeCards() {
+            const container = document.getElementById('task-size-cards');
+            if (!container) return;
+
+            container.innerHTML = Object.keys(taskSizeDefinitions).map(key => {
+                const size = taskSizeDefinitions[key];
+                const totalHours = size.days * hoursPerDay;
+                
+                return `
+                    <div class="task-size-card">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="size-label-enhanced">${size.name}</div>
+                            ${size.removable ? `<button onclick="removeTaskSize('${key}')" class="text-red-300 hover:text-red-100 text-xs">✕</button>` : ''}
+                        </div>
+                        <div class="size-controls">
+                            <input 
+                                type="number" 
+                                value="${size.days}" 
+                                min="0.1" 
+                                max="50"
+                                step="0.5"
+                                onchange="updateTaskSizeDaysEnhanced('${key}', this.value)" 
+                                class="size-input-enhanced"
+                            >
+                            <span class="text-sm">days</span>
+                        </div>
+                        <div class="size-metrics">
+                            <div>📊 <strong>${totalHours}h</strong> total</div>
+                            <div>⚡ ${(totalHours/hoursPerDay).toFixed(1)} person-days</div>
+                            <div class="text-xs mt-1 opacity-75">Size: <strong>${key}</strong></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            
+            // Update ticket size dropdown options
+            updateTicketSizeDropdown();
+        }
+        
+        function updateTicketSizeDropdown() {
+            const dropdown = document.getElementById('new-ticket-size');
+            if (!dropdown) return;
+            
+            dropdown.innerHTML = Object.keys(taskSizeDefinitions).map(key => {
+                const size = taskSizeDefinitions[key];
+                return `<option value="${key}">${size.name} (${key})</option>`;
+            }).join('');
+        }
+
+        function renderPeople() {
+            const peopleList = document.getElementById('people-list');
+            const assignDropdown = document.getElementById('new-ticket-assigned');
+            peopleList.innerHTML = '';
+            assignDropdown.innerHTML = '';
+
+            people.forEach((person, pIndex) => {
+                const card = document.createElement('div');
+                card.className = 'p-3 mb-3 bg-indigo-50 rounded-lg border border-indigo-200';
+                
+                let availabilityInputs = '';
+                for (let w = 0; w < 5; w++) {
+                    const weekEnd = formatWeekEndDate(w);
+                    availabilityInputs += `
+                        <div class="flex-1 min-w-[50px]">
+                            <label class="block text-xs text-gray-600 mb-1">Wk ${w+1} (${weekEnd})</label>
+                            <input 
+                                type="number" 
+                                value="${person.availability[w] || 0}" 
+                                min="0" 
+                                onchange="updatePersonAvailability('${person.name}', ${w}, this.value)" 
+                                class="w-full p-1 text-xs border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-center"
+                            >
+                        </div>
+                    `;
+                }
+
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <span class="font-bold text-indigo-800">${person.name}</span>
+                        <button onclick="removePerson('${person.name}')" class="text-red-500 hover:text-red-700 transition">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="flex gap-2 text-xs">
+                        ${availabilityInputs}
+                    </div>
+                `;
+                peopleList.appendChild(card);
+
+                const option = document.createElement('option');
+                option.value = person.name;
+                option.textContent = person.name;
+                assignDropdown.appendChild(option);
+            });
+            
+            const ticketAssignmentSelect = document.getElementById('new-ticket-assigned');
+            if (ticketAssignmentSelect) {
+                Array.from(ticketAssignmentSelect.options).forEach(opt => opt.selected = false);
+            }
+        }
+
+        function renderTickets(projectedTickets) {
+            const tbody = document.getElementById('ticket-table-body');
+            tbody.innerHTML = '';
+            
+            if (projectedTickets.length === 0) {
+                document.getElementById('no-tickets').classList.remove('hidden');
+                return;
+            }
+            document.getElementById('no-tickets').classList.add('hidden');
+
+            projectedTickets.forEach(ticket => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-gray-50';
+
+                // Rebuild the dropdown options to ensure current assignments are selected
+                const allOptions = people.map(p => {
+                    const isSelected = ticket.assigned.includes(p.name);
+                    return `<option value="${p.name}" ${isSelected ? 'selected' : ''}>${p.name}</option>`;
+                }).join('');
+
+                // Create size dropdown options
+                const sizeOptions = Object.keys(taskSizeDefinitions).map(key => {
+                    const size = taskSizeDefinitions[key];
+                    const isSelected = ticket.size === key;
+                    return `<option value="${key}" ${isSelected ? 'selected' : ''}>${size.name} (${key})</option>`;
+                }).join('');
+
+                const completionDateClass = ticket.isDelayed ? 'bg-red-100 text-red-700 font-bold p-1 rounded' : 'text-green-600 font-semibold';
+                
+                tr.innerHTML = `
+                    <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">${ticket.id}</td>
+                    <td class="px-3 py-2 text-sm text-gray-900 w-1/3">${ticket.description}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-600">${formatDate(ticket.startDate)}</td>
+                    <td class="px-3 py-2 whitespace-nowrap text-sm font-medium">
+                        <select 
+                            class="w-full p-1 border border-gray-300 rounded-lg text-xs bg-white text-indigo-600 font-medium"
+                            onchange="handleSizeChange(this, ${ticket.id})"
+                            title="Change task size"
+                        >
+                            ${sizeOptions}
+                        </select>
+                    </td>
+                    <td class="px-3 py-2 text-sm text-gray-500 w-1/4">
+                        <select 
+                            multiple 
+                            class="select-multiple w-full p-1 border border-gray-300 rounded-lg text-xs h-auto min-h-[40px]"
+                            onchange="handleAssignmentChange(this, ${ticket.id})"
+                        >
+                            ${allOptions}
+                        </select>
+                    </td>
+                    <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
+                        <div class="flex items-center">
+                            <span class="${completionDateClass}">${ticket.endDate}</span>
+                            <button onclick="showCalculationDetails(${ticket.id})" class="details-btn" title="Show calculation details">
+                                Details
+                            </button>
+                        </div>
+                    </td>
+                    <td class="px-3 py-2 whitespace-nowrap text-right text-sm font-medium">
+                        <button onclick="removeTicket(${ticket.id})" class="text-red-500 hover:text-red-700 transition">
+                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // --- CSV EXPORT FUNCTION ---
+
+        window.exportData = () => {
+            const projectedTickets = getProjectedTickets();
+            if (projectedTickets.length === 0) {
+                alert("No tickets to export.");
+                return;
+            }
+
+            // 1. Generate the CSV content
+            let csvContent = "Ticket ID,Description,Start Date,Size,Person Days,Total Hours,Assigned Team,Projected End Date,Detailed Explanation\n";
+
+            projectedTickets.forEach(ticket => {
+                const totalHours = effortMap[ticket.size] || 0;
+                const personDays = ticketDays[ticket.size] || 0;
+
+                // Escape double quotes and ensure data is wrapped in quotes
+                const escapeCSV = (value) => `"${String(value).replace(/"/g, '""')}"`;
+
+                const row = [
+                    ticket.id,
+                    escapeCSV(ticket.description),
+                    formatDate(ticket.startDate),
+                    ticket.size,
+                    personDays,
+                    totalHours,
+                    escapeCSV(ticket.assigned.join('; ')),
+                    ticket.endDate.replace(/,/g, ''),
+                    escapeCSV(ticket.explanation.replace(/\n/g, ' | ')) // Replace newlines for single-cell explanation
+                ].join(',');
+                csvContent += row + "\n";
+            });
+
+            // 2. Trigger download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `project_schedule_${new Date().toISOString().slice(0, 10)}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+
+        // --- DATA MODIFIERS (Trigger localStorage save and recalculation) ---
+        
+        window.updateEffortMapping = (value) => {
+            const newHours = parseInt(value, 10);
+            if (isNaN(newHours) || newHours < 1 || newHours > 24) return;
+            
+            hoursPerDay = newHours;
+            
+            calculateEffortMap();
+            renderTaskSizeCards(); // Updated to use new function
+            calculateProjection();
+            saveToLocalStorage();
+        }
+
+        window.updateTicketSizeDays = (sizeKey, value) => {
+            const newDays = parseInt(value, 10);
+            if (isNaN(newDays) || newDays < 1) return; 
+
+            ticketDays[sizeKey] = newDays;
+            
+            calculateEffortMap(); 
+            renderEffortMap();
+            calculateProjection();
+            saveToLocalStorage();
+        }
+        
+        // Enhanced task sizing functions
+        window.updateTicketSizeDaysEnhanced = (sizeKey, value) => {
+            const newDays = parseFloat(value);
+            if (isNaN(newDays) || newDays < 0.1) return; 
+
+            ticketDays[sizeKey] = newDays;
+            taskSizeDefinitions[sizeKey].days = newDays;
+            
+            calculateEffortMap(); 
+            renderTaskSizeCards();
+            calculateProjection();
+            saveToLocalStorage();
+        }
+        
+        window.applyPreset = (presetName) => {
+            const presets = {
+                agile: {
+                    XS: { name: 'Extra Small', days: 0.5, removable: true },
+                    S: { name: 'Small', days: 1, removable: false },
+                    M: { name: 'Medium', days: 3, removable: false },
+                    L: { name: 'Large', days: 5, removable: false },
+                    XL: { name: 'X-Large', days: 8, removable: false }
+                },
+                enterprise: {
+                    S: { name: 'Small', days: 2, removable: false },
+                    M: { name: 'Medium', days: 5, removable: false },
+                    L: { name: 'Large', days: 10, removable: false },
+                    XL: { name: 'X-Large', days: 20, removable: false },
+                    XXL: { name: 'XX-Large', days: 40, removable: false }
+                },
+                startup: {
+                    XS: { name: 'Quick Fix', days: 0.25, removable: true },
+                    S: { name: 'Small', days: 1, removable: false },
+                    M: { name: 'Medium', days: 2, removable: false },
+                    L: { name: 'Large', days: 5, removable: false },
+                    XL: { name: 'Epic', days: 10, removable: false }
+                },
+                conservative: {
+                    S: { name: 'Small', days: 3, removable: false },
+                    M: { name: 'Medium', days: 8, removable: false },
+                    L: { name: 'Large', days: 15, removable: false },
+                    XL: { name: 'X-Large', days: 25, removable: false },
+                    XXL: { name: 'XX-Large', days: 40, removable: false }
+                }
+            };
+            
+            if (presets[presetName]) {
+                if (confirm(`Apply ${presetName} preset? This will replace your current task sizes.`)) {
+                    taskSizeDefinitions = { ...presets[presetName] };
+                    syncTaskSizes();
+                    calculateEffortMap();
+                    renderTaskSizeCards();
+                    calculateProjection();
+                    saveToLocalStorage();
+                }
+            }
+        }
+        
+        window.showCustomSizeForm = () => {
+            document.getElementById('custom-size-form').classList.remove('hidden');
+        }
+        
+        window.hideCustomSizeForm = () => {
+            document.getElementById('custom-size-form').classList.add('hidden');
+            // Clear form
+            document.getElementById('new-size-key').value = '';
+            document.getElementById('new-size-name').value = '';
+            document.getElementById('new-size-days').value = '';
+        }
+        
+        window.addCustomSize = () => {
+            const key = document.getElementById('new-size-key').value.trim().toUpperCase();
+            const name = document.getElementById('new-size-name').value.trim();
+            const days = parseFloat(document.getElementById('new-size-days').value);
+            
+            if (!key || !name || isNaN(days) || days < 0.1) {
+                alert('Please fill all fields with valid values.');
+                return;
+            }
+            
+            if (taskSizeDefinitions[key]) {
+                alert('Size key already exists. Choose a different key.');
+                return;
+            }
+            
+            taskSizeDefinitions[key] = { name, days, removable: true };
+            ticketDays[key] = days;
+            
+            calculateEffortMap();
+            renderTaskSizeCards();
+            hideCustomSizeForm();
+            saveToLocalStorage();
+            
+            alert(`✅ Added custom size: ${name} (${key}) - ${days} days`);
+        }
+        
+        window.removeTaskSize = (sizeKey) => {
+            if (!taskSizeDefinitions[sizeKey]?.removable) {
+                alert('This task size cannot be removed.');
+                return;
+            }
+            
+            // Check if any tickets use this size
+            const ticketsWithSize = tickets.filter(ticket => ticket.size === sizeKey);
+            if (ticketsWithSize.length > 0) {
+                alert(`Cannot remove size ${sizeKey}. It's used by ${ticketsWithSize.length} ticket(s).`);
+                return;
+            }
+            
+            if (confirm(`Remove task size ${sizeKey} (${taskSizeDefinitions[sizeKey].name})?`)) {
+                delete taskSizeDefinitions[sizeKey];
+                delete ticketDays[sizeKey];
+                
+                calculateEffortMap();
+                renderTaskSizeCards();
+                saveToLocalStorage();
+            }
+        }
+
+        window.addPerson = () => {
+            const nameInput = document.getElementById('new-person-name');
+            const name = nameInput.value.trim();
+            if (!name || people.some(p => p.name === name)) {
+                // Simplified confirmation dialog for local environment
+                if (name) alert("Person already exists or name is invalid.");
+                return;
+            }
+
+            people.push({
+                name: name,
+                availability: [25, 25, 25, 25, 25] 
+            });
+            
+            nameInput.value = '';
+            renderPeople();
+            calculateProjection();
+            saveToLocalStorage();
+        }
+
+        window.removePerson = (name) => {
+            people = people.filter(p => p.name !== name);
+            tickets.forEach(ticket => {
+                ticket.assigned = ticket.assigned.filter(n => n !== name);
+            });
+
+            renderPeople();
+            calculateProjection();
+            saveToLocalStorage();
+        }
+
+        window.updatePersonAvailability = (name, weekIndex, value) => {
+            const hours = Math.max(0, parseInt(value, 10));
+            if (isNaN(hours)) return;
+
+            const person = people.find(p => p.name === name);
+            if (person) {
+                person.availability[weekIndex] = hours;
+                calculateProjection(); 
+                saveToLocalStorage();
+            }
+        }
+
+        window.addTicket = () => {
+            const descInput = document.getElementById('new-ticket-desc');
+            const startDateInput = document.getElementById('new-ticket-start-date');
+            const sizeSelect = document.getElementById('new-ticket-size');
+            const assignedSelect = document.getElementById('new-ticket-assigned');
+
+            const description = descInput.value.trim();
+            const startDate = startDateInput.value || getNextMonday(new Date()).toISOString().split('T')[0];
+            const size = sizeSelect.value;
+            const assigned = Array.from(assignedSelect.selectedOptions).map(option => option.value);
+
+            if (!description) {
+                alert("Ticket description cannot be empty.");
+                return;
+            }
+
+            tickets.push({
+                id: currentTicketId++,
+                description: description,
+                startDate: startDate,
+                size: size,
+                assigned: assigned
+            });
+
+            descInput.value = '';
+            startDateInput.value = '';
+            sizeSelect.value = 'L';
+            Array.from(assignedSelect.options).forEach(opt => opt.selected = false);
+
+            calculateProjection();
+            saveToLocalStorage();
+        }
+
+        window.removeTicket = (id) => {
+            tickets = tickets.filter(t => t.id !== id);
+            calculateProjection();
+            saveToLocalStorage();
+        }
+
+        window.updateTicketAssignment = (id, newAssignedArray) => {
+            const ticket = tickets.find(t => t.id === id);
+            if (ticket) {
+                ticket.assigned = newAssignedArray;
+                calculateProjection();
+                saveToLocalStorage();
+            }
+        }
+        
+        window.handleAssignmentChange = (selectElement, ticketId) => {
+            const newAssignedArray = Array.from(selectElement.selectedOptions).map(o => o.value);
+            window.updateTicketAssignment(ticketId, newAssignedArray);
+        }
+
+        window.handleSizeChange = (selectElement, ticketId) => {
+            const newSize = selectElement.value;
+            
+            // Find and update the ticket
+            const ticket = tickets.find(t => t.id === ticketId);
+            if (ticket) {
+                const oldSize = ticket.size;
+                ticket.size = newSize;
+                
+                // Provide visual feedback
+                selectElement.style.background = '#dcfce7'; // Light green background
+                setTimeout(() => {
+                    selectElement.style.background = 'white';
+                }, 500);
+                
+                // Recalculate and re-render immediately
+                calculateProjection();
+                saveToLocalStorage();
+                
+                // Optional: Show a brief notification
+                console.log(`📊 Ticket #${ticketId} size changed from ${oldSize} to ${newSize} - recalculating...`);
+            }
+        }
+
+        // --- CALCULATION DETAILS MODAL FUNCTIONS ---
+
+        window.showCalculationDetails = (ticketId) => {
+            // Find the ticket and get its calculation details
+            const projectedTickets = getProjectedTickets();
+            const ticket = projectedTickets.find(t => t.id === ticketId);
+            
+            if (!ticket) {
+                alert('Ticket not found.');
+                return;
+            }
+            
+            // Create enhanced content with better formatting
+            const enhancedContent = `
+🎯 TICKET: ${ticket.description} (ID: ${ticket.id})
+📊 SIZE: ${ticket.size} 
+📅 START DATE: ${formatDate(ticket.startDate)}
+👥 ASSIGNED TO: ${ticket.assigned.join(', ')}
+🎌 PROJECTED END: ${ticket.endDate}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+${ticket.explanation}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💡 HOW TO READ this calculation:
+• Week numbers correspond to the planning horizon (5 weeks total)
+• Pooled Capacity = combined hours available from all assigned team members
+• Hours are distributed proportionally based on each person's availability
+• Task completes when all required hours are allocated
+• Any capacity constraints or delays are noted in the weekly breakdown
+            `.trim();
+            
+            // Update modal content
+            document.getElementById('modal-title').textContent = `📊 Calculation Details - Ticket #${ticket.id}`;
+            document.getElementById('calculation-content').textContent = enhancedContent;
+            
+            // Show modal
+            const modal = document.getElementById('calculation-modal');
+            modal.classList.add('active');
+            
+            // Add event listener for clicking outside modal to close
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeCalculationModal();
+                }
+            });
+        }
+
+        window.closeCalculationModal = () => {
+            const modal = document.getElementById('calculation-modal');
+            modal.classList.remove('active');
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeCalculationModal();
+            }
+        });
+
+
+        // --- INITIALIZATION ---
+
+        function initializeDefaultData() {
+            console.log("Setting up default people data.");
+            people = [
+                { name: 'Vipul', availability: [25, 25, 25, 25, 25] },
+                { name: 'Sameet', availability: [25, 25, 25, 25, 25] },
+                { name: 'Peter', availability: [25, 25, 25, 25, 25] },
+                { name: 'Sharanya', availability: [25, 25, 25, 25, 25] },
+                { name: 'Divya', availability: [25, 25, 25, 25, 25] },
+            ];
+            tickets = [
+                { id: 1, description: 'Design System Migration', size: 'XL', assigned: ['Vipul', 'Peter'], startDate: getNextMonday(new Date()).toISOString().split('T')[0] },
+                { id: 2, description: 'Fix payment gateway bug', size: 'S', assigned: ['Sameet'], startDate: getNextMonday(new Date()).toISOString().split('T')[0] },
+                { id: 3, description: 'Build new reporting dashboard', size: 'XXL', assigned: ['Sharanya', 'Divya'], startDate: new Date(getNextMonday(new Date()).getTime() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] }
+            ];
+            currentTicketId = 4;
+            saveToLocalStorage(); 
+        }
+
+        function initializeScheduler() {
+            if (!loadFromLocalStorage()) {
+                initializeDefaultData();
+            }
+            
+            // Set default start date to next Monday
+            const defaultStartDate = getNextMonday(new Date()).toISOString().split('T')[0];
+            document.getElementById('new-ticket-start-date').value = defaultStartDate;
+            
+            // Initial render
+            calculateEffortMap();
+            renderEffortMap();
+            renderPeople();
+            calculateProjection();
+        }
+
+        // Start the application
+        window.onload = initializeScheduler;
+    </script>
+</body>
+</html>
