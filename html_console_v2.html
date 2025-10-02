@@ -637,6 +637,64 @@
         .enterprise-input:hover {
             border-color: var(--primary-color);
         }
+        
+        /* Enhanced Form Styling */
+        .form-section {
+            transition: all 0.3s ease;
+        }
+        
+        .form-section:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* Compact spacing utilities */
+        .compact-grid {
+            gap: 0.75rem;
+        }
+        
+        .compact-grid input,
+        .compact-grid select {
+            height: 36px;
+        }
+        
+        /* Enhanced button styling */
+        .btn-enterprise {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-enterprise::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .btn-enterprise:hover::before {
+            left: 100%;
+        }
+        
+        /* Improved section headers */
+        .section-header {
+            border-bottom: 2px solid #e5e7eb;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+        }
+        
+        /* Smooth transitions for all interactive elements */
+        input, select, button, .card {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Reduced margin utilities */
+        .mb-tight { margin-bottom: 0.5rem; }
+        .mt-tight { margin-top: 0.5rem; }
+        .space-y-tight > * + * { margin-top: 0.75rem; }
     </style>
 </head>
 <body class="p-4 md:p-8">
@@ -705,15 +763,31 @@
                     </h2>
                     
                     <div class="compact-spacing">
-                        <div class="mb-3 flex items-center gap-4 flex-wrap">
-                            <div class="flex items-center gap-2">
-                                <label class="text-base font-semibold text-white">Hours/Day:</label>
-                                <input type="number" id="hours-per-day" value="8" min="1" max="24" 
-                                       onchange="updateEffortMapping(event.target.value)" 
-                                       class="enterprise-input w-20 text-lg font-bold">
+                        <div class="mb-3 space-y-3">
+                            <!-- Estimation Base Rate -->
+                            <div class="flex items-center gap-4 flex-wrap">
+                                <div class="flex items-center gap-2">
+                                    <label class="text-base font-semibold text-white">Estimation Base (hrs/day):</label>
+                                    <input type="number" id="estimation-base-hours" value="5" min="1" max="12" 
+                                           onchange="updateEstimationBase(event.target.value)" 
+                                           class="enterprise-input w-20 text-lg font-bold">
+                                </div>
+                                <div class="text-sm font-medium text-blue-100 bg-blue-800 bg-opacity-50 px-2 py-1 rounded">
+                                    ℹ️ Productive hours used for task estimation (after meetings, interruptions)
+                                </div>
                             </div>
-                            <div class="text-base font-medium text-blue-100 bg-blue-800 bg-opacity-50 px-2 py-1 rounded">
-                                Total = Days × <span id="hours-per-day-display" class="font-bold text-yellow-300">8</span>h
+                            
+                            <!-- Project Context Hours -->
+                            <div class="flex items-center gap-4 flex-wrap">
+                                <div class="flex items-center gap-2">
+                                    <label class="text-base font-semibold text-white">Project Hours/Day:</label>
+                                    <input type="number" id="project-hours-per-day" value="8" min="1" max="24" 
+                                           onchange="updateProjectHours(event.target.value)" 
+                                           class="enterprise-input w-20 text-lg font-bold">
+                                </div>
+                                <div class="text-base font-medium text-blue-100 bg-blue-800 bg-opacity-50 px-2 py-1 rounded">
+                                    Task Effort = Days × <span id="estimation-base-display" class="font-bold text-yellow-300">5</span>h
+                                </div>
                             </div>
                         </div>
                         
@@ -759,42 +833,6 @@
             <!-- Task Management - Takes remaining space -->
             <div class="task-management-area input-card enterprise-table p-4 rounded-lg">
                 
-                <!-- Visual Timeline Display -->
-                <div class="mt-4 p-3 enterprise-timeline border rounded-lg">
-                    <h3 class="text-md font-semibold mb-2 text-primary-dark flex items-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                        </svg>
-                        📈 Project Timeline
-                    </h3>
-                    <div id="timeline-container" class="relative" style="margin-top: 20px; margin-bottom: 20px;">
-                        <div id="timeline-info" class="text-sm text-gray-600 mb-4">
-                            📅 <span id="timeline-start-date">No tasks defined</span> → 
-                            🏁 <span id="timeline-end-date">No tasks defined</span> 
-                            (<span id="timeline-duration">0 days</span>)
-                        </div>
-                        <div class="timeline-scroll-container border border-gray-300 rounded-lg p-4 bg-gray-50" style="height: 200px; overflow-x: auto; overflow-y: auto;">
-                            <div style="min-width: 1200px; min-height: 350px; display: flex; flex-direction: column; justify-content: flex-start; padding-top: 20px;">
-                                <div class="relative" style="margin-top: 160px; margin-bottom: 60px;">
-                                    <div id="timeline-bar" class="relative bg-gray-200 h-8 rounded-lg" style="width: 100%; min-width: 1200px; overflow: visible;">
-                                        <div id="timeline-progress" class="h-full bg-gradient-to-r from-blue-400 to-green-400 transition-all duration-500" style="width: 0%"></div>
-                                        <div id="timeline-markers" class="absolute inset-0 flex items-center px-2">
-                                            <!-- Task markers will be populated here -->
-                                        </div>
-                                        <!-- Week markers for better visualization -->
-                                        <div id="week-markers" class="absolute inset-0 pointer-events-none">
-                                            <!-- Week markers will be populated here -->
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div id="timeline-legend" class="flex flex-wrap gap-2 mt-2 text-xs">
-                            <!-- Legend items will be populated here -->
-                        </div>
-                    </div>
-                </div>
-                
                 <h2 class="text-lg font-semibold mb-3 text-primary-dark flex items-center mt-4">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -803,44 +841,71 @@
                 </h2>
 
                 <!-- Common Start Date Control -->
-                <div class="mb-4 p-3 enterprise-card border rounded-lg">
-                    <div class="flex items-center gap-4 mb-2">
-                        <label class="flex items-center cursor-pointer">
-                            <input type="checkbox" id="use-common-start-date" onchange="toggleCommonStartDate()" 
-                                   class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                            <span class="ml-2 text-sm font-medium text-primary-dark">📅 Unified Start Date</span>
-                        </label>
-                        <input type="date" id="common-start-date" disabled 
-                               class="enterprise-input text-sm" 
-                               title="Common start date for all tasks"
-                               onchange="updateAllTaskStartDates()">
+                <!-- Enhanced Control Panel -->
+                <div class="mb-3 p-4 enterprise-card border rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50">
+                    <div class="flex items-center justify-between gap-6">
+                        <!-- Left Side: Unified Start Date Controls -->
+                        <div class="flex items-center gap-4">
+                            <label class="flex items-center cursor-pointer group">
+                                <input type="checkbox" id="use-common-start-date" onchange="toggleCommonStartDate()" 
+                                       class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 transition-all">
+                                <span class="ml-2 text-sm font-semibold text-primary-dark group-hover:text-blue-700 transition-colors">📅 Unified Start Date</span>
+                            </label>
+                            <input type="date" id="common-start-date" disabled 
+                                   class="enterprise-input text-sm w-36 transition-all duration-200" 
+                                   title="Common start date for all tasks"
+                                   onchange="updateAllTaskStartDates()">
+                        </div>
+                        
+                        <!-- Right Side: Project Completion Info -->
+                        <div class="text-right bg-white/70 backdrop-blur-sm rounded-lg p-3 border border-blue-200/50">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-xs font-medium text-gray-600">🏁 PROJECT COMPLETION</span>
+                            </div>
+                            <div class="flex items-center justify-end gap-2">
+                                <div class="text-sm font-bold text-blue-800" id="furthest-completion-date">No tasks</div>
+                                <div class="text-xs font-medium text-white bg-blue-600 px-2 py-1 rounded-full" id="furthest-completion-week">—</div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="text-xs text-gray-600">
+                    <div class="text-xs text-gray-600 mt-2 italic">
                         💡 Synchronizes all task start dates for streamlined project planning
                     </div>
                 </div>
 
-                <div class="mt-4">
-                    <h3 class="font-semibold text-md mb-3">Add New Task</h3>
-                    <div class="compact-spacing">
-                        <div class="grid grid-cols-1 xl:grid-cols-12 gap-3 items-end">
-                            <div class="xl:col-span-4">
-                                <label class="block text-xs text-gray-600 mb-1">Task Description</label>
-                                <input type="text" id="new-ticket-desc" placeholder="Task Description" class="enterprise-input w-full">
-                            </div>
-                            <div class="xl:col-span-2">
-                                <label class="block text-xs text-gray-600 mb-1">Start Date</label>
-                                <input type="date" id="new-ticket-start-date" class="enterprise-input w-full" title="Start Date">
-                            </div>
-                            <div class="xl:col-span-1">
-                                <label class="block text-xs text-gray-600 mb-1">Size</label>
-                                <select id="new-ticket-size" class="enterprise-input w-full">
+                <!-- Compact Task Creation Form -->
+                <div class="mb-4 p-4 bg-white border rounded-lg shadow-sm">
+                    <div class="flex items-center gap-2 mb-3">
+                        <h3 class="font-bold text-md text-primary-dark">➕ Add New Task</h3>
+                        <div class="flex-1 border-t border-gray-200"></div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-3 items-end">
+                        <!-- Task Description -->
+                        <div class="lg:col-span-4">
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Task Description</label>
+                            <input type="text" id="new-ticket-desc" placeholder="Enter task description..." 
+                                   class="enterprise-input w-full focus:ring-2 focus:ring-blue-500 transition-all">
+                        </div>
+                        
+                        <!-- Start Date -->
+                        <div class="lg:col-span-2">
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Start Date</label>
+                            <input type="date" id="new-ticket-start-date" 
+                                   class="enterprise-input w-full focus:ring-2 focus:ring-blue-500 transition-all" title="Start Date">
+                        </div>
+                        
+                        <!-- Size & Priority in compact layout -->
+                        <div class="lg:col-span-2 grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Size</label>
+                                <select id="new-ticket-size" class="enterprise-input w-full focus:ring-2 focus:ring-blue-500 transition-all">
                                     <!-- Options populated dynamically by JavaScript -->
                                 </select>
                             </div>
-                            <div class="xl:col-span-1">
-                                <label class="block text-xs text-gray-600 mb-1">Priority</label>
-                                <select id="new-ticket-priority" class="enterprise-input w-full" title="Priority">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Priority</label>
+                                <select id="new-ticket-priority" class="enterprise-input w-full focus:ring-2 focus:ring-blue-500 transition-all" title="Priority">
                                     <option value="P3">P3</option>
                                     <option value="P1">P1</option>
                                     <option value="P2">P2</option>
@@ -848,40 +913,51 @@
                                     <option value="P5">P5</option>
                                 </select>
                             </div>
-                            <div class="xl:col-span-3">
-                                <label class="block text-xs text-gray-600 mb-1">Assign to:</label>
-                                <div id="new-ticket-assigned" class="flex flex-wrap gap-1 p-2 border border-gray-300 rounded-md bg-white min-h-[35px] items-start">
-                                    <!-- Checkboxes populated by JS -->
-                                </div>
-                            </div>
-                            <div class="xl:col-span-1">
-                                <button onclick="addTicket()" class="btn-enterprise w-full h-[35px] flex-shrink-0">Add</button>
+                        </div>
+                        
+                        <!-- Assignment -->
+                        <div class="lg:col-span-3">
+                            <label class="block text-xs font-medium text-gray-700 mb-1">Assign to:</label>
+                            <div id="new-ticket-assigned" class="flex flex-wrap gap-1 p-2 border border-gray-300 rounded-md bg-gray-50 min-h-[36px] items-center transition-all hover:bg-white focus-within:bg-white focus-within:border-blue-500">
+                                <!-- Checkboxes populated by JS -->
                             </div>
                         </div>
-                        <div class="text-xs text-gray-500 mt-2">
-                            💡 <span id="start-date-help">Individual start dates enabled. Team availability calculated from earliest task.</span>
+                        
+                        <!-- Add Button -->
+                        <div class="lg:col-span-1">
+                            <button onclick="addTicket()" class="btn-enterprise w-full h-[36px] font-semibold shadow-md hover:shadow-lg transition-all duration-200 transform hover:scale-105">
+                                Add Task
+                            </button>
                         </div>
+                    </div>
+                    
+                    <!-- Compact Help Text -->
+                    <div class="text-xs text-gray-500 mt-2 bg-gray-50 rounded p-2">
+                        💡 <span id="start-date-help">Individual start dates enabled. Team availability calculated from earliest task.</span>
                     </div>
                 </div>
                 
-                <!-- Task List and Projection -->
-                <div class="mt-4">
-                    <h3 class="text-lg font-semibold mb-2 text-primary-dark">Task Schedule</h3>
+                <!-- Task Schedule Section -->
+                <div class="space-y-3">
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-lg font-bold text-primary-dark">📋 Task Schedule</h3>
+                        <div class="flex-1 border-t border-gray-300"></div>
+                    </div>
                     
-                    <!-- Task Filtering Controls -->
-                    <div id="task-filter-section" class="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <div class="flex items-center gap-3 mb-2">
-                            <span class="text-sm font-medium text-gray-700">🔍 Filter tasks by person:</span>
-                            <div id="person-filter-buttons" class="flex flex-wrap gap-2">
+                    <!-- Compact Task Filtering Controls -->
+                    <div id="task-filter-section" class="p-3 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg">
+                        <div class="flex items-center gap-3">
+                            <span class="text-sm font-semibold text-gray-700 whitespace-nowrap">🔍 Filter by person:</span>
+                            <div id="person-filter-buttons" class="flex flex-wrap gap-2 flex-1">
                                 <!-- Person filter buttons will be populated by JavaScript -->
                             </div>
                             <button id="clear-filter-btn" onclick="clearPersonFilter()" 
-                                    class="px-3 py-1 bg-red-100 text-red-700 rounded-md text-xs hover:bg-red-200 transition-colors" 
+                                    class="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600 transition-colors flex-shrink-0" 
                                     style="display: none;">
-                                Clear Filter
+                                Clear
                             </button>
                         </div>
-                        <div id="filter-status" class="text-xs text-gray-600" style="display: none;">
+                        <div id="filter-status" class="text-xs text-gray-600 mt-2" style="display: none;">
                             <!-- Filter status will be shown here -->
                         </div>
                     </div>
@@ -996,7 +1072,8 @@
         const STORAGE_KEY = 'projectSchedulerDataV2';
         let people = [];
         let tickets = [];
-        let hoursPerDay = 8; 
+        let estimationBaseHours = 5; // Hours per day used for initial task estimation (after meetings, etc.)
+        let projectHoursPerDay = 8; // Actual available hours per day in current project context 
         let ticketDays = {
             S: 1, M: 2, L: 5, XL: 10, XXL: 15
         };
@@ -1073,7 +1150,8 @@
             const data = {
                 people,
                 tickets,
-                hoursPerDay,
+                estimationBaseHours,
+                projectHoursPerDay,
                 ticketDays,
                 taskSizeDefinitions,
                 currentTicketId,
@@ -1097,7 +1175,8 @@
                     const data = JSON.parse(storedData);
                     people = data.people || [];
                     tickets = data.tickets || [];
-                    hoursPerDay = data.hoursPerDay || 8;
+                    estimationBaseHours = data.estimationBaseHours || 5;
+                    projectHoursPerDay = data.projectHoursPerDay || data.hoursPerDay || 8; // Migration from old hoursPerDay
                     ticketDays = data.ticketDays || { S: 1, M: 2, L: 5, XL: 10, XXL: 15 };
                     
                     console.log('📊 Loaded taskSizeDefinitions from storage:', data.taskSizeDefinitions);
@@ -1359,8 +1438,8 @@
 
             if (totalWeeklyCapacity > 0) {
                 // Calculate how many calendar days are needed to complete the remaining hours
-                // at the current work pace (hoursPerDay)
-                const daysNeeded = remainingHours / hoursPerDay;
+                // at the current project work pace
+                const daysNeeded = remainingHours / projectHoursPerDay;
                 daysIntoWeek = Math.ceil(daysNeeded);
                 daysIntoWeek = Math.min(daysIntoWeek, 5); // Cap at 5 working days per week
             }
@@ -1387,7 +1466,7 @@
             
             if (totalWeeklyCapacity > 0) {
                 // Calculate business days needed based on the task size definition
-                const daysNeeded = Math.ceil(remainingHours / hoursPerDay);
+                const daysNeeded = Math.ceil(remainingHours / projectHoursPerDay);
                 const completionDate = addBusinessDays(actualStartDate, Math.max(1, daysNeeded - 1));
                 
                 return {
@@ -1505,12 +1584,11 @@
             
             effortMap = {};
             Object.keys(taskSizeDefinitions).forEach(key => {
-                // Task effort should be based on a standard 8-hour workday
-                // This represents the actual work content, not the daily pace
+                // Task effort based on estimation base hours (productive work after meetings, etc.)
                 const days = taskSizeDefinitions[key].days;
-                const effort = days * 8;
+                const effort = days * estimationBaseHours;
                 effortMap[key] = effort;
-                console.log(`📊 Size ${key}: ${days} days × 8 hours = ${effort} hours`);
+                console.log(`📊 Size ${key}: ${days} days × ${estimationBaseHours} hours = ${effort} hours`);
             });
             console.log('📊 Final effort map:', effortMap);
         }
@@ -1639,43 +1717,36 @@
 
                 // Use capacity-based calculation for end date
                 if (completionWeekIndex !== -1) {
-                    // Calculate completion date based on the actual task start date and week offset
-                    const weekStartDate = new Date(taskStartDate);
-                    weekStartDate.setDate(weekStartDate.getDate() + ((completionWeekIndex - startWeekIndex) * 7));
+                    // Calculate completion date based on actual task progress through weeks
+                    const baseWeekDate = new Date(taskStartDate);
+                    const weekOffset = completionWeekIndex - startWeekIndex;
+                    baseWeekDate.setDate(baseWeekDate.getDate() + (weekOffset * 7));
                     
-                    // Ensure we start on a business day
-                    const actualCompletionDate = getNextBusinessDay(weekStartDate);
-                    
-                    if (pooledCapacityThisWeek > 0) {
-                        // Calculate business days needed based on remaining capacity
-                        const daysNeeded = Math.ceil(finalCapacity / 8); // Assuming 8 hours per day
-                        const completionDate = addBusinessDays(actualCompletionDate, Math.max(0, daysNeeded - 1));
+                    // The task completes within this week, estimate specific day based on capacity consumption
+                    if (pooledCapacityThisWeek > 0 && finalCapacity > 0) {
+                        // Estimate how many project hours are needed to finish the remaining work
+                        const projectDaysNeeded = Math.ceil(finalCapacity / projectHoursPerDay);
+                        const completionDate = new Date(baseWeekDate);
+                        completionDate.setDate(completionDate.getDate() + Math.max(0, projectDaysNeeded - 1));
                         
                         endDate = completionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                         rawEndDate = completionDate;
                     } else {
-                        endDate = actualCompletionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                        rawEndDate = actualCompletionDate;
+                        // Fallback to week start if we can't determine specific completion day
+                        endDate = baseWeekDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        rawEndDate = baseWeekDate;
                     }
                     
                     explanation += `\nTask completes in Week ${completionWeekIndex + 1}: ${endDate}\n`;
                 } else {
-                    explanation += '\nTask is projected to finish AFTER the 8-week window based on capacity.';
+                    explanation += '\nTask cannot complete within the 8-week planning window based on available capacity.';
                     isDelayed = true;
-                    // Fallback to business day calculation only when capacity calculation fails
-                    const taskDurationInDays = taskSizeDefinitions[ticket.size].days;
-                    const actualEndDate = addBusinessDays(taskStartDate, taskDurationInDays - 1);
-                    endDate = actualEndDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    rawEndDate = actualEndDate;
+                    // Use a reasonable estimate based on current task start
+                    const estimatedDate = new Date(taskStartDate);
+                    estimatedDate.setDate(estimatedDate.getDate() + 56); // 8 weeks from start
+                    endDate = estimatedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    rawEndDate = estimatedDate;
                 }
-                
-                // Show business day calculation for reference
-                const taskDurationInDays = taskSizeDefinitions[ticket.size].days;
-                const businessDayEndDate = addBusinessDays(taskStartDate, taskDurationInDays - 1);
-                explanation += `\n--- BUSINESS DAY REFERENCE ---\n`;
-                explanation += `Task Duration: ${taskDurationInDays} business days\n`;
-                explanation += `Start: ${taskStartDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}\n`;
-                explanation += `Business Day End: ${businessDayEndDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}\n`;
                 
                 return { 
                     ...ticket, 
@@ -1692,300 +1763,81 @@
         function calculateProjection() {
             const projectedTickets = getProjectedTickets();
             renderTickets(projectedTickets);
-            renderTimeline(projectedTickets);
+            // Timeline removed - will be replaced with new timeline system
             renderWorkloadHeatMap();
+            updateFurthestCompletionDate(projectedTickets);
         }
         
-        function renderTimeline(projectedTickets) {
-            const timelineStartDateEl = document.getElementById('timeline-start-date');
-            const timelineEndDateEl = document.getElementById('timeline-end-date');
-            const timelineDurationEl = document.getElementById('timeline-duration');
-            const timelineProgressEl = document.getElementById('timeline-progress');
-            const timelineMarkersEl = document.getElementById('timeline-markers');
-            const timelineLegendEl = document.getElementById('timeline-legend');
+        function updateFurthestCompletionDate(projectedTickets) {
+            const furthestDateEl = document.getElementById('furthest-completion-date');
+            const furthestWeekEl = document.getElementById('furthest-completion-week');
             
-            if (projectedTickets.length === 0) {
-                timelineStartDateEl.textContent = 'No tasks defined';
-                timelineEndDateEl.textContent = 'No tasks defined';
-                timelineDurationEl.textContent = '0 days';
-                timelineProgressEl.style.width = '0%';
-                timelineMarkersEl.innerHTML = '';
-                timelineLegendEl.innerHTML = '';
+            if (!projectedTickets || projectedTickets.length === 0) {
+                furthestDateEl.textContent = 'No tasks';
+                furthestWeekEl.textContent = '—';
                 return;
             }
             
-            // Calculate timeline bounds - start from the earliest actual task start date
-            let projectStartDate;
-            if (useCommonStartDate) {
-                const commonDate = document.getElementById('common-start-date')?.value;
-                projectStartDate = commonDate ? new Date(commonDate) : getEarliestTaskStartDate() || new Date();
-            } else {
-                projectStartDate = getEarliestTaskStartDate() || new Date();
-            }
+            let furthestDate = null;
+            let furthestTaskId = null;
             
-            let projectEndDate = new Date(projectStartDate);
-            let latestEndDate = new Date(projectStartDate);
-            let hasDelayedTasks = false;
-            
-            // Find the latest completion date
+            // Find the task with the latest completion date
             projectedTickets.forEach(ticket => {
                 if (ticket.rawEndDate && !ticket.isDelayed) {
-                    // Use the raw date object for accurate timeline calculation
-                    if (ticket.rawEndDate > latestEndDate) {
-                        latestEndDate = ticket.rawEndDate;
-                    }
-                } else if (ticket.isDelayed || (ticket.endDate && ticket.endDate.includes('>'))) {
-                    hasDelayedTasks = true;
-                    // For delayed tasks, assume they extend beyond 8 weeks
-                    const delayedDate = new Date(projectStartDate);
-                    delayedDate.setDate(delayedDate.getDate() + 56); // 8 weeks
-                    if (delayedDate > latestEndDate) {
-                        latestEndDate = delayedDate;
+                    if (!furthestDate || ticket.rawEndDate > furthestDate) {
+                        furthestDate = ticket.rawEndDate;
+                        furthestTaskId = ticket.id;
                     }
                 }
             });
             
-            projectEndDate = latestEndDate;
-            
-            // Calculate duration
-            const durationDays = Math.ceil((projectEndDate - projectStartDate) / (1000 * 60 * 60 * 24));
-            const durationWeeks = Math.ceil(durationDays / 7);
-            
-            // Update timeline info
-            timelineStartDateEl.textContent = formatDate(projectStartDate.toLocaleDateString('en-CA')); // YYYY-MM-DD format
-            timelineEndDateEl.textContent = formatDate(projectEndDate.toLocaleDateString('en-CA')); // YYYY-MM-DD format
-            timelineDurationEl.textContent = `${durationDays} days (${durationWeeks} weeks)`;
-            
-            // Determine timeline health based on 8-week planning horizon
-            // Green: <= 6 weeks (good), Red: > 6 weeks or has delayed tasks (concerning)
-            const isOverSchedule = hasDelayedTasks || durationWeeks > 6;
-            
-            if (isOverSchedule) {
-                timelineProgressEl.className = 'h-full timeline-delayed transition-all duration-500';
+            if (furthestDate) {
+                // Format the date
+                const formattedDate = formatDate(furthestDate.toLocaleDateString('en-CA'));
+                furthestDateEl.textContent = formattedDate;
+                
+                // Calculate which week this is from the effective start date
+                const effectiveStartDate = getEffectiveStartDate();
+                const daysDifference = Math.ceil((furthestDate - effectiveStartDate) / (1000 * 60 * 60 * 24));
+                const weekNumber = Math.ceil(daysDifference / 7);
+                
+                furthestWeekEl.textContent = `Week ${weekNumber}`;
+                furthestWeekEl.title = `Task #${furthestTaskId} completes in week ${weekNumber}`;
             } else {
-                timelineProgressEl.className = 'h-full timeline-ontime transition-all duration-500';
-            }
-            
-            // Add task markers
-            timelineMarkersEl.innerHTML = '';
-            
-            // Track the furthest task position for progress bar alignment
-            let furthestTaskPosition = 0;
-            
-            // Add week markers for better visualization
-            const weekMarkersEl = document.getElementById('week-markers');
-            if (weekMarkersEl) {
-                weekMarkersEl.innerHTML = '';
-                for (let week = 1; week <= 8; week++) {
-                    const weekPosition = (week / 8) * 100;
-                    const weekMarker = document.createElement('div');
-                    weekMarker.className = 'absolute top-0 bottom-0 w-px bg-gray-300 opacity-50';
-                    weekMarker.style.left = `${weekPosition}%`;
-                    weekMarker.setAttribute('data-label', `Week ${week}`);
-                    weekMarkersEl.appendChild(weekMarker);
-                    
-                    // Add week labels at the bottom
-                    const weekLabel = document.createElement('div');
-                    weekLabel.className = 'absolute text-xs text-gray-500';
-                    weekLabel.style.left = `${weekPosition}%`;
-                    weekLabel.style.bottom = '-20px';
-                    weekLabel.style.transform = 'translateX(-50%)';
-                    weekLabel.textContent = `W${week}`;
-                    weekMarkersEl.appendChild(weekLabel);
+                // Check if there are any delayed tasks
+                const hasDelayedTasks = projectedTickets.some(ticket => ticket.isDelayed || (ticket.endDate && ticket.endDate.includes('>')));
+                if (hasDelayedTasks) {
+                    furthestDateEl.textContent = 'Beyond 8 weeks';
+                    furthestWeekEl.textContent = 'Week 8+';
+                    furthestWeekEl.title = 'Some tasks extend beyond the 8-week planning horizon';
+                } else {
+                    furthestDateEl.textContent = 'No valid dates';
+                    furthestWeekEl.textContent = '—';
                 }
             }
-            
-            projectedTickets.forEach((ticket, index) => {
-                if (ticket.rawEndDate && !ticket.isDelayed) {
-                    // Use raw date for accurate positioning
-                    const dayFromStart = Math.ceil((ticket.rawEndDate - projectStartDate) / (1000 * 60 * 60 * 24));
-                    // Position based on actual project duration, but ensure it fits within the visual timeline
-                    const timelineScaleDays = Math.max(56, durationDays); // Use 8 weeks minimum, or actual duration if longer
-                    const positionPercentage = Math.min(100, Math.max(0, (dayFromStart / timelineScaleDays) * 100));
-                    
-                    // Track the furthest task position
-                    furthestTaskPosition = Math.max(furthestTaskPosition, positionPercentage);
-                    
-                    const marker = document.createElement('div');
-                    marker.className = 'timeline-marker';
-                    marker.style.left = `calc(${positionPercentage}% - 8px)`; // Center the 16px wide marker
-                    marker.style.position = 'relative'; // For tooltip positioning
-                    marker.setAttribute('data-ticket-id', ticket.id);
-                    marker.setAttribute('data-tooltip-text', `Task #${ticket.id}: ${ticket.description}\nDue: ${ticket.endDate}\nAssigned: ${ticket.assigned.join(', ') || 'Unassigned'}`);
-                    // Use white markers with colored border for better visibility on any background
-                    marker.style.background = '#ffffff';
-                    marker.style.border = '4px solid #10b981';
-                    marker.style.boxShadow = '0 3px 6px rgba(0,0,0,0.3)';
-                    
-                    // Create tooltip element
-                    const tooltip = document.createElement('div');
-                    tooltip.className = 'timeline-tooltip';
-                    tooltip.innerHTML = `
-                        <div style="margin-bottom: 4px;">
-                            <strong>Task #${ticket.id}:</strong> ${ticket.description}
-                        </div>
-                        <div style="display: flex; justify-content: space-between; font-size: 12px;">
-                            <span><em>Due: ${ticket.endDate}</em></span>
-                            <span>Assigned: ${ticket.assigned.join(', ') || 'Unassigned'}</span>
-                        </div>
-                    `;
-                    marker.appendChild(tooltip);
-                    
-                    // Add click event handler
-                    marker.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        toggleTimelineTooltip(this);
-                    });
-                    
-                    timelineMarkersEl.appendChild(marker);
-                } else if (ticket.isDelayed || (ticket.endDate && ticket.endDate.includes('>'))) {
-                    // Add a marker for delayed tasks at the end (beyond 8 weeks)
-                    const marker = document.createElement('div');
-                    marker.className = 'timeline-marker';
-                    marker.style.left = 'calc(98% - 8px)'; // Center the 16px wide marker
-                    marker.style.position = 'relative'; // For tooltip positioning
-                    marker.setAttribute('data-ticket-id', ticket.id);
-                    marker.setAttribute('data-tooltip-text', `Task #${ticket.id}: ${ticket.description}\nStatus: Delayed (>8 weeks)\nAssigned: ${ticket.assigned.join(', ') || 'Unassigned'}`);
-                    // Use white background with red border for delayed tasks
-                    marker.style.background = '#ffffff';
-                    marker.style.border = '4px solid #ef4444';
-                    marker.style.boxShadow = '0 3px 6px rgba(0,0,0,0.3)';
-                    
-                    // Create tooltip element
-                    const tooltip = document.createElement('div');
-                    tooltip.className = 'timeline-tooltip';
-                    tooltip.innerHTML = `
-                        <div style="margin-bottom: 4px;">
-                            <strong>Task #${ticket.id} (DELAYED):</strong> ${ticket.description}
-                        </div>
-                        <div style="display: flex; justify-content: space-between; font-size: 12px;">
-                            <span><em>Status: Over 8 weeks</em></span>
-                            <span>Assigned: ${ticket.assigned.join(', ') || 'Unassigned'}</span>
-                        </div>
-                    `;
-                    marker.appendChild(tooltip);
-                    
-                    // Add click event handler
-                    marker.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        toggleTimelineTooltip(this);
-                    });
-                    
-                    timelineMarkersEl.appendChild(marker);
-                }
-            });
-            
-            // Update progress bar to end exactly at the furthest task marker
-            timelineProgressEl.style.width = `${furthestTaskPosition}%`;
-            
-            // Update legend
-            timelineLegendEl.innerHTML = `
-                <div class="timeline-legend-item">
-                    <div class="timeline-legend-dot bg-white border-2 border-green-500"></div>
-                    <span>On Schedule (≤6 weeks)</span>
-                </div>
-                <div class="timeline-legend-item">
-                    <div class="timeline-legend-dot bg-white border-2 border-red-500"></div>
-                    <span>Over Schedule (>6 weeks)</span>
-                </div>
-                <div class="timeline-legend-item">
-                    <div class="timeline-legend-dot bg-gray-400"></div>
-                    <span>Click markers for task details</span>
-                </div>
-                <div class="timeline-legend-item">
-                    <div class="w-2 h-1 bg-gray-300"></div>
-                    <span>Week markers (8-week horizon)</span>
-                </div>
-            `;
         }
-
-        // Timeline marker click handler
-        function toggleTimelineTooltip(marker) {
-            console.log('Marker clicked:', marker.getAttribute('data-ticket-id')); // Debug log
-            
-            // Close any other active tooltips first
-            document.querySelectorAll('.timeline-marker').forEach(otherMarker => {
-                if (otherMarker !== marker) {
-                    otherMarker.classList.remove('active');
-                    const otherTooltip = otherMarker.querySelector('.timeline-tooltip');
-                    if (otherTooltip) {
-                        otherTooltip.classList.remove('visible');
-                    }
-                }
-            });
-            
-            // Toggle the clicked marker and its tooltip
-            const tooltip = marker.querySelector('.timeline-tooltip');
-            const isActive = marker.classList.contains('active');
-            
-            if (isActive) {
-                // Close tooltip
-                marker.classList.remove('active');
-                if (tooltip) {
-                    tooltip.classList.remove('visible');
-                }
-            } else {
-                // Open tooltip with smart positioning
-                marker.classList.add('active');
-                if (tooltip) {
-                    // Get marker position relative to timeline container
-                    const timelineContainer = document.querySelector('.timeline-scroll-container');
-                    const markerRect = marker.getBoundingClientRect();
-                    const containerRect = timelineContainer.getBoundingClientRect();
-                    const markerLeft = markerRect.left - containerRect.left + timelineContainer.scrollLeft;
-                    const containerWidth = timelineContainer.clientWidth;
-                    const tooltipWidth = 400; // Our tooltip width
-                    
-                    // Reset positioning classes
-                    tooltip.classList.remove('tooltip-left', 'tooltip-right', 'tooltip-center');
-                    
-                    // Smart positioning logic
-                    if (markerLeft < tooltipWidth / 2) {
-                        // Marker is too far left - align tooltip to left edge
-                        tooltip.classList.add('tooltip-left');
-                        tooltip.style.left = '0px';
-                        tooltip.style.transform = 'translateX(0)';
-                    } else if (markerLeft > containerWidth - tooltipWidth / 2) {
-                        // Marker is too far right - align tooltip to right edge
-                        tooltip.classList.add('tooltip-right');
-                        tooltip.style.left = 'auto';
-                        tooltip.style.right = '0px';
-                        tooltip.style.transform = 'translateX(0)';
-                    } else {
-                        // Marker is in the middle - center tooltip normally
-                        tooltip.classList.add('tooltip-center');
-                        tooltip.style.left = '50%';
-                        tooltip.style.right = 'auto';
-                        tooltip.style.transform = 'translateX(-50%)';
-                    }
-                    
-                    tooltip.classList.add('visible');
-                }
-            }
-            
-            console.log('Marker active state:', marker.classList.contains('active')); // Debug log
-        }
-
-        // Close marker info when clicking outside
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('.timeline-marker')) {
-                document.querySelectorAll('.timeline-marker').forEach(marker => {
-                    marker.classList.remove('active');
-                    const tooltip = marker.querySelector('.timeline-tooltip');
-                    if (tooltip) {
-                        tooltip.classList.remove('visible');
-                    }
-                });
-            }
-        });
+        
+        
+        /* ===== TIMELINE FUNCTIONS REMOVED =====
+           The old timeline system has been removed and will be replaced
+           with a new, more effective timeline visualization.
+           
+           Original functions removed:
+           - renderTimeline(projectedTickets)  
+           - toggleTimelineTooltip(marker)
+           - Timeline click handlers
+           
+           Timeline HTML elements were also removed from the main interface.
+        */
 
         // --- RENDERING FUNCTIONS ---
 
         function renderEffortMap() {
             calculateEffortMap(); 
             
-            document.getElementById('hours-per-day-display').textContent = hoursPerDay;
-            document.getElementById('hours-per-day').value = hoursPerDay;
+            document.getElementById('estimation-base-display').textContent = estimationBaseHours;
+            document.getElementById('estimation-base-hours').value = estimationBaseHours;
+            document.getElementById('project-hours-per-day').value = projectHoursPerDay;
 
             renderTaskSizeCards();
         }
@@ -1996,7 +1848,7 @@
 
             container.innerHTML = Object.keys(taskSizeDefinitions).map(key => {
                 const size = taskSizeDefinitions[key];
-                const totalHours = size.days * hoursPerDay;
+                const totalHours = size.days * estimationBaseHours;
                 
                 return `
                     <div class="task-size-card">
@@ -2018,7 +1870,7 @@
                         </div>
                         <div class="size-metrics">
                             <div>📊 <strong>${totalHours}h</strong> total</div>
-                            <div>⚡ ${(totalHours/hoursPerDay).toFixed(1)} person-days</div>
+                            <div>⚡ ${(totalHours/estimationBaseHours).toFixed(1)} person-days</div>
                             <div class="text-xs mt-1 opacity-75">Size: <strong>${key}</strong></div>
                         </div>
                     </div>
@@ -2027,6 +1879,25 @@
             
             // Update ticket size dropdown options
             updateTicketSizeDropdown();
+        }
+        
+        function updateEstimationBase(newHours) {
+            estimationBaseHours = parseFloat(newHours);
+            document.getElementById('estimation-base-display').textContent = estimationBaseHours;
+            console.log('📊 Estimation Base Hours updated to:', estimationBaseHours);
+            
+            // Recalculate effort map with new base hours
+            calculateEffortMap();
+            renderTaskSizeCards();
+            calculateProjection();
+        }
+        
+        function updateProjectHours(newHours) {
+            projectHoursPerDay = parseFloat(newHours);
+            console.log('📊 Project Hours/Day updated to:', projectHoursPerDay);
+            
+            // Recalculate projections with new project hours
+            calculateProjection();
         }
         
         function updateTaskSizeDaysEnhanced(sizeKey, newDays) {
@@ -2351,7 +2222,8 @@
                     description: 'Enterprise Project Scheduler Configuration Export'
                 },
                 settings: {
-                    hoursPerDay: hoursPerDay,
+                    estimationBaseHours: estimationBaseHours,
+                    projectHoursPerDay: projectHoursPerDay,
                     useCommonStartDate: useCommonStartDate,
                     commonStartDate: document.getElementById('common-start-date')?.value || '',
                     currentTicketId: currentTicketId
@@ -2375,7 +2247,8 @@
             // Settings section
             csvContent += "SECTION,SETTINGS\n";
             csvContent += "Key,Value\n";
-            csvContent += `Hours Per Day,${configData.settings.hoursPerDay}\n`;
+            csvContent += `Estimation Base Hours,${configData.settings.estimationBaseHours}\n`;
+            csvContent += `Project Hours Per Day,${configData.settings.projectHoursPerDay}\n`;
             csvContent += `Use Common Start Date,${configData.settings.useCommonStartDate}\n`;
             csvContent += `Common Start Date,${configData.settings.commonStartDate}\n`;
             csvContent += `Current Ticket ID,${configData.settings.currentTicketId}\n`;
@@ -2492,7 +2365,9 @@
                 try {
                     if (currentSection === 'SETTINGS') {
                         const [key, value] = parseCSVLine(line);
-                        if (key === 'Hours Per Day') importedData.settings.hoursPerDay = parseInt(value);
+                        if (key === 'Estimation Base Hours') importedData.settings.estimationBaseHours = parseInt(value);
+                        else if (key === 'Project Hours Per Day') importedData.settings.projectHoursPerDay = parseInt(value);
+                        else if (key === 'Hours Per Day') importedData.settings.projectHoursPerDay = parseInt(value); // Legacy support
                         else if (key === 'Use Common Start Date') importedData.settings.useCommonStartDate = value === 'true';
                         else if (key === 'Common Start Date') importedData.settings.commonStartDate = value;
                         else if (key === 'Current Ticket ID') importedData.settings.currentTicketId = parseInt(value);
@@ -2562,7 +2437,8 @@
             // Apply imported configuration
             try {
                 // Apply settings
-                hoursPerDay = importedData.settings.hoursPerDay || 8;
+                estimationBaseHours = importedData.settings.estimationBaseHours || 5;
+                projectHoursPerDay = importedData.settings.projectHoursPerDay || importedData.settings.hoursPerDay || 8; // Legacy support
                 useCommonStartDate = importedData.settings.useCommonStartDate || false;
                 currentTicketId = importedData.settings.currentTicketId || 1;
                 
@@ -2579,7 +2455,9 @@
                 selectedPersonFilters = [];
                 
                 // Update UI
-                document.getElementById('hours-per-day').value = hoursPerDay;
+                document.getElementById('estimation-base-hours').value = estimationBaseHours;
+                document.getElementById('project-hours-per-day').value = projectHoursPerDay;
+                document.getElementById('estimation-base-display').textContent = estimationBaseHours;
                 document.getElementById('use-common-start-date').checked = useCommonStartDate;
                 if (importedData.settings.commonStartDate) {
                     document.getElementById('common-start-date').value = importedData.settings.commonStartDate;
@@ -2880,20 +2758,10 @@
 
         // --- DATA MODIFIERS (Trigger localStorage save and recalculation) ---
         
+        // Legacy function - kept for compatibility but redirects to new functions
         window.updateEffortMapping = (value) => {
-            const newHours = parseInt(value, 10);
-            if (isNaN(newHours) || newHours < 1 || newHours > 24) return;
-            
-            hoursPerDay = newHours;
-            
-            // Update the display span
-            document.getElementById('hours-per-day-display').textContent = newHours;
-            
-            calculateEffortMap();
-            renderTaskSizeCards(); // Updated to use new function
-            calculateProjection();
-            saveToLocalStorage();
-        }
+            updateProjectHours(value);
+        };
 
         window.updateTicketSizeDays = (sizeKey, value) => {
             const newDays = parseInt(value, 10);
@@ -3635,9 +3503,10 @@ ${ticket.explanation}
             updateTicketSizeDropdown(); // Populate the task size dropdown
             updateFilterUI();
             
-            // Update hours per day display and input
-            document.getElementById('hours-per-day').value = hoursPerDay;
-            document.getElementById('hours-per-day-display').textContent = hoursPerDay;
+            // Update form field displays
+            document.getElementById('estimation-base-hours').value = estimationBaseHours;
+            document.getElementById('project-hours-per-day').value = projectHoursPerDay;
+            document.getElementById('estimation-base-display').textContent = estimationBaseHours;
         }
 
         // --- TEAM WORKLOAD HEAT MAP ---
@@ -3677,7 +3546,7 @@ ${ticket.explanation}
                     // Get person's availability for this week
                     const availability = person.availability && person.availability[weekIndex] !== undefined 
                         ? person.availability[weekIndex] 
-                        : hoursPerDay * 5; // Default to full week if not defined
+                        : projectHoursPerDay * 5; // Default to full week if not defined
                     
                     // Calculate assigned hours for this week
                     let assignedHours = 0;
@@ -3706,8 +3575,7 @@ ${ticket.explanation}
                                 
                                 // Calculate hours for this person for this task
                                 const totalTaskDays = taskSizeDefinitions[ticket.size]?.days || ticketDays[ticket.size] || 1;
-                                const hoursPerTaskDay = hoursPerDay;
-                                const totalTaskHours = totalTaskDays * hoursPerTaskDay;
+                                const totalTaskHours = totalTaskDays * estimationBaseHours; // Use estimation base for task effort
                                 const hoursPerAssignee = totalTaskHours / Math.max(ticket.assigned.length, 1); // Prevent division by zero
                                 
                                 // Distribute hours across task duration
