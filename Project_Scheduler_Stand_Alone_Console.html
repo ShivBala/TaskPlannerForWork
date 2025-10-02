@@ -779,6 +779,25 @@
                 <!-- Task List and Projection -->
                 <div class="mt-4">
                     <h3 class="text-lg font-semibold mb-2 text-primary-dark">Task Schedule</h3>
+                    
+                    <!-- Task Filtering Controls -->
+                    <div id="task-filter-section" class="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div class="flex items-center gap-3 mb-2">
+                            <span class="text-sm font-medium text-gray-700">🔍 Filter tasks by person:</span>
+                            <div id="person-filter-buttons" class="flex flex-wrap gap-2">
+                                <!-- Person filter buttons will be populated by JavaScript -->
+                            </div>
+                            <button id="clear-filter-btn" onclick="clearPersonFilter()" 
+                                    class="px-3 py-1 bg-red-100 text-red-700 rounded-md text-xs hover:bg-red-200 transition-colors" 
+                                    style="display: none;">
+                                Clear Filter
+                            </button>
+                        </div>
+                        <div id="filter-status" class="text-xs text-gray-600" style="display: none;">
+                            <!-- Filter status will be shown here -->
+                        </div>
+                    </div>
+                    
                     <div class="overflow-x-auto rounded-lg border">
                         <table class="enterprise-table min-w-full divide-y">
                             <thead>
@@ -875,6 +894,9 @@
         let effortMap = {};
         let currentTicketId = 1;
         let useCommonStartDate = false;
+
+        // Task filtering variables
+        let selectedPersonFilters = []; // Array to track which people are selected for filtering
 
         // Date constants (used as the start of Week 1)
         const startDate = getNextMonday(new Date());
@@ -1028,6 +1050,118 @@
             nextMonday.setHours(0, 0, 0, 0);
             
             return nextMonday;
+        }
+
+        // --- TASK FILTERING FUNCTIONS ---
+
+        function generatePersonFilterButtons() {
+            const container = document.getElementById('person-filter-buttons');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            people.forEach(person => {
+                const button = document.createElement('button');
+                button.className = 'person-filter-btn px-3 py-1 rounded-md text-xs transition-all duration-200 border';
+                button.textContent = person.name;
+                button.onclick = () => togglePersonFilter(person.name);
+                button.setAttribute('data-person', person.name);
+                
+                // Set initial state
+                updatePersonFilterButtonState(button, person.name);
+                
+                container.appendChild(button);
+            });
+        }
+
+        function updatePersonFilterButtonState(button, personName) {
+            const isSelected = selectedPersonFilters.includes(personName);
+            
+            if (isSelected) {
+                button.className = 'person-filter-btn px-3 py-1 rounded-md text-xs transition-all duration-200 border bg-blue-600 text-white border-blue-600 font-medium';
+                button.title = `✓ Showing ${personName}'s tasks (click to remove filter)`;
+            } else if (selectedPersonFilters.length > 0) {
+                button.className = 'person-filter-btn px-3 py-1 rounded-md text-xs transition-all duration-200 border bg-gray-100 text-gray-500 border-gray-300';
+                button.title = `Click to show ${personName}'s tasks`;
+            } else {
+                button.className = 'person-filter-btn px-3 py-1 rounded-md text-xs transition-all duration-200 border bg-white text-gray-700 border-gray-300 hover:bg-gray-50';
+                button.title = `Click to filter ${personName}'s tasks`;
+            }
+        }
+
+        function togglePersonFilter(personName) {
+            if (selectedPersonFilters.includes(personName)) {
+                // Remove from filter
+                selectedPersonFilters = selectedPersonFilters.filter(name => name !== personName);
+            } else {
+                // Add to filter
+                selectedPersonFilters.push(personName);
+            }
+            
+            updateFilterUI();
+            updateTable(); // Re-render the table with filtering applied
+        }
+
+        function clearPersonFilter() {
+            selectedPersonFilters = [];
+            updateFilterUI();
+            updateTable(); // Re-render the table
+        }
+
+        function updateFilterUI() {
+            try {
+                // Update all filter button states
+                document.querySelectorAll('.person-filter-btn').forEach(button => {
+                    const personName = button.getAttribute('data-person');
+                    updatePersonFilterButtonState(button, personName);
+                });
+                
+                // Update filter status and clear button
+                const filterStatus = document.getElementById('filter-status');
+                const clearBtn = document.getElementById('clear-filter-btn');
+                
+                if (!filterStatus || !clearBtn) {
+                    console.warn('Filter UI elements not found');
+                    return;
+                }
+                
+                if (selectedPersonFilters.length === 0) {
+                    filterStatus.style.display = 'none';
+                    clearBtn.style.display = 'none';
+                } else {
+                    filterStatus.style.display = 'block';
+                    clearBtn.style.display = 'inline-block';
+                    
+                    const filteredTaskCount = getFilteredTickets().length;
+                    filterStatus.innerHTML = `
+                        Showing tasks assigned to: <strong>${selectedPersonFilters.join(', ')}</strong> 
+                        (${filteredTaskCount} task${filteredTaskCount !== 1 ? 's' : ''} visible)
+                    `;
+                }
+            } catch (error) {
+                console.error('Error updating filter UI:', error);
+            }
+        }
+
+        function shouldShowTicket(ticket) {
+            // If no filter is active, show all tickets
+            if (selectedPersonFilters.length === 0) return true;
+            
+            // If filter is active, only show tickets assigned to selected people
+            return selectedPersonFilters.some(filterPerson => 
+                ticket.assigned.some(assignedPerson => 
+                    assignedPerson.toLowerCase() === filterPerson.toLowerCase()
+                )
+            );
+        }
+
+        function getFilteredTickets() {
+            return tickets.filter(ticket => shouldShowTicket(ticket));
+        }
+
+        // Alias for compatibility with the filtering functions
+        function updateTable() {
+            calculateProjection();
         }
 
         function getDefaultTaskStartDate() {
@@ -1751,6 +1885,9 @@
                 `;
                 assignContainer.appendChild(checkboxWrapper);
             });
+            
+            // Generate person filter buttons whenever people are updated
+            generatePersonFilterButtons();
         }
 
         function renderTickets(projectedTickets) {
@@ -1760,13 +1897,23 @@
             // Update column header based on current mode
             updateStartDateColumnHeader();
             
-            if (projectedTickets.length === 0) {
+            // Apply person filtering
+            const filteredTickets = projectedTickets.filter(ticket => shouldShowTicket(ticket));
+            
+            if (filteredTickets.length === 0) {
                 document.getElementById('no-tickets').classList.remove('hidden');
+                // Update the no-tickets message based on whether filtering is active
+                const noTicketsMsg = document.getElementById('no-tickets');
+                if (selectedPersonFilters.length > 0) {
+                    noTicketsMsg.textContent = `No tasks found for ${selectedPersonFilters.join(', ')}.`;
+                } else {
+                    noTicketsMsg.textContent = 'No tasks defined. Add a task to begin!';
+                }
                 return;
             }
             document.getElementById('no-tickets').classList.add('hidden');
 
-            projectedTickets.forEach(ticket => {
+            filteredTickets.forEach(ticket => {
                 const tr = document.createElement('tr');
                 tr.className = 'hover:bg-gray-50';
 
@@ -2147,6 +2294,9 @@
                 people = importedData.people;
                 tickets = importedData.tickets;
                 
+                // Reset filtering state after import
+                selectedPersonFilters = [];
+                
                 // Update UI
                 document.getElementById('hours-per-day').value = hoursPerDay;
                 document.getElementById('use-common-start-date').checked = useCommonStartDate;
@@ -2165,6 +2315,10 @@
                 renderEffortMap();
                 renderPeople();
                 calculateProjection();
+                
+                // Update filter UI to ensure clean state
+                updateFilterUI();
+                
                 saveToLocalStorage();
                 
                 alert(`✅ Configuration imported successfully!\n\n• ${Object.keys(taskSizeDefinitions).length} task sizes loaded\n• ${people.length} team members configured\n• ${tickets.length} tickets imported\n\nAll data has been restored and calculations updated.`);
@@ -3130,6 +3284,9 @@ ${ticket.explanation}
             renderEffortMap();
             renderPeople();
             calculateProjection(); // This now includes timeline rendering
+            
+            // Initialize filter UI
+            updateFilterUI();
             
             // Update hours per day display and input
             document.getElementById('hours-per-day').value = hoursPerDay;
