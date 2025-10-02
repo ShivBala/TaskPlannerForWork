@@ -507,6 +507,92 @@
             background: #b91c1c;
         }
         
+        /* Main layout override for better control */
+        #main-content {
+            display: block !important;
+            margin-bottom: 2rem !important;
+        }
+        
+        @media (max-width: 1024px) {
+            #main-content {
+                display: block !important;
+            }
+            
+            .task-config-container {
+                width: 100% !important;
+                float: none !important;
+                margin-right: 0 !important;
+                margin-bottom: 20px !important;
+            }
+        }
+        
+        /* Task Configuration on the left - fixed sizing */
+        .task-config-container {
+            width: 350px !important;
+            max-width: 350px !important;
+            float: left !important;
+            margin-right: 20px !important;
+            margin-bottom: 20px !important;
+        }
+        
+        /* Task management area - clear the float */
+        .task-management-area {
+            overflow: hidden !important;
+        }
+        
+        /* Vertical arrangement for task size cards */
+        #task-size-cards.space-y-2 > * + * {
+            margin-top: 0.5rem !important;
+        }
+        
+        /* Team Availability Scrollable Area Styles */
+        .team-availability-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: #cbd5e1 #f1f5f9;
+            position: relative;
+        }
+        
+        .team-availability-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .team-availability-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 3px;
+        }
+        
+        .team-availability-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        
+        .team-availability-scroll::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        
+        /* Scroll fade indicator */
+        .team-availability-scroll::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 20px;
+            background: linear-gradient(transparent, rgba(248, 250, 252, 0.8));
+            pointer-events: none;
+            border-radius: 0 0 8px 8px;
+        }
+        
+        /* Enhanced hover effects for people cards in scroll area */
+        .team-availability-scroll .person-card {
+            transition: all 0.2s ease;
+        }
+        
+        .team-availability-scroll .person-card:hover {
+            transform: translateX(2px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
         /* Compact table styles */
         .enterprise-table {
             font-size: 12px;
@@ -604,27 +690,10 @@
             <!-- Spinner removed as local loading is instant -->
         </div>
 
-        <div id="main-content" class="grid lg:grid-cols-3 gap-6 mb-8">
+        <div id="main-content" class="mb-8">
             
-            <!-- People and Availability Configuration -->
-            <div class="lg:col-span-1 input-card enterprise-table p-4 rounded-lg h-full">
-                <h2 class="text-lg font-semibold mb-3 text-primary-dark flex items-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20v-2c0-.656-.126-1.283-.356-1.857M17 20H7m0 0v-2c0-.656.126-1.283.356-1.857M7 20h4m0-9a3 3 0 100 6 3 3 0 000-6zm-4 3a2 2 0 11-4 0 2 2 0 014 0zm10 0a2 2 0 11-4 0 2 2 0 014 0zm7-3a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                    <span id="availability-header">Team Resources (8 Weeks)</span>
-                </h2>
-                <div id="people-list" class="compact-spacing">
-                    <!-- People cards will be rendered here -->
-                </div>
-                <div class="mt-3 compact-spacing">
-                    <input type="text" id="new-person-name" placeholder="Team member name" class="enterprise-input w-full">
-                    <button onclick="addPerson()" class="btn-enterprise w-full mt-2">Add Member</button>
-                </div>
-            </div>
-
-            <!-- Effort Mapping and Control -->
-            <div class="lg:col-span-2 input-card enterprise-table p-4 rounded-lg">
+            <!-- Task Configuration - Now on the left with fixed width -->
+            <div class="task-config-container input-card enterprise-table p-4 rounded-lg">
                 
                 <!-- Enhanced Task Sizing Management -->
                 <div class="task-size-manager">
@@ -648,8 +717,9 @@
                             </div>
                         </div>
                         
-                        <div id="task-size-cards" class="grid md:grid-cols-3 lg:grid-cols-5 gap-2 mb-3">
-                            <!-- Enhanced task size cards will be rendered here -->
+                        <!-- Vertical arrangement of task size cards -->
+                        <div id="task-size-cards" class="space-y-2 mb-3">
+                            <!-- Enhanced task size cards will be rendered here vertically -->
                         </div>
                         
                         <div class="flex gap-2 mb-3 flex-wrap text-xs">
@@ -684,6 +754,10 @@
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- Task Management - Takes remaining space -->
+            <div class="task-management-area input-card enterprise-table p-4 rounded-lg">
                 
                 <!-- Visual Timeline Display -->
                 <div class="mt-4 p-3 enterprise-timeline border rounded-lg">
@@ -747,30 +821,44 @@
                 </div>
 
                 <div class="mt-4">
-                    <h3 class="font-semibold text-md mb-2">Add New Task</h3>
+                    <h3 class="font-semibold text-md mb-3">Add New Task</h3>
                     <div class="compact-spacing">
-                        <div class="flex flex-col md:flex-row gap-2">
-                            <input type="text" id="new-ticket-desc" placeholder="Task Description" class="enterprise-input flex-grow">
-                            <input type="date" id="new-ticket-start-date" class="enterprise-input w-full md:w-36" title="Start Date">
-                            <select id="new-ticket-size" class="enterprise-input w-full md:w-32">
-                                <!-- Options populated dynamically by JavaScript -->
-                            </select>
-                            <select id="new-ticket-priority" class="enterprise-input w-full md:w-24" title="Priority">
-                                <option value="P3">P3</option>
-                                <option value="P1">P1</option>
-                                <option value="P2">P2</option>
-                                <option value="P4">P4</option>
-                                <option value="P5">P5</option>
-                            </select>
-                            <div class="w-full md:w-48 min-h-[35px]">
-                                <div class="text-xs text-gray-600 mb-1">Assign to:</div>
+                        <div class="grid grid-cols-1 xl:grid-cols-12 gap-3 items-end">
+                            <div class="xl:col-span-4">
+                                <label class="block text-xs text-gray-600 mb-1">Task Description</label>
+                                <input type="text" id="new-ticket-desc" placeholder="Task Description" class="enterprise-input w-full">
+                            </div>
+                            <div class="xl:col-span-2">
+                                <label class="block text-xs text-gray-600 mb-1">Start Date</label>
+                                <input type="date" id="new-ticket-start-date" class="enterprise-input w-full" title="Start Date">
+                            </div>
+                            <div class="xl:col-span-1">
+                                <label class="block text-xs text-gray-600 mb-1">Size</label>
+                                <select id="new-ticket-size" class="enterprise-input w-full">
+                                    <!-- Options populated dynamically by JavaScript -->
+                                </select>
+                            </div>
+                            <div class="xl:col-span-1">
+                                <label class="block text-xs text-gray-600 mb-1">Priority</label>
+                                <select id="new-ticket-priority" class="enterprise-input w-full" title="Priority">
+                                    <option value="P3">P3</option>
+                                    <option value="P1">P1</option>
+                                    <option value="P2">P2</option>
+                                    <option value="P4">P4</option>
+                                    <option value="P5">P5</option>
+                                </select>
+                            </div>
+                            <div class="xl:col-span-3">
+                                <label class="block text-xs text-gray-600 mb-1">Assign to:</label>
                                 <div id="new-ticket-assigned" class="flex flex-wrap gap-1 p-2 border border-gray-300 rounded-md bg-white min-h-[35px] items-start">
                                     <!-- Checkboxes populated by JS -->
                                 </div>
                             </div>
-                            <button onclick="addTicket()" class="btn-enterprise w-full md:w-20 flex-shrink-0">Add</button>
+                            <div class="xl:col-span-1">
+                                <button onclick="addTicket()" class="btn-enterprise w-full h-[35px] flex-shrink-0">Add</button>
+                            </div>
                         </div>
-                        <div class="text-xs text-gray-500 mt-1">
+                        <div class="text-xs text-gray-500 mt-2">
                             💡 <span id="start-date-help">Individual start dates enabled. Team availability calculated from earliest task.</span>
                         </div>
                     </div>
@@ -802,20 +890,20 @@
                         <table class="enterprise-table min-w-full divide-y">
                             <thead>
                                 <tr>
-                                    <th class="px-2 py-2 text-left">ID</th>
-                                    <th class="px-2 py-2 text-left">Description</th>
-                                    <th class="px-2 py-2 text-left">
+                                    <th class="px-3 py-2 text-left w-16">ID</th>
+                                    <th class="px-3 py-2 text-left min-w-0 flex-1">Description</th>
+                                    <th class="px-3 py-2 text-left w-32">
                                         <span id="start-date-column-header">Start Date</span>
                                     </th>
-                                    <th class="px-2 py-2 text-left">Size</th>
-                                    <th class="px-2 py-2 text-left">Priority</th>
-                                    <th class="px-2 py-2 text-left">Assigned</th>
-                                    <th class="px-2 py-2 text-left tooltip-container">End Date
+                                    <th class="px-3 py-2 text-left w-20">Size</th>
+                                    <th class="px-3 py-2 text-left w-20">Priority</th>
+                                    <th class="px-3 py-2 text-left w-48">Assigned</th>
+                                    <th class="px-3 py-2 text-left w-32 tooltip-container">End Date
                                         <div class="tooltip-text">
                                             Calculated from start date, team availability, and effort hours.
                                         </div>
                                     </th>
-                                    <th class="px-2 py-2 text-left">Actions</th>
+                                    <th class="px-3 py-2 text-left w-24">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="ticket-table-body" class="divide-y">
@@ -825,8 +913,14 @@
                     </div>
                     <p id="no-tickets" class="text-center py-3 text-gray-500 hidden">No tasks defined. Add a task to begin!</p>
                 </div>
+                </div>
+                <!-- End task-management-area -->
+                
             </div>
+            <!-- End right-side-container -->
+            
         </div>
+        <!-- End main-content -->
         
     </div>
 
@@ -866,6 +960,31 @@
                     <div class="flex items-center gap-2">
                         <div class="w-4 h-4 bg-red-100 border border-red-300 rounded"></div>
                         <span>91%+ Capacity (Overloaded)</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Configuration Section -->
+    <div class="container mx-auto px-4 py-6">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">👥 Team Configuration</h2>
+                <p id="availability-header" class="text-sm text-gray-600 mt-1">Team Availability (Next 8 Weeks)</p>
+            </div>
+            <div class="card-content">
+                <!-- People list with larger cards for configuration -->
+                <div id="people-list" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
+                    <!-- People cards will be rendered here in grid -->
+                </div>
+                
+                <!-- Add member section -->
+                <div class="border-t pt-4">
+                    <h3 class="text-lg font-semibold mb-3">Add New Team Member</h3>
+                    <div class="flex gap-3 items-center max-w-md">
+                        <input type="text" id="new-person-name" placeholder="Enter team member name" class="enterprise-input flex-grow">
+                        <button onclick="addPerson()" class="btn-enterprise">Add Member</button>
                     </div>
                 </div>
             </div>
@@ -948,6 +1067,9 @@
         // --- LOCAL STORAGE FUNCTIONS (Persistence) ---
 
         function saveToLocalStorage() {
+            console.log('💾 Saving to localStorage...');
+            console.log('📊 taskSizeDefinitions being saved:', taskSizeDefinitions);
+            
             const data = {
                 people,
                 tickets,
@@ -960,6 +1082,7 @@
             };
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                console.log('✅ Save successful');
             } catch (e) {
                 console.error("Error saving to local storage:", e);
             }
@@ -967,13 +1090,17 @@
 
         function loadFromLocalStorage() {
             try {
+                console.log('🔧 Loading from localStorage...');
                 const storedData = localStorage.getItem(STORAGE_KEY);
                 if (storedData) {
+                    console.log('📦 Found stored data, parsing...');
                     const data = JSON.parse(storedData);
                     people = data.people || [];
                     tickets = data.tickets || [];
                     hoursPerDay = data.hoursPerDay || 8;
                     ticketDays = data.ticketDays || { S: 1, M: 2, L: 5, XL: 10, XXL: 15 };
+                    
+                    console.log('📊 Loaded taskSizeDefinitions from storage:', data.taskSizeDefinitions);
                     taskSizeDefinitions = data.taskSizeDefinitions || {
                         S: { name: 'Small', days: 1, removable: false },
                         M: { name: 'Medium', days: 2, removable: false },
@@ -981,11 +1108,18 @@
                         XL: { name: 'X-Large', days: 10, removable: false },
                         XXL: { name: 'XX-Large', days: 15, removable: false }
                     };
+                    console.log('📊 Final taskSizeDefinitions after loading:', taskSizeDefinitions);
+                    
+                    // Backup the loaded task size definitions
+                    backupTaskSizeDefinitions();
+                    
                     currentTicketId = data.currentTicketId || (tickets.length > 0 ? Math.max(...tickets.map(t => t.id)) + 1 : 1);
                     useCommonStartDate = data.useCommonStartDate || false;
                     
                     // Sync ticketDays with taskSizeDefinitions
+                    console.log('🔄 About to sync task sizes...');
                     syncTaskSizes();
+                    console.log('📊 taskSizeDefinitions after sync:', taskSizeDefinitions);
                     
                     // Migrate people availability arrays to 8 weeks if needed
                     migratePeopleToEightWeeks();
@@ -1269,23 +1403,133 @@
             };
         }
         
+        // Function to get default task size definitions
+        function getDefaultTaskSizeDefinitions() {
+            return {
+                S: { name: 'Small', days: 1, removable: false },
+                M: { name: 'Medium', days: 2, removable: false },
+                L: { name: 'Large', days: 5, removable: false },
+                XL: { name: 'X-Large', days: 10, removable: false },
+                XXL: { name: 'XX-Large', days: 15, removable: false }
+            };
+        }
+
+        // Function to backup current task size definitions (only if changed)
+        function backupTaskSizeDefinitions() {
+            if (!taskSizeDefinitions || Object.keys(taskSizeDefinitions).length === 0) {
+                return;
+            }
+            
+            try {
+                // Check if backup already exists and is the same
+                const existingBackup = localStorage.getItem('taskSizeDefinitions_backup');
+                const currentData = JSON.stringify(taskSizeDefinitions);
+                
+                if (existingBackup === currentData) {
+                    // No changes, skip backup
+                    return;
+                }
+                
+                // Only backup if data has actually changed
+                localStorage.setItem('taskSizeDefinitions_backup', currentData);
+                const timestamp = new Date().toISOString();
+                localStorage.setItem('taskSizeDefinitions_backup_timestamp', timestamp);
+                console.log('📁 Backed up taskSizeDefinitions (changed data detected)');
+                
+                // Optional: Clean up old backups (keep only the latest)
+                cleanupOldBackups();
+                
+            } catch (e) {
+                console.log('⚠️ Could not create backup:', e.message);
+            }
+        }
+
+        // Function to clean up old backup data
+        function cleanupOldBackups() {
+            try {
+                // Remove any old backup keys that might exist
+                const keysToCheck = ['taskSizeDefinitions_backup_1', 'taskSizeDefinitions_backup_2', 'taskSizeDefinitions_backup_old'];
+                keysToCheck.forEach(key => {
+                    if (localStorage.getItem(key)) {
+                        localStorage.removeItem(key);
+                        console.log(`🧹 Cleaned up old backup: ${key}`);
+                    }
+                });
+            } catch (e) {
+                console.log('⚠️ Could not clean up old backups:', e.message);
+            }
+        }
+
+        // Function to restore from backup or defaults
+        function restoreTaskSizeDefinitions() {
+            console.log('🔧 Attempting to restore taskSizeDefinitions...');
+            
+            // First try to restore from backup
+            try {
+                const backup = localStorage.getItem('taskSizeDefinitions_backup');
+                const backupTimestamp = localStorage.getItem('taskSizeDefinitions_backup_timestamp');
+                
+                if (backup) {
+                    const restored = JSON.parse(backup);
+                    if (restored && Object.keys(restored).length > 0) {
+                        console.log('✅ Restored from backup:', restored);
+                        if (backupTimestamp) {
+                            console.log('📅 Backup created:', new Date(backupTimestamp).toLocaleString());
+                        }
+                        return restored;
+                    }
+                }
+            } catch (e) {
+                console.log('⚠️ Could not restore from backup:', e.message);
+            }
+            
+            // Fall back to defaults
+            const defaults = getDefaultTaskSizeDefinitions();
+            console.log('✅ Restored from defaults:', defaults);
+            return defaults;
+        }
+        
         function calculateEffortMap() {
+            console.log('🔧 calculateEffortMap called');
+            console.log('📊 taskSizeDefinitions keys count:', Object.keys(taskSizeDefinitions).length);
+            console.log('📊 taskSizeDefinitions:', taskSizeDefinitions);
+            
+            // Add a check to see if it's unexpectedly empty
+            if (Object.keys(taskSizeDefinitions).length === 0) {
+                console.error('❌ CRITICAL: taskSizeDefinitions is empty! Stack trace:');
+                console.trace();
+                
+                // Restore from backup or defaults
+                taskSizeDefinitions = restoreTaskSizeDefinitions();
+            }
+            
             effortMap = {};
             Object.keys(taskSizeDefinitions).forEach(key => {
                 // Task effort should be based on a standard 8-hour workday
                 // This represents the actual work content, not the daily pace
-                effortMap[key] = taskSizeDefinitions[key].days * 8;
+                const days = taskSizeDefinitions[key].days;
+                const effort = days * 8;
+                effortMap[key] = effort;
+                console.log(`📊 Size ${key}: ${days} days × 8 hours = ${effort} hours`);
             });
+            console.log('📊 Final effort map:', effortMap);
         }
 
         // --- CORE SCHEDULING LOGIC ---
 
         function getProjectedTickets() {
+            console.log('🔧 getProjectedTickets called');
+            console.log('📊 People count:', people.length);
+            console.log('📊 Tickets count:', tickets.length);
+            
             if (people.length === 0 || tickets.length === 0) {
+                console.log('❌ No people or tickets, returning N/A end dates');
                 return tickets.map(t => ({ ...t, endDate: 'N/A', explanation: 'No people or no effort.', isDelayed: false }));
             }
 
             calculateEffortMap();
+            console.log('📊 Effort map:', effortMap);
+            console.log('📊 Task size definitions:', taskSizeDefinitions);
 
             // Create a deep clone of availability for resource tracking
             const availabilityTracker = people.reduce((acc, p) => {
@@ -1294,10 +1538,14 @@
             }, {});
             
             const projectedTickets = tickets.map(ticket => {
+                console.log(`🎫 Processing ticket ${ticket.id}: ${ticket.description}`);
                 const totalEffortHours = effortMap[ticket.size] || 0;
                 const assignedCount = ticket.assigned.length;
                 
+                console.log(`📊 Ticket ${ticket.id} - Size: ${ticket.size}, Effort: ${totalEffortHours}h, Assigned: ${assignedCount} people`);
+                
                 if (totalEffortHours === 0 || assignedCount === 0) {
+                    console.log(`❌ Ticket ${ticket.id} - No effort defined or no one assigned`);
                     return { ...ticket, endDate: 'N/A', explanation: 'No effort defined or no one assigned.', isDelayed: false };
                 }
 
@@ -1767,6 +2015,9 @@
                 return;
             }
             
+            // Backup current configuration before making changes
+            backupTaskSizeDefinitions();
+            
             // Update the task size definition
             taskSizeDefinitions[sizeKey].days = days;
             
@@ -1784,6 +2035,8 @@
             
             // Save to localStorage
             saveData();
+            
+            console.log(`✅ Updated ${sizeKey} to ${days} days and backed up configuration`);
         }
         
         function updateTicketSizeDropdown() {
@@ -1837,20 +2090,21 @@
 
             people.forEach((person, pIndex) => {
                 const card = document.createElement('div');
-                card.className = 'p-3 mb-3 bg-indigo-50 rounded-lg border border-indigo-200';
+                card.className = 'p-4 bg-indigo-50 rounded-lg border border-indigo-200 hover:bg-indigo-100 transition-colors';
                 
                 let availabilityInputs = '';
                 for (let w = 0; w < 8; w++) {
                     const weekEnd = formatWeekEndDate(w);
                     availabilityInputs += `
-                        <div class="flex-1 min-w-[50px]">
-                            <label class="block text-xs text-gray-600 mb-1">Wk ${w+1} (${weekEnd})</label>
+                        <div class="flex flex-col items-center min-w-[40px]">
+                            <label class="text-xs text-gray-600 mb-1">W${w+1}</label>
+                            <label class="text-xs text-gray-500 mb-1">${weekEnd}</label>
                             <input 
                                 type="number" 
                                 value="${person.availability[w] || 0}" 
                                 min="0" 
                                 onchange="updatePersonAvailability('${person.name}', ${w}, this.value)" 
-                                class="w-full p-1 text-xs border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 text-center"
+                                class="w-10 p-1 text-xs border border-gray-300 rounded text-center focus:border-blue-500 focus:ring-1 focus:ring-blue-200"
                             >
                         </div>
                     `;
@@ -1861,18 +2115,20 @@
                     (getEarliestTaskStartDate() ? ' (Based on earliest task start date)' : '');
                 
                 card.innerHTML = `
-                    <div class="flex justify-between items-start mb-2">
-                        <span class="font-bold text-indigo-800">${person.name}</span>
-                        <button onclick="removePerson('${person.name}')" class="text-red-500 hover:text-red-700 transition">
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="font-bold text-indigo-800 text-base">${person.name}</span>
+                        <button onclick="removePerson('${person.name}')" class="text-red-500 hover:text-red-700 transition p-1 rounded hover:bg-red-50">
                              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
                         </button>
                     </div>
-                    <div class="flex gap-2 text-xs">
-                        ${availabilityInputs}
+                    <div class="overflow-x-auto">
+                        <div class="flex gap-1 text-xs min-w-max">
+                            ${availabilityInputs}
+                        </div>
                     </div>
-                    ${weekRangeInfo ? `<div class="text-xs text-blue-600 mt-1">${weekRangeInfo}</div>` : ''}
+                    ${weekRangeInfo ? `<div class="text-xs text-blue-600 mt-2">${weekRangeInfo}</div>` : ''}
                 `;
                 peopleList.appendChild(card);
 
@@ -2290,7 +2546,11 @@
                 currentTicketId = importedData.settings.currentTicketId || 1;
                 
                 // Apply configurations
+                console.log('🔄 IMPORT: About to replace taskSizeDefinitions');
+                console.log('🔄 IMPORT: Current taskSizeDefinitions:', taskSizeDefinitions);
+                console.log('🔄 IMPORT: Incoming taskSizeDefinitions:', importedData.taskSizeDefinitions);
                 taskSizeDefinitions = importedData.taskSizeDefinitions;
+                console.log('🔄 IMPORT: After replacement:', taskSizeDefinitions);
                 people = importedData.people;
                 tickets = importedData.tickets;
                 
@@ -2790,12 +3050,18 @@
 
         // P1 Task Conflict Detection System
         function checkP1TaskConflicts(employeeNames, taskStartDate, taskSize, excludeTaskId = null) {
+            console.log('🔍 P1 Conflict Check:', { employeeNames, taskStartDate, taskSize, excludeTaskId });
+            
             if (!Array.isArray(employeeNames) || employeeNames.length === 0) {
+                console.log('❌ No employees to check or invalid input');
                 return { hasConflicts: false, conflictedEmployees: [], availableEmployees: [] };
             }
 
-            // Calculate the expected end date for the new task
+            // Get fresh projection data to ensure we have current end dates
             const projectedTickets = getProjectedTickets();
+            
+            console.log('📊 Fresh projected tickets count:', projectedTickets.length);
+            console.log('📊 Sample projected ticket:', projectedTickets[0]);
             
             // Create a temporary task to get its projected end date
             const tempTask = {
@@ -2807,26 +3073,37 @@
                 assigned: employeeNames
             };
             
+            console.log('🔧 Created temp task:', tempTask);
+            
             // Get projected end date for this temporary task
             const tempProjected = projectedTickets.concat([tempTask]);
             const recalculatedProjected = getProjectedTickets([tempTask]);
             let tempTaskProjected = recalculatedProjected.find(t => t.id === -1);
+            
+            console.log('📈 Temp task projected:', tempTaskProjected);
             
             if (!tempTaskProjected || !tempTaskProjected.rawEndDate) {
                 // If we can't calculate end date, use a conservative 4-week estimate
                 const estimatedEndDate = new Date(taskStartDate);
                 estimatedEndDate.setDate(estimatedEndDate.getDate() + 28);
                 tempTaskProjected = { rawEndDate: estimatedEndDate };
+                console.log('⚠️ Using fallback end date calculation:', estimatedEndDate);
             }
 
             const newTaskStart = new Date(taskStartDate);
             const newTaskEnd = tempTaskProjected.rawEndDate;
+            
+            console.log('🗓️ New task date range:', {
+                start: newTaskStart.toDateString(),
+                end: newTaskEnd.toDateString()
+            });
 
             const conflictedEmployees = [];
             const availableEmployees = [];
 
             // Check each employee for P1 conflicts
             employeeNames.forEach(employeeName => {
+                console.log(`🔍 Checking ${employeeName} for P1 conflicts...`);
                 let hasConflict = false;
                 
                 // Check all existing P1 tasks for this employee
@@ -2835,18 +3112,52 @@
                     ticket.assigned.includes(employeeName) &&
                     ticket.id !== excludeTaskId // Exclude current task if editing
                 );
+                
+                console.log(`📋 Found ${existingP1Tasks.length} existing P1 tasks for ${employeeName}:`, existingP1Tasks.map(t => ({ id: t.id, desc: t.description, start: t.startDate })));
 
                 for (const existingTask of existingP1Tasks) {
+                    console.log(`🔍 Checking existing task:`, { id: existingTask.id, desc: existingTask.description, start: existingTask.startDate, size: existingTask.size });
+                    
                     // Get projected end date for existing task
                     const existingProjected = projectedTickets.find(pt => pt.id === existingTask.id);
-                    if (existingProjected && existingProjected.rawEndDate) {
+                    console.log(`📊 Existing task projected:`, existingProjected);
+                    console.log(`📊 Available properties:`, existingProjected ? Object.keys(existingProjected) : 'none');
+                    
+                    if (existingProjected && (existingProjected.rawEndDate || existingProjected.endDate)) {
                         const existingStart = new Date(existingTask.startDate);
-                        const existingEnd = existingProjected.rawEndDate;
+                        const existingEndValue = existingProjected.rawEndDate || existingProjected.endDate;
+                        const existingEnd = new Date(existingEndValue);
+
+                        console.log(`📊 Date values:`, {
+                            existingEndValue,
+                            existingEnd,
+                            isValidDate: !isNaN(existingEnd.getTime())
+                        });
+
+                        // If the projected end date is invalid, this indicates a bug in the projection system
+                        if (isNaN(existingEnd.getTime()) || existingEndValue === 'N/A') {
+                            console.error(`❌ PROJECTION SYSTEM BUG: Task ${existingTask.id} has invalid end date '${existingEndValue}'. This must be fixed!`);
+                            console.log(`Task details:`, existingTask);
+                            console.log(`Projected details:`, existingProjected);
+                            // Skip this task for now, but log the issue
+                            return;
+                        }
 
                         // Check for date overlap
                         const hasOverlap = (newTaskStart <= existingEnd && newTaskEnd >= existingStart);
                         
+                        console.log(`📅 Date overlap check for ${employeeName}:`, {
+                            newTaskStart: newTaskStart.toDateString(),
+                            newTaskEnd: newTaskEnd.toDateString(),
+                            existingStart: existingStart.toDateString(),
+                            existingEnd: existingEnd.toDateString(),
+                            hasOverlap,
+                            condition1: newTaskStart <= existingEnd,
+                            condition2: newTaskEnd >= existingStart
+                        });
+                        
                         if (hasOverlap) {
+                            console.log(`⚠️ CONFLICT DETECTED for ${employeeName}!`);
                             hasConflict = true;
                             if (!conflictedEmployees.find(ce => ce.name === employeeName)) {
                                 conflictedEmployees.push({
@@ -2858,6 +3169,8 @@
                             }
                             break;
                         }
+                    } else {
+                        console.log(`❌ No projected data found for existing task ${existingTask.id}, available properties:`, existingProjected ? Object.keys(existingProjected) : 'task not found');
                     }
                 }
 
@@ -2898,11 +3211,15 @@
                 }
             });
 
-            return {
+            const result = {
                 hasConflicts: conflictedEmployees.length > 0,
                 conflictedEmployees: conflictedEmployees,
                 availableEmployees: availableEmployees
             };
+            
+            console.log('✅ P1 Conflict Check Result:', result);
+            
+            return result;
         }
 
         function showP1ConflictWarning(conflictResult) {
@@ -3034,8 +3351,10 @@
             
             // Check for P1 conflicts if this is a P1 task and person is being assigned
             if (isChecked && ticket.priority === 'P1') {
+                console.log('🔍 Checkbox P1 check triggered for:', { personName, ticketId, priority: ticket.priority });
                 const conflictResult = checkP1TaskConflicts([personName], ticket.startDate, ticket.size, ticketId);
                 if (conflictResult.hasConflicts) {
+                    console.log('⚠️ P1 conflicts found, showing warning...');
                     const userWantsToProceed = showP1ConflictWarning(conflictResult);
                     if (!userWantsToProceed) {
                         // User clicked Cancel, revert the checkbox state
@@ -3043,6 +3362,8 @@
                         return;
                     }
                     // User clicked OK, continue with assignment
+                } else {
+                    console.log('✅ No P1 conflicts found');
                 }
             }
             
@@ -3102,8 +3423,10 @@
                 
                 // Check for P1 conflicts if changing to P1 priority and ticket has assignments
                 if (newPriority === 'P1' && ticket.assigned.length > 0) {
+                    console.log('🔍 Priority change P1 check triggered for:', { ticketId, assigned: ticket.assigned });
                     const conflictResult = checkP1TaskConflicts(ticket.assigned, ticket.startDate, ticket.size, ticketId);
                     if (conflictResult.hasConflicts) {
+                        console.log('⚠️ P1 conflicts found during priority change, showing warning...');
                         const userWantsToProceed = showP1ConflictWarning(conflictResult);
                         if (!userWantsToProceed) {
                             // User clicked Cancel, revert the priority change
@@ -3111,6 +3434,8 @@
                             return;
                         }
                         // User clicked OK, continue with priority change
+                    } else {
+                        console.log('✅ No P1 conflicts found during priority change');
                     }
                 }
                 
@@ -3285,7 +3610,8 @@ ${ticket.explanation}
             renderPeople();
             calculateProjection(); // This now includes timeline rendering
             
-            // Initialize filter UI
+            // Initialize UI components
+            updateTicketSizeDropdown(); // Populate the task size dropdown
             updateFilterUI();
             
             // Update hours per day display and input
