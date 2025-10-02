@@ -1768,6 +1768,89 @@
             updateFurthestCompletionDate(projectedTickets);
         }
         
+        // --- PERSON AVAILABILITY CALCULATION ---
+        function getPersonNextAvailableDate(personName) {
+            const projectedTickets = getProjectedTickets();
+            const today = new Date();
+            
+            // Find all tasks assigned to this person
+            const personTasks = projectedTickets.filter(ticket => 
+                ticket.assigned && ticket.assigned.includes(personName)
+            );
+            
+            if (personTasks.length === 0) {
+                // Person has no tasks, available from next business day
+                const nextBusinessDay = getNextBusinessDay(today);
+                return {
+                    nextAvailable: nextBusinessDay,
+                    status: 'Available immediately',
+                    lastTaskEnd: null
+                };
+            }
+            
+            // Find the latest end date among their tasks
+            let latestEndDate = new Date(today);
+            let latestTaskDescription = '';
+            
+            personTasks.forEach(task => {
+                if (task.rawEndDate) {
+                    const taskEndDate = new Date(task.rawEndDate);
+                    if (taskEndDate > latestEndDate) {
+                        latestEndDate = taskEndDate;
+                        latestTaskDescription = task.description;
+                    }
+                }
+            });
+            
+            // Find next business day after their last task
+            const nextAvailable = new Date(latestEndDate);
+            nextAvailable.setDate(nextAvailable.getDate() + 1);
+            const nextBusinessDay = getNextBusinessDay(nextAvailable);
+            
+            return {
+                nextAvailable: nextBusinessDay,
+                status: `Busy until ${latestEndDate.toLocaleDateString('en-US', { 
+                    weekday: 'short', 
+                    month: 'short', 
+                    day: 'numeric' 
+                })}`,
+                lastTaskEnd: latestEndDate,
+                lastTaskDescription: latestTaskDescription
+            };
+        }
+        
+        function showPersonAvailability(personName) {
+            const availability = getPersonNextAvailableDate(personName);
+            const nextAvailableFormatted = availability.nextAvailable.toLocaleDateString('en-US', { 
+                weekday: 'long', 
+                month: 'short', 
+                day: 'numeric',
+                year: 'numeric'
+            });
+            
+            // Calculate days from today
+            const today = new Date();
+            const daysFromToday = Math.ceil((availability.nextAvailable - today) / (1000 * 60 * 60 * 24));
+            const daysText = daysFromToday <= 0 ? 'Available now' : 
+                            daysFromToday === 1 ? 'Available tomorrow' : 
+                            `Available in ${daysFromToday} days`;
+            
+            let message = `👤 ${personName} - Availability Status\n`;
+            message += `${'='.repeat(40)}\n\n`;
+            message += `📅 Next Available: ${nextAvailableFormatted}\n`;
+            message += `⏰ Timeline: ${daysText}\n\n`;
+            message += `📊 Current Status: ${availability.status}\n`;
+            
+            if (availability.lastTaskDescription) {
+                message += `🔗 Last Task: "${availability.lastTaskDescription}"\n`;
+            }
+            
+            message += `\n💡 Tip: Use this date as the start date when assigning new tasks to avoid overallocation.`;
+            
+            // Show in a nice alert dialog
+            alert(message);
+        }
+        
         function updateFurthestCompletionDate(projectedTickets) {
             const furthestDateEl = document.getElementById('furthest-completion-date');
             const furthestWeekEl = document.getElementById('furthest-completion-week');
@@ -2008,7 +2091,11 @@
                 
                 card.innerHTML = `
                     <div class="flex justify-between items-start mb-3">
-                        <span class="font-bold text-indigo-800 text-base">${person.name}</span>
+                        <span class="font-bold text-indigo-800 text-base cursor-pointer hover:text-blue-600 hover:underline transition-colors" 
+                              onclick="showPersonAvailability('${person.name}')" 
+                              title="Click to see availability">
+                            📅 ${person.name}
+                        </span>
                         <button onclick="removePerson('${person.name}')" class="text-red-500 hover:text-red-700 transition p-1 rounded hover:bg-red-50">
                              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -2029,7 +2116,11 @@
                 checkboxWrapper.className = 'flex items-center space-x-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer';
                 checkboxWrapper.innerHTML = `
                     <input type="checkbox" value="${person.name}" class="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-1">
-                    <span class="text-sm text-gray-700">${person.name}</span>
+                    <span class="text-sm text-gray-700 cursor-pointer hover:text-blue-600" 
+                          onclick="event.preventDefault(); showPersonAvailability('${person.name}')" 
+                          title="Click to see availability">
+                        📅 ${person.name}
+                    </span>
                 `;
                 assignContainer.appendChild(checkboxWrapper);
             });
@@ -2077,7 +2168,11 @@
                                 onchange="handleAssignmentCheckboxChange(this, ${ticket.id})"
                                 class="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
                             >
-                            <span class="text-gray-700">${p.name}</span>
+                            <span class="text-gray-700 cursor-pointer hover:text-blue-600" 
+                                  onclick="event.preventDefault(); showPersonAvailability('${p.name}')"
+                                  title="Click to see availability">
+                                📅 ${p.name}
+                            </span>
                         </label>
                     `;
                 }).join('');
