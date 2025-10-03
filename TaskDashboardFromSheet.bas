@@ -314,7 +314,7 @@ Sub CreateCapacityAnalysis()
     utilRow = startRow + 4
     Dim personKey As Variant
     For Each personKey In People.Keys
-        Call CalculatePersonUtilization ws, utilRow, CStr(personKey)
+        Call CalculatePersonUtilization(ws, utilRow, CStr(personKey))
         utilRow = utilRow + 1
     Next personKey
 End Sub
@@ -709,4 +709,4 @@ Sub TestProjectReadyCompatibility()
               "Ready for latest exported configurations!"
               
     MsgBox testMsg, vbInformation, "Compatibility Confirmed"
-End Sub
+End Sub
