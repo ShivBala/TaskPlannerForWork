@@ -38,7 +38,7 @@ Sub CreateDashboardFromTaskData()
     
     ' Check if TaskData sheet exists
     If Not SheetExists("TaskData") Then
-        MsgBox "❌ ERROR: 'TaskData' sheet not found!" & vbCrLf & vbCrLf & _
+        MsgBox "ERROR: 'TaskData' sheet not found!" & vbCrLf & vbCrLf & _
                "Please:" & vbCrLf & _
                "1. Import your CSV file into Excel" & vbCrLf & _
                "2. Rename the sheet to 'TaskData'" & vbCrLf & _
@@ -66,7 +66,7 @@ Sub CreateDashboardFromTaskData()
     Application.ScreenUpdating = True
     Application.DisplayAlerts = True
     
-    MsgBox "✅ Task Projection Dashboard created successfully!" & vbCrLf & _
+    MsgBox "Task Projection Dashboard created successfully!" & vbCrLf & _
            "Source: 'TaskData' sheet" & vbCrLf & _
            "Output: 'Task Dashboard' sheet" & vbCrLf & _
            "Ready for presentation!", vbInformation, "Dashboard Complete"
@@ -668,7 +668,7 @@ End Sub
 Sub ValidateTaskDataFormat()
     ' Helper function to validate TaskData sheet format
     If Not SheetExists("TaskData") Then
-        MsgBox "❌ TaskData sheet not found!", vbCritical
+        MsgBox "TaskData sheet not found!", vbCritical
         Exit Sub
     End If
     
@@ -700,7 +700,7 @@ Sub TestProjectReadyCompatibility()
     ' Test function to verify Project Ready field parsing from sheet
     Dim testMsg As String
     
-    testMsg = "✅ TaskDashboardFromSheet is compatible with:" & vbCrLf & vbCrLf & _
+    testMsg = "TaskDashboardFromSheet is compatible with:" & vbCrLf & vbCrLf & _
               "• Old format: Name,Week1-8" & vbCrLf & _
               "• New format: Name,Week1-8,Project Ready" & vbCrLf & vbCrLf & _
               "Project Ready column (10th column) will be:" & vbCrLf & _
@@ -709,4 +709,4 @@ Sub TestProjectReadyCompatibility()
               "Ready for latest exported configurations!"
               
     MsgBox testMsg, vbInformation, "Compatibility Confirmed"
-End Sub
+End Sub

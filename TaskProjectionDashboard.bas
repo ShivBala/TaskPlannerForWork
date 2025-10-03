@@ -54,7 +54,7 @@ Sub InitializeTaskProjectionDashboard()
     Application.ScreenUpdating = True
     Application.DisplayAlerts = True
     
-    MsgBox "✅ Task Projection Dashboard created successfully!" & vbCrLf & _
+    MsgBox "Task Projection Dashboard created successfully!" & vbCrLf & _
            "Sheet: 'Task Dashboard'" & vbCrLf & _
            "Ready for presentation!", vbInformation, "Dashboard Complete"
 End Sub
@@ -99,7 +99,7 @@ Sub ImportCSVData()
     filePath = Application.GetOpenFilename("CSV Files (*.csv), *.csv", , "Select Task Planner Export File")
     
     If filePath = "False" Then
-        MsgBox "❌ No file selected. Operation cancelled.", vbExclamation
+        MsgBox "No file selected. Operation cancelled.", vbExclamation
         Exit Sub
     End If
     
@@ -688,7 +688,7 @@ Sub TestProjectReadyParsing()
     newFormat = """Bob Johnson"",25,30,25,20,25,30,25,25,No"
     Call ParsePerson(newFormat)
     
-    MsgBox "✅ Project Ready parsing test completed!" & vbCrLf & _
+    MsgBox "Project Ready parsing test completed!" & vbCrLf & _
            "Parsed " & People.Count & " people successfully." & vbCrLf & _
            "Both old and new CSV formats supported.", vbInformation, "Compatibility Test"
 End Sub
@@ -696,4 +696,4 @@ End Sub
 Sub RefreshDashboard()
     ' Refresh dashboard with latest data
     Call InitializeTaskProjectionDashboard
-End Sub
+End Sub
