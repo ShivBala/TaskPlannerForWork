@@ -1197,6 +1197,14 @@
                     console.log('📦 Found stored data, parsing...');
                     const data = JSON.parse(storedData);
                     people = data.people || [];
+                    
+                    // Add backwards compatibility for isProjectReady field
+                    people.forEach(person => {
+                        if (person.isProjectReady === undefined) {
+                            person.isProjectReady = true; // Default to true for existing data
+                        }
+                    });
+                    
                     tickets = data.tickets || [];
                     estimationBaseHours = data.estimationBaseHours || 5;
                     projectHoursPerDay = data.projectHoursPerDay || data.hoursPerDay || 8; // Migration from old hoursPerDay
@@ -1671,7 +1679,25 @@
                 const assignedCount = ticket.assigned.length;
                 
                 console.log(`📊 Ticket ${ticket.id} - Size: ${ticket.size}, Effort: ${totalEffortHours}h, Assigned: ${assignedCount} people`);
+                
+                // Categorize assigned people by project readiness
+                const projectReadyPeople = ticket.assigned.filter(name => {
+                    const person = people.find(p => p.name === name);
+                    return person && person.isProjectReady;
+                });
+                
+                const notProjectReadyPeople = ticket.assigned.filter(name => {
+                    const person = people.find(p => p.name === name);
+                    return person && !person.isProjectReady;
+                });
+                
                 console.log(`👥 Assigned to: ${ticket.assigned.join(', ')}`);
+                if (projectReadyPeople.length > 0) {
+                    console.log(`🎯 Project Ready (Contributing): ${projectReadyPeople.join(', ')}`);
+                }
+                if (notProjectReadyPeople.length > 0) {
+                    console.log(`📋 Tracked Only (Not Contributing): ${notProjectReadyPeople.join(', ')}`);
+                }
 
                 // Create fresh availability tracker for this task based on its start date
                 // This ensures each task starts with full availability from its start date onwards
@@ -1781,14 +1807,39 @@
                     pooledCapacityThisWeek = 0;
                     const capacityBreakdown = {};
                     
-                    ticket.assigned.forEach(name => {
+                    // Filter assigned people to only include project-ready resources for capacity calculations
+                    const projectReadyAssigned = ticket.assigned.filter(name => {
+                        const person = people.find(p => p.name === name);
+                        return person && person.isProjectReady;
+                    });
+                    
+                    const notProjectReadyAssigned = ticket.assigned.filter(name => {
+                        const person = people.find(p => p.name === name);
+                        return person && !person.isProjectReady;
+                    });
+                    
+                    // Only count capacity from project-ready resources
+                    projectReadyAssigned.forEach(name => {
                         const personCapacity = taskAvailabilityTracker[name] ? taskAvailabilityTracker[name][w] || 0 : 0;
                         pooledCapacityThisWeek += personCapacity;
                         capacityBreakdown[name] = personCapacity;
-                        console.log(`👤 ${name} Week ${w + 1}: ${personCapacity} hours available`);
+                        console.log(`👤 ${name} Week ${w + 1}: ${personCapacity} hours available (Project Ready)`);
+                    });
+                    
+                    // Log non-project-ready resources for tracking but don't include in capacity
+                    notProjectReadyAssigned.forEach(name => {
+                        const personCapacity = taskAvailabilityTracker[name] ? taskAvailabilityTracker[name][w] || 0 : 0;
+                        capacityBreakdown[name] = `${personCapacity} (Not Contributing)`;
+                        console.log(`👤 ${name} Week ${w + 1}: ${personCapacity} hours available (Not Project Ready - Tracked Only)`);
                     });
                     
                     explanation += `--- Week ${w + 1} (${getWeekDateRange(w)}) ---\n`;
+                    if (projectReadyAssigned.length > 0) {
+                        explanation += `Project Ready Resources: ${projectReadyAssigned.join(', ')}\n`;
+                    }
+                    if (notProjectReadyAssigned.length > 0) {
+                        explanation += `Tracked Only (Not Contributing): ${notProjectReadyAssigned.join(', ')}\n`;
+                    }
                     explanation += `Pooled Capacity: ${pooledCapacityThisWeek.toFixed(1)} hours.\n`;
                     console.log(`📊 Week ${w + 1} Total Pooled Capacity: ${pooledCapacityThisWeek} hours, Need: ${currentHoursToConsume} hours`);
                     
@@ -2225,6 +2276,19 @@
                             </svg>
                         </button>
                     </div>
+                    <div class="flex items-center gap-2 mb-3 px-1">
+                        <label class="flex items-center gap-1 text-sm cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                ${person.isProjectReady ? 'checked' : ''} 
+                                onchange="updatePersonProjectReady('${person.name}', this.checked)"
+                                class="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-1"
+                            >
+                            <span class="text-blue-700 font-medium" title="When checked, this person contributes to project delivery timelines. When unchecked, their capacity is tracked but doesn't affect completion dates.">
+                                🎯 Project Ready Resource
+                            </span>
+                        </label>
+                    </div>
                     <div class="overflow-x-auto">
                         <div class="flex gap-1 text-xs min-w-max">
                             ${availabilityInputs}
@@ -2237,12 +2301,14 @@
                 // Create checkbox for "Add New Task" form
                 const checkboxWrapper = document.createElement('label');
                 checkboxWrapper.className = 'flex items-center space-x-1 px-2 py-1 hover:bg-gray-100 rounded cursor-pointer';
+                const projectReadyIndicator = person.isProjectReady ? '🎯' : '📋';
+                const projectReadyTitle = person.isProjectReady ? 'Project Ready - Contributes to delivery timelines' : 'Tracked Only - Does not affect delivery dates';
                 checkboxWrapper.innerHTML = `
                     <input type="checkbox" value="${person.name}" class="w-3 h-3 text-blue-600 border-gray-300 rounded focus:ring-blue-500 focus:ring-1">
-                    <span class="text-sm text-gray-700 cursor-pointer hover:text-blue-600" 
+                    <span class="text-sm cursor-pointer hover:text-blue-600 ${person.isProjectReady ? 'text-gray-700' : 'text-gray-500'}" 
                           onclick="event.preventDefault(); showPersonAvailability('${person.name}')" 
-                          title="Click to see availability">
-                        📅 ${person.name}
+                          title="Click to see availability - ${projectReadyTitle}">
+                        ${projectReadyIndicator} ${person.name}
                     </span>
                 `;
                 assignContainer.appendChild(checkboxWrapper);
@@ -2483,14 +2549,15 @@
             
             // People section
             csvContent += "SECTION,PEOPLE\n";
-            csvContent += "Name,Week1,Week2,Week3,Week4,Week5,Week6,Week7,Week8\n";
+            csvContent += "Name,Week1,Week2,Week3,Week4,Week5,Week6,Week7,Week8,Project Ready\n";
             configData.people.forEach(person => {
                 // Ensure person has 8-week availability
                 const availability = [...person.availability];
                 while (availability.length < 8) {
                     availability.push(25);
                 }
-                csvContent += `"${person.name}",${availability.slice(0, 8).join(',')}\n`;
+                const isProjectReady = person.isProjectReady !== undefined ? person.isProjectReady : true;
+                csvContent += `"${person.name}",${availability.slice(0, 8).join(',')},${isProjectReady ? 'Yes' : 'No'}\n`;
             });
             csvContent += "\n";
             
@@ -2603,7 +2670,10 @@
                         const name = parsed[0];
                         
                         // Handle both old 5-week and new 8-week format
-                        const availabilityValues = parsed.slice(1).map(val => parseInt(val) || 0);
+                        const availabilityValues = parsed.slice(1, -1).map(val => parseInt(val) || 0); // Exclude last column for project ready flag
+                        
+                        // Get project ready flag (last column, default to true for backwards compatibility)
+                        const isProjectReady = parsed.length > 9 ? (parsed[parsed.length - 1] === 'true' || parsed[parsed.length - 1] === 'Yes') : true;
                         
                         // Ensure we have exactly 8 weeks
                         while (availabilityValues.length < 8) {
@@ -2619,7 +2689,8 @@
                         
                         importedData.people.push({
                             name: name,
-                            availability: availabilityValues
+                            availability: availabilityValues,
+                            isProjectReady: isProjectReady
                         });
                     }
                     else if (currentSection === 'TICKETS') {
@@ -2667,6 +2738,14 @@
                 taskSizeDefinitions = importedData.taskSizeDefinitions;
                 console.log('🔄 IMPORT: After replacement:', taskSizeDefinitions);
                 people = importedData.people;
+                
+                // Add backwards compatibility for isProjectReady field
+                people.forEach(person => {
+                    if (person.isProjectReady === undefined) {
+                        person.isProjectReady = true; // Default to true for existing data
+                    }
+                });
+                
                 tickets = importedData.tickets;
                 
                 // Reset filtering state after import
@@ -3123,7 +3202,8 @@
 
             people.push({
                 name: name,
-                availability: [25, 25, 25, 25, 25, 25, 25, 25] 
+                availability: [25, 25, 25, 25, 25, 25, 25, 25],
+                isProjectReady: true // Default to true for new people
             });
             
             nameInput.value = '';
@@ -3155,6 +3235,18 @@
                 calculateProjection(); 
                 saveToLocalStorage();
                 console.log(`✅ Recalculation triggered for availability change`);
+            }
+        }
+
+        window.updatePersonProjectReady = (name, isReady) => {
+            const person = people.find(p => p.name === name);
+            if (person) {
+                console.log(`🎯 PROJECT READY UPDATE: ${name} changed from ${person.isProjectReady ? 'Project Ready' : 'Not Project Ready'} to ${isReady ? 'Project Ready' : 'Not Project Ready'}`);
+                person.isProjectReady = isReady;
+                console.log(`📊 Updated ${name} project ready status:`, person.isProjectReady);
+                calculateProjection(); 
+                saveToLocalStorage();
+                console.log(`✅ Recalculation triggered for project ready change`);
             }
         }
 
@@ -3662,11 +3754,11 @@ ${ticket.explanation}
         function initializeDefaultData() {
             console.log("Setting up default people data.");
             people = [
-                { name: 'Vipul', availability: [25, 25, 25, 25, 25, 25, 25, 25] },
-                { name: 'Sameet', availability: [25, 25, 25, 25, 25, 25, 25, 25] },
-                { name: 'Peter', availability: [25, 25, 25, 25, 25, 25, 25, 25] },
-                { name: 'Sharanya', availability: [25, 25, 25, 25, 25, 25, 25, 25] },
-                { name: 'Divya', availability: [25, 25, 25, 25, 25, 25, 25, 25] },
+                { name: 'Vipul', availability: [25, 25, 25, 25, 25, 25, 25, 25], isProjectReady: true },
+                { name: 'Sameet', availability: [25, 25, 25, 25, 25, 25, 25, 25], isProjectReady: true },
+                { name: 'Peter', availability: [25, 25, 25, 25, 25, 25, 25, 25], isProjectReady: true },
+                { name: 'Sharanya', availability: [25, 25, 25, 25, 25, 25, 25, 25], isProjectReady: true },
+                { name: 'Divya', availability: [25, 25, 25, 25, 25, 25, 25, 25], isProjectReady: true },
             ];
             
             // Use realistic current dates
