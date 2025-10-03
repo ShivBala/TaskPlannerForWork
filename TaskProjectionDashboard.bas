@@ -1,7 +1,4 @@
-Attribute VB_Name = "TaskProjectionDashboard"
-
 ' =====================================================
-
 ' ENTERPRISE TASK PROJECTION DASHBOARD - VBA MODULE
 
 ' =====================================================

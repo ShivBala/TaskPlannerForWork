@@ -1,4 +1,3 @@
-Attribute VB_Name = "TaskDashboardFromSheet"
 ' =====================================================
 ' ENTERPRISE TASK DASHBOARD FROM SHEET - VBA MODULE
 ' =====================================================
