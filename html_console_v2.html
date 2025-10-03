@@ -1724,17 +1724,18 @@
                     
                     // The task completes within this week, estimate specific day based on capacity consumption
                     if (pooledCapacityThisWeek > 0 && finalCapacity > 0) {
-                        // Estimate how many project hours are needed to finish the remaining work
-                        const projectDaysNeeded = Math.ceil(finalCapacity / projectHoursPerDay);
-                        const completionDate = new Date(baseWeekDate);
-                        completionDate.setDate(completionDate.getDate() + Math.max(0, projectDaysNeeded - 1));
+                        // Calculate how many business days are needed to finish the remaining work
+                        const businessDaysNeeded = Math.ceil(finalCapacity / projectHoursPerDay);
+                        // Use addBusinessDays to ensure we land on a business day
+                        const completionDate = addBusinessDays(baseWeekDate, businessDaysNeeded - 1);
                         
                         endDate = completionDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                         rawEndDate = completionDate;
                     } else {
-                        // Fallback to week start if we can't determine specific completion day
-                        endDate = baseWeekDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                        rawEndDate = baseWeekDate;
+                        // Fallback to week start if we can't determine specific completion day  
+                        const businessDayStart = getNextBusinessDay(baseWeekDate);
+                        endDate = businessDayStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        rawEndDate = businessDayStart;
                     }
                     
                     explanation += `\nTask completes in Week ${completionWeekIndex + 1}: ${endDate}\n`;
