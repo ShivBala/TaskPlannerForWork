@@ -1643,7 +1643,6 @@
 
                 // Apply capacity consumption from previous tasks that might overlap with this task
                 const thisTaskStartDate = new Date(ticket.startDate || getEffectiveStartDate());
-                const thisTaskStartWeekIndex = getWeekIndex(thisTaskStartDate);
                 
                 // Only apply consumption from previous tasks that actually overlap with this task's timeline
                 sortedTickets.forEach(prevTicket => {
