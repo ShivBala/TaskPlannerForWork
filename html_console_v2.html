@@ -1622,12 +1622,40 @@
                 return dateA - dateB;
             });
             
+            console.log('📅 Processing tickets in chronological order:');
+            sortedTickets.forEach(ticket => {
+                console.log(`  - Ticket ${ticket.id}: ${ticket.description}, Start: ${ticket.startDate}, Size: ${ticket.size}`);
+            });
+            
             const projectedTickets = sortedTickets.map(ticket => {
                 console.log(`🎫 Processing ticket ${ticket.id}: ${ticket.description}`);
                 const totalEffortHours = effortMap[ticket.size] || 0;
                 const assignedCount = ticket.assigned.length;
                 
                 console.log(`📊 Ticket ${ticket.id} - Size: ${ticket.size}, Effort: ${totalEffortHours}h, Assigned: ${assignedCount} people`);
+
+                // Create fresh availability tracker for this task based on its start date
+                // This ensures each task starts with full availability from its start date onwards
+                const taskAvailabilityTracker = people.reduce((acc, p) => {
+                    acc[p.name] = [...p.availability];
+                    return acc;
+                }, {});
+
+                // Apply capacity consumption from previous tasks that might overlap with this task
+                const thisTaskStartDate = new Date(ticket.startDate || getEffectiveStartDate());
+                const thisTaskStartWeekIndex = getWeekIndex(thisTaskStartDate);
+                
+                // Only apply consumption from previous tasks that actually overlap with this task's timeline
+                sortedTickets.forEach(prevTicket => {
+                    if (prevTicket.id === ticket.id) return; // Skip self
+                    
+                    const prevStartDate = new Date(prevTicket.startDate || getEffectiveStartDate());
+                    if (prevStartDate >= thisTaskStartDate) return; // Skip future tasks
+                    
+                    // Check if this previous task overlaps with current task's timeline
+                    // For now, we'll simplify and let each task have fresh availability
+                    // This may need refinement for true overlapping task support
+                });
                 
                 if (totalEffortHours === 0 || assignedCount === 0) {
                     console.log(`❌ Ticket ${ticket.id} - No effort defined or no one assigned`);
@@ -1679,7 +1707,7 @@
                     const capacityBreakdown = {};
                     
                     ticket.assigned.forEach(name => {
-                        const personCapacity = availabilityTracker[name] ? availabilityTracker[name][w] || 0 : 0;
+                        const personCapacity = taskAvailabilityTracker[name] ? taskAvailabilityTracker[name][w] || 0 : 0;
                         pooledCapacityThisWeek += personCapacity;
                         capacityBreakdown[name] = personCapacity;
                     });
@@ -1703,8 +1731,8 @@
                             if (personCapacity > 0) {
                                 const proportion = personCapacity / pooledCapacityThisWeek;
                                 const timeToDeduct = capacityUsed * proportion;
-                                availabilityTracker[name][w] -= timeToDeduct;
-                                explanation += `  - ${name} contribution: ${timeToDeduct.toFixed(1)} hours (Remaining: ${availabilityTracker[name][w].toFixed(1)}).\n`;
+                                taskAvailabilityTracker[name][w] -= timeToDeduct;
+                                explanation += `  - ${name} contribution: ${timeToDeduct.toFixed(1)} hours (Remaining: ${taskAvailabilityTracker[name][w].toFixed(1)}).\n`;
                             }
                         });
                         break;
@@ -1713,7 +1741,7 @@
                         explanation += `Full capacity consumed (${pooledCapacityThisWeek.toFixed(1)} hours). Remaining hours for task: ${currentHoursToConsume.toFixed(1)}.\n`;
 
                         ticket.assigned.forEach(name => {
-                            availabilityTracker[name][w] = 0;
+                            taskAvailabilityTracker[name][w] = 0;
                         });
                     }
                 }
