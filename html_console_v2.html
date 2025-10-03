@@ -4197,8 +4197,14 @@ ${ticket.explanation}
                     const activeTasks = weekTasks.filter(task => {
                         const taskStart = task.taskStartDate;
                         const taskEnd = task.taskEndDate || task.taskStartDate;
+                        
+                        // Normalize dates to midnight for accurate day comparison
+                        const dayDateNormalized = new Date(dayDate.getFullYear(), dayDate.getMonth(), dayDate.getDate());
+                        const taskStartNormalized = new Date(taskStart.getFullYear(), taskStart.getMonth(), taskStart.getDate());
+                        const taskEndNormalized = new Date(taskEnd.getFullYear(), taskEnd.getMonth(), taskEnd.getDate());
+                        
                         // Only show tasks on business days (Monday = 1, Friday = 5)
-                        return dayDate >= taskStart && dayDate <= taskEnd && dayOfWeek >= 1 && dayOfWeek <= 5;
+                        return dayDateNormalized >= taskStartNormalized && dayDateNormalized <= taskEndNormalized && dayOfWeek >= 1 && dayOfWeek <= 5;
                     });
                     
                     let dayClass = 'h-8 flex items-center justify-center text-xs border border-gray-200';
