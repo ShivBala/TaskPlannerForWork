@@ -36,8 +36,25 @@
             transition: all 0.2s ease;
         }
         
+        /* Dirty state - unsaved changes indicator */
+        .input-card.dirty, .output-card.dirty, div.card.dirty {
+            background: #f0fdfa !important; /* Light teal background */
+            border: 1px solid #5eead4 !important; /* Teal border */
+            box-shadow: 0 2px 4px rgba(45, 212, 191, 0.1) !important;
+        }
+        
+        /* Force override any Tailwind background classes */
+        .dirty {
+            background-color: #f0fdfa !important;
+            border-color: #5eead4 !important;
+        }
+        
         .input-card:hover, .output-card:hover {
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        }
+        
+        .input-card.dirty:hover, .output-card.dirty:hover, .card.dirty:hover {
+            box-shadow: 0 4px 6px rgba(45, 212, 191, 0.15);
         }
         
         .enterprise-header {
@@ -1116,6 +1133,36 @@
 
         // Task filtering variables
         let selectedPersonFilters = []; // Array to track which people are selected for filtering
+        
+        // --- DIRTY STATE MANAGEMENT ---
+        let isDirty = false; // Track if there are unsaved changes
+        
+        function setDirtyState(dirty = true) {
+            isDirty = dirty;
+            const cards = document.querySelectorAll('.input-card, .output-card, .card');
+            
+            if (dirty) {
+                cards.forEach(card => card.classList.add('dirty'));
+                // Update page title to show unsaved changes
+                document.title = '💾 Enterprise Project Scheduler (Unsaved Changes)';
+                console.log('💾 Unsaved changes detected - export configuration to save');
+            } else {
+                cards.forEach(card => card.classList.remove('dirty'));
+                // Reset page title
+                document.title = 'Enterprise Project Scheduler';
+                console.log('✅ Configuration saved - all changes exported');
+            }
+        }
+        
+        function markDirty() {
+            if (!isDirty) {
+                setDirtyState(true);
+            }
+        }
+        
+        function markClean() {
+            setDirtyState(false);
+        }
 
         // Date constants (used as the start of Week 1)
         const startDate = getNextMonday(new Date());
@@ -1233,6 +1280,9 @@
                     
                     // Migrate people availability arrays to 8 weeks if needed
                     migratePeopleToEightWeeks();
+                    
+                    // Mark as clean since we just loaded existing data
+                    markClean();
                     
                     return true;
                 }
@@ -2143,6 +2193,8 @@
             document.getElementById('estimation-base-display').textContent = estimationBaseHours;
             console.log('📊 Estimation Base Hours updated to:', estimationBaseHours);
             
+            markDirty(); // Mark as having unsaved changes
+            
             // Recalculate effort map with new base hours
             calculateEffortMap();
             renderTaskSizeCards();
@@ -2152,6 +2204,8 @@
         function updateProjectHours(newHours) {
             projectHoursPerDay = parseFloat(newHours);
             console.log('📊 Project Hours/Day updated to:', projectHoursPerDay);
+            
+            markDirty(); // Mark as having unsaved changes
             
             // Recalculate projections with new project hours
             calculateProjection();
@@ -2581,6 +2635,9 @@
             link.click();
             document.body.removeChild(link);
             
+            // Mark as clean since configuration has been exported
+            markClean();
+            
             // Show success message
             alert(`✅ Configuration exported successfully!\n\nFile: project_config_${timestamp}.csv\n\nThis file contains:\n• All team member configurations\n• Task size definitions\n• All tickets and assignments\n• System settings\n\nUse "Import Config" to restore this configuration later.`);
         }
@@ -2776,6 +2833,9 @@
                 updateFilterUI();
                 
                 saveToLocalStorage();
+                
+                // Mark as clean since we just imported a saved configuration
+                markClean();
                 
                 alert(`✅ Configuration imported successfully!\n\n• ${Object.keys(taskSizeDefinitions).length} task sizes loaded\n• ${people.length} team members configured\n• ${tickets.length} tickets imported\n\nAll data has been restored and calculations updated.`);
                 
@@ -3036,6 +3096,8 @@
             // Refresh people display to show updated week dates
             renderPeople();
             
+            markDirty(); // Mark as having unsaved changes
+            
             // Recalculate projections (this will also update the table)
             calculateProjection();
             saveToLocalStorage();
@@ -3066,6 +3128,7 @@
 
             ticketDays[sizeKey] = newDays;
             
+            markDirty(); // Mark as having unsaved changes
             calculateEffortMap(); 
             renderEffortMap();
             calculateProjection();
@@ -3080,6 +3143,7 @@
             ticketDays[sizeKey] = newDays;
             taskSizeDefinitions[sizeKey].days = newDays;
             
+            markDirty(); // Mark as having unsaved changes
             calculateEffortMap(); 
             renderTaskSizeCards();
             calculateProjection();
@@ -3122,6 +3186,7 @@
                 if (confirm(`Apply ${presetName} preset? This will replace your current task sizes.`)) {
                     taskSizeDefinitions = { ...presets[presetName] };
                     syncTaskSizes();
+                    markDirty(); // Mark as having unsaved changes
                     calculateEffortMap();
                     renderTaskSizeCards();
                     calculateProjection();
@@ -3160,6 +3225,7 @@
             taskSizeDefinitions[key] = { name, days, removable: true };
             ticketDays[key] = days;
             
+            markDirty(); // Mark as having unsaved changes
             calculateEffortMap();
             renderTaskSizeCards();
             hideCustomSizeForm();
@@ -3185,6 +3251,7 @@
                 delete taskSizeDefinitions[sizeKey];
                 delete ticketDays[sizeKey];
                 
+                markDirty(); // Mark as having unsaved changes
                 calculateEffortMap();
                 renderTaskSizeCards();
                 saveToLocalStorage();
@@ -3207,6 +3274,7 @@
             });
             
             nameInput.value = '';
+            markDirty(); // Mark as having unsaved changes
             renderPeople();
             calculateProjection();
             saveToLocalStorage();
@@ -3218,6 +3286,7 @@
                 ticket.assigned = ticket.assigned.filter(n => n !== name);
             });
 
+            markDirty(); // Mark as having unsaved changes
             renderPeople();
             calculateProjection();
             saveToLocalStorage();
@@ -3232,6 +3301,7 @@
                 console.log(`🔄 AVAILABILITY UPDATE: ${name} Week ${weekIndex + 1} changed from ${person.availability[weekIndex]} to ${hours} hours`);
                 person.availability[weekIndex] = hours;
                 console.log(`📊 Updated ${name} availability:`, person.availability);
+                markDirty(); // Mark as having unsaved changes
                 calculateProjection(); 
                 saveToLocalStorage();
                 console.log(`✅ Recalculation triggered for availability change`);
@@ -3244,6 +3314,7 @@
                 console.log(`🎯 PROJECT READY UPDATE: ${name} changed from ${person.isProjectReady ? 'Project Ready' : 'Not Project Ready'} to ${isReady ? 'Project Ready' : 'Not Project Ready'}`);
                 person.isProjectReady = isReady;
                 console.log(`📊 Updated ${name} project ready status:`, person.isProjectReady);
+                markDirty(); // Mark as having unsaved changes
                 calculateProjection(); 
                 saveToLocalStorage();
                 console.log(`✅ Recalculation triggered for project ready change`);
@@ -3508,6 +3579,8 @@
             // Clear all checkboxes
             assignedContainer.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
 
+            markDirty(); // Mark as having unsaved changes
+            
             // Refresh people display since earliest task date might have changed
             if (!useCommonStartDate) {
                 renderPeople();
@@ -3519,6 +3592,8 @@
 
         window.removeTicket = (id) => {
             tickets = tickets.filter(t => t.id !== id);
+            
+            markDirty(); // Mark as having unsaved changes
             
             // Refresh people display since earliest task date might have changed
             if (!useCommonStartDate) {
@@ -3533,6 +3608,7 @@
             const ticket = tickets.find(t => t.id === id);
             if (ticket) {
                 ticket.assigned = newAssignedArray;
+                markDirty(); // Mark as having unsaved changes
                 calculateProjection();
                 saveToLocalStorage();
             }
@@ -3586,6 +3662,9 @@
                 checkboxElement.parentElement.style.background = 'transparent';
             }, 500);
             
+            // Mark as having unsaved changes
+            markDirty();
+            
             // Recalculate and re-render immediately
             calculateProjection();
             saveToLocalStorage();
@@ -3605,6 +3684,9 @@
                 setTimeout(() => {
                     selectElement.style.background = 'white';
                 }, 500);
+                
+                // Mark as having unsaved changes
+                markDirty();
                 
                 // Recalculate and re-render immediately
                 calculateProjection();
@@ -3649,6 +3731,9 @@
                     selectElement.style.background = 'white';
                 }, 500);
                 
+                // Mark as having unsaved changes
+                markDirty();
+                
                 // Save to storage (no need to recalculate as priority doesn't affect timeline)
                 saveToLocalStorage();
                 
@@ -3671,6 +3756,9 @@
                 setTimeout(() => {
                     inputElement.style.background = 'white';
                 }, 500);
+                
+                // Mark as having unsaved changes
+                markDirty();
                 
                 // Refresh people display since earliest task date might have changed
                 if (!useCommonStartDate) {
