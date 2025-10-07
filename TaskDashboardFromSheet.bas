@@ -311,6 +311,19 @@ Sub CreateCapacityAnalysis()
     
     ' Calculate utilization for each person (matches HTML logic)
     utilRow = startRow + 4
+    
+    ' Check if People object is initialized
+    If People Is Nothing Then
+        ws.Cells(utilRow, 1).Value = "ERROR: No people data found. Run ParseTaskDataSheet first."
+        Exit Sub
+    End If
+    
+    ' Check if People has any entries
+    If People.Count = 0 Then
+        ws.Cells(utilRow, 1).Value = "ERROR: No people data loaded. Check TaskData sheet format."
+        Exit Sub
+    End If
+    
     Dim personKey As Variant
     For Each personKey In People.Keys
         Call CalculatePersonUtilization(ws, utilRow, CStr(personKey))
