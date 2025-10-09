@@ -1034,6 +1034,17 @@
                                 Clear
                             </button>
                         </div>
+                        <div class="flex items-center gap-3 mt-2">
+                            <span class="text-sm font-semibold text-gray-700 whitespace-nowrap">📊 Filter by status:</span>
+                            <div id="status-filter-buttons" class="flex flex-wrap gap-2 flex-1">
+                                <!-- Status filter buttons will be populated by JavaScript -->
+                            </div>
+                            <button id="clear-status-filter-btn" onclick="clearStatusFilter()" 
+                                    class="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600 transition-colors flex-shrink-0" 
+                                    style="display: none;">
+                                Clear
+                            </button>
+                        </div>
                         <div id="filter-status" class="text-xs text-gray-600 mt-2" style="display: none;">
                             <!-- Filter status will be shown here -->
                         </div>
@@ -1187,6 +1198,15 @@
             XL: { name: 'X-Large', days: 10, removable: false },
             XXL: { name: 'XX-Large', days: 15, removable: false }
         };
+
+        // --- UTILITY FUNCTIONS ---
+        
+        // Get local date string in YYYY-MM-DD format (avoids timezone issues with toISOString)
+        function getLocalDateString(date) {
+            return date.getFullYear() + '-' + 
+                String(date.getMonth() + 1).padStart(2, '0') + '-' + 
+                String(date.getDate()).padStart(2, '0');
+        }
         
         let effortMap = {};
         let currentTicketId = 1;
@@ -1194,6 +1214,7 @@
 
         // Task filtering variables
         let selectedPersonFilters = []; // Array to track which people are selected for filtering
+        let selectedStatusFilters = []; // Array to track which statuses are selected for filtering
         
         // --- DIRTY STATE MANAGEMENT ---
         let isDirty = false; // Track if there are unsaved changes
@@ -1465,49 +1486,144 @@
 
         function updateFilterUI() {
             try {
-                // Update all filter button states
+                // Update all person filter button states
                 document.querySelectorAll('.person-filter-btn').forEach(button => {
                     const personName = button.getAttribute('data-person');
                     updatePersonFilterButtonState(button, personName);
                 });
                 
-                // Update filter status and clear button
+                // Update all status filter button states
+                document.querySelectorAll('.status-filter-btn').forEach(button => {
+                    const status = button.getAttribute('data-status');
+                    updateStatusFilterButtonState(button, status);
+                });
+                
+                // Update filter status and clear buttons
                 const filterStatus = document.getElementById('filter-status');
                 const clearBtn = document.getElementById('clear-filter-btn');
+                const clearStatusBtn = document.getElementById('clear-status-filter-btn');
                 
-                if (!filterStatus || !clearBtn) {
-                    console.warn('Filter UI elements not found');
+                if (!filterStatus) {
+                    console.warn('Filter status element not found');
                     return;
                 }
                 
-                if (selectedPersonFilters.length === 0) {
+                // Show/hide person clear button
+                if (clearBtn) {
+                    clearBtn.style.display = selectedPersonFilters.length > 0 ? 'inline-block' : 'none';
+                }
+                
+                // Show/hide status clear button
+                if (clearStatusBtn) {
+                    clearStatusBtn.style.display = selectedStatusFilters.length > 0 ? 'inline-block' : 'none';
+                }
+                
+                // Update filter status message
+                if (selectedPersonFilters.length === 0 && selectedStatusFilters.length === 0) {
                     filterStatus.style.display = 'none';
-                    clearBtn.style.display = 'none';
                 } else {
                     filterStatus.style.display = 'block';
-                    clearBtn.style.display = 'inline-block';
                     
                     const filteredTaskCount = getFilteredTickets().length;
-                    filterStatus.innerHTML = `
-                        Showing tasks assigned to: <strong>${selectedPersonFilters.join(', ')}</strong> 
-                        (${filteredTaskCount} task${filteredTaskCount !== 1 ? 's' : ''} visible)
-                    `;
+                    let statusMessage = 'Showing tasks';
+                    
+                    if (selectedPersonFilters.length > 0) {
+                        statusMessage += ` assigned to: <strong>${selectedPersonFilters.join(', ')}</strong>`;
+                    }
+                    
+                    if (selectedStatusFilters.length > 0) {
+                        if (selectedPersonFilters.length > 0) statusMessage += ' and';
+                        statusMessage += ` with status: <strong>${selectedStatusFilters.join(', ')}</strong>`;
+                    }
+                    
+                    statusMessage += ` (${filteredTaskCount} task${filteredTaskCount !== 1 ? 's' : ''} visible)`;
+                    
+                    filterStatus.innerHTML = statusMessage;
                 }
             } catch (error) {
                 console.error('Error updating filter UI:', error);
             }
         }
 
-        function shouldShowTicket(ticket) {
-            // If no filter is active, show all tickets
-            if (selectedPersonFilters.length === 0) return true;
+        // --- STATUS FILTERING FUNCTIONS ---
+
+        function generateStatusFilterButtons() {
+            const container = document.getElementById('status-filter-buttons');
+            if (!container) return;
             
-            // If filter is active, only show tickets assigned to selected people
-            return selectedPersonFilters.some(filterPerson => 
-                ticket.assigned.some(assignedPerson => 
-                    assignedPerson.toLowerCase() === filterPerson.toLowerCase()
-                )
-            );
+            container.innerHTML = '';
+            
+            const statuses = ['To Do', 'In Progress', 'Paused', 'Done'];
+            const statusIcons = {
+                'To Do': '📋',
+                'In Progress': '🚀',
+                'Paused': '⏸️',
+                'Done': '✅'
+            };
+            
+            statuses.forEach(status => {
+                const button = document.createElement('button');
+                button.className = 'status-filter-btn px-3 py-1 rounded-md text-xs transition-all duration-200 border';
+                button.innerHTML = `${statusIcons[status]} ${status}`;
+                button.onclick = () => toggleStatusFilter(status);
+                button.setAttribute('data-status', status);
+                
+                // Set initial state
+                updateStatusFilterButtonState(button, status);
+                
+                container.appendChild(button);
+            });
+        }
+
+        function updateStatusFilterButtonState(button, status) {
+            const isSelected = selectedStatusFilters.includes(status);
+            
+            if (isSelected) {
+                button.className = 'status-filter-btn px-3 py-1 rounded-md text-xs transition-all duration-200 border bg-green-600 text-white border-green-600 font-medium';
+                button.title = `✓ Showing "${status}" tasks (click to remove filter)`;
+            } else if (selectedStatusFilters.length > 0) {
+                button.className = 'status-filter-btn px-3 py-1 rounded-md text-xs transition-all duration-200 border bg-gray-100 text-gray-500 border-gray-300';
+                button.title = `Click to show "${status}" tasks`;
+            } else {
+                button.className = 'status-filter-btn px-3 py-1 rounded-md text-xs transition-all duration-200 border bg-white text-gray-700 border-gray-300 hover:border-green-400';
+                button.title = `Click to filter by "${status}" tasks`;
+            }
+        }
+
+        function toggleStatusFilter(status) {
+            if (selectedStatusFilters.includes(status)) {
+                // Remove from filter
+                selectedStatusFilters = selectedStatusFilters.filter(s => s !== status);
+            } else {
+                // Add to filter
+                selectedStatusFilters.push(status);
+            }
+            
+            updateFilterUI();
+            updateTable(); // Re-render the table
+        }
+
+        function clearStatusFilter() {
+            selectedStatusFilters = [];
+            updateFilterUI();
+            updateTable(); // Re-render the table
+        }
+
+        function shouldShowTicket(ticket) {
+            // Check person filter
+            const personFilterPassed = selectedPersonFilters.length === 0 || 
+                selectedPersonFilters.some(filterPerson => 
+                    ticket.assigned.some(assignedPerson => 
+                        assignedPerson.toLowerCase() === filterPerson.toLowerCase()
+                    )
+                );
+            
+            // Check status filter
+            const statusFilterPassed = selectedStatusFilters.length === 0 || 
+                selectedStatusFilters.includes(ticket.status || 'To Do');
+            
+            // Both filters must pass
+            return personFilterPassed && statusFilterPassed;
         }
 
         function getFilteredTickets() {
@@ -2431,6 +2547,9 @@
             
             // Generate person filter buttons whenever people are updated
             generatePersonFilterButtons();
+            
+            // Generate status filter buttons
+            generateStatusFilterButtons();
         }
 
         function renderTickets(projectedTickets) {
@@ -2447,8 +2566,17 @@
                 document.getElementById('no-tickets').classList.remove('hidden');
                 // Update the no-tickets message based on whether filtering is active
                 const noTicketsMsg = document.getElementById('no-tickets');
-                if (selectedPersonFilters.length > 0) {
-                    noTicketsMsg.textContent = `No tasks found for ${selectedPersonFilters.join(', ')}.`;
+                if (selectedPersonFilters.length > 0 || selectedStatusFilters.length > 0) {
+                    let filterMessage = 'No tasks found';
+                    if (selectedPersonFilters.length > 0) {
+                        filterMessage += ` for ${selectedPersonFilters.join(', ')}`;
+                    }
+                    if (selectedStatusFilters.length > 0) {
+                        if (selectedPersonFilters.length > 0) filterMessage += ' and';
+                        filterMessage += ` with status ${selectedStatusFilters.join(', ')}`;
+                    }
+                    filterMessage += '.';
+                    noTicketsMsg.textContent = filterMessage;
                 } else {
                     noTicketsMsg.textContent = 'No tasks defined. Add a task to begin!';
                 }
@@ -2541,9 +2669,11 @@
                         <span 
                             class="status-badge ${getStatusClass(ticket.status || 'To Do')}" 
                             onclick="cycleTaskStatus(${ticket.id})"
+                            oncontextmenu="handleStatusRightClick(event, ${ticket.id})"
+                            data-ticket-id="${ticket.id}"
                             title="Click to change status"
                         >
-                            ${getStatusDisplay(ticket.status || 'To Do')}
+                            ${getStatusDisplayWithComments(ticket)}
                         </span>
                     </td>
                     <td class="px-3 py-2 text-sm text-gray-500 w-1/4">
@@ -2568,6 +2698,23 @@
                     </td>
                 `;
                 tbody.appendChild(tr);
+                
+                // Set up the tooltip for the status badge after the row is added
+                const statusBadge = tr.querySelector('.status-badge');
+                if (statusBadge && ticket.status === 'Paused' && ticket.pauseComments && ticket.pauseComments.length > 0) {
+                    const latestComment = ticket.pauseComments[ticket.pauseComments.length - 1];
+                    let tooltip = 'Left click: Change status\nRight click: Edit latest comment\n\nLatest pause reason:\n"' + latestComment.comment + '"\n(' + latestComment.timestamp + ')';
+                    
+                    if (ticket.pauseComments.length > 1) {
+                        tooltip += '\n\n' + ticket.pauseComments.length + ' total pause comments';
+                    }
+                    
+                    statusBadge.title = tooltip;
+                    console.log(`🏷️ Set tooltip for ticket ${ticket.id}:`, tooltip);
+                } else if (statusBadge && ticket.status === 'Paused') {
+                    // Paused task without comments
+                    statusBadge.title = 'Left click: Change status\nRight click: Add pause comment';
+                }
             });
         }
 
@@ -2581,7 +2728,7 @@
             }
 
             // 1. Generate the CSV content
-            let csvContent = "Ticket ID,Description,Start Date,Size,Priority,Status,Person Days,Total Hours,Assigned Team,Projected End Date,Detailed Explanation\n";
+            let csvContent = "Ticket ID,Description,Start Date,Size,Priority,Status,Pause Comments,Person Days,Total Hours,Assigned Team,Projected End Date,Detailed Explanation\n";
 
             projectedTickets.forEach(ticket => {
                 const totalHours = effortMap[ticket.size] || 0;
@@ -2590,6 +2737,11 @@
                 // Escape double quotes and ensure data is wrapped in quotes
                 const escapeCSV = (value) => `"${String(value).replace(/"/g, '""')}"`;
 
+                // Format pause comments for CSV
+                const pauseCommentsText = ticket.pauseComments && ticket.pauseComments.length > 0 
+                    ? ticket.pauseComments.map(pc => `[${pc.timestamp}] ${pc.comment}`).join(' | ')
+                    : '';
+
                 const row = [
                     ticket.id,
                     escapeCSV(ticket.description),
@@ -2597,6 +2749,7 @@
                     ticket.size,
                     ticket.priority || 'P3',
                     escapeCSV(ticket.status || 'To Do'),
+                    escapeCSV(pauseCommentsText),
                     personDays,
                     totalHours,
                     escapeCSV(ticket.assigned.join('; ')),
@@ -2878,6 +3031,7 @@
                 
                 // Reset filtering state after import
                 selectedPersonFilters = [];
+                selectedStatusFilters = [];
                 
                 // Update UI
                 document.getElementById('estimation-base-hours').value = estimationBaseHours;
@@ -3051,7 +3205,7 @@
             // Apply default settings for new tasks
             const defaultSize = 'M'; // Medium
             const defaultPriority = 'P3'; // Default priority
-            const defaultStartDate = getNextMonday(new Date()).toISOString().split('T')[0];
+            const defaultStartDate = getLocalDateString(getNextMonday(new Date()));
             const defaultAssigned = []; // Unassigned
             
             // Add tasks to the system
@@ -3078,7 +3232,8 @@
                     size: defaultSize,
                     priority: defaultPriority,
                     status: 'To Do', // Default status for imported tasks
-                    assigned: [...defaultAssigned]
+                    assigned: [...defaultAssigned],
+                    pauseComments: [] // Initialize empty pause comments array
                 });
                 
                 addedCount++;
@@ -3145,7 +3300,7 @@
                 
                 // Set default to next Monday if empty
                 if (!commonDateInput.value) {
-                    commonDateInput.value = getDefaultTaskStartDate().toISOString().split('T')[0];
+                    commonDateInput.value = getLocalDateString(getDefaultTaskStartDate());
                 }
                 
                 individualDateInput.disabled = true;
@@ -3608,9 +3763,9 @@
             let startDate;
             if (useCommonStartDate) {
                 const commonDate = document.getElementById('common-start-date').value;
-                startDate = commonDate || getDefaultTaskStartDate().toISOString().split('T')[0];
+                startDate = commonDate || getLocalDateString(getDefaultTaskStartDate());
             } else {
-                startDate = startDateInput.value || getDefaultTaskStartDate().toISOString().split('T')[0];
+                startDate = startDateInput.value || getLocalDateString(getDefaultTaskStartDate());
             }
             
             const size = sizeSelect.value;
@@ -3642,7 +3797,8 @@
                 size: size,
                 priority: priority,
                 assigned: assigned,
-                status: "To Do" // Default status for new tickets
+                status: "To Do", // Default status for new tickets
+                pauseComments: [] // Initialize empty pause comments array
             });
 
             descInput.value = '';
@@ -3836,6 +3992,36 @@
             return statusDisplay[status] || '📋 To Do';
         }
 
+        // Enhanced status display that shows comment indicator for paused tasks
+        window.getStatusDisplayWithComments = (ticket) => {
+            const status = ticket.status || 'To Do';
+            const baseDisplay = window.getStatusDisplay(status);
+            
+            // Add comment indicator for paused tasks with comments
+            if (status === 'Paused' && ticket.pauseComments && ticket.pauseComments.length > 0) {
+                return baseDisplay + ' 💬';
+            }
+            
+            return baseDisplay;
+        }
+
+        // Generate tooltip text for status badges
+        window.getStatusTooltip = (ticket) => {
+            const status = ticket.status || 'To Do';
+            let tooltip = 'Click to change status';
+            
+            if (status === 'Paused' && ticket.pauseComments && ticket.pauseComments.length > 0) {
+                const latestComment = ticket.pauseComments[ticket.pauseComments.length - 1];
+                tooltip += `\n\nLatest pause reason:\n"${latestComment.comment}"\n(${latestComment.timestamp})`;
+                
+                if (ticket.pauseComments.length > 1) {
+                    tooltip += `\n\n${ticket.pauseComments.length} total pause comments`;
+                }
+            }
+            
+            return tooltip;
+        }
+
         // Helper function to set task status without confirmation (for bulk operations)
         function setTaskStatusDirect(ticketId, newStatus) {
             const ticketIndex = tickets.findIndex(t => t.id === ticketId);
@@ -3846,6 +4032,71 @@
                 return true;
             }
             return false;
+        }
+
+        // Handle right-click on status badges for editing pause comments
+        window.handleStatusRightClick = (event, ticketId) => {
+            event.preventDefault(); // Prevent the default context menu
+            
+            const ticket = tickets.find(t => t.id === ticketId);
+            if (!ticket) {
+                console.error(`Ticket ${ticketId} not found`);
+                return;
+            }
+            
+            if (ticket.status !== 'Paused') {
+                // For non-paused tasks, show a helpful message
+                alert(`💡 Edit Comments\n\nThis feature is only available for paused tasks.\n\nCurrent status: ${ticket.status || 'To Do'}\n\nTo add pause comments, first change the task status to "Paused".`);
+                return;
+            }
+            
+            if (!ticket.pauseComments || ticket.pauseComments.length === 0) {
+                // No existing comments - offer to add one
+                const newComment = prompt(`➕ Add Pause Comment\n\nTask: "${ticket.description}"\n\nPlease provide a reason for why this task is paused:`);
+                
+                if (newComment === null) {
+                    return; // User cancelled
+                }
+                
+                // Initialize pause comments if not exists
+                if (!ticket.pauseComments) {
+                    ticket.pauseComments = [];
+                }
+                
+                const timestamp = new Date().toLocaleString();
+                ticket.pauseComments.push({
+                    timestamp: timestamp,
+                    comment: newComment || '(No reason specified)',
+                    previousStatus: 'Unknown' // Since we don't know what status it was before
+                });
+                
+                console.log(`➕ Added pause comment to ticket ${ticketId}: "${newComment}"`);
+                
+            } else {
+                // Edit the latest comment
+                const latestComment = ticket.pauseComments[ticket.pauseComments.length - 1];
+                const currentComment = latestComment.comment;
+                
+                const editedComment = prompt(`✏️ Edit Latest Pause Comment\n\nTask: "${ticket.description}"\nOriginal comment: "${currentComment}"\nAdded: ${latestComment.timestamp}\n\nEdit your comment:`, currentComment);
+                
+                if (editedComment === null) {
+                    return; // User cancelled
+                }
+                
+                // Update the latest comment
+                latestComment.comment = editedComment || '(No reason specified)';
+                latestComment.editedAt = new Date().toLocaleString();
+                
+                console.log(`✏️ Edited pause comment for ticket ${ticketId}: "${editedComment}"`);
+            }
+            
+            // Save changes and update display
+            markDirty();
+            saveToLocalStorage();
+            calculateProjection(); // Re-render to update tooltips and display
+            
+            // Show success message
+            alert(`✅ Comment Updated\n\nThe pause comment has been successfully updated.\nThe changes are automatically saved.`);
         }
 
         window.cycleTaskStatus = (ticketId) => {
@@ -3867,34 +4118,63 @@
                     'Done': '✅'
                 };
                 
-                // Create confirmation message
-                const confirmMessage = `🔄 Change Task Status?\n\n` +
-                    `Task: "${ticket.description}"\n\n` +
-                    `${statusIcons[currentStatus]} Current: ${currentStatus}\n` +
-                    `${statusIcons[nextStatus]} New: ${nextStatus}\n\n` +
-                    `Continue with status change?`;
-                
-                // Show confirmation dialog
-                if (confirm(confirmMessage)) {
-                    tickets[ticketIndex].status = nextStatus;
+                // Special handling for "Paused" status - request comment
+                if (nextStatus === 'Paused') {
+                    const pauseComment = prompt(`⏸️ Pausing Task: "${ticket.description}"\n\nPlease provide a reason for pausing this task:\n(This will help track why work was stopped)`);
                     
-                    // Provide visual feedback
-                    const statusElement = document.querySelector(`[onclick="cycleTaskStatus(${ticketId})"]`);
-                    if (statusElement) {
-                        statusElement.style.transform = 'scale(1.1)';
-                        setTimeout(() => {
-                            statusElement.style.transform = 'scale(1)';
-                        }, 150);
+                    if (pauseComment === null) {
+                        // User clicked Cancel on the comment prompt
+                        console.log(`❌ Status change to Paused cancelled for Ticket #${ticketId} - no comment provided`);
+                        return;
                     }
                     
-                    markDirty();
-                    saveToLocalStorage();
-                    calculateProjection(); // Re-calculate and render to update status display
+                    // Store the pause comment (allow empty string if user wants no comment)
+                    if (!ticket.pauseComments) {
+                        ticket.pauseComments = [];
+                    }
                     
-                    console.log(`📊 Ticket #${ticketId} status changed from "${currentStatus}" to "${nextStatus}"`);
+                    const timestamp = new Date().toLocaleString();
+                    ticket.pauseComments.push({
+                        timestamp: timestamp,
+                        comment: pauseComment || '(No reason specified)',
+                        previousStatus: currentStatus
+                    });
+                    
+                    // Update status
+                    tickets[ticketIndex].status = nextStatus;
+                    
+                    console.log(`⏸️ Ticket #${ticketId} paused with comment: "${pauseComment}"`);
+                    
                 } else {
-                    console.log(`❌ Status change cancelled for Ticket #${ticketId}`);
+                    // Regular status change confirmation for non-Paused statuses
+                    const confirmMessage = `🔄 Change Task Status?\n\n` +
+                        `Task: "${ticket.description}"\n\n` +
+                        `${statusIcons[currentStatus]} Current: ${currentStatus}\n` +
+                        `${statusIcons[nextStatus]} New: ${nextStatus}\n\n` +
+                        `Continue with status change?`;
+                    
+                    if (!confirm(confirmMessage)) {
+                        console.log(`❌ Status change cancelled for Ticket #${ticketId}`);
+                        return;
+                    }
+                    
+                    // Update status
+                    tickets[ticketIndex].status = nextStatus;
+                    console.log(`📊 Ticket #${ticketId} status changed from "${currentStatus}" to "${nextStatus}"`);
                 }
+                
+                // Provide visual feedback
+                const statusElement = document.querySelector(`[onclick="cycleTaskStatus(${ticketId})"]`);
+                if (statusElement) {
+                    statusElement.style.transform = 'scale(1.1)';
+                    setTimeout(() => {
+                        statusElement.style.transform = 'scale(1)';
+                    }, 150);
+                }
+                
+                markDirty();
+                saveToLocalStorage();
+                calculateProjection(); // Re-calculate and render to update status display
             }
         }
 
@@ -4011,30 +4291,53 @@ ${ticket.explanation}
             const followingMonday = new Date(nextMonday.getTime() + 7 * 24 * 60 * 60 * 1000);
             
             tickets = [
-                { id: 1, description: 'Design System Migration', size: 'XL', priority: 'P1', assigned: ['Vipul', 'Peter'], startDate: nextMonday.toISOString().split('T')[0] },
-                { id: 2, description: 'Fix payment gateway bug', size: 'S', priority: 'P2', assigned: ['Sameet'], startDate: nextMonday.toISOString().split('T')[0] },
-                { id: 3, description: 'Build new reporting dashboard', size: 'XXL', priority: 'P3', assigned: ['Sharanya', 'Divya'], startDate: followingMonday.toISOString().split('T')[0] }
+                { id: 1, description: 'Design System Migration', size: 'XL', priority: 'P1', status: 'To Do', assigned: ['Vipul', 'Peter'], startDate: getLocalDateString(nextMonday) },
+                { id: 2, description: 'Fix payment gateway bug', size: 'S', priority: 'P2', status: 'To Do', assigned: ['Sameet'], startDate: getLocalDateString(nextMonday) },
+                { id: 3, description: 'Build new reporting dashboard', size: 'XXL', priority: 'P3', status: 'To Do', assigned: ['Sharanya', 'Divya'], startDate: getLocalDateString(followingMonday) },
+                // Add some overdue tasks for testing (3 days ago)
+                { id: 4, description: 'Update documentation', size: 'M', priority: 'P2', status: 'To Do', assigned: ['Vipul'], startDate: getLocalDateString(new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000)) },
+                { id: 5, description: 'Code review backlog', size: 'S', priority: 'P3', status: 'To Do', assigned: ['Peter'], startDate: getLocalDateString(new Date(today.getTime() - 2 * 24 * 60 * 60 * 1000)) }
             ];
-            currentTicketId = 4;
+            currentTicketId = 6;
             saveToLocalStorage(); 
         }
 
         // Check for overdue "To Do" tasks on startup
         function checkOverdueTasks() {
+            console.log('🔍 Checking for overdue tasks...');
+            
             const today = new Date();
             today.setHours(0, 0, 0, 0); // Reset time to start of day for comparison
             
+            // Use local date string instead of ISO to avoid timezone issues
+            const todayStr = getLocalDateString(today);
+            
+            console.log(`📅 Today's date: ${todayStr}`);
+            console.log(`📋 Total tickets: ${tickets.length}`);
+            
             // Find all "To Do" tasks with start dates in the past
             const overdueTasks = tickets.filter(ticket => {
-                if (ticket.status !== 'To Do') return false;
+                const status = ticket.status || 'To Do'; // Default to 'To Do' if no status
+                console.log(`🎫 Ticket #${ticket.id}: "${ticket.description}" - Status: "${status}", Start: ${ticket.startDate}`);
+                
+                if (status !== 'To Do') {
+                    console.log(`  ⏭️ Skipping - not "To Do" status`);
+                    return false;
+                }
                 
                 const startDate = new Date(ticket.startDate);
                 startDate.setHours(0, 0, 0, 0);
                 
-                return startDate < today;
+                const isOverdue = startDate < today;
+                console.log(`  📅 Start date: ${getLocalDateString(startDate)}, Overdue: ${isOverdue}`);
+                
+                return isOverdue;
             });
             
+            console.log(`⚠️ Found ${overdueTasks.length} overdue tasks`);
+            
             if (overdueTasks.length === 0) {
+                console.log('✅ No overdue tasks found');
                 return; // No overdue tasks found
             }
             
@@ -4053,7 +4356,8 @@ ${ticket.explanation}
             
             if (confirm(confirmMessage)) {
                 // Option 1: Move start dates to today
-                const todayStr = today.toISOString().split('T')[0];
+                // Use local date string instead of ISO to avoid timezone issues
+                const todayStr = getLocalDateString(today);
                 let updatedCount = 0;
                 
                 overdueTasks.forEach(task => {
@@ -4109,11 +4413,8 @@ ${ticket.explanation}
                 console.log('📊 Migrated existing tasks to include priority and status fields');
             }
             
-            // Check for overdue "To Do" tasks
-            checkOverdueTasks();
-            
             // Set default start date to a sensible default
-            const defaultStartDate = getDefaultTaskStartDate().toISOString().split('T')[0];
+            const defaultStartDate = getLocalDateString(getDefaultTaskStartDate());
             document.getElementById('new-ticket-start-date').value = defaultStartDate;
             document.getElementById('common-start-date').value = defaultStartDate;
             
@@ -4138,6 +4439,9 @@ ${ticket.explanation}
             document.getElementById('estimation-base-hours').value = estimationBaseHours;
             document.getElementById('project-hours-per-day').value = projectHoursPerDay;
             document.getElementById('estimation-base-display').textContent = estimationBaseHours;
+            
+            // Check for overdue "To Do" tasks AFTER initial rendering is complete
+            checkOverdueTasks();
         }
 
         // --- TEAM WORKLOAD HEAT MAP ---
@@ -4420,7 +4724,7 @@ ${ticket.explanation}
                 // Days of the month
                 for (let day = 1; day <= daysInMonth; day++) {
                     const dayDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-                    const dayStr = dayDate.toISOString().split('T')[0];
+                    const dayStr = getLocalDateString(dayDate);
                     const dayOfWeek = dayDate.getDay(); // 0 = Sunday, 6 = Saturday
                     
                     // Check which tasks are active on this day (only for business days)
@@ -4725,7 +5029,7 @@ ${ticket.explanation}
                 
                 // Generate filename with current date
                 const today = new Date();
-                const dateStr = today.toISOString().split('T')[0];
+                const dateStr = getLocalDateString(today);
                 link.setAttribute('download', `task-map-${dateStr}.csv`);
                 
                 link.style.visibility = 'hidden';
