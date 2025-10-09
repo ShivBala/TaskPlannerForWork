@@ -1111,10 +1111,20 @@
                         <h2 class="card-title">📊 Team Workload Heat Map (Next 8 Weeks)</h2>
                         <p class="text-sm text-gray-600 mt-1">Visual overview of team capacity utilization based on individual availability</p>
                     </div>
-                    <button onclick="exportTaskMapCSV()" class="btn-enterprise flex items-center gap-2">
-                        <span>📊</span>
-                        Export Task Map CSV
-                    </button>
+                    <div class="flex gap-2">
+                        <button onclick="generateDelayAnalysis()" class="btn-enterprise flex items-center gap-2">
+                            <span>⏰</span>
+                            Analyze Start Date Delays
+                        </button>
+                        <button onclick="generateCompletionGraph()" class="btn-enterprise flex items-center gap-2">
+                            <span>📈</span>
+                            Generate Completion Graph
+                        </button>
+                        <button onclick="exportTaskMapCSV()" class="btn-enterprise flex items-center gap-2">
+                            <span>📊</span>
+                            Export Task Map CSV
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="card-content">
@@ -1134,6 +1144,39 @@
                         <div class="w-4 h-4 bg-red-100 border border-red-300 rounded"></div>
                         <span>91%+ Capacity (Overloaded)</span>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Completion Graph Modal -->
+    <div id="completionGraphModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-auto">
+            <div class="flex justify-between items-center p-6 border-b">
+                <h2 class="text-2xl font-bold text-gray-800">📈 Task Completion Projection</h2>
+                <button onclick="closeCompletionGraph()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div class="p-6">
+                <div id="completionGraphContent" class="w-full h-96">
+                    <!-- Graph will be rendered here -->
+                </div>
+                <div class="mt-4 text-sm text-gray-600">
+                    <p><strong>📊 Chart Explanation:</strong> This graph shows the projected completion dates for all tasks based on current scheduling and team capacity.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delay Analysis Modal -->
+    <div id="delayAnalysisModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-auto">
+            <div class="flex justify-between items-center p-6 border-b">
+                <h2 class="text-2xl font-bold text-gray-800">⏰ Start Date Delay Analysis</h2>
+                <button onclick="closeDelayAnalysis()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div class="p-6">
+                <div id="delayAnalysisContent" class="w-full">
+                    <!-- Analysis will be rendered here -->
                 </div>
             </div>
         </div>
@@ -1206,6 +1249,39 @@
             return date.getFullYear() + '-' + 
                 String(date.getMonth() + 1).padStart(2, '0') + '-' + 
                 String(date.getDate()).padStart(2, '0');
+        }
+
+        // Initialize start date history for backward compatibility
+        function initializeStartDateHistory(ticket) {
+            if (!ticket.startDateHistory) {
+                ticket.startDateHistory = [];
+                // Add current start date as the initial entry if it exists
+                if (ticket.startDate) {
+                    ticket.startDateHistory.push({
+                        date: ticket.startDate,
+                        timestamp: new Date().toISOString(),
+                        reason: 'Initial planning'
+                    });
+                }
+            }
+            return ticket;
+        }
+
+        // Track start date changes
+        function trackStartDateChange(ticket, oldDate, newDate, reason = 'Manual update') {
+            initializeStartDateHistory(ticket);
+            
+            // Only track if the date actually changed
+            if (oldDate !== newDate) {
+                ticket.startDateHistory.push({
+                    date: newDate,
+                    timestamp: new Date().toISOString(),
+                    reason: reason,
+                    previousDate: oldDate
+                });
+                
+                console.log(`📅 Start date changed for "${ticket.description}": ${oldDate} → ${newDate} (${reason})`);
+            }
         }
         
         let effortMap = {};
@@ -1335,6 +1411,9 @@
                     });
                     
                     tickets = data.tickets || [];
+                    
+                    // Initialize start date history for backward compatibility
+                    tickets = tickets.map(ticket => initializeStartDateHistory(ticket));
                     estimationBaseHours = data.estimationBaseHours || 5;
                     projectHoursPerDay = data.projectHoursPerDay || data.hoursPerDay || 8; // Migration from old hoursPerDay
                     ticketDays = data.ticketDays || { S: 1, M: 2, L: 5, XL: 10, XXL: 15 };
@@ -2841,11 +2920,25 @@
             
             // Tickets section
             csvContent += "SECTION,TICKETS\n";
-            csvContent += "ID,Description,Start Date,Size,Priority,Assigned Team\n";
+            csvContent += "ID,Description,Start Date,Size,Priority,Assigned Team,Status,Pause Comments,Start Date History\n";
             configData.tickets.forEach(ticket => {
                 const assignedTeam = ticket.assigned.join(';');
                 const priority = ticket.priority || 'P3';
-                csvContent += `${ticket.id},"${ticket.description.replace(/"/g, '""')}",${ticket.startDate},${ticket.size},${priority},"${assignedTeam}"\n`;
+                const status = ticket.status || 'To Do';
+                
+                // Format pause comments for CSV
+                const pauseCommentsText = ticket.pauseComments && ticket.pauseComments.length > 0 
+                    ? ticket.pauseComments.map(pc => `[${pc.timestamp}] ${pc.comment}`).join(' | ')
+                    : '';
+                
+                // Format start date history for CSV
+                const startDateHistoryText = ticket.startDateHistory && ticket.startDateHistory.length > 0
+                    ? ticket.startDateHistory.map(entry => 
+                        `${entry.date}(${entry.reason}@${entry.timestamp})`
+                    ).join(' | ')
+                    : '';
+                
+                csvContent += `${ticket.id},"${ticket.description.replace(/"/g, '""')}",${ticket.startDate},${ticket.size},${priority},"${assignedTeam}","${status}","${pauseCommentsText}","${startDateHistoryText}"\n`;
             });
             
             // Download the configuration file
@@ -2975,16 +3068,54 @@
                         });
                     }
                     else if (currentSection === 'TICKETS') {
-                        const [id, description, startDate, size, priority, assignedTeam] = parseCSVLine(line);
+                        const columns = parseCSVLine(line);
+                        const [id, description, startDate, size, priority, assignedTeam, status, pauseComments, startDateHistory] = columns;
                         const assigned = assignedTeam ? assignedTeam.split(';').filter(name => name.trim()) : [];
-                        importedData.tickets.push({
+                        
+                        // Parse pause comments
+                        const parsedPauseComments = [];
+                        if (pauseComments && pauseComments.trim()) {
+                            const commentEntries = pauseComments.split(' | ');
+                            commentEntries.forEach(entry => {
+                                const match = entry.match(/^\[([^\]]+)\] (.+)$/);
+                                if (match) {
+                                    parsedPauseComments.push({
+                                        timestamp: match[1],
+                                        comment: match[2]
+                                    });
+                                }
+                            });
+                        }
+                        
+                        // Parse start date history
+                        const parsedStartDateHistory = [];
+                        if (startDateHistory && startDateHistory.trim()) {
+                            const historyEntries = startDateHistory.split(' | ');
+                            historyEntries.forEach(entry => {
+                                const match = entry.match(/^([^(]+)\(([^@]+)@([^)]+)\)$/);
+                                if (match) {
+                                    parsedStartDateHistory.push({
+                                        date: match[1],
+                                        reason: match[2],
+                                        timestamp: match[3]
+                                    });
+                                }
+                            });
+                        }
+                        
+                        const ticket = {
                             id: parseInt(id),
                             description: description,
                             startDate: startDate,
                             size: size,
                             priority: priority || 'P3',
-                            assigned: assigned
-                        });
+                            assigned: assigned,
+                            status: status || 'To Do',
+                            pauseComments: parsedPauseComments,
+                            startDateHistory: parsedStartDateHistory
+                        };
+                        
+                        importedData.tickets.push(ticket);
                     }
                 } catch (error) {
                     console.warn(`Skipping invalid line in ${currentSection}: ${line}`);
@@ -3028,6 +3159,9 @@
                 });
                 
                 tickets = importedData.tickets;
+                
+                // Initialize start date history for backward compatibility
+                tickets = tickets.map(ticket => initializeStartDateHistory(ticket));
                 
                 // Reset filtering state after import
                 selectedPersonFilters = [];
@@ -3790,7 +3924,7 @@
                 }
             }
 
-            tickets.push({
+            const newTicket = {
                 id: currentTicketId++,
                 description: description,
                 startDate: startDate,
@@ -3799,7 +3933,12 @@
                 assigned: assigned,
                 status: "To Do", // Default status for new tickets
                 pauseComments: [] // Initialize empty pause comments array
-            });
+            };
+            
+            // Initialize start date history for new ticket
+            initializeStartDateHistory(newTicket);
+            
+            tickets.push(newTicket);
 
             descInput.value = '';
             startDateInput.value = '';
@@ -4187,6 +4326,9 @@
                 const oldStartDate = ticket.startDate;
                 ticket.startDate = newStartDate;
                 
+                // Track start date change
+                trackStartDateChange(ticket, oldStartDate, newStartDate, 'Manual update via UI');
+                
                 // Provide visual feedback
                 inputElement.style.background = '#dcfce7'; // Light green background
                 setTimeout(() => {
@@ -4298,6 +4440,9 @@ ${ticket.explanation}
                 { id: 4, description: 'Update documentation', size: 'M', priority: 'P2', status: 'To Do', assigned: ['Vipul'], startDate: getLocalDateString(new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000)) },
                 { id: 5, description: 'Code review backlog', size: 'S', priority: 'P3', status: 'To Do', assigned: ['Peter'], startDate: getLocalDateString(new Date(today.getTime() - 2 * 24 * 60 * 60 * 1000)) }
             ];
+            
+            // Initialize start date history for all tasks
+            tickets = tickets.map(ticket => initializeStartDateHistory(ticket));
             currentTicketId = 6;
             saveToLocalStorage(); 
         }
@@ -4361,7 +4506,11 @@ ${ticket.explanation}
                 let updatedCount = 0;
                 
                 overdueTasks.forEach(task => {
+                    const oldStartDate = task.startDate;
                     task.startDate = todayStr;
+                    
+                    // Track start date change for overdue task correction
+                    trackStartDateChange(task, oldStartDate, todayStr, 'Overdue task correction');
                     updatedCount++;
                 });
                 
@@ -5043,6 +5192,427 @@ ${ticket.explanation}
                 alert('CSV export not supported in this browser');
             }
         }
+
+        // --- DELAY ANALYSIS FUNCTIONALITY ---
+        function generateDelayAnalysis() {
+            console.log('⏰ Generating start date delay analysis...');
+            
+            // Ensure all tasks have start date history initialized
+            tickets.forEach(ticket => initializeStartDateHistory(ticket));
+            
+            // Analyze delay patterns
+            const delayData = tickets.map(ticket => {
+                const history = ticket.startDateHistory || [];
+                const delayCount = Math.max(0, history.length - 1); // Subtract 1 for initial planning
+                const totalDelayDays = calculateTotalDelayDays(history);
+                
+                return {
+                    ticket: ticket,
+                    delayCount: delayCount,
+                    totalDelayDays: totalDelayDays,
+                    history: history,
+                    isProblematic: delayCount >= 2 || totalDelayDays >= 7 // 2+ delays or 7+ days total delay
+                };
+            });
+            
+            // Sort by most problematic first
+            delayData.sort((a, b) => {
+                if (a.isProblematic !== b.isProblematic) {
+                    return a.isProblematic ? -1 : 1; // Problematic tasks first
+                }
+                return b.delayCount - a.delayCount; // Then by delay count
+            });
+            
+            console.log('📊 Delay analysis data:', delayData);
+            
+            // Show modal and render analysis
+            document.getElementById('delayAnalysisModal').classList.remove('hidden');
+            renderDelayAnalysis(delayData);
+        }
+
+        function calculateTotalDelayDays(history) {
+            if (history.length <= 1) return 0;
+            
+            const originalDate = new Date(history[0].date);
+            const currentDate = new Date(history[history.length - 1].date);
+            
+            // Calculate business days difference
+            return Math.max(0, Math.floor((currentDate - originalDate) / (1000 * 60 * 60 * 24)));
+        }
+
+        function renderDelayAnalysis(delayData) {
+            const container = document.getElementById('delayAnalysisContent');
+            
+            const problematicTasks = delayData.filter(d => d.isProblematic);
+            const goodTasks = delayData.filter(d => !d.isProblematic);
+            
+            let html = `
+                <div class="space-y-6">
+                    <!-- Summary Section -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-blue-800 mb-2">📊 Delay Analysis Summary</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                            <div class="bg-white rounded p-3 text-center">
+                                <div class="text-2xl font-bold text-gray-800">${delayData.length}</div>
+                                <div class="text-gray-600">Total Tasks</div>
+                            </div>
+                            <div class="bg-white rounded p-3 text-center">
+                                <div class="text-2xl font-bold text-red-600">${problematicTasks.length}</div>
+                                <div class="text-gray-600">Problematic Tasks</div>
+                            </div>
+                            <div class="bg-white rounded p-3 text-center">
+                                <div class="text-2xl font-bold text-green-600">${goodTasks.length}</div>
+                                <div class="text-gray-600">On-Track Tasks</div>
+                            </div>
+                            <div class="bg-white rounded p-3 text-center">
+                                <div class="text-2xl font-bold text-orange-600">${delayData.reduce((sum, d) => sum + d.delayCount, 0)}</div>
+                                <div class="text-gray-600">Total Delays</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Problematic Tasks Section -->
+                    ${problematicTasks.length > 0 ? `
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-red-800 mb-4">🚨 Problematic Tasks (High Delay Risk)</h3>
+                        <div class="space-y-3">
+                            ${problematicTasks.map(data => generateTaskDelayCard(data, 'red')).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <!-- Good Tasks Section -->
+                    ${goodTasks.length > 0 ? `
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-green-800 mb-4">✅ On-Track Tasks</h3>
+                        <div class="space-y-2">
+                            ${goodTasks.slice(0, 10).map(data => generateTaskDelayCard(data, 'green')).join('')}
+                            ${goodTasks.length > 10 ? `<div class="text-sm text-gray-600 italic">... and ${goodTasks.length - 10} more on-track tasks</div>` : ''}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <!-- Delay Pattern Chart -->
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">📈 Delay Pattern Visualization</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            ${renderDelayChart(delayData)}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        function generateTaskDelayCard(data, type) {
+            const colorClasses = {
+                red: 'bg-red-100 border-red-300 text-red-800',
+                green: 'bg-green-100 border-green-300 text-green-800'
+            };
+            
+            const colorClass = colorClasses[type] || colorClasses.green;
+            
+            return `
+                <div class="border rounded p-3 ${colorClass}">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="font-semibold">${data.ticket.description}</div>
+                            <div class="text-sm mt-1">
+                                ${data.delayCount} delays • ${data.totalDelayDays} days total delay
+                            </div>
+                        </div>
+                        <div class="text-right text-sm">
+                            <div>Size: ${data.ticket.size}</div>
+                            <div>Priority: ${data.ticket.priority || 'P3'}</div>
+                        </div>
+                    </div>
+                    ${data.history.length > 1 ? `
+                    <div class="mt-2 text-xs">
+                        <div class="font-medium">Start Date History:</div>
+                        ${data.history.map((entry, index) => `
+                            <div class="ml-2">${index + 1}. ${formatDate(entry.date)} ${entry.reason ? `(${entry.reason})` : ''}</div>
+                        `).join('')}
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function renderDelayChart(delayData) {
+            // Create a simple histogram of delay counts
+            const delayCounts = {};
+            delayData.forEach(data => {
+                const count = data.delayCount;
+                delayCounts[count] = (delayCounts[count] || 0) + 1;
+            });
+            
+            const maxCount = Math.max(...Object.values(delayCounts));
+            const chartHtml = Object.keys(delayCounts).sort((a, b) => parseInt(a) - parseInt(b)).map(delayCount => {
+                const count = delayCounts[delayCount];
+                const barHeight = (count / maxCount) * 100;
+                return `
+                    <div class="text-center">
+                        <div class="bg-blue-200 border border-blue-300 mx-auto mb-1" style="width: 40px; height: ${Math.max(barHeight, 5)}px; max-height: 100px;"></div>
+                        <div class="text-xs">${delayCount} delays</div>
+                        <div class="text-xs font-semibold">${count} tasks</div>
+                    </div>
+                `;
+            }).join('');
+            
+            return `
+                <div>
+                    <h4 class="font-semibold mb-2">Delay Distribution</h4>
+                    <div class="flex items-end justify-center space-x-2" style="height: 120px;">
+                        ${chartHtml}
+                    </div>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-2">Key Insights</h4>
+                    <ul class="text-sm space-y-1">
+                        <li>• ${delayData.filter(d => d.delayCount === 0).length} tasks started on original date</li>
+                        <li>• ${delayData.filter(d => d.delayCount >= 1).length} tasks experienced delays</li>
+                        <li>• ${delayData.filter(d => d.isProblematic).length} tasks need attention</li>
+                        <li>• Avg delays per task: ${(delayData.reduce((sum, d) => sum + d.delayCount, 0) / delayData.length).toFixed(1)}</li>
+                    </ul>
+                </div>
+            `;
+        }
+
+        function closeDelayAnalysis() {
+            document.getElementById('delayAnalysisModal').classList.add('hidden');
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('delayAnalysisModal');
+            if (event.target === modal) {
+                closeDelayAnalysis();
+            }
+        });
+
+        // --- COMPLETION GRAPH FUNCTIONALITY ---
+        function generateCompletionGraph() {
+            console.log('📈 Generating completion projection graph...');
+            
+            const projectedTickets = getProjectedTickets();
+            console.log('🔍 Projected tickets:', projectedTickets);
+            
+            if (projectedTickets.length === 0) {
+                alert('No tasks found to generate completion graph. Please add some tasks first.');
+                return;
+            }
+
+            // Sort tasks by completion date - use rawEndDate instead of taskEndDate
+            const sortedTasks = projectedTickets
+                .filter(task => task.rawEndDate && task.rawEndDate !== 'N/A') // Only include tasks with valid end dates
+                .sort((a, b) => new Date(a.rawEndDate) - new Date(b.rawEndDate));
+
+            console.log('🔍 Filtered and sorted tasks:', sortedTasks);
+
+            if (sortedTasks.length === 0) {
+                alert('No scheduled tasks found. Please ensure tasks have valid start dates and team assignments.');
+                return;
+            }
+
+            // Create cumulative completion data
+            const graphData = [];
+            let cumulativeCount = 0;
+            
+            sortedTasks.forEach((task, index) => {
+                cumulativeCount++;
+                graphData.push({
+                    taskNumber: cumulativeCount,
+                    completionDate: formatDate(getLocalDateString(task.rawEndDate)),
+                    task: task,
+                    dateString: getLocalDateString(task.rawEndDate)
+                });
+            });
+
+            console.log('📊 Graph data prepared:', graphData);
+            
+            // Show modal and render chart
+            document.getElementById('completionGraphModal').classList.remove('hidden');
+            renderCompletionChart(graphData);
+        }
+
+        function renderCompletionChart(data) {
+            const container = document.getElementById('completionGraphContent');
+            
+            // Generate all unique dates for proper x-axis
+            const allDates = [...new Set(data.map(item => item.dateString))].sort();
+            const dateLabels = allDates.map(dateStr => formatDate(dateStr));
+            
+            // Create cumulative data points for each date
+            const chartPoints = [];
+            let cumulativeCount = 0;
+            
+            allDates.forEach(dateStr => {
+                const tasksCompletingOnThisDate = data.filter(item => item.dateString === dateStr).length;
+                cumulativeCount += tasksCompletingOnThisDate;
+                chartPoints.push({
+                    date: dateStr,
+                    dateLabel: formatDate(dateStr),
+                    cumulativeCount: cumulativeCount,
+                    tasksThisDate: tasksCompletingOnThisDate
+                });
+            });
+            
+            // Create a simple HTML-based chart
+            let chartHTML = `
+                <div class="w-full h-full bg-gray-50 border rounded-lg p-4">
+                    <div class="mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">Task Completion Timeline</h3>
+                        <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+                            <p><strong>📊 Chart Explanation:</strong> This graph shows the projected completion dates for all tasks based on current scheduling and team capacity. The line shows cumulative tasks completed over time, with each point representing when tasks are scheduled to finish.</p>
+                        </div>
+                        <p class="text-sm text-gray-600">Showing projected completion dates for ${data.length} scheduled tasks across ${allDates.length} completion dates</p>
+                    </div>
+                    
+                    <div class="relative h-64 mb-6 bg-white border rounded">
+                        <!-- Y-axis labels (Task Count) -->
+                        <div class="absolute left-0 top-0 bottom-0 w-12 flex flex-col justify-between text-xs text-gray-500 py-4">
+                            <span>${data.length}</span>
+                            <span>${Math.floor(data.length * 0.75)}</span>
+                            <span>${Math.floor(data.length * 0.5)}</span>
+                            <span>${Math.floor(data.length * 0.25)}</span>
+                            <span>0</span>
+                        </div>
+                        
+                        <!-- Chart area -->
+                        <div class="ml-12 h-full relative">
+                            <svg class="w-full h-full" viewBox="0 0 800 200">
+                                <!-- Grid lines -->
+                                ${generateGridLines(data.length)}
+                                
+                                <!-- Data points and line -->
+                                ${generateRealisticChartPath(chartPoints, 800, 200, data.length)}
+                                
+                                <!-- Data points -->
+                                ${generateRealisticDataPoints(chartPoints, 800, 200, data.length)}
+                            </svg>
+                        </div>
+                        
+                        <!-- X-axis labels (Dates) -->
+                        <div class="ml-12 mt-2 flex justify-between text-xs text-gray-500">
+                            ${generateDateLabels(chartPoints)}
+                        </div>
+                    </div>
+                    
+                    <!-- Task list -->
+                    <div class="max-h-48 overflow-y-auto">
+                        <h4 class="font-semibold mb-2 text-gray-800">Task Details:</h4>
+                        <div class="space-y-1">
+                            ${data.map(item => `
+                                <div class="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
+                                    <span class="font-medium text-blue-600">Task #${item.taskNumber}</span>
+                                    <span class="text-gray-600">${item.task.description}</span>
+                                    <span class="text-gray-800 font-medium">${item.completionDate}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = chartHTML;
+        }
+
+        function generateGridLines(maxTasks) {
+            let lines = '';
+            for (let i = 0; i <= 4; i++) {
+                const y = (i / 4) * 200;
+                lines += `<line x1="0" y1="${y}" x2="800" y2="${y}" stroke="#e5e7eb" stroke-width="1"/>`;
+            }
+            return lines;
+        }
+
+        function generateChartPath(data, width, height) {
+            if (data.length < 2) return '';
+            
+            let path = '';
+            data.forEach((point, index) => {
+                const x = (index / (data.length - 1)) * width;
+                const y = height - (point.taskNumber / data.length) * height;
+                
+                if (index === 0) {
+                    path += `M ${x} ${y}`;
+                } else {
+                    path += ` L ${x} ${y}`;
+                }
+            });
+            
+            return `<path d="${path}" stroke="#3b82f6" stroke-width="2" fill="none"/>`;
+        }
+
+        function generateRealisticChartPath(chartPoints, width, height, maxTasks) {
+            if (chartPoints.length < 2) return '';
+            
+            let path = '';
+            chartPoints.forEach((point, index) => {
+                const x = (index / (chartPoints.length - 1)) * width;
+                const y = height - (point.cumulativeCount / maxTasks) * height;
+                
+                if (index === 0) {
+                    path += `M ${x} ${y}`;
+                } else {
+                    path += ` L ${x} ${y}`;
+                }
+            });
+            
+            return `<path d="${path}" stroke="#3b82f6" stroke-width="2" fill="none"/>`;
+        }
+
+        function generateDataPoints(data, width, height) {
+            return data.map((point, index) => {
+                const x = (index / (data.length - 1)) * width;
+                const y = height - (point.taskNumber / data.length) * height;
+                
+                return `<circle cx="${x}" cy="${y}" r="4" fill="#3b82f6" stroke="white" stroke-width="2">
+                    <title>Task ${point.taskNumber}: ${point.task.description} - ${point.completionDate}</title>
+                </circle>`;
+            }).join('');
+        }
+
+        function generateRealisticDataPoints(chartPoints, width, height, maxTasks) {
+            return chartPoints.map((point, index) => {
+                const x = (index / (chartPoints.length - 1)) * width;
+                const y = height - (point.cumulativeCount / maxTasks) * height;
+                
+                return `<circle cx="${x}" cy="${y}" r="4" fill="#3b82f6" stroke="white" stroke-width="2">
+                    <title>${point.cumulativeCount} tasks completed by ${point.dateLabel} (${point.tasksThisDate} task${point.tasksThisDate > 1 ? 's' : ''} completing this date)</title>
+                </circle>`;
+            }).join('');
+        }
+
+        function generateDateLabels(chartPoints) {
+            if (chartPoints.length <= 3) {
+                return chartPoints.map(point => `<span>${point.dateLabel}</span>`).join('');
+            }
+            
+            // Show first, middle, and last dates
+            const first = chartPoints[0];
+            const middle = chartPoints[Math.floor(chartPoints.length / 2)];
+            const last = chartPoints[chartPoints.length - 1];
+            
+            return `
+                <span>${first.dateLabel}</span>
+                <span>${middle.dateLabel}</span>
+                <span>${last.dateLabel}</span>
+            `;
+        }
+
+        function closeCompletionGraph() {
+            document.getElementById('completionGraphModal').classList.add('hidden');
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('completionGraphModal');
+            if (event.target === modal) {
+                closeCompletionGraph();
+            }
+        });
 
         // Start the application
         window.onload = initializeScheduler;
