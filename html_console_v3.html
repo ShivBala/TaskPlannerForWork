@@ -1045,6 +1045,17 @@
                                 Clear
                             </button>
                         </div>
+                        <div class="flex items-center gap-3 mt-2">
+                            <span class="text-sm font-semibold text-gray-700 whitespace-nowrap">📅 Filter by date:</span>
+                            <div id="date-filter-buttons" class="flex flex-wrap gap-2 flex-1">
+                                <!-- Date filter buttons will be populated by JavaScript -->
+                            </div>
+                            <button id="clear-date-filter-btn" onclick="clearDateFilter()" 
+                                    class="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600 transition-colors flex-shrink-0" 
+                                    style="display: none;">
+                                Clear
+                            </button>
+                        </div>
                         <div id="filter-status" class="text-xs text-gray-600 mt-2" style="display: none;">
                             <!-- Filter status will be shown here -->
                         </div>
@@ -1291,6 +1302,7 @@
         // Task filtering variables
         let selectedPersonFilters = []; // Array to track which people are selected for filtering
         let selectedStatusFilters = []; // Array to track which statuses are selected for filtering
+        let selectedDateFilters = []; // Array to track which date ranges are selected for filtering
         
         // --- DIRTY STATE MANAGEMENT ---
         let isDirty = false; // Track if there are unsaved changes
@@ -1577,10 +1589,17 @@
                     updateStatusFilterButtonState(button, status);
                 });
                 
+                // Update all date filter button states
+                document.querySelectorAll('.date-filter-btn').forEach(button => {
+                    const dateRange = button.getAttribute('data-date');
+                    updateDateFilterButtonState(button, dateRange);
+                });
+                
                 // Update filter status and clear buttons
                 const filterStatus = document.getElementById('filter-status');
                 const clearBtn = document.getElementById('clear-filter-btn');
                 const clearStatusBtn = document.getElementById('clear-status-filter-btn');
+                const clearDateBtn = document.getElementById('clear-date-filter-btn');
                 
                 if (!filterStatus) {
                     console.warn('Filter status element not found');
@@ -1597,8 +1616,13 @@
                     clearStatusBtn.style.display = selectedStatusFilters.length > 0 ? 'inline-block' : 'none';
                 }
                 
+                // Show/hide date clear button
+                if (clearDateBtn) {
+                    clearDateBtn.style.display = selectedDateFilters.length > 0 ? 'inline-block' : 'none';
+                }
+                
                 // Update filter status message
-                if (selectedPersonFilters.length === 0 && selectedStatusFilters.length === 0) {
+                if (selectedPersonFilters.length === 0 && selectedStatusFilters.length === 0 && selectedDateFilters.length === 0) {
                     filterStatus.style.display = 'none';
                 } else {
                     filterStatus.style.display = 'block';
@@ -1613,6 +1637,11 @@
                     if (selectedStatusFilters.length > 0) {
                         if (selectedPersonFilters.length > 0) statusMessage += ' and';
                         statusMessage += ` with status: <strong>${selectedStatusFilters.join(', ')}</strong>`;
+                    }
+                    
+                    if (selectedDateFilters.length > 0) {
+                        if (selectedPersonFilters.length > 0 || selectedStatusFilters.length > 0) statusMessage += ' and';
+                        statusMessage += ` active in: <strong>${selectedDateFilters.join(', ')}</strong>`;
                     }
                     
                     statusMessage += ` (${filteredTaskCount} task${filteredTaskCount !== 1 ? 's' : ''} visible)`;
@@ -1688,6 +1717,117 @@
             updateTable(); // Re-render the table
         }
 
+        // --- DATE FILTERING FUNCTIONS ---
+
+        function generateDateFilterButtons() {
+            const container = document.getElementById('date-filter-buttons');
+            if (!container) return;
+            
+            container.innerHTML = '';
+            
+            const dateRanges = ['Today', 'This Week', 'Next Week'];
+            const dateIcons = {
+                'Today': '📅',
+                'This Week': '📆',
+                'Next Week': '🗓️'
+            };
+            
+            dateRanges.forEach(dateRange => {
+                const button = document.createElement('button');
+                button.className = 'date-filter-btn px-3 py-1 rounded-md text-xs transition-all duration-200 border';
+                button.innerHTML = `${dateIcons[dateRange]} ${dateRange}`;
+                button.onclick = () => toggleDateFilter(dateRange);
+                button.setAttribute('data-date', dateRange);
+                
+                updateDateFilterButtonState(button, dateRange);
+                
+                container.appendChild(button);
+            });
+        }
+
+        function updateDateFilterButtonState(button, dateRange) {
+            const isSelected = selectedDateFilters.includes(dateRange);
+            
+            if (isSelected) {
+                button.className = 'date-filter-btn px-3 py-1 rounded-md text-xs transition-all duration-200 border bg-blue-600 text-white border-blue-600 font-medium';
+                button.title = `✓ Showing tasks active "${dateRange}" (click to remove filter)`;
+            } else if (selectedDateFilters.length > 0) {
+                button.className = 'date-filter-btn px-3 py-1 rounded-md text-xs transition-all duration-200 border bg-gray-100 text-gray-500 border-gray-300';
+                button.title = `Click to show tasks active "${dateRange}"`;
+            } else {
+                button.className = 'date-filter-btn px-3 py-1 rounded-md text-xs transition-all duration-200 border bg-white text-gray-700 border-gray-300 hover:border-blue-400';
+                button.title = `Click to filter by tasks active "${dateRange}"`;
+            }
+        }
+
+        function toggleDateFilter(dateRange) {
+            if (selectedDateFilters.includes(dateRange)) {
+                // Remove filter if already selected
+                selectedDateFilters = selectedDateFilters.filter(d => d !== dateRange);
+            } else {
+                // Add filter
+                selectedDateFilters.push(dateRange);
+            }
+            
+            updateFilterUI();
+            updateTable(); // Re-render the table
+        }
+
+        function clearDateFilter() {
+            selectedDateFilters = [];
+            updateFilterUI();
+            updateTable(); // Re-render the table
+        }
+
+        function isTaskActiveInDateRange(ticket, dateRange) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            let rangeStart, rangeEnd;
+            
+            if (dateRange === 'Today') {
+                rangeStart = new Date(today);
+                rangeEnd = new Date(today);
+            } else if (dateRange === 'This Week') {
+                // Get start of current week (Monday)
+                rangeStart = new Date(today);
+                const dayOfWeek = rangeStart.getDay();
+                const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Sunday = 0, Monday = 1
+                rangeStart.setDate(rangeStart.getDate() + mondayOffset);
+                
+                // Get end of current week (Friday)
+                rangeEnd = new Date(rangeStart);
+                rangeEnd.setDate(rangeStart.getDate() + 4); // Friday
+            } else if (dateRange === 'Next Week') {
+                // Get start of next week (Monday)
+                rangeStart = new Date(today);
+                const dayOfWeek = rangeStart.getDay();
+                const nextMondayOffset = dayOfWeek === 0 ? 1 : 8 - dayOfWeek; // Sunday = 0, Monday = 1
+                rangeStart.setDate(rangeStart.getDate() + nextMondayOffset);
+                
+                // Get end of next week (Friday)
+                rangeEnd = new Date(rangeStart);
+                rangeEnd.setDate(rangeStart.getDate() + 4); // Friday
+            }
+            
+            // Get task's date range
+            const taskStartDate = new Date(ticket.startDate);
+            taskStartDate.setHours(0, 0, 0, 0);
+            
+            // Get projected end date
+            const projectedTickets = getProjectedTickets();
+            const projectedTicket = projectedTickets.find(pt => pt.id === ticket.id);
+            let taskEndDate = taskStartDate; // Default to start date if no projection
+            
+            if (projectedTicket && projectedTicket.rawEndDate) {
+                taskEndDate = new Date(projectedTicket.rawEndDate);
+                taskEndDate.setHours(0, 0, 0, 0);
+            }
+            
+            // Check if date ranges overlap
+            return taskStartDate <= rangeEnd && taskEndDate >= rangeStart;
+        }
+
         function shouldShowTicket(ticket) {
             // Check person filter
             const personFilterPassed = selectedPersonFilters.length === 0 || 
@@ -1701,8 +1841,12 @@
             const statusFilterPassed = selectedStatusFilters.length === 0 || 
                 selectedStatusFilters.includes(ticket.status || 'To Do');
             
-            // Both filters must pass
-            return personFilterPassed && statusFilterPassed;
+            // Check date filter
+            const dateFilterPassed = selectedDateFilters.length === 0 || 
+                selectedDateFilters.some(dateRange => isTaskActiveInDateRange(ticket, dateRange));
+            
+            // All filters must pass
+            return personFilterPassed && statusFilterPassed && dateFilterPassed;
         }
 
         function getFilteredTickets() {
@@ -2629,6 +2773,9 @@
             
             // Generate status filter buttons
             generateStatusFilterButtons();
+            
+            // Generate date filter buttons
+            generateDateFilterButtons();
         }
 
         function renderTickets(projectedTickets) {
@@ -2645,7 +2792,7 @@
                 document.getElementById('no-tickets').classList.remove('hidden');
                 // Update the no-tickets message based on whether filtering is active
                 const noTicketsMsg = document.getElementById('no-tickets');
-                if (selectedPersonFilters.length > 0 || selectedStatusFilters.length > 0) {
+                if (selectedPersonFilters.length > 0 || selectedStatusFilters.length > 0 || selectedDateFilters.length > 0) {
                     let filterMessage = 'No tasks found';
                     if (selectedPersonFilters.length > 0) {
                         filterMessage += ` for ${selectedPersonFilters.join(', ')}`;
@@ -2653,6 +2800,10 @@
                     if (selectedStatusFilters.length > 0) {
                         if (selectedPersonFilters.length > 0) filterMessage += ' and';
                         filterMessage += ` with status ${selectedStatusFilters.join(', ')}`;
+                    }
+                    if (selectedDateFilters.length > 0) {
+                        if (selectedPersonFilters.length > 0 || selectedStatusFilters.length > 0) filterMessage += ' and';
+                        filterMessage += ` active in ${selectedDateFilters.join(', ')}`;
                     }
                     filterMessage += '.';
                     noTicketsMsg.textContent = filterMessage;
@@ -3166,6 +3317,7 @@
                 // Reset filtering state after import
                 selectedPersonFilters = [];
                 selectedStatusFilters = [];
+                selectedDateFilters = [];
                 
                 // Update UI
                 document.getElementById('estimation-base-hours').value = estimationBaseHours;
