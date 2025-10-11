@@ -1123,6 +1123,10 @@
                         <p class="text-sm text-gray-600 mt-1">Visual overview of team capacity utilization based on individual availability</p>
                     </div>
                     <div class="flex gap-2">
+                        <button onclick="openBulkTaskResolution()" class="btn-enterprise flex items-center gap-2">
+                            <span>✅</span>
+                            Resolve Completed
+                        </button>
                         <button onclick="generateDelayAnalysis()" class="btn-enterprise flex items-center gap-2">
                             <span>⏰</span>
                             Analyze Start Date Delays
@@ -1188,6 +1192,27 @@
             <div class="p-6">
                 <div id="delayAnalysisContent" class="w-full">
                     <!-- Analysis will be rendered here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Task Resolution Modal -->
+    <div id="bulkTaskResolutionModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl max-w-5xl w-full mx-4 max-h-[90vh] overflow-auto">
+            <div class="flex justify-between items-center p-6 border-b">
+                <h2 class="text-2xl font-bold text-gray-800">✅ Resolve Completed Tasks</h2>
+                <button onclick="closeBulkTaskResolution()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <div class="p-6">
+                <div class="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p class="text-sm text-blue-800">
+                        <strong>📋 Tasks shown:</strong> "In Progress" tasks with calculated end dates in the past (overdue).
+                        Use the actions below to resolve each task or extend deadlines as needed.
+                    </p>
+                </div>
+                <div id="bulkTaskResolutionContent" class="w-full">
+                    <!-- Task resolution content will be rendered here -->
                 </div>
             </div>
         </div>
@@ -1292,6 +1317,67 @@
                 });
                 
                 console.log(`📅 Start date changed for "${ticket.description}": ${oldDate} → ${newDate} (${reason})`);
+            }
+        }
+
+        // Initialize end date history for backward compatibility
+        function initializeEndDateHistory(ticket) {
+            if (!ticket.endDateHistory) {
+                ticket.endDateHistory = [];
+            }
+            return ticket;
+        }
+
+        // Track end date changes
+        function trackEndDateChange(ticket, oldDate, newDate, reason = 'Date extension') {
+            initializeEndDateHistory(ticket);
+            
+            // Only track if the date actually changed
+            if (oldDate !== newDate) {
+                ticket.endDateHistory.push({
+                    date: newDate,
+                    timestamp: new Date().toISOString(),
+                    reason: reason,
+                    previousDate: oldDate
+                });
+                
+                console.log(`📅 End date changed for "${ticket.description}": ${oldDate} → ${newDate} (${reason})`);
+            }
+        }
+
+        // Initialize size history for backward compatibility
+        function initializeSizeHistory(ticket) {
+            if (!ticket.sizeHistory) {
+                ticket.sizeHistory = [];
+                // Add current size as the initial entry if it exists
+                if (ticket.size) {
+                    ticket.sizeHistory.push({
+                        size: ticket.size,
+                        days: taskSizeDefinitions[ticket.size]?.days || 0,
+                        timestamp: new Date().toISOString(),
+                        reason: 'Initial sizing'
+                    });
+                }
+            }
+            return ticket;
+        }
+
+        // Track size changes
+        function trackSizeChange(ticket, oldSize, newSize, reason = 'Manual update') {
+            initializeSizeHistory(ticket);
+            
+            // Only track if the size actually changed
+            if (oldSize !== newSize) {
+                ticket.sizeHistory.push({
+                    size: newSize,
+                    days: taskSizeDefinitions[newSize]?.days || 0,
+                    timestamp: new Date().toISOString(),
+                    reason: reason,
+                    previousSize: oldSize,
+                    previousDays: taskSizeDefinitions[oldSize]?.days || 0
+                });
+                
+                console.log(`📊 Size changed for "${ticket.description}": ${oldSize} → ${newSize} (${reason})`);
             }
         }
         
@@ -1424,8 +1510,13 @@
                     
                     tickets = data.tickets || [];
                     
-                    // Initialize start date history for backward compatibility
-                    tickets = tickets.map(ticket => initializeStartDateHistory(ticket));
+                    // Initialize all history for backward compatibility
+                    tickets = tickets.map(ticket => {
+                        ticket = initializeStartDateHistory(ticket);
+                        ticket = initializeEndDateHistory(ticket);
+                        ticket = initializeSizeHistory(ticket);
+                        return ticket;
+                    });
                     estimationBaseHours = data.estimationBaseHours || 5;
                     projectHoursPerDay = data.projectHoursPerDay || data.hoursPerDay || 8; // Migration from old hoursPerDay
                     ticketDays = data.ticketDays || { S: 1, M: 2, L: 5, XL: 10, XXL: 15 };
@@ -2125,6 +2216,22 @@
             
             const projectedTickets = sortedTickets.map(ticket => {
                 console.log(`🎫 Processing ticket ${ticket.id}: ${ticket.description}`);
+                
+                // Check if ticket has a custom end date that overrides calculations
+                if (ticket.customEndDate) {
+                    console.log(`📅 Using custom end date for ticket ${ticket.id}: ${ticket.customEndDate}`);
+                    const customDate = new Date(ticket.customEndDate);
+                    const result = {
+                        ...ticket,
+                        endDate: customDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                        rawEndDate: customDate,
+                        explanation: `Custom deadline set via bulk resolution: ${customDate.toLocaleDateString()}`,
+                        isDelayed: false
+                    };
+                    console.log(`📅 Custom end date result for ticket ${ticket.id}:`, result);
+                    return result;
+                }
+                
                 const totalEffortHours = effortMap[ticket.size] || 0;
                 const assignedCount = ticket.assigned.length;
                 
@@ -2914,6 +3021,7 @@
                     <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
                         <div class="flex items-center">
                             <span class="${completionDateClass}">${ticket.endDate}</span>
+                            ${ticket.customEndDate ? '<span class="ml-1 text-xs text-blue-600" title="Custom deadline set">📅</span>' : ''}
                             <button onclick="showCalculationDetails(${ticket.id})" class="details-btn" title="Show calculation details">
                                 Details
                             </button>
@@ -3071,7 +3179,7 @@
             
             // Tickets section
             csvContent += "SECTION,TICKETS\n";
-            csvContent += "ID,Description,Start Date,Size,Priority,Assigned Team,Status,Pause Comments,Start Date History\n";
+            csvContent += "ID,Description,Start Date,Size,Priority,Assigned Team,Status,Pause Comments,Start Date History,End Date History,Size History,Custom End Date\n";
             configData.tickets.forEach(ticket => {
                 const assignedTeam = ticket.assigned.join(';');
                 const priority = ticket.priority || 'P3';
@@ -3089,7 +3197,24 @@
                     ).join(' | ')
                     : '';
                 
-                csvContent += `${ticket.id},"${ticket.description.replace(/"/g, '""')}",${ticket.startDate},${ticket.size},${priority},"${assignedTeam}","${status}","${pauseCommentsText}","${startDateHistoryText}"\n`;
+                // Format end date history for CSV
+                const endDateHistoryText = ticket.endDateHistory && ticket.endDateHistory.length > 0
+                    ? ticket.endDateHistory.map(entry => 
+                        `${entry.date}(${entry.reason}@${entry.timestamp})`
+                    ).join(' | ')
+                    : '';
+                
+                // Format size history for CSV
+                const sizeHistoryText = ticket.sizeHistory && ticket.sizeHistory.length > 0
+                    ? ticket.sizeHistory.map(entry => 
+                        `${entry.size}:${entry.days}d(${entry.reason}@${entry.timestamp})`
+                    ).join(' | ')
+                    : '';
+                
+                // Custom end date (if set)
+                const customEndDate = ticket.customEndDate || '';
+                
+                csvContent += `${ticket.id},"${ticket.description.replace(/"/g, '""')}",${ticket.startDate},${ticket.size},${priority},"${assignedTeam}","${status}","${pauseCommentsText}","${startDateHistoryText}","${endDateHistoryText}","${sizeHistoryText}","${customEndDate}"\n`;
             });
             
             // Download the configuration file
@@ -3220,7 +3345,7 @@
                     }
                     else if (currentSection === 'TICKETS') {
                         const columns = parseCSVLine(line);
-                        const [id, description, startDate, size, priority, assignedTeam, status, pauseComments, startDateHistory] = columns;
+                        const [id, description, startDate, size, priority, assignedTeam, status, pauseComments, startDateHistory, endDateHistory, sizeHistory, customEndDate] = columns;
                         const assigned = assignedTeam ? assignedTeam.split(';').filter(name => name.trim()) : [];
                         
                         // Parse pause comments
@@ -3254,6 +3379,39 @@
                             });
                         }
                         
+                        // Parse end date history
+                        const parsedEndDateHistory = [];
+                        if (endDateHistory && endDateHistory.trim()) {
+                            const historyEntries = endDateHistory.split(' | ');
+                            historyEntries.forEach(entry => {
+                                const match = entry.match(/^([^(]+)\(([^@]+)@([^)]+)\)$/);
+                                if (match) {
+                                    parsedEndDateHistory.push({
+                                        date: match[1],
+                                        reason: match[2],
+                                        timestamp: match[3]
+                                    });
+                                }
+                            });
+                        }
+                        
+                        // Parse size history
+                        const parsedSizeHistory = [];
+                        if (sizeHistory && sizeHistory.trim()) {
+                            const historyEntries = sizeHistory.split(' | ');
+                            historyEntries.forEach(entry => {
+                                const match = entry.match(/^([^:]+):(\d+)d\(([^@]+)@([^)]+)\)$/);
+                                if (match) {
+                                    parsedSizeHistory.push({
+                                        size: match[1],
+                                        days: parseInt(match[2]),
+                                        reason: match[3],
+                                        timestamp: match[4]
+                                    });
+                                }
+                            });
+                        }
+                        
                         const ticket = {
                             id: parseInt(id),
                             description: description,
@@ -3263,7 +3421,10 @@
                             assigned: assigned,
                             status: status || 'To Do',
                             pauseComments: parsedPauseComments,
-                            startDateHistory: parsedStartDateHistory
+                            startDateHistory: parsedStartDateHistory,
+                            endDateHistory: parsedEndDateHistory,
+                            sizeHistory: parsedSizeHistory,
+                            customEndDate: customEndDate || undefined
                         };
                         
                         importedData.tickets.push(ticket);
@@ -3311,8 +3472,13 @@
                 
                 tickets = importedData.tickets;
                 
-                // Initialize start date history for backward compatibility
-                tickets = tickets.map(ticket => initializeStartDateHistory(ticket));
+                // Initialize all history for backward compatibility
+                tickets = tickets.map(ticket => {
+                    ticket = initializeStartDateHistory(ticket);
+                    ticket = initializeEndDateHistory(ticket);
+                    ticket = initializeSizeHistory(ticket);
+                    return ticket;
+                });
                 
                 // Reset filtering state after import
                 selectedPersonFilters = [];
@@ -4590,12 +4756,21 @@ ${ticket.explanation}
                 { id: 3, description: 'Build new reporting dashboard', size: 'XXL', priority: 'P3', status: 'To Do', assigned: ['Sharanya', 'Divya'], startDate: getLocalDateString(followingMonday) },
                 // Add some overdue tasks for testing (3 days ago)
                 { id: 4, description: 'Update documentation', size: 'M', priority: 'P2', status: 'To Do', assigned: ['Vipul'], startDate: getLocalDateString(new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000)) },
-                { id: 5, description: 'Code review backlog', size: 'S', priority: 'P3', status: 'To Do', assigned: ['Peter'], startDate: getLocalDateString(new Date(today.getTime() - 2 * 24 * 60 * 60 * 1000)) }
+                { id: 5, description: 'Code review backlog', size: 'S', priority: 'P3', status: 'To Do', assigned: ['Peter'], startDate: getLocalDateString(new Date(today.getTime() - 2 * 24 * 60 * 60 * 1000)) },
+                // Add some "In Progress" tasks that are overdue for testing bulk resolution
+                { id: 6, description: 'API Security Audit', size: 'M', priority: 'P1', status: 'In Progress', assigned: ['Sameet'], startDate: getLocalDateString(new Date(today.getTime() - 5 * 24 * 60 * 60 * 1000)) },
+                { id: 7, description: 'Performance Optimization', size: 'S', priority: 'P2', status: 'In Progress', assigned: ['Vipul'], startDate: getLocalDateString(new Date(today.getTime() - 3 * 24 * 60 * 60 * 1000)) },
+                { id: 8, description: 'Database Migration Script', size: 'L', priority: 'P1', status: 'In Progress', assigned: ['Peter', 'Sharanya'], startDate: getLocalDateString(new Date(today.getTime() - 8 * 24 * 60 * 60 * 1000)) }
             ];
             
-            // Initialize start date history for all tasks
-            tickets = tickets.map(ticket => initializeStartDateHistory(ticket));
-            currentTicketId = 6;
+            // Initialize all history for all tasks
+            tickets = tickets.map(ticket => {
+                ticket = initializeStartDateHistory(ticket);
+                ticket = initializeEndDateHistory(ticket);
+                ticket = initializeSizeHistory(ticket);
+                return ticket;
+            });
+            currentTicketId = 9;
             saveToLocalStorage(); 
         }
 
@@ -5196,12 +5371,6 @@ ${ticket.explanation}
             const projectedTickets = getProjectedTickets();
             const effectiveStartDate = getEffectiveStartDate();
             
-            // Debug: Log what we're working with
-            console.log('🔧 CSV Export Debug:');
-            console.log('People:', people.map(p => p.name));
-            console.log('Projected Tickets:', projectedTickets);
-            console.log('Effective Start Date:', effectiveStartDate);
-            
             // Generate date range for next 8 weeks (business days only)
             const dates = [];
             const currentDate = new Date(effectiveStartDate);
@@ -5349,8 +5518,12 @@ ${ticket.explanation}
         function generateDelayAnalysis() {
             console.log('⏰ Generating start date delay analysis...');
             
-            // Ensure all tasks have start date history initialized
-            tickets.forEach(ticket => initializeStartDateHistory(ticket));
+            // Ensure all tasks have history initialized
+            tickets.forEach(ticket => {
+                initializeStartDateHistory(ticket);
+                initializeEndDateHistory(ticket);
+                initializeSizeHistory(ticket);
+            });
             
             // Analyze delay patterns
             const delayData = tickets.map(ticket => {
@@ -5535,11 +5708,397 @@ ${ticket.explanation}
             document.getElementById('delayAnalysisModal').classList.add('hidden');
         }
 
+        // === BULK TASK RESOLUTION FUNCTIONS ===
+        
+        function openBulkTaskResolution() {
+            // Find all "In Progress" tasks with past end dates
+            const overdueInProgressTasks = getOverdueInProgressTasks();
+            
+            if (overdueInProgressTasks.length === 0) {
+                alert('✅ No overdue "In Progress" tasks found!\n\nAll tasks are either on track or not yet in progress.');
+                return;
+            }
+            
+            renderBulkTaskResolutionContent(overdueInProgressTasks);
+            document.getElementById('bulkTaskResolutionModal').classList.remove('hidden');
+        }
+
+        function closeBulkTaskResolution() {
+            document.getElementById('bulkTaskResolutionModal').classList.add('hidden');
+        }
+
+        function getOverdueInProgressTasks() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            const projectedTickets = getProjectedTickets();
+            
+            return tickets.filter(ticket => {
+                // Must be "In Progress"
+                if (ticket.status !== 'In Progress') return false;
+                
+                // Must have a calculated end date that's in the past
+                const projectedTicket = projectedTickets.find(pt => pt.id === ticket.id);
+                if (!projectedTicket || !projectedTicket.rawEndDate) return false;
+                
+                const endDate = new Date(projectedTicket.rawEndDate);
+                endDate.setHours(0, 0, 0, 0);
+                
+                return endDate < today;
+            });
+        }
+
+        function renderBulkTaskResolutionContent(overdueInProgressTasks) {
+            const projectedTickets = getProjectedTickets();
+            
+            let html = `
+                <div class="space-y-4">
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                        <h3 class="text-lg font-semibold text-yellow-800 mb-2">📊 Summary</h3>
+                        <p class="text-yellow-700">
+                            Found <strong>${overdueInProgressTasks.length}</strong> overdue "In Progress" task${overdueInProgressTasks.length !== 1 ? 's' : ''} that need resolution.
+                        </p>
+                    </div>
+            `;
+            
+            overdueInProgressTasks.forEach(ticket => {
+                const projectedTicket = projectedTickets.find(pt => pt.id === ticket.id);
+                const endDate = projectedTicket ? new Date(projectedTicket.rawEndDate) : null;
+                const daysOverdue = endDate ? Math.floor((new Date() - endDate) / (1000 * 60 * 60 * 24)) : 0;
+                
+                html += `
+                    <div class="border border-gray-200 rounded-lg p-4 bg-white" id="task-${ticket.id}">
+                        <div class="flex justify-between items-start mb-3">
+                            <div class="flex-1">
+                                <h4 class="text-lg font-semibold text-gray-800">Task #${ticket.id}: ${ticket.description}</h4>
+                                <div class="text-sm text-gray-600 mt-1">
+                                    <span class="inline-block mr-4">📅 Started: ${ticket.startDate}</span>
+                                    <span class="inline-block mr-4">📊 Size: ${ticket.size} (${taskSizeDefinitions[ticket.size]?.days || 0} days)</span>
+                                    <span class="inline-block mr-4">👥 Assigned: ${ticket.assigned.join(', ')}</span>
+                                </div>
+                                <div class="text-sm mt-1">
+                                    <span class="text-red-600 font-medium">
+                                        🚨 Overdue by ${daysOverdue} day${daysOverdue !== 1 ? 's' : ''} 
+                                        (expected completion: ${endDate ? endDate.toLocaleDateString() : 'Unknown'})
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <!-- Mark Done -->
+                            <div class="bg-green-50 border border-green-200 rounded p-3">
+                                <h5 class="font-medium text-green-800 mb-2">✅ Mark as Done</h5>
+                                <button onclick="markTaskDone(${ticket.id})" 
+                                        class="w-full px-3 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors">
+                                    Complete Task
+                                </button>
+                            </div>
+                            
+                            <!-- Pause with Comment -->
+                            <div class="bg-yellow-50 border border-yellow-200 rounded p-3">
+                                <h5 class="font-medium text-yellow-800 mb-2">⏸️ Pause Task</h5>
+                                <textarea id="pause-comment-${ticket.id}" placeholder="Reason for pausing..." 
+                                          class="w-full p-2 border border-yellow-300 rounded text-sm mb-2 h-16 resize-none"></textarea>
+                                <button onclick="pauseTaskWithComment(${ticket.id})" 
+                                        class="w-full px-3 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700 transition-colors">
+                                    Pause Task
+                                </button>
+                            </div>
+                            
+                            <!-- Extend End Date -->
+                            <div class="bg-blue-50 border border-blue-200 rounded p-3">
+                                <h5 class="font-medium text-blue-800 mb-2">📅 Extend Deadline</h5>
+                                <input type="date" id="new-end-date-${ticket.id}" 
+                                       class="w-full p-2 border border-blue-300 rounded text-sm mb-2"
+                                       min="${getLocalDateString(new Date())}"
+                                       onchange="validateNewEndDate(${ticket.id})">
+                                <div id="size-info-${ticket.id}" class="text-xs text-blue-600 mb-2 min-h-[2rem]">
+                                    Select a new end date to see size impact
+                                </div>
+                                <button onclick="extendTaskDeadline(${ticket.id})" 
+                                        id="extend-btn-${ticket.id}"
+                                        class="w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors disabled:bg-gray-400"
+                                        disabled>
+                                    Extend Deadline
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                </div>
+                <div class="mt-6 pt-4 border-t border-gray-200 text-center">
+                    <button onclick="closeBulkTaskResolution()" 
+                            class="px-6 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors">
+                        Close
+                    </button>
+                </div>
+            `;
+            
+            document.getElementById('bulkTaskResolutionContent').innerHTML = html;
+        }
+
+        function markTaskDone(ticketId) {
+            const ticket = tickets.find(t => t.id === ticketId);
+            if (!ticket) return;
+            
+            const oldStatus = ticket.status;
+            ticket.status = 'Done';
+            
+            console.log(`✅ Marked task #${ticketId} as Done (was: ${oldStatus})`);
+            
+            // Remove the task from the modal display
+            const taskElement = document.getElementById(`task-${ticketId}`);
+            if (taskElement) {
+                taskElement.style.opacity = '0.5';
+                taskElement.innerHTML = `
+                    <div class="text-center py-4">
+                        <div class="text-green-600 font-semibold">✅ Task marked as Done!</div>
+                        <div class="text-sm text-gray-600 mt-1">Status updated successfully</div>
+                    </div>
+                `;
+            }
+            
+            saveToLocalStorage();
+            
+            // Clear any active status filters so user can see resolved tasks
+            selectedStatusFilters = [];
+            
+            // Refresh the main task list with proper projection
+            const doneProjectedTickets = getProjectedTickets();
+            renderTickets(doneProjectedTickets);
+            
+            // Check if all tasks are resolved
+            setTimeout(() => checkAllTasksResolved(), 1000);
+        }
+
+        function pauseTaskWithComment(ticketId) {
+            const ticket = tickets.find(t => t.id === ticketId);
+            if (!ticket) return;
+            
+            const comment = document.getElementById(`pause-comment-${ticketId}`).value.trim();
+            if (!comment) {
+                alert('Please provide a reason for pausing this task.');
+                return;
+            }
+            
+            const oldStatus = ticket.status;
+            ticket.status = 'Paused';
+            
+            // Add pause comment to ticket
+            if (!ticket.pauseComments) {
+                ticket.pauseComments = [];
+            }
+            ticket.pauseComments.push({
+                comment: comment,
+                timestamp: new Date().toISOString(),
+                action: 'Paused from bulk resolution'
+            });
+            
+            console.log(`⏸️ Paused task #${ticketId} (was: ${oldStatus}): ${comment}`);
+            
+            // Remove the task from the modal display
+            const taskElement = document.getElementById(`task-${ticketId}`);
+            if (taskElement) {
+                taskElement.style.opacity = '0.5';
+                taskElement.innerHTML = `
+                    <div class="text-center py-4">
+                        <div class="text-yellow-600 font-semibold">⏸️ Task paused!</div>
+                        <div class="text-sm text-gray-600 mt-1">Reason: ${comment}</div>
+                    </div>
+                `;
+            }
+            
+            saveToLocalStorage();
+            
+            // Clear any active status filters so user can see resolved tasks
+            selectedStatusFilters = [];
+            
+            // Refresh the main task list with proper projection
+            const pausedProjectedTickets = getProjectedTickets();
+            renderTickets(pausedProjectedTickets);
+            
+            // Check if all tasks are resolved
+            setTimeout(() => checkAllTasksResolved(), 1000);
+        }
+
+        function validateNewEndDate(ticketId) {
+            const ticket = tickets.find(t => t.id === ticketId);
+            if (!ticket) return;
+            
+            const newEndDateInput = document.getElementById(`new-end-date-${ticketId}`);
+            const sizeInfoDiv = document.getElementById(`size-info-${ticketId}`);
+            const extendBtn = document.getElementById(`extend-btn-${ticketId}`);
+            
+            const newEndDate = newEndDateInput.value;
+            if (!newEndDate) {
+                sizeInfoDiv.innerHTML = 'Select a new end date to see size impact';
+                extendBtn.disabled = true;
+                return;
+            }
+            
+            const startDate = new Date(ticket.startDate);
+            const endDate = new Date(newEndDate);
+            const daysDiff = calculateBusinessDays(startDate, endDate);
+            
+            // Find the appropriate size for the new duration
+            const newSize = calculateSizeFromDays(daysDiff);
+            const maxSize = getMaximumSize();
+            const maxDays = taskSizeDefinitions[maxSize]?.days || 0;
+            
+            if (daysDiff > maxDays) {
+                // Calculate the maximum allowed end date
+                const startDate = new Date(ticket.startDate);
+                const maxAllowedEndDate = addBusinessDays(startDate, maxDays - 1); // -1 because start date counts as day 1
+                const maxAllowedDateStr = maxAllowedEndDate.toLocaleDateString('en-GB'); // dd/mm/yyyy format
+                
+                sizeInfoDiv.innerHTML = `
+                    <span class="text-red-600">
+                        ❌ Duration too long: ${daysDiff} business days exceeds maximum (${maxDays} days for ${maxSize}). Latest allowed is ${maxAllowedDateStr}
+                    </span>
+                `;
+                extendBtn.disabled = true;
+            } else {
+                const currentSize = ticket.size;
+                const currentDays = taskSizeDefinitions[currentSize]?.days || 0;
+                
+                sizeInfoDiv.innerHTML = `
+                    <div class="text-blue-700">
+                        📊 New duration: ${daysDiff} business days<br>
+                        📏 Size change: ${currentSize} (${currentDays}d) → ${newSize} (${taskSizeDefinitions[newSize]?.days || 0}d)
+                    </div>
+                `;
+                extendBtn.disabled = false;
+            }
+        }
+
+        function calculateSizeFromDays(days) {
+            // Find the smallest size that can accommodate the required days
+            const sizes = Object.keys(taskSizeDefinitions).sort((a, b) => 
+                taskSizeDefinitions[a].days - taskSizeDefinitions[b].days
+            );
+            
+            for (const size of sizes) {
+                if (taskSizeDefinitions[size].days >= days) {
+                    return size;
+                }
+            }
+            
+            // If no size fits, return the largest
+            return sizes[sizes.length - 1];
+        }
+
+        function getMaximumSize() {
+            // Find the size with the most days
+            let maxSize = 'S';
+            let maxDays = 0;
+            
+            for (const [size, config] of Object.entries(taskSizeDefinitions)) {
+                if (config.days > maxDays) {
+                    maxDays = config.days;
+                    maxSize = size;
+                }
+            }
+            
+            return maxSize;
+        }
+
+        function extendTaskDeadline(ticketId) {
+            const ticket = tickets.find(t => t.id === ticketId);
+            if (!ticket) return;
+            
+            const newEndDateInput = document.getElementById(`new-end-date-${ticketId}`);
+            const newEndDate = newEndDateInput.value;
+            
+            if (!newEndDate) {
+                alert('Please select a new end date.');
+                return;
+            }
+            
+            const startDate = new Date(ticket.startDate);
+            const endDate = new Date(newEndDate);
+            const daysDiff = calculateBusinessDays(startDate, endDate);
+            
+            const oldSize = ticket.size;
+            const newSize = calculateSizeFromDays(daysDiff);
+            
+            // Track the size change
+            trackSizeChange(ticket, oldSize, newSize, 'Deadline extension via bulk resolution');
+            
+            // Track the end date change (calculate current projected end date)
+            const projectedTickets = getProjectedTickets();
+            const projectedTicket = projectedTickets.find(pt => pt.id === ticketId);
+            const oldEndDate = projectedTicket ? projectedTicket.rawEndDate : null;
+            
+            if (oldEndDate) {
+                trackEndDateChange(ticket, oldEndDate, newEndDate, 'Deadline extension via bulk resolution');
+            }
+            
+            // Update the ticket with new size and custom end date
+            ticket.size = newSize;
+            ticket.customEndDate = newEndDate; // Store the custom end date to override calculations
+            
+            console.log(` Extended deadline for task #${ticketId}: ${oldSize} → ${newSize} (${daysDiff} business days)`);
+            
+            // Remove the task from the modal display
+            const taskElement = document.getElementById(`task-${ticketId}`);
+            if (taskElement) {
+                taskElement.style.opacity = '0.5';
+                taskElement.innerHTML = `
+                    <div class="text-center py-4">
+                        <div class="text-blue-600 font-semibold">📅 Deadline extended!</div>
+                        <div class="text-sm text-gray-600 mt-1">
+                            Size updated: ${oldSize} → ${newSize}<br>
+                            New target: ${new Date(newEndDate).toLocaleDateString()}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            saveToLocalStorage();
+            
+            // Refresh the main task list with proper projection
+            const extendedProjectedTickets = getProjectedTickets();
+            renderTickets(extendedProjectedTickets);
+            
+            // Check if all tasks are resolved
+            setTimeout(() => checkAllTasksResolved(), 1000);
+        }
+
+        function checkAllTasksResolved() {
+            const remainingTasks = getOverdueInProgressTasks();
+            if (remainingTasks.length === 0) {
+                // All tasks resolved, show success message and close modal
+                document.getElementById('bulkTaskResolutionContent').innerHTML = `
+                    <div class="text-center py-8">
+                        <div class="text-6xl mb-4">🎉</div>
+                        <h3 class="text-2xl font-bold text-green-600 mb-2">All Tasks Resolved!</h3>
+                        <p class="text-gray-600 mb-4">Great job! All overdue tasks have been addressed.</p>
+                        <button onclick="closeBulkTaskResolution()" 
+                                class="px-6 py-3 bg-green-600 text-white rounded hover:bg-green-700 transition-colors">
+                            Close
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
         // Close modal when clicking outside
         document.addEventListener('click', function(event) {
             const modal = document.getElementById('delayAnalysisModal');
             if (event.target === modal) {
                 closeDelayAnalysis();
+            }
+        });
+
+        // Close bulk task resolution modal when clicking outside
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('bulkTaskResolutionModal');
+            if (event.target === modal) {
+                closeBulkTaskResolution();
             }
         });
 
