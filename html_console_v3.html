@@ -3345,7 +3345,10 @@
                     }
                     else if (currentSection === 'TICKETS') {
                         const columns = parseCSVLine(line);
+                        
+                        // Handle backward compatibility - older CSV files may not have customEndDate column
                         const [id, description, startDate, size, priority, assignedTeam, status, pauseComments, startDateHistory, endDateHistory, sizeHistory, customEndDate] = columns;
+                        
                         const assigned = assignedTeam ? assignedTeam.split(';').filter(name => name.trim()) : [];
                         
                         // Parse pause comments
@@ -3424,7 +3427,7 @@
                             startDateHistory: parsedStartDateHistory,
                             endDateHistory: parsedEndDateHistory,
                             sizeHistory: parsedSizeHistory,
-                            customEndDate: customEndDate || undefined
+                            customEndDate: (customEndDate && customEndDate.trim()) ? customEndDate : undefined
                         };
                         
                         importedData.tickets.push(ticket);
@@ -4365,6 +4368,13 @@
                 const oldSize = ticket.size;
                 ticket.size = newSize;
                 
+                // Clear any custom end date override when size is manually changed
+                // This allows the system to recalculate end dates based on the new size
+                if (ticket.customEndDate) {
+                    console.log(`📅 Clearing custom end date for ticket #${ticketId} due to manual size change: ${oldSize} → ${newSize}`);
+                    delete ticket.customEndDate;
+                }
+                
                 // Provide visual feedback
                 selectElement.style.background = '#dcfce7'; // Light green background
                 setTimeout(() => {
@@ -4923,12 +4933,16 @@ ${ticket.explanation}
         // --- TEAM WORKLOAD HEAT MAP ---
         function calculateWorkloadHeatMap() {
             const projectedTickets = getProjectedTickets();
+            // Filter out completed and paused tasks for capacity calculation
+            const activeTickets = projectedTickets.filter(ticket => 
+                ticket.status !== 'Done' && ticket.status !== 'Paused'
+            );
             const heatMapData = [];
             
             // Get the start date for the heat map (earliest task or today)
             let startDate = new Date();
-            if (projectedTickets.length > 0) {
-                const earliestTask = projectedTickets.reduce((earliest, task) => 
+            if (activeTickets.length > 0) {
+                const earliestTask = activeTickets.reduce((earliest, task) => 
                     new Date(task.startDate) < new Date(earliest.startDate) ? task : earliest
                 );
                 startDate = new Date(earliestTask.startDate);
@@ -4962,7 +4976,7 @@ ${ticket.explanation}
                     // Calculate assigned hours for this week
                     let assignedHours = 0;
                     
-                    projectedTickets.forEach(ticket => {
+                    activeTickets.forEach(ticket => {
                         if (ticket.assigned.includes(person.name)) {
                             const taskStart = new Date(ticket.startDate);
                             const taskEnd = ticket.rawEndDate ? new Date(ticket.rawEndDate) : new Date(taskStart);
