@@ -1,0 +1,38 @@
+{
+  "name": "task-tracker-tests",
+  "version": "1.0.0",
+  "description": "Comprehensive testing suite for HTML Task Tracker application",
+  "main": "tests/test-framework.js",
+  "scripts": {
+    "test": "node tests/node-test-runner.js",
+    "test:verbose": "node tests/node-test-runner.js --verbose",
+    "test:html": "echo 'Open tests/test-runner.html in your browser to run HTML tests'",
+    "test:ci": "node tests/node-test-runner.js --output-format junit",
+    "test:report": "node tests/node-test-runner.js --output-format all",
+    "test:watch": "nodemon tests/node-test-runner.js",
+    "clean": "rm -rf test-results/"
+  },
+  "keywords": [
+    "testing",
+    "task-tracker",
+    "html",
+    "javascript",
+    "test-framework"
+  ],
+  "author": "Task Tracker Development Team",
+  "license": "MIT",
+  "devDependencies": {
+    "nodemon": "^2.0.20"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ShivBala/TaskPlannerForWork.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ShivBala/TaskPlannerForWork/issues"
+  },
+  "homepage": "https://github.com/ShivBala/TaskPlannerForWork#readme"
+}

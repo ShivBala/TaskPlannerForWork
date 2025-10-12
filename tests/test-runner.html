@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Tracker Test Runner</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8fafc;
+            color: #1e293b;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            padding: 24px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            margin: 0;
+            font-size: 2rem;
+            font-weight: 600;
+        }
+        
+        .header p {
+            margin: 8px 0 0 0;
+            opacity: 0.9;
+        }
+        
+        .controls {
+            padding: 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+        
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+        
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .results {
+            padding: 20px;
+        }
+        
+        .status-bar {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+        }
+        
+        .status-passed { color: #059669; }
+        .status-failed { color: #dc2626; }
+        .status-skipped { color: #d97706; }
+        .status-total { color: #374151; }
+        
+        .console-output {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            line-height: 1.4;
+            max-height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin-bottom: 20px;
+        }
+        
+        .test-details {
+            background: #f8fafc;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .test-suite {
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .suite-header {
+            background: #f1f5f9;
+            padding: 12px 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .suite-header:hover {
+            background: #e2e8f0;
+        }
+        
+        .suite-content {
+            padding: 16px;
+            display: none;
+        }
+        
+        .suite-content.expanded {
+            display: block;
+        }
+        
+        .test-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .test-item:last-child {
+            border-bottom: none;
+        }
+        
+        .test-status {
+            font-weight: 500;
+            font-size: 18px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6b7280;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #e2e8f0;
+            border-radius: 50%;
+            border-top-color: #3b82f6;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .app-frame {
+            width: 100%;
+            height: 0;
+            border: none;
+            opacity: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 Task Tracker Test Runner</h1>
+            <p>Comprehensive testing suite for HTML Task Tracker application</p>
+        </div>
+        
+        <div class="controls">
+            <button id="runAllTests" class="btn btn-primary">▶️ Run All Tests</button>
+            <button id="runHtmlTests" class="btn btn-secondary">🌐 HTML Tests Only</button>
+            <button id="clearResults" class="btn btn-secondary">🗑️ Clear Results</button>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="verboseMode" checked>
+                <label for="verboseMode">Verbose Output</label>
+            </div>
+            
+            <div class="checkbox-group">
+                <input type="checkbox" id="stopOnFailure">
+                <label for="stopOnFailure">Stop on First Failure</label>
+            </div>
+        </div>
+        
+        <div class="results">
+            <div id="loadingIndicator" class="loading hidden">
+                <div class="spinner"></div>
+                Running tests...
+            </div>
+            
+            <div id="statusBar" class="status-bar hidden">
+                <div class="status-item status-total">
+                    Total: <span id="totalTests">0</span>
+                </div>
+                <div class="status-item status-passed">
+                    ✅ Passed: <span id="passedTests">0</span>
+                </div>
+                <div class="status-item status-failed">
+                    ❌ Failed: <span id="failedTests">0</span>
+                </div>
+                <div class="status-item status-skipped">
+                    ⏭️ Skipped: <span id="skippedTests">0</span>
+                </div>
+                <div class="status-item">
+                    Success Rate: <span id="successRate">0%</span>
+                </div>
+                <div class="status-item">
+                    Duration: <span id="duration">0ms</span>
+                </div>
+            </div>
+            
+            <div id="consoleOutput" class="console-output hidden"></div>
+            
+            <div id="testDetails" class="test-details hidden"></div>
+        </div>
+    </div>
+    
+    <!-- Hidden iframe to load the application for testing -->
+    <iframe id="appFrame" class="app-frame" src="../html_console_v3.html"></iframe>
+    
+    <!-- Load testing framework -->
+    <script src="test-framework.js"></script>
+    
+    <!-- Load HTML-specific tests -->
+    <script src="html/html-task-tracker-tests.js"></script>
+    
+    <script>
+        class TestRunner extends TestFramework {
+            constructor() {
+                super({
+                    verbose: document.getElementById('verboseMode').checked,
+                    stopOnFirstFailure: document.getElementById('stopOnFailure').checked
+                });
+                
+                this.consoleOutput = document.getElementById('consoleOutput');
+                this.originalConsole = { ...console };
+                this.setupConsoleCapture();
+                this.setupEventListeners();
+                this.appFrame = document.getElementById('appFrame');
+                this.appWindow = null;
+            }
+            
+            setupConsoleCapture() {
+                const self = this;
+                ['log', 'error', 'warn', 'info'].forEach(method => {
+                    console[method] = function(...args) {
+                        self.originalConsole[method](...args);
+                        self.appendToConsole(args.join(' '), method);
+                    };
+                });
+            }
+            
+            appendToConsole(message, type = 'log') {
+                const timestamp = new Date().toLocaleTimeString();
+                const prefix = `[${timestamp}]`;
+                const colorClass = type === 'error' ? 'color: #ef4444;' : 
+                                 type === 'warn' ? 'color: #f59e0b;' : 
+                                 'color: #e2e8f0;';
+                
+                this.consoleOutput.innerHTML += `<span style="${colorClass}">${prefix} ${message}</span>\n`;
+                this.consoleOutput.scrollTop = this.consoleOutput.scrollHeight;
+            }
+            
+            setupEventListeners() {
+                document.getElementById('runAllTests').addEventListener('click', () => {
+                    this.updateOptions();
+                    this.runAllTests();
+                });
+                
+                document.getElementById('runHtmlTests').addEventListener('click', () => {
+                    this.updateOptions();
+                    this.runHtmlTestsOnly();
+                });
+                
+                document.getElementById('clearResults').addEventListener('click', () => {
+                    this.clearResults();
+                });
+                
+                // Wait for app to load
+                this.appFrame.addEventListener('load', () => {
+                    this.appWindow = this.appFrame.contentWindow;
+                    console.log('✅ Task Tracker application loaded successfully');
+                });
+            }
+            
+            updateOptions() {
+                this.options.verbose = document.getElementById('verboseMode').checked;
+                this.options.stopOnFirstFailure = document.getElementById('stopOnFailure').checked;
+            }
+            
+            clearResults() {
+                this.consoleOutput.innerHTML = '';
+                document.getElementById('statusBar').classList.add('hidden');
+                document.getElementById('testDetails').classList.add('hidden');
+                document.getElementById('loadingIndicator').classList.add('hidden');
+            }
+            
+            showLoading() {
+                document.getElementById('loadingIndicator').classList.remove('hidden');
+                document.getElementById('statusBar').classList.add('hidden');
+                document.getElementById('testDetails').classList.add('hidden');
+            }
+            
+            hideLoading() {
+                document.getElementById('loadingIndicator').classList.add('hidden');
+            }
+            
+            updateStatusBar(results) {
+                document.getElementById('totalTests').textContent = results.total;
+                document.getElementById('passedTests').textContent = results.passed;
+                document.getElementById('failedTests').textContent = results.failed;
+                document.getElementById('skippedTests').textContent = results.skipped;
+                document.getElementById('successRate').textContent = `${results.successRate.toFixed(1)}%`;
+                document.getElementById('duration').textContent = `${results.duration}ms`;
+                
+                document.getElementById('statusBar').classList.remove('hidden');
+                document.getElementById('consoleOutput').classList.remove('hidden');
+            }
+            
+            async loadTestModules() {
+                // HTML tests are already loaded via script tag
+                if (typeof HTMLTaskTrackerTests !== 'undefined') {
+                    const htmlTests = new HTMLTaskTrackerTests(this.appWindow);
+                    htmlTests.runTests(this);
+                }
+            }
+            
+            async runAllTests() {
+                this.showLoading();
+                this.clearResults();
+                
+                try {
+                    const results = await this.runTests();
+                    this.updateStatusBar(results);
+                    this.displayTestDetails(results);
+                } catch (error) {
+                    console.error('Test execution failed:', error);
+                } finally {
+                    this.hideLoading();
+                }
+            }
+            
+            async runHtmlTestsOnly() {
+                this.showLoading();
+                this.clearResults();
+                
+                try {
+                    // Reset counters
+                    this.testResults = [];
+                    this.testCount = 0;
+                    this.passCount = 0;
+                    this.failCount = 0;
+                    this.skipCount = 0;
+                    
+                    const startTime = Date.now();
+                    
+                    if (typeof HTMLTaskTrackerTests !== 'undefined' && this.appWindow) {
+                        const htmlTests = new HTMLTaskTrackerTests(this.appWindow);
+                        htmlTests.runTests(this);
+                    } else {
+                        console.error('HTML tests not available or app not loaded');
+                    }
+                    
+                    const endTime = Date.now();
+                    const results = this.generateReport(endTime - startTime);
+                    this.updateStatusBar(results);
+                    this.displayTestDetails(results);
+                    
+                } catch (error) {
+                    console.error('HTML test execution failed:', error);
+                } finally {
+                    this.hideLoading();
+                }
+            }
+            
+            displayTestDetails(results) {
+                const detailsContainer = document.getElementById('testDetails');
+                detailsContainer.innerHTML = '';
+                
+                Object.entries(this.suiteResults).forEach(([suiteName, suiteResult]) => {
+                    const suiteDiv = document.createElement('div');
+                    suiteDiv.className = 'test-suite';
+                    
+                    const header = document.createElement('div');
+                    header.className = 'suite-header';
+                    header.innerHTML = `
+                        <span>${suiteName}</span>
+                        <span>${suiteResult.passed}✅ ${suiteResult.failed}❌ (${suiteResult.duration}ms)</span>
+                    `;
+                    
+                    const content = document.createElement('div');
+                    content.className = 'suite-content';
+                    
+                    // Get tests for this suite (simplified - would need better tracking)
+                    const suiteTests = this.testResults.slice(-suiteResult.total);
+                    suiteTests.forEach(test => {
+                        const testDiv = document.createElement('div');
+                        testDiv.className = 'test-item';
+                        testDiv.innerHTML = `
+                            <span>${test.message}</span>
+                            <span class="test-status">${test.passed ? '✅' : '❌'}</span>
+                        `;
+                        content.appendChild(testDiv);
+                    });
+                    
+                    header.addEventListener('click', () => {
+                        content.classList.toggle('expanded');
+                    });
+                    
+                    suiteDiv.appendChild(header);
+                    suiteDiv.appendChild(content);
+                    detailsContainer.appendChild(suiteDiv);
+                });
+                
+                detailsContainer.classList.remove('hidden');
+            }
+        }
+        
+        // Initialize test runner when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            window.testRunner = new TestRunner();
+            console.log('🧪 Test Runner initialized. Waiting for application to load...');
+        });
+    </script>
+</body>
+</html>

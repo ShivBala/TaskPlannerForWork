@@ -1128,8 +1128,16 @@
                             Resolve Completed
                         </button>
                         <button onclick="generateDelayAnalysis()" class="btn-enterprise flex items-center gap-2">
-                            <span>⏰</span>
+                            <span>📅</span>
                             Analyze Start Date Delays
+                        </button>
+                        <button onclick="generateEndDateDelayAnalysis()" class="btn-enterprise flex items-center gap-2">
+                            <span>⏰</span>
+                            Analyze End Date Delays
+                        </button>
+                        <button onclick="generateComprehensiveDelayAnalysis()" class="btn-enterprise flex items-center gap-2">
+                            <span>🔍</span>
+                            Analyze All Delays
                         </button>
                         <button onclick="generateCompletionGraph()" class="btn-enterprise flex items-center gap-2">
                             <span>📈</span>
@@ -1993,20 +2001,16 @@
         }
         
         function getWeekDateRange(weekIndex) {
-            // Use the same baseline as the heat map for consistency
-            let startDate = new Date();
-            
-            // Find earliest task start date from tickets array (not projected tickets to avoid recursion)
-            if (tickets.length > 0) {
-                const earliestTask = tickets.reduce((earliest, task) => 
-                    new Date(task.startDate) < new Date(earliest.startDate) ? task : earliest
-                );
-                startDate = new Date(earliestTask.startDate);
-            }
-            
-            // Ensure we start from a Monday (same logic as heat map)
-            while (startDate.getDay() !== 1) {
-                startDate.setDate(startDate.getDate() - 1);
+            // Use the stored heat map baseline if available, otherwise fallback to simple calculation
+            let startDate;
+            if (heatMapStartDate) {
+                startDate = new Date(heatMapStartDate);
+            } else {
+                // Fallback to today-based calculation (avoid recursion)
+                startDate = new Date();
+                while (startDate.getDay() !== 1) {
+                    startDate.setDate(startDate.getDate() - 1);
+                }
             }
             
             const weekStartDate = new Date(startDate);
@@ -4930,6 +4934,9 @@ ${ticket.explanation}
             checkOverdueTasks();
         }
 
+        // Global variable to store heat map baseline
+        let heatMapStartDate = null;
+
         // --- TEAM WORKLOAD HEAT MAP ---
         function calculateWorkloadHeatMap() {
             const projectedTickets = getProjectedTickets();
@@ -4939,19 +4946,43 @@ ${ticket.explanation}
             );
             const heatMapData = [];
             
-            // Get the start date for the heat map (earliest task or today)
+            // Get the start date for the heat map with smart baseline calculation
             let startDate = new Date();
+            
             if (activeTickets.length > 0) {
-                const earliestTask = activeTickets.reduce((earliest, task) => 
-                    new Date(task.startDate) < new Date(earliest.startDate) ? task : earliest
-                );
-                startDate = new Date(earliestTask.startDate);
+                // Find earliest task with weekend adjustment for proper work week planning
+                let earliestTaskDate = null;
+                
+                activeTickets.forEach(task => {
+                    let taskStartDate = new Date(task.startDate);
+                    
+                    // Apply weekend adjustment - move weekend starts to next Monday
+                    const dayOfWeek = taskStartDate.getDay();
+                    if (dayOfWeek === 0) { // Sunday
+                        taskStartDate.setDate(taskStartDate.getDate() + 1);
+                    } else if (dayOfWeek === 6) { // Saturday
+                        taskStartDate.setDate(taskStartDate.getDate() + 2);
+                    }
+                    
+                    // Track the earliest adjusted task date
+                    if (!earliestTaskDate || taskStartDate < earliestTaskDate) {
+                        earliestTaskDate = new Date(taskStartDate);
+                    }
+                });
+                
+                // Use the earliest adjusted task date if it exists
+                if (earliestTaskDate) {
+                    startDate = earliestTaskDate;
+                }
             }
             
-            // Ensure we start from a Monday
+            // Ensure we start from a Monday (should already be Monday due to weekend adjustment above)
             while (startDate.getDay() !== 1) {
                 startDate.setDate(startDate.getDate() - 1);
             }
+            
+            // Store the baseline for header calculations
+            heatMapStartDate = new Date(startDate);
             
             // Calculate for each person
             people.forEach(person => {
@@ -4978,8 +5009,18 @@ ${ticket.explanation}
                     
                     activeTickets.forEach(ticket => {
                         if (ticket.assigned.includes(person.name)) {
-                            const taskStart = new Date(ticket.startDate);
+                            let taskStart = new Date(ticket.startDate);
                             const taskEnd = ticket.rawEndDate ? new Date(ticket.rawEndDate) : new Date(taskStart);
+                            
+                            // Apply weekend adjustment for consistent work week assignment
+                            const taskStartDay = taskStart.getDay();
+                            if (taskStartDay === 0) { // Sunday
+                                taskStart = new Date(taskStart);
+                                taskStart.setDate(taskStart.getDate() + 1); // Move to Monday
+                            } else if (taskStartDay === 6) { // Saturday
+                                taskStart = new Date(taskStart);
+                                taskStart.setDate(taskStart.getDate() + 2); // Move to Monday
+                            }
                             
                             // Check if task overlaps with this week
                             if (taskStart <= weekEnd && taskEnd >= weekStart) {
@@ -5304,26 +5345,76 @@ ${ticket.explanation}
             
             // Get projected tickets with calculated end dates
             const projectedTickets = getProjectedTickets();
+            const activeTickets = projectedTickets.filter(ticket => 
+                ticket.status !== 'Done' && ticket.status !== 'Paused'
+            );
+            
+            // Calculate the same start date as the heat map with smart baseline
+            let heatMapStartDate = new Date();
+            
+            if (activeTickets.length > 0) {
+                // Find earliest task with weekend adjustment (same logic as heat map)
+                let earliestTaskDate = null;
+                
+                activeTickets.forEach(task => {
+                    let taskStartDate = new Date(task.startDate);
+                    
+                    // Apply weekend adjustment - move weekend starts to next Monday
+                    const dayOfWeek = taskStartDate.getDay();
+                    if (dayOfWeek === 0) { // Sunday
+                        taskStartDate.setDate(taskStartDate.getDate() + 1);
+                    } else if (dayOfWeek === 6) { // Saturday
+                        taskStartDate.setDate(taskStartDate.getDate() + 2);
+                    }
+                    
+                    // Track the earliest adjusted task date
+                    if (!earliestTaskDate || taskStartDate < earliestTaskDate) {
+                        earliestTaskDate = new Date(taskStartDate);
+                    }
+                });
+                
+                // Use the earliest adjusted task date if it exists
+                if (earliestTaskDate) {
+                    heatMapStartDate = earliestTaskDate;
+                }
+            }
+            
+            // Ensure we start from a Monday (should already be Monday due to weekend adjustment above)
+            while (heatMapStartDate.getDay() !== 1) {
+                heatMapStartDate.setDate(heatMapStartDate.getDate() - 1);
+            }
+            
+            // Calculate the exact week dates used by heat map
+            const weekStartDate = new Date(heatMapStartDate);
+            weekStartDate.setDate(heatMapStartDate.getDate() + (weekIndex * 7));
+            
+            const weekEndDate = new Date(weekStartDate);
+            weekEndDate.setDate(weekStartDate.getDate() + 6);
             
             // Find all tasks for this person in this week
             const weekTasks = [];
-            projectedTickets.forEach(ticket => {
+            activeTickets.forEach(ticket => {
                 if (ticket.assigned.includes(personName)) {
-                    const taskStartDate = new Date(ticket.startDate || getEffectiveStartDate());
-                    const taskEndDate = ticket.rawEndDate ? new Date(ticket.rawEndDate) : null;
+                    let taskStartDate = new Date(ticket.startDate);
+                    const taskEndDate = ticket.rawEndDate ? new Date(ticket.rawEndDate) : new Date(taskStartDate);
                     
-                    // Check if task overlaps with this week
-                    const weekStartDate = new Date(getEffectiveStartDate());
-                    weekStartDate.setDate(weekStartDate.getDate() + (weekIndex * 7));
-                    const weekEndDate = new Date(weekStartDate);
-                    weekEndDate.setDate(weekEndDate.getDate() + 4);
+                    // Apply weekend adjustment for consistent work week assignment
+                    const taskStartDay = taskStartDate.getDay();
+                    if (taskStartDay === 0) { // Sunday
+                        taskStartDate = new Date(taskStartDate);
+                        taskStartDate.setDate(taskStartDate.getDate() + 1); // Move to Monday
+                    } else if (taskStartDay === 6) { // Saturday
+                        taskStartDate = new Date(taskStartDate);
+                        taskStartDate.setDate(taskStartDate.getDate() + 2); // Move to Monday
+                    }
                     
                     // Task overlaps if it starts before week ends and ends after week starts
-                    if (taskStartDate <= weekEndDate && (!taskEndDate || taskEndDate >= weekStartDate)) {
+                    if (taskStartDate <= weekEndDate && taskEndDate >= weekStartDate) {
                         weekTasks.push({
                             ...ticket,
                             taskStartDate: taskStartDate,
-                            taskEndDate: taskEndDate
+                            taskEndDate: taskEndDate,
+                            originalStartDate: new Date(ticket.startDate) // Keep original for display
                         });
                     }
                 }
@@ -5720,6 +5811,458 @@ ${ticket.explanation}
 
         function closeDelayAnalysis() {
             document.getElementById('delayAnalysisModal').classList.add('hidden');
+        }
+
+        // --- END DATE DELAY ANALYSIS FUNCTIONALITY ---
+        function generateEndDateDelayAnalysis() {
+            console.log('⏰ Generating end date delay analysis...');
+            
+            // Ensure all tasks have history initialized
+            tickets.forEach(ticket => {
+                initializeEndDateHistory(ticket);
+            });
+            
+            // Analyze end date delay patterns
+            const endDateDelayData = tickets.map(ticket => {
+                const history = ticket.endDateHistory || [];
+                let delayCount = Math.max(0, history.length - 1); // Subtract 1 for initial projection
+                let totalDelayDays = calculateEndDateDelayDays(history);
+                
+                // Also check for customEndDate (from bulk resolution) that might not be in history
+                if (ticket.customEndDate && delayCount === 0) {
+                    // If there's a custom end date but no history, it means it was manually extended
+                    const projectedTickets = getProjectedTickets();
+                    const projectedTicket = projectedTickets.find(pt => pt.id === ticket.id);
+                    if (projectedTicket && projectedTicket.rawEndDate) {
+                        const originalDate = new Date(projectedTicket.rawEndDate);
+                        const customDate = new Date(ticket.customEndDate);
+                        const daysDiff = Math.floor((customDate - originalDate) / (1000 * 60 * 60 * 24));
+                        
+                        if (daysDiff > 0) {
+                            delayCount = 1; // Count as one extension
+                            totalDelayDays = daysDiff;
+                            console.log(`📅 Found custom end date extension for ticket ${ticket.id}: ${daysDiff} days`);
+                        }
+                    }
+                }
+                
+                return {
+                    ticket: ticket,
+                    delayCount: delayCount,
+                    totalDelayDays: totalDelayDays,
+                    history: history,
+                    hasCustomEndDate: !!ticket.customEndDate,
+                    isProblematic: delayCount >= 2 || totalDelayDays >= 7 // 2+ delays or 7+ days total delay
+                };
+            });
+            
+            // Sort by most problematic first
+            endDateDelayData.sort((a, b) => {
+                if (a.isProblematic !== b.isProblematic) {
+                    return a.isProblematic ? -1 : 1; // Problematic tasks first
+                }
+                return b.delayCount - a.delayCount; // Then by delay count
+            });
+            
+            console.log('📊 End date delay analysis data:', endDateDelayData);
+            
+            // Show modal and render analysis
+            document.getElementById('delayAnalysisModal').classList.remove('hidden');
+            renderEndDateDelayAnalysis(endDateDelayData);
+        }
+
+        function calculateEndDateDelayDays(history) {
+            if (history.length <= 1) return 0;
+            
+            const originalDate = new Date(history[0].endDate);
+            const currentDate = new Date(history[history.length - 1].endDate);
+            
+            // Calculate business days difference
+            return Math.max(0, Math.floor((currentDate - originalDate) / (1000 * 60 * 60 * 24)));
+        }
+
+        function renderEndDateDelayAnalysis(endDateDelayData) {
+            const container = document.getElementById('delayAnalysisContent');
+            
+            const problematicTasks = endDateDelayData.filter(d => d.isProblematic);
+            const goodTasks = endDateDelayData.filter(d => !d.isProblematic);
+            
+            let html = `
+                <div class="space-y-6">
+                    <!-- Summary Section -->
+                    <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-orange-800 mb-2">📊 End Date Delay Analysis Summary</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                            <div class="bg-white rounded p-3 text-center">
+                                <div class="text-2xl font-bold text-gray-800">${endDateDelayData.length}</div>
+                                <div class="text-gray-600">Total Tasks</div>
+                            </div>
+                            <div class="bg-white rounded p-3 text-center">
+                                <div class="text-2xl font-bold text-red-600">${problematicTasks.length}</div>
+                                <div class="text-gray-600">Delayed Tasks</div>
+                            </div>
+                            <div class="bg-white rounded p-3 text-center">
+                                <div class="text-2xl font-bold text-green-600">${goodTasks.length}</div>
+                                <div class="text-gray-600">On-Time Tasks</div>
+                            </div>
+                            <div class="bg-white rounded p-3 text-center">
+                                <div class="text-2xl font-bold text-orange-600">${endDateDelayData.reduce((sum, d) => sum + d.delayCount, 0)}</div>
+                                <div class="text-gray-600">Total Extensions</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Problematic Tasks Section -->
+                    ${problematicTasks.length > 0 ? `
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-red-800 mb-4">🚨 Tasks with Significant End Date Delays</h3>
+                        <div class="space-y-3">
+                            ${problematicTasks.map(data => generateEndDateDelayCard(data, 'red')).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <!-- Good Tasks Section -->
+                    ${goodTasks.length > 0 ? `
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-green-800 mb-4">✅ On-Time Tasks</h3>
+                        <div class="space-y-2">
+                            ${goodTasks.slice(0, 10).map(data => generateEndDateDelayCard(data, 'green')).join('')}
+                            ${goodTasks.length > 10 ? `<div class="text-sm text-gray-600 italic">... and ${goodTasks.length - 10} more on-time tasks</div>` : ''}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <!-- End Date Pattern Chart -->
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">📈 End Date Extension Pattern</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            ${renderEndDateDelayChart(endDateDelayData)}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        function generateEndDateDelayCard(data, colorScheme) {
+            const ticket = data.ticket;
+            const colorClasses = {
+                red: 'bg-red-100 border-red-300',
+                green: 'bg-green-100 border-green-300'
+            };
+            
+            return `
+                <div class="border rounded-lg p-3 ${colorClasses[colorScheme]}">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="font-semibold text-sm">
+                                Task #${ticket.id}: ${ticket.description}
+                                ${data.hasCustomEndDate ? '<span class="ml-1 text-xs text-blue-600" title="Custom deadline set">📅</span>' : ''}
+                            </div>
+                            <div class="text-xs text-gray-600 mt-1">
+                                ${data.delayCount} extensions • ${data.totalDelayDays} days extended
+                                ${data.hasCustomEndDate ? ' • Custom deadline active' : ''}
+                            </div>
+                        </div>
+                        <div class="text-xs">
+                            ${ticket.assigned.join(', ')}
+                        </div>
+                    </div>
+                    ${(data.history.length > 1 || data.hasCustomEndDate) ? `
+                    <div class="mt-2 text-xs">
+                        ${data.history.length > 1 ? `
+                        <div class="text-gray-700 font-medium">Extension History:</div>
+                        ${data.history.map((entry, index) => 
+                            `<div class="ml-2">• ${entry.endDate} ${entry.reason ? `(${entry.reason})` : ''}</div>`
+                        ).join('')}
+                        ` : ''}
+                        ${data.hasCustomEndDate && data.history.length <= 1 ? `
+                        <div class="text-gray-700 font-medium">Current Status:</div>
+                        <div class="ml-2">• Custom deadline: ${ticket.customEndDate} (Set via bulk resolution)</div>
+                        ` : ''}
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function renderEndDateDelayChart(endDateDelayData) {
+            const maxDelays = Math.max(...endDateDelayData.map(d => d.delayCount), 1);
+            const chartData = {};
+            
+            for (let i = 0; i <= maxDelays; i++) {
+                chartData[i] = endDateDelayData.filter(d => d.delayCount === i).length;
+            }
+            
+            const maxCount = Math.max(...Object.values(chartData));
+            const chartHtml = Object.entries(chartData).map(([delays, count]) => {
+                const height = maxCount > 0 ? (count / maxCount) * 100 : 0;
+                const color = delays === '0' ? 'bg-green-500' : delays >= '2' ? 'bg-red-500' : 'bg-yellow-500';
+                
+                return `
+                    <div class="flex flex-col items-center">
+                        <div class="${color}" style="width: 30px; height: ${height}px; min-height: 4px;"></div>
+                        <div class="text-xs mt-1">${count}</div>
+                        <div class="text-xs text-gray-600">${delays} ext</div>
+                    </div>
+                `;
+            }).join('');
+            
+            return `
+                <div>
+                    <h4 class="font-semibold mb-2">Extension Distribution</h4>
+                    <div class="flex items-end justify-center space-x-2" style="height: 120px;">
+                        ${chartHtml}
+                    </div>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-2">Key Insights</h4>
+                    <ul class="text-sm space-y-1">
+                        <li>• ${endDateDelayData.filter(d => d.delayCount === 0).length} tasks completed on original timeline</li>
+                        <li>• ${endDateDelayData.filter(d => d.delayCount >= 1).length} tasks had deadline extensions</li>
+                        <li>• ${endDateDelayData.filter(d => d.isProblematic).length} tasks had significant delays</li>
+                        <li>• Avg extensions per task: ${(endDateDelayData.reduce((sum, d) => sum + d.delayCount, 0) / endDateDelayData.length).toFixed(1)}</li>
+                    </ul>
+                </div>
+            `;
+        }
+
+        // --- COMPREHENSIVE DELAY ANALYSIS FUNCTIONALITY ---
+        function generateComprehensiveDelayAnalysis() {
+            console.log('🔍 Generating comprehensive delay analysis...');
+            
+            // Ensure all tasks have history initialized
+            tickets.forEach(ticket => {
+                initializeStartDateHistory(ticket);
+                initializeEndDateHistory(ticket);
+                initializeSizeHistory(ticket);
+            });
+            
+            // Analyze both start date and end date patterns
+            const comprehensiveData = tickets.map(ticket => {
+                const startHistory = ticket.startDateHistory || [];
+                const endHistory = ticket.endDateHistory || [];
+                const sizeHistory = ticket.sizeHistory || [];
+                
+                const startDelayCount = Math.max(0, startHistory.length - 1);
+                const endDelayCount = Math.max(0, endHistory.length - 1);
+                const sizeChangeCount = Math.max(0, sizeHistory.length - 1);
+                
+                const startDelayDays = calculateTotalDelayDays(startHistory);
+                const endDelayDays = calculateEndDateDelayDays(endHistory);
+                
+                const totalIssues = startDelayCount + endDelayCount + sizeChangeCount;
+                const totalDelayDays = startDelayDays + endDelayDays;
+                
+                return {
+                    ticket: ticket,
+                    startDelayCount: startDelayCount,
+                    endDelayCount: endDelayCount,
+                    sizeChangeCount: sizeChangeCount,
+                    startDelayDays: startDelayDays,
+                    endDelayDays: endDelayDays,
+                    totalIssues: totalIssues,
+                    totalDelayDays: totalDelayDays,
+                    startHistory: startHistory,
+                    endHistory: endHistory,
+                    sizeHistory: sizeHistory,
+                    isHighRisk: totalIssues >= 3 || totalDelayDays >= 10,
+                    isMediumRisk: totalIssues >= 2 || totalDelayDays >= 5
+                };
+            });
+            
+            // Sort by risk level and total issues
+            comprehensiveData.sort((a, b) => {
+                if (a.isHighRisk !== b.isHighRisk) {
+                    return a.isHighRisk ? -1 : 1;
+                }
+                if (a.isMediumRisk !== b.isMediumRisk) {
+                    return a.isMediumRisk ? -1 : 1;
+                }
+                return b.totalIssues - a.totalIssues;
+            });
+            
+            console.log('📊 Comprehensive delay analysis data:', comprehensiveData);
+            
+            // Show modal and render analysis
+            document.getElementById('delayAnalysisModal').classList.remove('hidden');
+            renderComprehensiveDelayAnalysis(comprehensiveData);
+        }
+
+        function renderComprehensiveDelayAnalysis(comprehensiveData) {
+            const container = document.getElementById('delayAnalysisContent');
+            
+            const highRiskTasks = comprehensiveData.filter(d => d.isHighRisk);
+            const mediumRiskTasks = comprehensiveData.filter(d => d.isMediumRisk && !d.isHighRisk);
+            const lowRiskTasks = comprehensiveData.filter(d => !d.isMediumRisk && !d.isHighRisk);
+            
+            let html = `
+                <div class="space-y-6">
+                    <!-- Summary Section -->
+                    <div class="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-purple-800 mb-2">🔍 Comprehensive Delay Analysis</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 text-sm">
+                            <div class="bg-white rounded p-3 text-center">
+                                <div class="text-2xl font-bold text-gray-800">${comprehensiveData.length}</div>
+                                <div class="text-gray-600">Total Tasks</div>
+                            </div>
+                            <div class="bg-white rounded p-3 text-center">
+                                <div class="text-2xl font-bold text-red-600">${highRiskTasks.length}</div>
+                                <div class="text-gray-600">High Risk</div>
+                            </div>
+                            <div class="bg-white rounded p-3 text-center">
+                                <div class="text-2xl font-bold text-orange-600">${mediumRiskTasks.length}</div>
+                                <div class="text-gray-600">Medium Risk</div>
+                            </div>
+                            <div class="bg-white rounded p-3 text-center">
+                                <div class="text-2xl font-bold text-green-600">${lowRiskTasks.length}</div>
+                                <div class="text-gray-600">Low Risk</div>
+                            </div>
+                            <div class="bg-white rounded p-3 text-center">
+                                <div class="text-2xl font-bold text-purple-600">${comprehensiveData.reduce((sum, d) => sum + d.totalIssues, 0)}</div>
+                                <div class="text-gray-600">Total Issues</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- High Risk Tasks Section -->
+                    ${highRiskTasks.length > 0 ? `
+                    <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-red-800 mb-4">🚨 High Risk Tasks (Urgent Attention Needed)</h3>
+                        <div class="space-y-3">
+                            ${highRiskTasks.map(data => generateComprehensiveDelayCard(data, 'red')).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <!-- Medium Risk Tasks Section -->
+                    ${mediumRiskTasks.length > 0 ? `
+                    <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-orange-800 mb-4">⚠️ Medium Risk Tasks (Monitor Closely)</h3>
+                        <div class="space-y-3">
+                            ${mediumRiskTasks.map(data => generateComprehensiveDelayCard(data, 'orange')).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <!-- Low Risk Tasks Section -->
+                    ${lowRiskTasks.length > 0 ? `
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-green-800 mb-4">✅ Low Risk Tasks</h3>
+                        <div class="space-y-2">
+                            ${lowRiskTasks.slice(0, 5).map(data => generateComprehensiveDelayCard(data, 'green')).join('')}
+                            ${lowRiskTasks.length > 5 ? `<div class="text-sm text-gray-600 italic">... and ${lowRiskTasks.length - 5} more low-risk tasks</div>` : ''}
+                        </div>
+                    </div>
+                    ` : ''}
+
+                    <!-- Risk Analysis Chart -->
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">📈 Risk Distribution & Patterns</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            ${renderComprehensiveDelayChart(comprehensiveData)}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            container.innerHTML = html;
+        }
+
+        function generateComprehensiveDelayCard(data, colorScheme) {
+            const ticket = data.ticket;
+            const colorClasses = {
+                red: 'bg-red-100 border-red-300',
+                orange: 'bg-orange-100 border-orange-300', 
+                green: 'bg-green-100 border-green-300'
+            };
+            
+            return `
+                <div class="border rounded-lg p-3 ${colorClasses[colorScheme]}">
+                    <div class="flex justify-between items-start">
+                        <div class="flex-1">
+                            <div class="font-semibold text-sm">
+                                Task #${ticket.id}: ${ticket.description}
+                            </div>
+                            <div class="text-xs text-gray-600 mt-1">
+                                📅 ${data.startDelayCount} start delays • ⏰ ${data.endDelayCount} deadline extensions • 📏 ${data.sizeChangeCount} size changes
+                            </div>
+                            <div class="text-xs text-gray-600">
+                                Total delay impact: ${data.totalDelayDays} days • Risk score: ${data.totalIssues} issues
+                            </div>
+                        </div>
+                        <div class="text-xs">
+                            ${ticket.assigned.join(', ')}
+                        </div>
+                    </div>
+                    ${(data.startHistory.length > 1 || data.endHistory.length > 1 || data.sizeHistory.length > 1) ? `
+                    <div class="mt-2 text-xs">
+                        ${data.startHistory.length > 1 ? `
+                        <div class="text-gray-700 font-medium">Start Date Changes:</div>
+                        ${data.startHistory.slice(1).map(entry => 
+                            `<div class="ml-2">• ${entry.date} ${entry.reason ? `(${entry.reason})` : ''}</div>`
+                        ).join('')}
+                        ` : ''}
+                        ${data.endHistory.length > 1 ? `
+                        <div class="text-gray-700 font-medium mt-1">End Date Extensions:</div>
+                        ${data.endHistory.slice(1).map(entry => 
+                            `<div class="ml-2">• ${entry.endDate} ${entry.reason ? `(${entry.reason})` : ''}</div>`
+                        ).join('')}
+                        ` : ''}
+                        ${data.sizeHistory.length > 1 ? `
+                        <div class="text-gray-700 font-medium mt-1">Size Changes:</div>
+                        ${data.sizeHistory.slice(1).map(entry => 
+                            `<div class="ml-2">• ${entry.oldSize} → ${entry.newSize} ${entry.reason ? `(${entry.reason})` : ''}</div>`
+                        ).join('')}
+                        ` : ''}
+                    </div>
+                    ` : ''}
+                </div>
+            `;
+        }
+
+        function renderComprehensiveDelayChart(comprehensiveData) {
+            // Risk distribution chart
+            const riskCounts = {
+                'High Risk': comprehensiveData.filter(d => d.isHighRisk).length,
+                'Medium Risk': comprehensiveData.filter(d => d.isMediumRisk && !d.isHighRisk).length,
+                'Low Risk': comprehensiveData.filter(d => !d.isMediumRisk && !d.isHighRisk).length
+            };
+            
+            const maxRiskCount = Math.max(...Object.values(riskCounts));
+            const riskChartHtml = Object.entries(riskCounts).map(([risk, count]) => {
+                const height = maxRiskCount > 0 ? (count / maxRiskCount) * 100 : 0;
+                const color = risk === 'High Risk' ? 'bg-red-500' : risk === 'Medium Risk' ? 'bg-orange-500' : 'bg-green-500';
+                
+                return `
+                    <div class="flex flex-col items-center">
+                        <div class="${color}" style="width: 40px; height: ${height}px; min-height: 4px;"></div>
+                        <div class="text-xs mt-1">${count}</div>
+                        <div class="text-xs text-gray-600">${risk}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            return `
+                <div>
+                    <h4 class="font-semibold mb-2">Risk Distribution</h4>
+                    <div class="flex items-end justify-center space-x-4" style="height: 120px;">
+                        ${riskChartHtml}
+                    </div>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-2">Key Risk Indicators</h4>
+                    <ul class="text-sm space-y-1">
+                        <li>• ${comprehensiveData.filter(d => d.startDelayCount > 0).length} tasks had start delays</li>
+                        <li>• ${comprehensiveData.filter(d => d.endDelayCount > 0).length} tasks had deadline extensions</li>
+                        <li>• ${comprehensiveData.filter(d => d.sizeChangeCount > 0).length} tasks had size changes</li>
+                        <li>• Avg issues per task: ${(comprehensiveData.reduce((sum, d) => sum + d.totalIssues, 0) / comprehensiveData.length).toFixed(1)}</li>
+                        <li>• Total delay impact: ${comprehensiveData.reduce((sum, d) => sum + d.totalDelayDays, 0)} days</li>
+                    </ul>
+                </div>
+            `;
         }
 
         // === BULK TASK RESOLUTION FUNCTIONS ===
