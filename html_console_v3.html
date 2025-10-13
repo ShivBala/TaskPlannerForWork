@@ -3033,8 +3033,13 @@
                 tr.className = 'hover:bg-gray-50';
 
                 // Rebuild the assignment checkboxes
+                // Normalize assigned names for robust matching
+                const assignedNames = Array.isArray(ticket.assigned)
+                    ? ticket.assigned.map(n => n.trim().replace(/^"|"$/g, '').toLowerCase())
+                    : [];
                 const assignmentCheckboxes = people.map(p => {
-                    const isChecked = ticket.assigned.includes(p.name);
+                    const normalizedPersonName = p.name.trim().replace(/^"|"$/g, '').toLowerCase();
+                    const isChecked = assignedNames.includes(normalizedPersonName);
                     return `
                         <label class="flex items-center space-x-1 text-xs whitespace-nowrap">
                             <input 
@@ -3326,13 +3331,54 @@
 
             // --- Export closed tasks as separate file ---
             let closedCsvContent = '';
+            // Metadata section
+            closedCsvContent += "SECTION,METADATA\n";
+            closedCsvContent += "Key,Value\n";
+            closedCsvContent += `Export Date,${configData.metadata.exportDate}\n`;
+            closedCsvContent += `Version,${configData.metadata.version}\n`;
+            closedCsvContent += `Description,${configData.metadata.description}\n`;
+            closedCsvContent += "\n";
+
+            // Settings section
+            closedCsvContent += "SECTION,SETTINGS\n";
+            closedCsvContent += "Key,Value\n";
+            closedCsvContent += `Estimation Base Hours,${configData.settings.estimationBaseHours}\n`;
+            closedCsvContent += `Project Hours Per Day,${configData.settings.projectHoursPerDay}\n`;
+            closedCsvContent += `Use Common Start Date,${configData.settings.useCommonStartDate}\n`;
+            closedCsvContent += `Common Start Date,${configData.settings.commonStartDate}\n`;
+            closedCsvContent += `Current Ticket ID,${configData.settings.currentTicketId}\n`;
+            closedCsvContent += "\n";
+
+            // Task Size Definitions section
+            closedCsvContent += "SECTION,TASK_SIZES\n";
+            closedCsvContent += "Size Key,Name,Days,Removable\n";
+            Object.keys(configData.taskSizeDefinitions).forEach(key => {
+                const size = configData.taskSizeDefinitions[key];
+                closedCsvContent += `${key},"${size.name}",${size.days},${size.removable}\n`;
+            });
+            closedCsvContent += "\n";
+
+            // People section
+            closedCsvContent += "SECTION,PEOPLE\n";
+            closedCsvContent += "Name,Week1,Week2,Week3,Week4,Week5,Week6,Week7,Week8,Project Ready\n";
+            configData.people.forEach(person => {
+                // Ensure person has 8-week availability
+                const availability = [...person.availability];
+                while (availability.length < 8) {
+                    availability.push(25);
+                }
+                const isProjectReady = person.isProjectReady !== undefined ? person.isProjectReady : true;
+                closedCsvContent += `"${person.name}",${availability.slice(0, 8).join(',')},${isProjectReady ? 'Yes' : 'No'}\n`;
+            });
+            closedCsvContent += "\n";
+
+            // Tickets section (closed only)
             closedCsvContent += "SECTION,TICKETS\n";
             closedCsvContent += "ID,Description,Start Date,Size,Priority,Assigned Team,Status,Pause Comments,Start Date History,End Date History,Size History,Custom End Date\n";
             configData.tickets.filter(ticket => (ticket.status || 'To Do') === 'Closed').forEach(ticket => {
                 const assignedTeam = ticket.assigned.join(';');
                 const priority = ticket.priority || 'P3';
                 const status = ticket.status || 'Closed';
-                // ...existing code...
                 const pauseCommentsText = ticket.pauseComments && ticket.pauseComments.length > 0 
                     ? ticket.pauseComments.map(pc => `[${pc.timestamp}] ${pc.comment}`).join(' | ')
                     : '';
@@ -3488,7 +3534,8 @@
                         // Handle backward compatibility - older CSV files may not have customEndDate column
                         const [id, description, startDate, size, priority, assignedTeam, status, pauseComments, startDateHistory, endDateHistory, sizeHistory, customEndDate] = columns;
                         
-                        const assigned = assignedTeam ? assignedTeam.split(';').filter(name => name.trim()) : [];
+                        // Normalize assigned names: trim and remove quotes
+                        const assigned = assignedTeam ? assignedTeam.split(';').map(name => name.trim().replace(/^"|"$/g, '')).filter(name => name) : [];
                         
                         // Parse pause comments
                         const parsedPauseComments = [];
@@ -3596,7 +3643,7 @@
                 projectHoursPerDay = importedData.settings.projectHoursPerDay || importedData.settings.hoursPerDay || 8; // Legacy support
                 useCommonStartDate = importedData.settings.useCommonStartDate || false;
                 currentTicketId = importedData.settings.currentTicketId || 1;
-                
+
                 // Apply configurations
                 console.log('🔄 IMPORT: About to replace taskSizeDefinitions');
                 console.log('🔄 IMPORT: Current taskSizeDefinitions:', taskSizeDefinitions);
@@ -3604,16 +3651,16 @@
                 taskSizeDefinitions = importedData.taskSizeDefinitions;
                 console.log('🔄 IMPORT: After replacement:', taskSizeDefinitions);
                 people = importedData.people;
-                
+
                 // Add backwards compatibility for isProjectReady field
                 people.forEach(person => {
                     if (person.isProjectReady === undefined) {
                         person.isProjectReady = true; // Default to true for existing data
                     }
                 });
-                
+
                 tickets = importedData.tickets;
-                
+
                 // Initialize all history for backward compatibility
                 tickets = tickets.map(ticket => {
                     ticket = initializeStartDateHistory(ticket);
@@ -3621,12 +3668,29 @@
                     ticket = initializeSizeHistory(ticket);
                     return ticket;
                 });
-                
+
+                // --- LOGGING FOR DEBUGGING ---
+                console.log('🔍 People after import:', JSON.stringify(people, null, 2));
+                console.log('🔍 Tickets after import:', JSON.stringify(tickets, null, 2));
+                const closedTickets = tickets.filter(t => (t.status || 'To Do') === 'Closed');
+                closedTickets.forEach(t => {
+                    console.log(`🔍 Closed Ticket ${t.id} assigned:`, t.assigned);
+                });
+
+                // Show visible error if no people imported
+                if (people.length === 0) {
+                    alert('❌ No people imported! Please check the PEOPLE section of your configuration CSV. Assigned people will not display unless team members are imported.');
+                }
+                // Show warning if no task sizes imported
+                if (Object.keys(taskSizeDefinitions).length === 0) {
+                    alert('⚠️ No task sizes imported! Please check the TASK_SIZES section of your configuration CSV.');
+                }
+
                 // Reset filtering state after import
                 selectedPersonFilters = [];
                 selectedStatusFilters = [];
                 selectedDateFilters = [];
-                
+
                 // Update UI
                 document.getElementById('estimation-base-hours').value = estimationBaseHours;
                 document.getElementById('project-hours-per-day').value = projectHoursPerDay;
@@ -3635,12 +3699,12 @@
                 if (importedData.settings.commonStartDate) {
                     document.getElementById('common-start-date').value = importedData.settings.commonStartDate;
                 }
-                
+
                 // Apply common start date logic
                 if (useCommonStartDate) {
                     toggleCommonStartDate();
                 }
-                
+
                 // Sync and recalculate everything
                 syncTaskSizes();
                 calculateEffortMap();
