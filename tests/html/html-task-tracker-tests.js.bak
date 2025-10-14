@@ -107,13 +107,10 @@ class HTMLTaskTrackerTests {
     createTestTicket(overrides = {}) {
         return {
             id: 'test-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
-            description: 'Test Task',
             title: 'Test Task',
-            assigned: ['Test Person'], // Array of assignee names
-            assignee: 'Test Person', // For compatibility
+            assignee: 'Test Person',
             status: 'To Do',
             size: 'M',
-            priority: 'P2',
             originalEstimate: 2,
             startDate: '2025-10-14',
             endDate: '2025-10-16',
@@ -127,8 +124,6 @@ class HTMLTaskTrackerTests {
         return {
             id: 'person-' + Date.now(),
             name: 'Test Person',
-            availability: [25, 25, 25, 25, 25, 25, 25, 25], // 8 weeks x 25 hours
-            isProjectReady: true,
             ...overrides
         };
     }
@@ -175,11 +170,11 @@ class HTMLTaskTrackerTests {
             try {
                 // Create test data
                 this.setTickets([
-                    this.createTestTicket({ assigned: ['Alice'], status: 'To Do' }),
-                    this.createTestTicket({ assigned: ['Bob'], status: 'In Progress' }),
-                    this.createTestTicket({ assigned: ['Alice'], status: 'Done' }),
-                    this.createTestTicket({ assigned: ['Charlie'], status: 'Paused' })
-                ]);
+                    this.createTestTicket({ assignee: 'Alice', status: 'To Do' }),
+                    this.createTestTicket({ assignee: 'Bob', status: 'In Progress' }),
+                    this.createTestTicket({ assignee: 'Alice', status: 'Done' }),
+                    this.createTestTicket({ assignee: 'Charlie', status: 'Paused' })
+                ];
 
                 // Test person filter functionality
                 if (this.appWindow.setPersonFilter && this.appWindow.getFilteredTickets) {
@@ -213,7 +208,7 @@ class HTMLTaskTrackerTests {
                     this.createTestTicket({ status: 'To Do' }),
                     this.createTestTicket({ status: 'In Progress' }),
                     this.createTestTicket({ status: 'Done' })
-                ]);
+                ];
 
                 if (this.appWindow.setStatusFilter && this.appWindow.getFilteredTickets) {
                     this.appWindow.setStatusFilter('To Do');
@@ -241,7 +236,7 @@ class HTMLTaskTrackerTests {
             
             try {
                 const testTicket = this.createTestTicket({ status: 'To Do' });
-                this.setTickets([testTicket]);
+                this.setTickets([testTicket];
 
                 if (this.appWindow.updateTicketStatus) {
                     this.appWindow.updateTicketStatus(testTicket.id, 'In Progress');
@@ -265,7 +260,7 @@ class HTMLTaskTrackerTests {
             
             try {
                 const testTicket = this.createTestTicket({ status: 'In Progress' });
-                this.setTickets([testTicket]);
+                this.setTickets([testTicket];
 
                 if (this.appWindow.updateTicketStatus) {
                     this.appWindow.updateTicketStatus(testTicket.id, 'Done');
@@ -299,7 +294,7 @@ class HTMLTaskTrackerTests {
                 // Create test data with various statuses
                 this.setTickets([
                     this.createTestTicket({ 
-                        assigned: ['Alice'], 
+                        assignee: 'Alice', 
                         status: 'To Do', 
                         size: 'L', 
                         originalEstimate: 5,
@@ -307,7 +302,7 @@ class HTMLTaskTrackerTests {
                         endDate: '2025-10-18' 
                     }),
                     this.createTestTicket({ 
-                        assigned: ['Alice'], 
+                        assignee: 'Alice', 
                         status: 'In Progress', 
                         size: 'M', 
                         originalEstimate: 3,
@@ -315,7 +310,7 @@ class HTMLTaskTrackerTests {
                         endDate: '2025-10-17' 
                     }),
                     this.createTestTicket({ 
-                        assigned: ['Alice'], 
+                        assignee: 'Alice', 
                         status: 'Done', 
                         size: 'XL', 
                         originalEstimate: 8,
@@ -323,7 +318,7 @@ class HTMLTaskTrackerTests {
                         endDate: '2025-10-23' 
                     }), // Should be excluded
                     this.createTestTicket({ 
-                        assigned: ['Bob'], 
+                        assignee: 'Bob', 
                         status: 'To Do', 
                         size: 'M', 
                         originalEstimate: 4,
@@ -345,22 +340,17 @@ class HTMLTaskTrackerTests {
                         'Heat map should return an object'
                     );
 
-                    // Check that the heat map has data for people with assigned tasks
+                    // Check that the heat map includes expected people
                     const people = Object.keys(heatMapData);
                     this.testFramework.assert(
-                        people.length > 0,
-                        'Heat map should include at least one person',
-                        { peopleCount: people.length }
+                        people.includes('Alice'),
+                        'Heat map should include Alice'
                     );
                     
-                    // Verify structure of heat map data
-                    if (people.length > 0) {
-                        const firstPerson = people[0];
-                        this.testFramework.assert(
-                            typeof heatMapData[firstPerson] === 'object',
-                            'Heat map data for each person should be an object'
-                        );
-                    }
+                    this.testFramework.assert(
+                        people.includes('Bob'),
+                        'Heat map should include Bob'
+                    );
                 } else {
                     this.testFramework.assert(true, 'calculateWorkloadHeatMap function not available - skipping test');
                 }
@@ -376,17 +366,17 @@ class HTMLTaskTrackerTests {
             try {
                 this.setTickets([
                     this.createTestTicket({ 
-                        assigned: ['Alice'], 
+                        assignee: 'Alice', 
                         status: 'To Do', 
                         originalEstimate: 5 
                     }),
                     this.createTestTicket({ 
-                        assigned: ['Alice'], 
+                        assignee: 'Alice', 
                         status: 'Done', 
                         originalEstimate: 10 
                     }), // Should be excluded
                     this.createTestTicket({ 
-                        assigned: ['Alice'], 
+                        assignee: 'Alice', 
                         status: 'Paused', 
                         originalEstimate: 3 
                     }) // Should be excluded
@@ -397,22 +387,17 @@ class HTMLTaskTrackerTests {
                 if (this.appWindow.calculateWorkloadHeatMap) {
                     const heatMapData = this.appWindow.calculateWorkloadHeatMap();
                     
-                    // Verify that the heat map has data (active tasks should be included)
-                    const people = Object.keys(heatMapData);
+                    // Verify that only active tasks are included
                     this.testFramework.assert(
-                        people.length > 0,
-                        'Heat map should include people with active tasks',
-                        { peopleCount: people.length }
+                        heatMapData.Alice !== undefined,
+                        'Heat map should include Alice'
                     );
                     
                     // The exact calculation depends on implementation, but we can verify structure
-                    if (people.length > 0) {
-                        const firstPerson = people[0];
-                        this.testFramework.assert(
-                            typeof heatMapData[firstPerson] === 'object',
-                            'Heat map data should be an object for each person'
-                        );
-                    }
+                    this.testFramework.assert(
+                        typeof heatMapData.Alice === 'object',
+                        'Alice heat map data should be an object'
+                    );
                 } else {
                     this.testFramework.assert(true, 'calculateWorkloadHeatMap function not available - skipping test');
                 }
@@ -430,7 +415,7 @@ class HTMLTaskTrackerTests {
             
             try {
                 const testTicket = this.createTestTicket({ endDate: '2025-10-20' });
-                this.setTickets([testTicket]);
+                this.setTickets([testTicket];
 
                 // Test setting custom end date
                 const customDate = '2025-10-25';
@@ -481,7 +466,7 @@ class HTMLTaskTrackerTests {
                         status: 'Done',
                         completedDate: '2025-10-14'
                     })
-                ]);
+                ];
 
                 // Test that delay analysis functions exist
                 this.testFramework.assert(
@@ -557,8 +542,8 @@ class HTMLTaskTrackerTests {
             
             try {
                 const testTickets = [
-                    this.createTestTicket({ title: 'CSV Test Task 1', assigned: ['Alice'] }),
-                    this.createTestTicket({ title: 'CSV Test Task 2', assigned: ['Bob'], customEndDate: '2025-10-30' })
+                    this.createTestTicket({ title: 'CSV Test Task 1', assignee: 'Alice' }),
+                    this.createTestTicket({ title: 'CSV Test Task 2', assignee: 'Bob', customEndDate: '2025-10-30' })
                 ];
                 this.setTickets(testTickets);
 

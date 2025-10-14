@@ -3296,7 +3296,6 @@
                 const assignedTeam = ticket.assigned.join(';');
                 const priority = ticket.priority || 'P3';
                 const status = ticket.status || 'To Do';
-                // ...existing code...
                 const pauseCommentsText = ticket.pauseComments && ticket.pauseComments.length > 0 
                     ? ticket.pauseComments.map(pc => `[${pc.timestamp}] ${pc.comment}`).join(' | ')
                     : '';
@@ -3418,6 +3417,82 @@
 
             // Show success message
             alert(`✅ Configuration exported successfully!\n\nFile: project_config_${timestamp}.csv\nFile: project_config_closed_${timestamp}.csv\n\nThe first file contains all active and non-closed tasks.\nThe second file contains all closed tasks only.\nBoth files use the same format.\n\nUse "Import Config" to restore this configuration later.`);
+        }
+
+        // Update task start date from heat map popup
+        window.updateTaskStartDate = function(taskId, newDate) {
+            const ticket = tickets.find(t => t.id === taskId);
+            if (ticket && newDate) {
+                ticket.startDate = newDate;
+                if (!ticket.startDateHistory) ticket.startDateHistory = [];
+                ticket.startDateHistory.push({
+                    date: newDate,
+                    timestamp: new Date().toISOString(),
+                    reason: 'Changed from heat map popup'
+                });
+                saveToLocalStorage();
+                updateTable();
+                renderWorkloadHeatMap();
+                // Re-render the modal for real-time update
+                // Find which modal is open and re-render its content
+                const modal = document.getElementById('week-task-modal');
+                if (!modal.classList.contains('hidden')) {
+                    // Find the current person and weekIndex from the modal title
+                    const title = document.getElementById('modal-title').textContent;
+                    const match = title.match(/^(.*) - Week (\d+)/);
+                    if (match) {
+                        const personName = match[1].trim();
+                        const weekIndex = parseInt(match[2], 10) - 1;
+                        // Find weekStart and weekEnd from title
+                        const rangeMatch = title.match(/\(([^-]+) - ([^)]+)\)/);
+                        if (rangeMatch) {
+                            const weekStart = rangeMatch[1].trim();
+                            const weekEnd = rangeMatch[2].trim();
+                            showWeekTaskDetails(personName, weekIndex, weekStart, weekEnd);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Update task assignment from heat map popup
+        window.updateTaskAssignment = function(taskId, personName, isChecked, weekIndex) {
+            const ticket = tickets.find(t => t.id === taskId);
+            if (!ticket) {
+                console.log('updateTaskAssignment: Ticket not found for id', taskId);
+                return;
+            }
+            let assigned = Array.isArray(ticket.assigned) ? [...ticket.assigned] : [];
+            if (isChecked) {
+                if (!assigned.includes(personName)) {
+                    assigned.push(personName);
+                }
+            } else {
+                assigned = assigned.filter(n => n !== personName);
+            }
+            ticket.assigned = assigned;
+            console.log('updateTaskAssignment:', { taskId, personName, isChecked, assigned });
+            saveToLocalStorage();
+            updateTable();
+            renderWorkloadHeatMap();
+            // Re-render the modal for real-time update
+            const modal = document.getElementById('week-task-modal');
+            if (!modal.classList.contains('hidden')) {
+                const title = document.getElementById('modal-title').textContent;
+                const match = title.match(/^(.*) - Week (\d+)/);
+                if (match) {
+                    const personName = match[1].trim();
+                    const weekIndex = parseInt(match[2], 10) - 1;
+                    const rangeMatch = title.match(/\(([^-]+) - ([^)]+)\)/);
+                    if (rangeMatch) {
+                        const weekStart = rangeMatch[1].trim();
+                        const weekEnd = rangeMatch[2].trim();
+                        showWeekTaskDetails(personName, weekIndex, weekStart, weekEnd);
+                    }
+                }
+            }
+            // Log the updated ticket for verification
+            console.log('Updated ticket:', ticket);
         }
 
         window.triggerImport = () => {
@@ -5336,7 +5411,14 @@ ${ticket.explanation}
                     activeTickets.forEach(ticket => {
                         if (ticket.assigned.includes(person.name)) {
                             let taskStart = new Date(ticket.startDate);
-                            const taskEnd = ticket.rawEndDate ? new Date(ticket.rawEndDate) : new Date(taskStart);
+                            
+                            // Calculate the ideal task end date based on size and assignees
+                            // This is the theoretical minimum duration if resources work full-time
+                            const totalTaskDays = taskSizeDefinitions[ticket.size]?.days || ticketDays[ticket.size] || 1;
+                            const daysPerPerson = totalTaskDays / Math.max(ticket.assigned.length, 1);
+                            // Calculate business days needed for this person's portion
+                            const businessDaysNeeded = Math.ceil(daysPerPerson);
+                            const taskEnd = addBusinessDays(new Date(taskStart), businessDaysNeeded - 1);
                             
                             // Apply weekend adjustment for consistent work week assignment
                             const taskStartDay = taskStart.getDay();
@@ -5366,13 +5448,13 @@ ${ticket.explanation}
                                 }
                                 
                                 // Calculate hours for this person for this task
+                                // Each person works at full daily capacity (estimationBaseHours) for their portion of days
                                 const totalTaskDays = taskSizeDefinitions[ticket.size]?.days || ticketDays[ticket.size] || 1;
-                                const totalTaskHours = totalTaskDays * estimationBaseHours; // Use estimation base for task effort
-                                const hoursPerAssignee = totalTaskHours / Math.max(ticket.assigned.length, 1); // Prevent division by zero
+                                const daysPerPersonForTask = totalTaskDays / Math.max(ticket.assigned.length, 1);
+                                const dailyHours = estimationBaseHours; // Each person works full capacity per day
                                 
-                                // Distribute hours across task duration
-                                const taskBusinessDays = Math.max(calculateBusinessDays(taskStart, taskEnd), 1); // Prevent division by zero
-                                const dailyHours = hoursPerAssignee / taskBusinessDays;
+                                // Calculate business days this person needs (already calculated above as businessDaysNeeded)
+                                const taskBusinessDays = Math.max(calculateBusinessDays(taskStart, taskEnd), 1);
                                 
                                 // Ensure we have valid numbers
                                 if (!isNaN(dailyHours) && !isNaN(businessDays)) {
@@ -5717,12 +5799,17 @@ ${ticket.explanation}
             const weekEndDate = new Date(weekStartDate);
             weekEndDate.setDate(weekStartDate.getDate() + 6);
             
-            // Find all tasks for this person in this week
+            // Find all tasks for this person in this week using latest tickets data
             const weekTasks = [];
-            activeTickets.forEach(ticket => {
-                if (ticket.assigned.includes(personName)) {
+            tickets.forEach(ticket => {
+                if (Array.isArray(ticket.assigned) && ticket.assigned.includes(personName)) {
                     let taskStartDate = new Date(ticket.startDate);
-                    const taskEndDate = ticket.rawEndDate ? new Date(ticket.rawEndDate) : new Date(taskStartDate);
+                    
+                    // Calculate the ideal task end date based on size and assignees (same as heat map)
+                    const totalTaskDays = taskSizeDefinitions[ticket.size]?.days || ticketDays[ticket.size] || 1;
+                    const daysPerPerson = totalTaskDays / Math.max(ticket.assigned.length, 1);
+                    const businessDaysNeeded = Math.ceil(daysPerPerson);
+                    const taskEndDate = addBusinessDays(new Date(taskStartDate), businessDaysNeeded - 1);
                     
                     // Apply weekend adjustment for consistent work week assignment
                     const taskStartDay = taskStartDate.getDay();
@@ -5733,14 +5820,13 @@ ${ticket.explanation}
                         taskStartDate = new Date(taskStartDate);
                         taskStartDate.setDate(taskStartDate.getDate() + 2); // Move to Monday
                     }
-                    
                     // Task overlaps if it starts before week ends and ends after week starts
                     if (taskStartDate <= weekEndDate && taskEndDate >= weekStartDate) {
                         weekTasks.push({
                             ...ticket,
                             taskStartDate: taskStartDate,
                             taskEndDate: taskEndDate,
-                            originalStartDate: new Date(ticket.startDate) // Keep original for display
+                            originalStartDate: new Date(ticket.startDate)
                         });
                     }
                 }
@@ -5752,28 +5838,46 @@ ${ticket.explanation}
                 html = '<p class="text-gray-500 text-center py-4">No tasks assigned for this week.</p>';
             } else {
                 html = '<div class="space-y-3">';
+                // Get heat map data for allocation percentages
+                const heatMapData = calculateWorkloadHeatMap();
                 weekTasks.forEach(task => {
                     const startStr = task.taskStartDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    const endStr = task.endDate || 'N/A'; // Use the calculated endDate from projection
-                    
-                    html += `
-                        <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                            <div class="flex justify-between items-start mb-2">
-                                <h4 class="font-semibold text-lg">${task.title || `Task ${task.id}`}</h4>
-                                <span class="text-sm font-medium px-2 py-1 bg-blue-100 text-blue-800 rounded">${task.size}</span>
-                            </div>
-                            <p class="text-gray-700 mb-2">${task.description}</p>
-                            <div class="text-sm text-gray-600">
-                                <div><strong>Start Date:</strong> ${startStr}</div>
-                                <div><strong>End Date:</strong> ${endStr}</div>
-                                <div><strong>Priority:</strong> ${task.priority}</div>
-                                <div><strong>Assigned:</strong> ${task.assigned.join(', ')}</div>
-                            </div>
+                    const endStr = task.endDate || 'N/A';
+                    // Date picker for start date
+                    html += `<div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="font-semibold text-lg">${task.title || `Task ${task.id}`}</h4>
+                            <span class="text-sm font-medium px-2 py-1 bg-blue-100 text-blue-800 rounded">${task.size}</span>
                         </div>
-                    `;
+                        <p class="text-gray-700 mb-2">${task.description}</p>
+                        <div class="text-sm text-gray-600 mb-2">
+                            <label><strong>Start Date:</strong> <input type="date" value="${task.originalStartDate.toISOString().split('T')[0]}" onchange="updateTaskStartDate(${task.id}, this.value)" class="border rounded p-1 text-xs ml-2" /></label>
+                            <div><strong>End Date:</strong> ${endStr}</div>
+                            <div><strong>Priority:</strong> ${task.priority}</div>
+                        </div>
+                        <div class="mb-2"><strong>Assigned:</strong></div>
+                        <div class="flex flex-wrap gap-2 mb-2">`;
+                    // Assignment checkboxes with allocation percentage
+                    people.forEach(p => {
+                        // Find allocation percentage for this person for this week
+                        const personHeat = heatMapData.find(h => h.name === p.name);
+                        const weekUtil = personHeat ? personHeat.weeks[weekIndex]?.utilization : 0;
+                        const normalizedPersonName = p.name.trim().replace(/^"|"$/g, '').toLowerCase();
+                        const isChecked = task.assigned.map(n => n.trim().toLowerCase()).includes(normalizedPersonName);
+                        // Escape the person name for safe use in inline event handler
+                        const escapedName = p.name.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        html += `<label class="flex items-center space-x-1 text-xs whitespace-nowrap">
+                            <input type="checkbox" value="${escapedName}" ${isChecked ? 'checked' : ''}
+                                onchange="updateTaskAssignment(${task.id}, '${escapedName}', this.checked, ${weekIndex})"
+                                class="w-3 h-3 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+                            <span class="text-gray-700 cursor-pointer hover:text-blue-600" title="${weekUtil === 999 ? 'Overloaded' : weekUtil + '% allocated'}">
+                                📅 ${p.name} (${weekUtil === 999 ? 'OVR' : weekUtil + '%'})
+                            </span>
+                        </label>`;
+                    });
+                    html += `</div></div>`;
                 });
                 html += '</div>';
-                
                 // Add calendar visualization
                 const weekStartDate = new Date(getEffectiveStartDate());
                 weekStartDate.setDate(weekStartDate.getDate() + (weekIndex * 7));

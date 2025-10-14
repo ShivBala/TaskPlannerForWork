@@ -236,6 +236,10 @@
                 <input type="checkbox" id="stopOnFailure">
                 <label for="stopOnFailure">Stop on First Failure</label>
             </div>
+            
+            <div id="appStatus" style="margin-left: auto; padding: 8px 16px; background: #fbbf24; color: #78350f; border-radius: 6px; font-weight: 500;">
+                ⏳ Loading app...
+            </div>
         </div>
         
         <div class="results">
@@ -283,16 +287,38 @@
     <script>
         class TestRunner extends TestFramework {
             constructor() {
+                console.log('🔍 TestRunner constructor called');
+                console.log('🔍 Document ready state:', document.readyState);
+                
+                const verboseCheckbox = document.getElementById('verboseMode');
+                const stopOnFailureCheckbox = document.getElementById('stopOnFailure');
+                
                 super({
-                    verbose: document.getElementById('verboseMode').checked,
-                    stopOnFirstFailure: document.getElementById('stopOnFailure').checked
+                    verbose: verboseCheckbox ? verboseCheckbox.checked : true,
+                    stopOnFirstFailure: stopOnFailureCheckbox ? stopOnFailureCheckbox.checked : false
                 });
                 
                 this.consoleOutput = document.getElementById('consoleOutput');
                 this.originalConsole = { ...console };
                 this.setupConsoleCapture();
-                this.setupEventListeners();
+                
+                // Try to get appFrame first
                 this.appFrame = document.getElementById('appFrame');
+                console.log('🔍 appFrame element:', this.appFrame ? 'Found' : 'Not found');
+                
+                if (!this.appFrame) {
+                    // Try again after a tiny delay
+                    setTimeout(() => {
+                        this.appFrame = document.getElementById('appFrame');
+                        console.log('🔍 appFrame element (retry):', this.appFrame ? 'Found' : 'Not found');
+                        if (this.appFrame) {
+                            this.setupEventListeners();
+                        }
+                    }, 10);
+                } else {
+                    this.setupEventListeners();
+                }
+                
                 this.appWindow = null;
             }
             
@@ -318,25 +344,128 @@
             }
             
             setupEventListeners() {
-                document.getElementById('runAllTests').addEventListener('click', () => {
-                    this.updateOptions();
-                    this.runAllTests();
-                });
+                const runAllBtn = document.getElementById('runAllTests');
+                const runHtmlBtn = document.getElementById('runHtmlTests');
+                const clearBtn = document.getElementById('clearResults');
                 
-                document.getElementById('runHtmlTests').addEventListener('click', () => {
-                    this.updateOptions();
-                    this.runHtmlTestsOnly();
-                });
+                if (runAllBtn) {
+                    runAllBtn.addEventListener('click', () => {
+                        this.updateOptions();
+                        if (!this.appWindow) {
+                            console.error('❌ Application not loaded yet. Please wait for the app to load.');
+                            return;
+                        }
+                        this.runAllTests();
+                    });
+                }
                 
-                document.getElementById('clearResults').addEventListener('click', () => {
-                    this.clearResults();
-                });
+                if (runHtmlBtn) {
+                    runHtmlBtn.addEventListener('click', () => {
+                        this.updateOptions();
+                        if (!this.appWindow) {
+                            console.error('❌ Application not loaded yet. Please wait for the app to load.');
+                            return;
+                        }
+                        this.runHtmlTestsOnly();
+                    });
+                }
+                
+                if (clearBtn) {
+                    clearBtn.addEventListener('click', () => {
+                        this.clearResults();
+                    });
+                }
                 
                 // Wait for app to load
-                this.appFrame.addEventListener('load', () => {
+                if (this.appFrame) {
+                    console.log('🔍 Setting up iframe event listeners...');
+                    
+                    this.appFrame.addEventListener('load', () => {
+                        console.log('🔍 Iframe load event triggered');
+                        this.initializeApp();
+                    });
+                    
+                    this.appFrame.addEventListener('error', (e) => {
+                        console.error('❌ Error loading iframe:', e);
+                        this.updateAppStatus('❌ Failed to Load', '#ef4444');
+                    });
+                    
+                    // Check if already loaded
+                    if (this.appFrame.contentWindow && this.appFrame.contentWindow.document.readyState === 'complete') {
+                        console.log('🔍 Iframe already loaded, initializing immediately...');
+                        setTimeout(() => this.initializeApp(), 100);
+                    }
+                } else {
+                    console.error('❌ appFrame element not found!');
+                }
+            }
+            
+            initializeApp() {
+                try {
                     this.appWindow = this.appFrame.contentWindow;
-                    console.log('✅ Task Tracker application loaded successfully');
-                });
+                    console.log('🔍 Got contentWindow:', this.appWindow ? 'Yes' : 'No');
+                    
+                    // Check if the app has the expected functions/variables
+                    // Note: tickets and people are declared with 'let' so they're not on window object
+                    // We need to use eval() to access them in the iframe's script scope
+                    const checkTickets = () => {
+                        try {
+                            return this.appWindow.eval('typeof tickets !== "undefined" && Array.isArray(tickets)');
+                        } catch (e) {
+                            return false;
+                        }
+                    };
+                    
+                    if (this.appWindow && checkTickets()) {
+                        console.log('✅ Task Tracker application loaded successfully');
+                        console.log('ℹ️  You can now run tests');
+                        this.updateAppStatus('✅ App Ready', '#10b981');
+                    } else {
+                        console.warn('⚠️ App window loaded but tickets array not found yet');
+                        // Try again after multiple delays
+                        let retries = 0;
+                        const maxRetries = 5;
+                        const checkApp = () => {
+                            retries++;
+                            console.log(`🔄 Retry ${retries}/${maxRetries}...`);
+                            
+                            if (this.appWindow && checkTickets()) {
+                                console.log('✅ Task Tracker application loaded successfully (delayed)');
+                                const ticketCount = this.appWindow.eval('tickets ? tickets.length : 0');
+                                const peopleCount = this.appWindow.eval('people ? people.length : 0');
+                                console.log(`📊 Found ${ticketCount} tickets and ${peopleCount} people`);
+                                this.updateAppStatus('✅ App Ready', '#10b981');
+                            } else if (retries < maxRetries) {
+                                setTimeout(checkApp, 1000);
+                            } else {
+                                console.error('❌ App failed to initialize properly');
+                                console.log('💡 Note: tickets/people are let-scoped variables, checking with eval...');
+                                try {
+                                    const hasTickets = this.appWindow.eval('typeof tickets');
+                                    const hasPeople = this.appWindow.eval('typeof people');
+                                    console.log('🔍 typeof tickets:', hasTickets);
+                                    console.log('🔍 typeof people:', hasPeople);
+                                } catch (e) {
+                                    console.error('❌ Cannot eval in iframe:', e.message);
+                                }
+                                this.updateAppStatus('❌ App Load Failed', '#ef4444');
+                            }
+                        };
+                        setTimeout(checkApp, 1000);
+                    }
+                } catch (error) {
+                    console.error('❌ Error loading app:', error);
+                    this.updateAppStatus('❌ App Load Error', '#ef4444');
+                }
+            }
+            
+            updateAppStatus(text, color) {
+                const appStatus = document.getElementById('appStatus');
+                if (appStatus) {
+                    appStatus.textContent = text;
+                    appStatus.style.background = color;
+                    appStatus.style.color = 'white';
+                }
             }
             
             updateOptions() {
