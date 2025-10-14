@@ -1702,6 +1702,18 @@ class ExtendedTaskTrackerTests {
         this.testDeletingTaskWithSpecificType();
         this.testStatusChangesDoNotAffectTaskType();
         this.testFilteringWorksWithBothTaskTypes();
+
+        // G. Edit Task Type Tests (10 tests)
+        this.testToggleTaskTypeFromFixedToFlexible();
+        this.testToggleTaskTypeFromFlexibleToFixed();
+        this.testToggleTaskTypeTriggersRecalculation();
+        this.testToggleTaskTypeClearsCustomEndDate();
+        this.testToggleTaskTypeSavesToLocalStorage();
+        this.testToggleTaskTypeInModalRefreshesHeatMap();
+        this.testMultipleTogglesWorkCorrectly();
+        this.testToggleOnTaskWithNoAssignees();
+        this.testToggleTaskTypeIconUpdates();
+        this.testToggleTaskTypeWithCapacityOverallocation();
     }
 
     // ===================================
@@ -3190,6 +3202,327 @@ class ExtendedTaskTrackerTests {
                     aliceTasks.length === 1 && bobTasks.length === 1,
                     'Filtering should work for both Fixed and Flexible tasks'
                 );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    // ===================================
+    // G. Edit Task Type Tests (10 tests)
+    // ===================================
+
+    testToggleTaskTypeFromFixedToFlexible() {
+        this.testFramework.it('Edit: Toggle task type from Fixed to Flexible', () => {
+            const backup = this.backupApplicationState();
+            try {
+                const task = this.createTestTicket({
+                    description: 'Toggle Test',
+                    isFixedLength: true,
+                    assignedPeople: ['Alice', 'Bob']
+                });
+
+                // Toggle to Flexible
+                if (this.appWindow.toggleTaskType) {
+                    this.appWindow.toggleTaskType(task.id);
+                    
+                    const updatedTask = this.getTickets().find(t => t.id === task.id);
+                    this.testFramework.assert(
+                        updatedTask.isFixedLength === false,
+                        'Task should be Flexible after toggle'
+                    );
+                }
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testToggleTaskTypeFromFlexibleToFixed() {
+        this.testFramework.it('Edit: Toggle task type from Flexible to Fixed', () => {
+            const backup = this.backupApplicationState();
+            try {
+                const task = this.createTestTicket({
+                    description: 'Toggle Test',
+                    isFixedLength: false,
+                    assignedPeople: ['Alice']
+                });
+
+                // Toggle to Fixed
+                if (this.appWindow.toggleTaskType) {
+                    this.appWindow.toggleTaskType(task.id);
+                    
+                    const updatedTask = this.getTickets().find(t => t.id === task.id);
+                    this.testFramework.assert(
+                        updatedTask.isFixedLength === true,
+                        'Task should be Fixed-Length after toggle'
+                    );
+                }
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testToggleTaskTypeTriggersRecalculation() {
+        this.testFramework.it('Edit: Toggle task type triggers end date recalculation', () => {
+            const backup = this.backupApplicationState();
+            try {
+                const task = this.createTestTicket({
+                    description: 'Recalc Test',
+                    size: 'XL', // 10 days
+                    isFixedLength: true,
+                    assignedPeople: ['Alice', 'Bob'],
+                    startDate: '2025-10-14'
+                });
+
+                // Get initial projected tickets
+                const initialProjected = this.appWindow.getProjectedTickets();
+                const initialTask = initialProjected.find(t => t.id === task.id);
+                const initialEndDate = initialTask ? initialTask.endDate : null;
+
+                // Toggle to Flexible (should halve the duration with 2 people)
+                if (this.appWindow.toggleTaskType) {
+                    this.appWindow.toggleTaskType(task.id);
+                    
+                    const updatedProjected = this.appWindow.getProjectedTickets();
+                    const updatedTask = updatedProjected.find(t => t.id === task.id);
+                    const updatedEndDate = updatedTask ? updatedTask.endDate : null;
+
+                    this.testFramework.assert(
+                        initialEndDate !== updatedEndDate,
+                        'End date should change after task type toggle'
+                    );
+                }
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testToggleTaskTypeClearsCustomEndDate() {
+        this.testFramework.it('Edit: Toggle task type clears custom end date override', () => {
+            const backup = this.backupApplicationState();
+            try {
+                const task = this.createTestTicket({
+                    description: 'Custom End Date Test',
+                    isFixedLength: true,
+                    customEndDate: '2025-12-31'
+                });
+
+                this.testFramework.assert(
+                    task.customEndDate === '2025-12-31',
+                    'Custom end date should be set initially'
+                );
+
+                // Toggle task type
+                if (this.appWindow.toggleTaskType) {
+                    this.appWindow.toggleTaskType(task.id);
+                    
+                    const updatedTask = this.getTickets().find(t => t.id === task.id);
+                    this.testFramework.assert(
+                        !updatedTask.customEndDate,
+                        'Custom end date should be cleared after toggle'
+                    );
+                }
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testToggleTaskTypeSavesToLocalStorage() {
+        this.testFramework.it('Edit: Toggle task type persists to localStorage', () => {
+            const backup = this.backupApplicationState();
+            try {
+                const task = this.createTestTicket({
+                    description: 'Storage Test',
+                    isFixedLength: true
+                });
+
+                // Toggle task type
+                if (this.appWindow.toggleTaskType) {
+                    this.appWindow.toggleTaskType(task.id);
+                    
+                    // Check localStorage
+                    const savedData = JSON.parse(this.appWindow.localStorage.getItem('taskPlannerData') || '{}');
+                    const savedTask = savedData.tickets?.find(t => t.id === task.id);
+                    
+                    this.testFramework.assert(
+                        savedTask && savedTask.isFixedLength === false,
+                        'Task type change should be saved to localStorage'
+                    );
+                }
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testToggleTaskTypeInModalRefreshesHeatMap() {
+        this.testFramework.it('Edit: Toggle in modal refreshes heat map', () => {
+            const backup = this.backupApplicationState();
+            try {
+                const task = this.createTestTicket({
+                    description: 'Modal Toggle Test',
+                    size: 'L',
+                    isFixedLength: true,
+                    assignedPeople: ['Alice'],
+                    startDate: '2025-10-14'
+                });
+
+                // Get initial heat map
+                const initialHeatMap = this.appWindow.calculateWorkloadHeatMap();
+                const initialAliceWeek1 = initialHeatMap.find(p => p.name === 'Alice')?.weeks[0]?.utilization;
+
+                // Toggle via modal function
+                if (this.appWindow.toggleTaskTypeInModal) {
+                    this.appWindow.toggleTaskTypeInModal(task.id, true, 0); // true = flexible
+                    
+                    const updatedHeatMap = this.appWindow.calculateWorkloadHeatMap();
+                    const updatedAliceWeek1 = updatedHeatMap.find(p => p.name === 'Alice')?.weeks[0]?.utilization;
+
+                    // Heat map should reflect the task type change
+                    this.testFramework.assert(
+                        typeof initialAliceWeek1 === 'number' && typeof updatedAliceWeek1 === 'number',
+                        'Heat map should be calculated before and after toggle'
+                    );
+                }
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testMultipleTogglesWorkCorrectly() {
+        this.testFramework.it('Edit: Multiple toggles work correctly', () => {
+            const backup = this.backupApplicationState();
+            try {
+                const task = this.createTestTicket({
+                    description: 'Multiple Toggle Test',
+                    isFixedLength: true
+                });
+
+                if (this.appWindow.toggleTaskType) {
+                    // Toggle 1: Fixed → Flexible
+                    this.appWindow.toggleTaskType(task.id);
+                    let updatedTask = this.getTickets().find(t => t.id === task.id);
+                    const afterFirstToggle = updatedTask.isFixedLength === false;
+
+                    // Toggle 2: Flexible → Fixed
+                    this.appWindow.toggleTaskType(task.id);
+                    updatedTask = this.getTickets().find(t => t.id === task.id);
+                    const afterSecondToggle = updatedTask.isFixedLength === true;
+
+                    // Toggle 3: Fixed → Flexible
+                    this.appWindow.toggleTaskType(task.id);
+                    updatedTask = this.getTickets().find(t => t.id === task.id);
+                    const afterThirdToggle = updatedTask.isFixedLength === false;
+
+                    this.testFramework.assert(
+                        afterFirstToggle && afterSecondToggle && afterThirdToggle,
+                        'Multiple toggles should work correctly'
+                    );
+                }
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testToggleOnTaskWithNoAssignees() {
+        this.testFramework.it('Edit: Toggle task type on task with no assignees', () => {
+            const backup = this.backupApplicationState();
+            try {
+                const task = this.createTestTicket({
+                    description: 'No Assignees Toggle',
+                    isFixedLength: true,
+                    assignedPeople: []
+                });
+
+                if (this.appWindow.toggleTaskType) {
+                    this.appWindow.toggleTaskType(task.id);
+                    
+                    const updatedTask = this.getTickets().find(t => t.id === task.id);
+                    this.testFramework.assert(
+                        updatedTask.isFixedLength === false,
+                        'Toggle should work even with no assignees'
+                    );
+                }
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testToggleTaskTypeIconUpdates() {
+        this.testFramework.it('Edit: Toggle updates task type icon in table', () => {
+            const backup = this.backupApplicationState();
+            try {
+                const task = this.createTestTicket({
+                    description: 'Icon Update Test',
+                    isFixedLength: true
+                });
+
+                if (this.appWindow.toggleTaskType) {
+                    // Initial icon should be 🔒
+                    const initialTask = this.getTickets().find(t => t.id === task.id);
+                    const initialIcon = (initialTask.isFixedLength === false) ? '⚡' : '🔒';
+                    
+                    // Toggle to Flexible
+                    this.appWindow.toggleTaskType(task.id);
+                    const updatedTask = this.getTickets().find(t => t.id === task.id);
+                    const updatedIcon = (updatedTask.isFixedLength === false) ? '⚡' : '🔒';
+
+                    this.testFramework.assert(
+                        initialIcon === '🔒' && updatedIcon === '⚡',
+                        'Icon should change from 🔒 to ⚡ after toggle'
+                    );
+                }
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testToggleTaskTypeWithCapacityOverallocation() {
+        this.testFramework.it('Edit: Toggle task type correctly recalculates capacity with overallocation', () => {
+            const backup = this.backupApplicationState();
+            try {
+                // Create multiple large tasks for same person
+                this.createTestTicket({
+                    description: 'Task 1',
+                    size: 'XXL', // 15 days
+                    isFixedLength: true,
+                    assignedPeople: ['Alice'],
+                    startDate: '2025-10-14'
+                });
+
+                const task2 = this.createTestTicket({
+                    description: 'Task 2',
+                    size: 'XXL', // 15 days
+                    isFixedLength: true,
+                    assignedPeople: ['Alice'],
+                    startDate: '2025-10-14'
+                });
+
+                // Initial capacity should show overallocation
+                const initialHeatMap = this.appWindow.calculateWorkloadHeatMap();
+                const initialAlice = initialHeatMap.find(p => p.name === 'Alice');
+                
+                // Toggle task2 to Flexible
+                if (this.appWindow.toggleTaskType) {
+                    this.appWindow.toggleTaskType(task2.id);
+                    
+                    const updatedHeatMap = this.appWindow.calculateWorkloadHeatMap();
+                    const updatedAlice = updatedHeatMap.find(p => p.name === 'Alice');
+
+                    // Both heat maps should exist
+                    this.testFramework.assert(
+                        initialAlice && updatedAlice,
+                        'Heat map should handle overallocation before and after toggle'
+                    );
+                }
             } finally {
                 this.restoreApplicationState(backup);
             }

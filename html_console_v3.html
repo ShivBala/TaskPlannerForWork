@@ -3151,12 +3151,17 @@
                 
                 // Determine task type indicator
                 const taskTypeIcon = (ticket.isFixedLength === false) ? '⚡' : '🔒';
-                const taskTypeTitle = (ticket.isFixedLength === false) ? 'Flexible Task' : 'Fixed-Length Task';
+                const taskTypeTitle = (ticket.isFixedLength === false) ? 'Flexible Task (click to change to Fixed-Length)' : 'Fixed-Length Task (click to change to Flexible)';
                 
                 tr.innerHTML = `
                     <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">${ticket.id}</td>
                     <td class="px-3 py-2 text-sm text-gray-900 w-1/3">
-                        <span title="${taskTypeTitle}">${taskTypeIcon}</span> ${ticket.description}
+                        <span 
+                            class="cursor-pointer hover:opacity-70 transition-opacity" 
+                            title="${taskTypeTitle}"
+                            onclick="toggleTaskType(${ticket.id})"
+                            style="font-size: 1.2em; user-select: none;"
+                        >${taskTypeIcon}</span> ${ticket.description}
                     </td>
                     <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-600">${startDateInput}</td>
                     <td class="px-3 py-2 whitespace-nowrap text-sm font-medium">
@@ -4803,6 +4808,35 @@
             }
         }
 
+        window.toggleTaskType = (ticketId) => {
+            // Find the ticket
+            const ticket = tickets.find(t => t.id === ticketId);
+            if (ticket) {
+                // Toggle the isFixedLength property
+                const wasFixed = ticket.isFixedLength !== false; // Default true if undefined
+                ticket.isFixedLength = !wasFixed;
+                
+                const newType = ticket.isFixedLength ? 'Fixed-Length' : 'Flexible';
+                const oldType = wasFixed ? 'Fixed-Length' : 'Flexible';
+                
+                console.log(`🔄 Ticket #${ticketId} task type changed from ${oldType} to ${newType}`);
+                
+                // Clear any custom end date override when task type changes
+                // This allows the system to recalculate end dates based on the new type
+                if (ticket.customEndDate) {
+                    console.log(`📅 Clearing custom end date for ticket #${ticketId} due to task type change`);
+                    delete ticket.customEndDate;
+                }
+                
+                // Mark as having unsaved changes
+                markDirty();
+                
+                // Recalculate and re-render immediately (task type affects timeline calculations)
+                calculateProjection();
+                saveToLocalStorage();
+            }
+        }
+
         // Status management functions
         window.getStatusClass = (status) => {
             const statusClasses = {
@@ -5958,6 +5992,18 @@ ${ticket.explanation}
                             <label><strong>Start Date:</strong> <input type="date" value="${task.originalStartDate.toISOString().split('T')[0]}" onchange="updateTaskStartDate(${task.id}, this.value)" class="border rounded p-1 text-xs ml-2" /></label>
                             <div><strong>End Date:</strong> ${endStr}</div>
                             <div><strong>Priority:</strong> ${task.priority}</div>
+                            <div class="mt-2">
+                                <label class="flex items-center space-x-2">
+                                    <input type="checkbox" 
+                                           ${task.isFixedLength === false ? 'checked' : ''} 
+                                           onchange="toggleTaskTypeInModal(${task.id}, this.checked, ${weekIndex})"
+                                           class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+                                    <span class="font-medium">
+                                        ${task.isFixedLength === false ? '⚡ Flexible Task' : '🔒 Fixed-Length Task'}
+                                        <span class="text-xs text-gray-500 ml-1">(check for Flexible)</span>
+                                    </span>
+                                </label>
+                            </div>
                         </div>
                         <div class="mb-2"><strong>Assigned:</strong></div>
                         <div class="flex flex-wrap gap-2 mb-2">`;
@@ -5995,6 +6041,38 @@ ${ticket.explanation}
         function closeWeekTaskModal() {
             const modal = document.getElementById('week-task-modal');
             modal.classList.add('hidden');
+        }
+        
+        // Toggle task type (Fixed-Length ↔ Flexible) from modal with real-time updates
+        function toggleTaskTypeInModal(taskId, isFlexible, weekIndex) {
+            const task = tickets.find(t => t.id === taskId);
+            if (!task) return;
+            
+            // Update task type
+            task.isFixedLength = !isFlexible;
+            
+            // Save to localStorage
+            saveToLocalStorage();
+            
+            // Recalculate everything
+            const projectedTickets = getProjectedTickets();
+            
+            // Refresh the heat map
+            renderWorkloadHeatMap();
+            
+            // Refresh the task table with updated end dates
+            renderTickets(projectedTickets);
+            
+            // Re-render the modal with updated data
+            const personName = task.assigned[0]; // Get first assignee to determine which person
+            if (personName) {
+                const heatMapData = calculateWorkloadHeatMap();
+                const personData = heatMapData.find(p => p.name === personName);
+                if (personData && personData.weeks[weekIndex]) {
+                    const week = personData.weeks[weekIndex];
+                    showWeekTaskDetails(personName, weekIndex, week.weekStart, week.weekEnd);
+                }
+            }
         }
         
         // Close modal when clicking outside
