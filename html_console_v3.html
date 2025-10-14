@@ -5957,15 +5957,29 @@ ${ticket.explanation}
             const weekEndDate = new Date(weekStartDate);
             weekEndDate.setDate(weekStartDate.getDate() + 6);
             
-            // Find all tasks for this person in this week using projected tickets (respects task type)
-            const projectedTicketsForModal = getProjectedTickets();
+            // Find all tasks for this person in this week using latest tickets data
             const weekTasks = [];
-            projectedTicketsForModal.forEach(ticket => {
+            tickets.forEach(ticket => {
                 if (Array.isArray(ticket.assigned) && ticket.assigned.includes(personName)) {
                     let taskStartDate = new Date(ticket.startDate);
                     
-                    // Use the end date from projected tickets (respects Fixed-Length vs Flexible)
-                    const taskEndDate = ticket.endDate ? new Date(ticket.endDate) : new Date(ticket.startDate);
+                    // Calculate the task end date based on task type (Fixed-Length vs Flexible)
+                    const totalTaskDays = taskSizeDefinitions[ticket.size]?.days || ticketDays[ticket.size] || 1;
+                    let taskEndDate;
+                    
+                    // Check task type to determine end date calculation
+                    const isFixedLength = ticket.isFixedLength !== false; // Default to true
+                    
+                    if (isFixedLength) {
+                        // Fixed-Length: Duration stays constant regardless of assignees
+                        const businessDaysNeeded = Math.ceil(totalTaskDays);
+                        taskEndDate = addBusinessDays(new Date(taskStartDate), businessDaysNeeded - 1);
+                    } else {
+                        // Flexible: Duration splits among assignees
+                        const daysPerPerson = totalTaskDays / Math.max(ticket.assigned.length, 1);
+                        const businessDaysNeeded = Math.ceil(daysPerPerson);
+                        taskEndDate = addBusinessDays(new Date(taskStartDate), businessDaysNeeded - 1);
+                    }
                     
                     // Apply weekend adjustment for consistent work week assignment
                     const taskStartDay = taskStartDate.getDay();
