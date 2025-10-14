@@ -1133,7 +1133,7 @@ class ExtendedTaskTrackerTests {
                 );
                 this.testFramework.assertEqual(
                     this.appWindow.getStatusDisplay('In Progress'),
-                    '� In Progress', // App uses 🚀 not 🔄
+                    '🚀 In Progress', // App uses 🚀 not 🔄
                     'In Progress status should have correct display'
                 );
                 this.testFramework.assertEqual(
