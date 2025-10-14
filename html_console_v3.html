@@ -1174,7 +1174,7 @@
 
     <!-- Modal for Task Details (Existing Tasks) -->
     <div id="task-details-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 800px;">
+        <div class="modal-content" style="max-width: 60vw; width: 60vw;">
             <div class="modal-header">
                 <h3 class="modal-title">📝 Task Details</h3>
                 <button class="modal-close" onclick="closeTaskDetailsModal()">&times;</button>
@@ -1185,21 +1185,21 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">📄 Description</label>
                         <textarea id="details-modal-description" 
-                                  rows="4" 
+                                  rows="6" 
                                   placeholder="Enter task description..."
                                   class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"></textarea>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-green-700 mb-2">✅ Positives</label>
                         <textarea id="details-modal-positives" 
-                                  rows="4" 
+                                  rows="6" 
                                   placeholder="Benefits, positive outcomes, advantages..."
                                   class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"></textarea>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-red-700 mb-2">⚠️ Negatives</label>
                         <textarea id="details-modal-negatives" 
-                                  rows="4" 
+                                  rows="6" 
                                   placeholder="Risks, challenges, concerns..."
                                   class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"></textarea>
                     </div>
@@ -1218,7 +1218,7 @@
 
     <!-- Modal for New Ticket Details -->
     <div id="new-ticket-details-modal" class="modal-overlay">
-        <div class="modal-content" style="max-width: 800px;">
+        <div class="modal-content" style="max-width: 60vw; width: 60vw;">
             <div class="modal-header">
                 <h3 class="modal-title">📝 Add Task Details (Optional)</h3>
                 <button class="modal-close" onclick="closeNewTicketDetailsModal()">&times;</button>
@@ -1228,21 +1228,21 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">📄 Description</label>
                         <textarea id="new-ticket-details-description" 
-                                  rows="4" 
+                                  rows="6" 
                                   placeholder="Enter task description..."
                                   class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"></textarea>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-green-700 mb-2">✅ Positives</label>
                         <textarea id="new-ticket-details-positives" 
-                                  rows="4" 
+                                  rows="6" 
                                   placeholder="Benefits, positive outcomes, advantages..."
                                   class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"></textarea>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-red-700 mb-2">⚠️ Negatives</label>
                         <textarea id="new-ticket-details-negatives" 
-                                  rows="4" 
+                                  rows="6" 
                                   placeholder="Risks, challenges, concerns..."
                                   class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"></textarea>
                     </div>
@@ -1392,6 +1392,65 @@
                         <input type="text" id="new-person-name" placeholder="Enter team member name" class="enterprise-input flex-grow">
                         <button onclick="addPerson()" class="btn-enterprise">Add Member</button>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Calculation Formulas Section -->
+    <div class="container mx-auto px-4 py-6">
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title">🧮 Calculation Formulas</h2>
+                <p class="text-sm text-gray-600 mt-1">Click below to understand how end dates and capacity utilization are calculated</p>
+            </div>
+            <div class="card-content">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button onclick="showEndDateFormula()" 
+                            class="p-6 bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200 rounded-lg hover:from-blue-100 hover:to-blue-200 hover:border-blue-300 transition-all duration-200 flex flex-col items-start gap-3 group">
+                        <div class="flex items-center gap-3">
+                            <span class="text-3xl">📅</span>
+                            <span class="text-lg font-semibold text-blue-900">End Date Calculation</span>
+                        </div>
+                        <p class="text-sm text-blue-700 text-left">
+                            Learn how task end dates are calculated based on task type (Fixed-Length vs Flexible), 
+                            task size, number of assignees, and weekend handling.
+                        </p>
+                        <span class="text-xs text-blue-600 group-hover:text-blue-800 font-medium">Click to view formula →</span>
+                    </button>
+                    
+                    <button onclick="showHeatMapFormula()" 
+                            class="p-6 bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200 rounded-lg hover:from-green-100 hover:to-green-200 hover:border-green-300 transition-all duration-200 flex flex-col items-start gap-3 group">
+                        <div class="flex items-center gap-3">
+                            <span class="text-3xl">📊</span>
+                            <span class="text-lg font-semibold text-green-900">Heat Map Calculation</span>
+                        </div>
+                        <p class="text-sm text-green-700 text-left">
+                            Understand how team capacity utilization is calculated per person per week, 
+                            including color coding for overallocation detection.
+                        </p>
+                        <span class="text-xs text-green-600 group-hover:text-green-800 font-medium">Click to view formula →</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formula Display Modal -->
+    <div id="formula-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3 class="modal-title" id="formula-modal-title">Calculation Formula</h3>
+                <button class="modal-close" onclick="closeFormulaModal()">&times;</button>
+            </div>
+            <div style="padding: 20px;">
+                <div id="formula-modal-content" style="white-space: pre-wrap; font-family: 'Segoe UI', sans-serif; line-height: 1.8;">
+                    <!-- Formula content will be inserted here -->
+                </div>
+                <div class="flex gap-3 mt-6 justify-end">
+                    <button onclick="closeFormulaModal()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        Close
+                    </button>
                 </div>
             </div>
         </div>
@@ -2430,6 +2489,60 @@
 
         // --- CORE SCHEDULING LOGIC ---
 
+        /**
+         * END_DATE_CALCULATION_FORMULA:
+         * 
+         * How Task End Dates are Calculated:
+         * 
+         * 1. FIXED-LENGTH TASKS (Default - marked with 🔒):
+         *    • Duration = Task Size (in days)
+         *    • Multiple people do NOT reduce the duration
+         *    • People work in parallel on different aspects
+         *    
+         *    Formula: End Date = Start Date + Task Size Days
+         *    
+         *    Example 1: 10-day task (XL) with 1 person
+         *      → Takes 10 business days
+         *    
+         *    Example 2: 10-day task (XL) with 5 people
+         *      → Still takes 10 business days
+         *      → Each person works 20% capacity (10 days ÷ 5 people)
+         * 
+         * 2. FLEXIBLE TASKS (Opt-in - marked with ⚡):
+         *    • Duration = Task Size ÷ Number of Assignees
+         *    • More people = shorter duration (work is divided)
+         *    • People work on same tasks, splitting the effort
+         *    
+         *    Formula: End Date = Start Date + (Task Size Days ÷ Number of Assignees)
+         *    
+         *    Example 1: 10-day task with 1 person
+         *      → Takes 10 business days (100% capacity)
+         *    
+         *    Example 2: 10-day task with 2 people
+         *      → Takes 5 business days (100% capacity each)
+         *    
+         *    Example 3: 10-day task with 5 people
+         *      → Takes 2 business days (100% capacity each)
+         * 
+         * 3. WEEKEND HANDLING (Both task types):
+         *    • All dates automatically skip weekends (Saturday/Sunday)
+         *    • If a calculated end date falls on Saturday: moved to Monday
+         *    • If a calculated end date falls on Sunday: moved to Monday
+         *    • Only business days (Monday-Friday) count toward duration
+         * 
+         * 4. CUSTOM END DATES:
+         *    • You can manually override any calculated end date
+         *    • Useful for external deadlines or dependencies
+         *    • Custom dates are preserved until you clear them
+         * 
+         * 5. TASK SIZES:
+         *    • S (Small) = 1 day
+         *    • M (Medium) = 2 days
+         *    • L (Large) = 5 days
+         *    • XL (Extra Large) = 10 days
+         *    • XXL (Extra Extra Large) = 15 days
+         *    • Custom sizes can be configured
+         */
         function getProjectedTickets() {
             console.log('🔧 getProjectedTickets called');
             console.log('📊 People count:', people.length);
@@ -5769,6 +5882,68 @@ ${ticket.explanation}
         let heatMapStartDate = null;
 
         // --- TEAM WORKLOAD HEAT MAP ---
+        /**
+         * HEAT_MAP_CALCULATION_FORMULA:
+         * 
+         * How Team Workload Heat Map Cells are Calculated:
+         * 
+         * 1. WEEK GROUPING:
+         *    • Heat map shows the next 8 weeks from today (or earliest task)
+         *    • Each column represents one week (Monday to Friday)
+         *    • Weekends (Saturday/Sunday) are excluded from calculations
+         * 
+         * 2. CAPACITY CALCULATION PER PERSON PER WEEK:
+         *    • Each person has a weekly availability (e.g., 25 hours/week)
+         *    • Tasks consume capacity based on task type and assignees
+         *    
+         *    For FIXED-LENGTH TASKS (🔒):
+         *      Capacity per Person = (Task Size × Base Hours) ÷ Number of Assignees ÷ Task Duration
+         *      
+         *      Example: 10-day task, 5 base hours/day, 2 people
+         *        → Total effort: 10 days × 5 hours = 50 hours
+         *        → Per person: 50 hours ÷ 2 people = 25 hours each
+         *        → Duration: 10 business days (not reduced)
+         *        → Weekly capacity: 25 hours ÷ 2 weeks = 12.5 hours/week
+         *    
+         *    For FLEXIBLE TASKS (⚡):
+         *      Capacity per Person = (Task Size × Base Hours) ÷ Task Duration
+         *      
+         *      Example: 10-day task, 5 base hours/day, 2 people
+         *        → Total effort: 10 days × 5 hours = 50 hours
+         *        → Duration: 10 days ÷ 2 people = 5 business days
+         *        → Per person: 50 hours (each does full work faster)
+         *        → Weekly capacity: 50 hours ÷ 1 week = 50 hours/week
+         * 
+         * 3. UTILIZATION PERCENTAGE:
+         *    • Utilization % = (Hours Consumed ÷ Available Hours) × 100
+         *    
+         *    Example: Person with 25 hours/week availability
+         *      • 10 hours consumed → 40% utilization (Green - under capacity)
+         *      • 25 hours consumed → 100% utilization (Yellow - at capacity)
+         *      • 35 hours consumed → 140% utilization (Red - overallocated)
+         * 
+         * 4. COLOR CODING:
+         *    • 0-50%: Light green (plenty of capacity)
+         *    • 51-80%: Yellow-green (moderate load)
+         *    • 81-100%: Yellow (at capacity)
+         *    • 101-120%: Orange (slightly overallocated)
+         *    • 121%+: Red (significantly overallocated)
+         * 
+         * 5. TASK STATUS FILTERING:
+         *    • Only active tasks are included (To Do, In Progress)
+         *    • Done, Paused, and Closed tasks are excluded
+         *    • This shows current/future workload only
+         * 
+         * 6. MULTI-TASK ALLOCATION:
+         *    • If a person has multiple tasks in the same week
+         *    • All task capacities are summed together
+         *    • This can lead to >100% utilization (overallocation)
+         * 
+         * 7. CLICKING A CELL:
+         *    • Shows all tasks for that person in that week
+         *    • Displays capacity breakdown per task
+         *    • Allows toggling between Fixed/Flexible task types
+         */
         function calculateWorkloadHeatMap() {
             const projectedTickets = getProjectedTickets();
             // Filter out completed, paused, and closed tasks for capacity calculation
@@ -7801,6 +7976,149 @@ ${ticket.explanation}
             const modal = document.getElementById('completionGraphModal');
             if (event.target === modal) {
                 closeCompletionGraph();
+            }
+        });
+
+        // --- CALCULATION FORMULA DISPLAY ---
+        function getEndDateFormula() {
+            return `How Task End Dates are Calculated:
+
+1. FIXED-LENGTH TASKS (Default - marked with 🔒):
+   • Duration = Task Size (in days)
+   • Multiple people do NOT reduce the duration
+   • People work in parallel on different aspects
+   
+   Formula: End Date = Start Date + Task Size Days
+   
+   Example 1: 10-day task (XL) with 1 person
+     → Takes 10 business days
+   
+   Example 2: 10-day task (XL) with 5 people
+     → Still takes 10 business days
+     → Each person works 20% capacity (10 days ÷ 5 people)
+
+2. FLEXIBLE TASKS (Opt-in - marked with ⚡):
+   • Duration = Task Size ÷ Number of Assignees
+   • More people = shorter duration (work is divided)
+   • People work on same tasks, splitting the effort
+   
+   Formula: End Date = Start Date + (Task Size Days ÷ Number of Assignees)
+   
+   Example 1: 10-day task with 1 person
+     → Takes 10 business days (100% capacity)
+   
+   Example 2: 10-day task with 2 people
+     → Takes 5 business days (100% capacity each)
+   
+   Example 3: 10-day task with 5 people
+     → Takes 2 business days (100% capacity each)
+
+3. WEEKEND HANDLING (Both task types):
+   • All dates automatically skip weekends (Saturday/Sunday)
+   • If a calculated end date falls on Saturday: moved to Monday
+   • If a calculated end date falls on Sunday: moved to Monday
+   • Only business days (Monday-Friday) count toward duration
+
+4. CUSTOM END DATES:
+   • You can manually override any calculated end date
+   • Useful for external deadlines or dependencies
+   • Custom dates are preserved until you clear them
+
+5. TASK SIZES:
+   • S (Small) = 1 day
+   • M (Medium) = 2 days
+   • L (Large) = 5 days
+   • XL (Extra Large) = 10 days
+   • XXL (Extra Extra Large) = 15 days
+   • Custom sizes can be configured`;
+        }
+
+        function getHeatMapFormula() {
+            return `How Team Workload Heat Map Cells are Calculated:
+
+1. WEEK GROUPING:
+   • Heat map shows the next 8 weeks from today (or earliest task)
+   • Each column represents one week (Monday to Friday)
+   • Weekends (Saturday/Sunday) are excluded from calculations
+
+2. CAPACITY CALCULATION PER PERSON PER WEEK:
+   • Each person has a weekly availability (e.g., 25 hours/week)
+   • Tasks consume capacity based on task type and assignees
+   
+   For FIXED-LENGTH TASKS (🔒):
+     Capacity per Person = (Task Size × Base Hours) ÷ Number of Assignees ÷ Task Duration
+     
+     Example: 10-day task, 5 base hours/day, 2 people
+       → Total effort: 10 days × 5 hours = 50 hours
+       → Per person: 50 hours ÷ 2 people = 25 hours each
+       → Duration: 10 business days (not reduced)
+       → Weekly capacity: 25 hours ÷ 2 weeks = 12.5 hours/week
+   
+   For FLEXIBLE TASKS (⚡):
+     Capacity per Person = (Task Size × Base Hours) ÷ Task Duration
+     
+     Example: 10-day task, 5 base hours/day, 2 people
+       → Total effort: 10 days × 5 hours = 50 hours
+       → Duration: 10 days ÷ 2 people = 5 business days
+       → Per person: 50 hours (each does full work faster)
+       → Weekly capacity: 50 hours ÷ 1 week = 50 hours/week
+
+3. UTILIZATION PERCENTAGE:
+   • Utilization % = (Hours Consumed ÷ Available Hours) × 100
+   
+   Example: Person with 25 hours/week availability
+     • 10 hours consumed → 40% utilization (Green - under capacity)
+     • 25 hours consumed → 100% utilization (Yellow - at capacity)
+     • 35 hours consumed → 140% utilization (Red - overallocated)
+
+4. COLOR CODING:
+   • 0-50%: Light green (plenty of capacity)
+   • 51-80%: Yellow-green (moderate load)
+   • 81-100%: Yellow (at capacity)
+   • 101-120%: Orange (slightly overallocated)
+   • 121%+: Red (significantly overallocated)
+
+5. TASK STATUS FILTERING:
+   • Only active tasks are included (To Do, In Progress)
+   • Done, Paused, and Closed tasks are excluded
+   • This shows current/future workload only
+
+6. MULTI-TASK ALLOCATION:
+   • If a person has multiple tasks in the same week
+   • All task capacities are summed together
+   • This can lead to >100% utilization (overallocation)
+
+7. CLICKING A CELL:
+   • Shows all tasks for that person in that week
+   • Displays capacity breakdown per task
+   • Allows toggling between Fixed/Flexible task types`;
+        }
+
+        function showEndDateFormula() {
+            const formula = getEndDateFormula();
+            
+            document.getElementById('formula-modal-title').textContent = '📅 End Date Calculation Formula';
+            document.getElementById('formula-modal-content').textContent = formula;
+            document.getElementById('formula-modal').classList.add('active');
+        }
+
+        function showHeatMapFormula() {
+            const formula = getHeatMapFormula();
+            
+            document.getElementById('formula-modal-title').textContent = '📊 Heat Map Calculation Formula';
+            document.getElementById('formula-modal-content').textContent = formula;
+            document.getElementById('formula-modal').classList.add('active');
+        }
+
+        function closeFormulaModal() {
+            document.getElementById('formula-modal').classList.remove('active');
+        }
+
+        // Close formula modal when clicking outside
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('formula-modal');
+            if (event.target === modal) {
+                closeFormulaModal();
             }
         });
 
