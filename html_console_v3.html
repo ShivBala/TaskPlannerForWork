@@ -5957,17 +5957,15 @@ ${ticket.explanation}
             const weekEndDate = new Date(weekStartDate);
             weekEndDate.setDate(weekStartDate.getDate() + 6);
             
-            // Find all tasks for this person in this week using latest tickets data
+            // Find all tasks for this person in this week using projected tickets (respects task type)
+            const projectedTicketsForModal = getProjectedTickets();
             const weekTasks = [];
-            tickets.forEach(ticket => {
+            projectedTicketsForModal.forEach(ticket => {
                 if (Array.isArray(ticket.assigned) && ticket.assigned.includes(personName)) {
                     let taskStartDate = new Date(ticket.startDate);
                     
-                    // Calculate the ideal task end date based on size and assignees (same as heat map)
-                    const totalTaskDays = taskSizeDefinitions[ticket.size]?.days || ticketDays[ticket.size] || 1;
-                    const daysPerPerson = totalTaskDays / Math.max(ticket.assigned.length, 1);
-                    const businessDaysNeeded = Math.ceil(daysPerPerson);
-                    const taskEndDate = addBusinessDays(new Date(taskStartDate), businessDaysNeeded - 1);
+                    // Use the end date from projected tickets (respects Fixed-Length vs Flexible)
+                    const taskEndDate = ticket.endDate ? new Date(ticket.endDate) : new Date(ticket.startDate);
                     
                     // Apply weekend adjustment for consistent work week assignment
                     const taskStartDay = taskStartDate.getDay();
