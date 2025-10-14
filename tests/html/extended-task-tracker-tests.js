@@ -1709,7 +1709,7 @@ class ExtendedTaskTrackerTests {
     // ===================================
 
     testTaskCreationWithFixedLength() {
-        this.testFramework.test('Fixed-Length Task Creation - Default behavior', () => {
+        this.testFramework.it('Fixed-Length Task Creation - Default behavior', () => {
             const backup = this.backupApplicationState();
             try {
                 // Create task with isFixedLength = true (default)
@@ -1729,7 +1729,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testTaskCreationWithFlexible() {
-        this.testFramework.test('Flexible Task Creation - Explicit opt-in', () => {
+        this.testFramework.it('Flexible Task Creation - Explicit opt-in', () => {
             const backup = this.backupApplicationState();
             try {
                 const task = this.createTestTicket({
@@ -1748,7 +1748,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testIsFixedLengthPropertyStored() {
-        this.testFramework.test('isFixedLength Property is Stored Correctly', () => {
+        this.testFramework.it('isFixedLength Property is Stored Correctly', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setTickets([
@@ -1768,7 +1768,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testBackwardsCompatibilityUndefinedToTrue() {
-        this.testFramework.test('Backwards Compatibility - undefined defaults to true', () => {
+        this.testFramework.it('Backwards Compatibility - undefined defaults to true', () => {
             const backup = this.backupApplicationState();
             try {
                 const task = this.createTestTicket({});
@@ -1791,7 +1791,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testCheckboxStateReflectsIsFixedLength() {
-        this.testFramework.test('Checkbox State Reflects isFixedLength Value', () => {
+        this.testFramework.it('Checkbox State Reflects isFixedLength Value', () => {
             const backup = this.backupApplicationState();
             try {
                 // Test that isFixedLength = true means checkbox unchecked
@@ -1815,7 +1815,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testVisualIndicatorDisplaysCorrectly() {
-        this.testFramework.test('Visual Indicators Display Correctly', () => {
+        this.testFramework.it('Visual Indicators Display Correctly', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([this.createTestPerson({ name: 'Alice' })]);
@@ -1853,7 +1853,7 @@ class ExtendedTaskTrackerTests {
     // ===================================
 
     testFixedLengthOnePersonVariousSizes() {
-        this.testFramework.test('Fixed-Length: 1 person, various sizes - Duration unchanged', () => {
+        this.testFramework.it('Fixed-Length: 1 person, various sizes - Duration unchanged', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([this.createTestPerson({ name: 'Alice' })]);
@@ -1894,7 +1894,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testFixedLengthTwoPeopleSameDuration() {
-        this.testFramework.test('Fixed-Length: 2 people - Same duration as 1 person', () => {
+        this.testFramework.it('Fixed-Length: 2 people - Same duration as 1 person', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([
@@ -1926,7 +1926,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testFixedLengthFivePeopleSameDuration() {
-        this.testFramework.test('Fixed-Length: 5 people - Same duration', () => {
+        this.testFramework.it('Fixed-Length: 5 people - Same duration', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([
@@ -1959,7 +1959,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testFlexibleOnePerson() {
-        this.testFramework.test('Flexible: 1 person - Baseline duration', () => {
+        this.testFramework.it('Flexible: 1 person - Baseline duration', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([this.createTestPerson({ name: 'Alice' })]);
@@ -1985,7 +1985,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testFlexibleTwoPeopleHalfDuration() {
-        this.testFramework.test('Flexible: 2 people - Half duration', () => {
+        this.testFramework.it('Flexible: 2 people - Half duration', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([
@@ -2016,7 +2016,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testFlexibleFivePeopleOneFifthDuration() {
-        this.testFramework.test('Flexible: 5 people - One-fifth duration', () => {
+        this.testFramework.it('Flexible: 5 people - One-fifth duration', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([
@@ -2050,7 +2050,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testEdgeCaseZeroAssignees() {
-        this.testFramework.test('Edge Case: 0 assignees - Should not crash', () => {
+        this.testFramework.it('Edge Case: 0 assignees - Should not crash', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([this.createTestPerson({ name: 'Alice' })]);
@@ -2077,7 +2077,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testEdgeCaseVeryLargeTaskSize() {
-        this.testFramework.test('Edge Case: Very large task size (100 days)', () => {
+        this.testFramework.it('Edge Case: Very large task size (100 days)', () => {
             const backup = this.backupApplicationState();
             try {
                 // Temporarily add a giant task size
@@ -2109,7 +2109,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testComparisonSameTaskFixedVsFlexible() {
-        this.testFramework.test('Comparison: Same task as Fixed vs Flexible', () => {
+        this.testFramework.it('Comparison: Same task as Fixed vs Flexible', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([
@@ -2148,7 +2148,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testDateBoundaryWeekends() {
-        this.testFramework.test('Date Boundary: Tasks crossing weekends', () => {
+        this.testFramework.it('Date Boundary: Tasks crossing weekends', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([this.createTestPerson({ name: 'Alice' })]);
@@ -2179,7 +2179,7 @@ class ExtendedTaskTrackerTests {
     // ===================================
 
     testFixedOnePersonHundredPercent() {
-        this.testFramework.test('Fixed: 1 person = 100% capacity', () => {
+        this.testFramework.it('Fixed: 1 person = 100% capacity', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([this.createTestPerson({ name: 'Alice' })]);
@@ -2205,7 +2205,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testFixedTwoPeopleFiftyPercent() {
-        this.testFramework.test('Fixed: 2 people = 50% each', () => {
+        this.testFramework.it('Fixed: 2 people = 50% each', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([
@@ -2235,7 +2235,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testFixedFivePeopleTwentyPercent() {
-        this.testFramework.test('Fixed: 5 people = 20% each', () => {
+        this.testFramework.it('Fixed: 5 people = 20% each', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([
@@ -2268,7 +2268,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testFlexibleOnePersonHundredPercent() {
-        this.testFramework.test('Flexible: 1 person = 100% capacity (shorter duration)', () => {
+        this.testFramework.it('Flexible: 1 person = 100% capacity (shorter duration)', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([this.createTestPerson({ name: 'Alice' })]);
@@ -2294,7 +2294,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testFlexibleTwoPeopleHundredPercent() {
-        this.testFramework.test('Flexible: 2 people = 100% each (half duration)', () => {
+        this.testFramework.it('Flexible: 2 people = 100% each (half duration)', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([
@@ -2324,7 +2324,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testMixedSamePersonFixedPlusFlexible() {
-        this.testFramework.test('Mixed: Same person with Fixed + Flexible tasks', () => {
+        this.testFramework.it('Mixed: Same person with Fixed + Flexible tasks', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([
@@ -2364,7 +2364,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testMixedSamePersonTwoFixed() {
-        this.testFramework.test('Mixed: Same person with 2 Fixed tasks', () => {
+        this.testFramework.it('Mixed: Same person with 2 Fixed tasks', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([this.createTestPerson({ name: 'Alice' })]);
@@ -2396,7 +2396,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testMixedSamePersonTwoFlexible() {
-        this.testFramework.test('Mixed: Same person with 2 Flexible tasks', () => {
+        this.testFramework.it('Mixed: Same person with 2 Flexible tasks', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([this.createTestPerson({ name: 'Alice' })]);
@@ -2428,7 +2428,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testOverallocationGreaterThan100() {
-        this.testFramework.test('Overallocation: Total >100%', () => {
+        this.testFramework.it('Overallocation: Total >100%', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([this.createTestPerson({ name: 'Alice' })]);
@@ -2461,7 +2461,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testUnderallocationLessThan100() {
-        this.testFramework.test('Underallocation: Total <100%', () => {
+        this.testFramework.it('Underallocation: Total <100%', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([this.createTestPerson({ name: 'Alice' })]);
@@ -2488,7 +2488,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testEdgeCaseZeroCapacity() {
-        this.testFramework.test('Edge Case: 0% capacity calculation', () => {
+        this.testFramework.it('Edge Case: 0% capacity calculation', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([this.createTestPerson({ name: 'Alice' })]);
@@ -2514,7 +2514,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testEdgeCaseRoundingPrecision() {
-        this.testFramework.test('Edge Case: Rounding/precision in percentages', () => {
+        this.testFramework.it('Edge Case: Rounding/precision in percentages', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([
@@ -2545,7 +2545,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testHeatMapStructureFixed() {
-        this.testFramework.test('Heat Map Structure: Fixed tasks', () => {
+        this.testFramework.it('Heat Map Structure: Fixed tasks', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([this.createTestPerson({ name: 'Alice' })]);
@@ -2573,7 +2573,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testHeatMapStructureFlexible() {
-        this.testFramework.test('Heat Map Structure: Flexible tasks', () => {
+        this.testFramework.it('Heat Map Structure: Flexible tasks', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([this.createTestPerson({ name: 'Alice' })]);
@@ -2601,7 +2601,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testHeatMapStructureMixed() {
-        this.testFramework.test('Heat Map Structure: Mixed task types', () => {
+        this.testFramework.it('Heat Map Structure: Mixed task types', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([this.createTestPerson({ name: 'Alice' })]);
@@ -2639,7 +2639,7 @@ class ExtendedTaskTrackerTests {
     // ===================================
 
     testFixedLengthIconDisplays() {
-        this.testFramework.test('UI: Fixed-Length icon 🔒 displays', () => {
+        this.testFramework.it('UI: Fixed-Length icon 🔒 displays', () => {
             const backup = this.backupApplicationState();
             try {
                 const task = this.createTestTicket({ isFixedLength: true });
@@ -2656,7 +2656,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testFlexibleIconDisplays() {
-        this.testFramework.test('UI: Flexible icon ⚡ displays', () => {
+        this.testFramework.it('UI: Flexible icon ⚡ displays', () => {
             const backup = this.backupApplicationState();
             try {
                 const task = this.createTestTicket({ isFixedLength: false });
@@ -2673,7 +2673,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testCheckboxDefaultsUnchecked() {
-        this.testFramework.test('UI: Checkbox defaults to unchecked (Fixed)', () => {
+        this.testFramework.it('UI: Checkbox defaults to unchecked (Fixed)', () => {
             const backup = this.backupApplicationState();
             try {
                 // Default task should have isFixedLength = true (checkbox unchecked)
@@ -2691,7 +2691,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testCheckboxStateChangesIsFixedLength() {
-        this.testFramework.test('UI: Checkbox state changes isFixedLength', () => {
+        this.testFramework.it('UI: Checkbox state changes isFixedLength', () => {
             const backup = this.backupApplicationState();
             try {
                 // Simulate checkbox checked → isFixedLength = false
@@ -2711,7 +2711,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testDetailsButtonShowsTaskType() {
-        this.testFramework.test('Details Button: Shows task type', () => {
+        this.testFramework.it('Details Button: Shows task type', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([this.createTestPerson({ name: 'Alice' })]);
@@ -2739,7 +2739,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testDetailsButtonShowsCapacityBreakdown() {
-        this.testFramework.test('Details Button: Shows capacity breakdown', () => {
+        this.testFramework.it('Details Button: Shows capacity breakdown', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([
@@ -2771,7 +2771,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testDetailsButtonShowsDurationExplanation() {
-        this.testFramework.test('Details Button: Shows duration explanation', () => {
+        this.testFramework.it('Details Button: Shows duration explanation', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([this.createTestPerson({ name: 'Alice' })]);
@@ -2803,7 +2803,7 @@ class ExtendedTaskTrackerTests {
     // ===================================
 
     testCSVExportIncludesTaskTypeColumn() {
-        this.testFramework.test('CSV Export: Includes Task Type column', () => {
+        this.testFramework.it('CSV Export: Includes Task Type column', () => {
             const backup = this.backupApplicationState();
             try {
                 // We can't directly test file download, but we can verify the logic
@@ -2828,7 +2828,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testCSVExportShowsFixed() {
-        this.testFramework.test('CSV Export: Shows "Fixed" for Fixed-Length tasks', () => {
+        this.testFramework.it('CSV Export: Shows "Fixed" for Fixed-Length tasks', () => {
             const backup = this.backupApplicationState();
             try {
                 const task = this.createTestTicket({ isFixedLength: true });
@@ -2845,7 +2845,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testCSVExportShowsFlexible() {
-        this.testFramework.test('CSV Export: Shows "Flexible" for Flexible tasks', () => {
+        this.testFramework.it('CSV Export: Shows "Flexible" for Flexible tasks', () => {
             const backup = this.backupApplicationState();
             try {
                 const task = this.createTestTicket({ isFixedLength: false });
@@ -2862,7 +2862,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testCSVImportParsesFixed() {
-        this.testFramework.test('CSV Import: Parses "Fixed" correctly', () => {
+        this.testFramework.it('CSV Import: Parses "Fixed" correctly', () => {
             const backup = this.backupApplicationState();
             try {
                 // Simulate parsing logic
@@ -2880,7 +2880,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testCSVImportParsesFlexible() {
-        this.testFramework.test('CSV Import: Parses "Flexible" correctly', () => {
+        this.testFramework.it('CSV Import: Parses "Flexible" correctly', () => {
             const backup = this.backupApplicationState();
             try {
                 // Simulate parsing logic
@@ -2898,7 +2898,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testCSVImportDefaultsToFixed() {
-        this.testFramework.test('CSV Import: Defaults to Fixed if column missing', () => {
+        this.testFramework.it('CSV Import: Defaults to Fixed if column missing', () => {
             const backup = this.backupApplicationState();
             try {
                 // Simulate missing/invalid task type
@@ -2916,7 +2916,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testConfigExportIncludesIsFixedLength() {
-        this.testFramework.test('Config Export: Includes isFixedLength in JSON', () => {
+        this.testFramework.it('Config Export: Includes isFixedLength in JSON', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setTickets([
@@ -2940,7 +2940,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testConfigImportParsesIsFixedLength() {
-        this.testFramework.test('Config Import: Parses isFixedLength with default', () => {
+        this.testFramework.it('Config Import: Parses isFixedLength with default', () => {
             const backup = this.backupApplicationState();
             try {
                 // Simulate old config without isFixedLength
@@ -2965,7 +2965,7 @@ class ExtendedTaskTrackerTests {
     // ===================================
 
     testTaskWithNoAssignees() {
-        this.testFramework.test('Edge: Task with no assignees should not crash', () => {
+        this.testFramework.it('Edge: Task with no assignees should not crash', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([this.createTestPerson({ name: 'Alice' })]);
@@ -2990,7 +2990,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testTaskWithOneAssignee() {
-        this.testFramework.test('Edge: Task with 1 assignee (Fixed = Flexible)', () => {
+        this.testFramework.it('Edge: Task with 1 assignee (Fixed = Flexible)', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([this.createTestPerson({ name: 'Alice' })]);
@@ -3023,7 +3023,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testVerySmallTaskSize() {
-        this.testFramework.test('Edge: Very small task size (0.5 days)', () => {
+        this.testFramework.it('Edge: Very small task size (0.5 days)', () => {
             const backup = this.backupApplicationState();
             try {
                 // Add a tiny task size
@@ -3055,7 +3055,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testVeryLargeTaskSizeHundredDays() {
-        this.testFramework.test('Edge: Very large task size (100 days)', () => {
+        this.testFramework.it('Edge: Very large task size (100 days)', () => {
             const backup = this.backupApplicationState();
             try {
                 this.appWindow.eval(`
@@ -3086,7 +3086,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testChangingTaskTypeAfterCreation() {
-        this.testFramework.test('Edge: Changing task type after creation', () => {
+        this.testFramework.it('Edge: Changing task type after creation', () => {
             const backup = this.backupApplicationState();
             try {
                 const task = this.createTestTicket({ isFixedLength: true });
@@ -3110,7 +3110,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testDeletingTaskWithSpecificType() {
-        this.testFramework.test('Edge: Deleting task with specific type', () => {
+        this.testFramework.it('Edge: Deleting task with specific type', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setTickets([
@@ -3134,7 +3134,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testStatusChangesDoNotAffectTaskType() {
-        this.testFramework.test('Edge: Status changes do not affect task type', () => {
+        this.testFramework.it('Edge: Status changes do not affect task type', () => {
             const backup = this.backupApplicationState();
             try {
                 const task = this.createTestTicket({ 
@@ -3161,7 +3161,7 @@ class ExtendedTaskTrackerTests {
     }
 
     testFilteringWorksWithBothTaskTypes() {
-        this.testFramework.test('Edge: Filtering works with both task types', () => {
+        this.testFramework.it('Edge: Filtering works with both task types', () => {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([
