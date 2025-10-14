@@ -29,3 +29,9 @@ comprehensive_test.ps1
 # Editor files
 *.swp
 *.swo
+# Intermediate optimization files
+html_console_v4.html
+html_console_v4_backup.html
+consolidate_delay_analysis.py
+create_v9_optimized.py
+PHASE1_QUICK_REFERENCE.md
