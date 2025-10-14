@@ -1,0 +1,313 @@
+FIXED-LENGTH TASKS FEATURE - REQUIREMENTS DOCUMENT
+=====================================================
+
+OVERVIEW
+--------
+Implement a new feature that allows tasks to be either "Fixed-Length" or "Flexible" in terms of how they calculate duration and capacity allocation when multiple people are assigned.
+
+CORE CONCEPTS
+-------------
+
+1. FIXED-LENGTH TASKS (DEFAULT)
+   - Duration remains constant regardless of number of assignees
+   - If a 10-day task has 2 people assigned, it still takes 10 days
+   - Each person contributes proportionally over the full duration
+   - Example: 10-day task, 2 people = each person works at 50% capacity for 10 days
+   - Marked with 🔒 icon in UI
+
+2. FLEXIBLE TASKS (OPT-IN)
+   - Duration splits among assignees (current behavior)
+   - If a 10-day task has 2 people assigned, it takes 5 days
+   - Each person works at 100% capacity for the shorter duration
+   - Example: 10-day task, 2 people = each person works at 100% for 5 days
+   - Marked with ⚡ icon in UI
+
+DATA MODEL CHANGES
+------------------
+
+3. NEW PROPERTY: isFixedLength
+   - Type: Boolean
+   - Default: true (Fixed-Length is the default)
+   - Stored in task object alongside existing properties
+
+4. TASK OBJECT STRUCTURE
+   ```javascript
+   {
+     id: string,
+     taskName: string,
+     assignedPeople: array,
+     status: string,
+     sizing: string,
+     startDate: string,
+     isFixedLength: true,  // NEW PROPERTY - defaults to true
+     // ... other existing properties
+   }
+   ```
+
+UI CHANGES
+----------
+
+5. ADD TICKET FORM
+   - Add checkbox: "Flexible Task" (unchecked by default)
+   - When unchecked: isFixedLength = true (Fixed-Length task)
+   - When checked: isFixedLength = false (Flexible task)
+   - Position: Below or near the existing form fields
+
+6. TASK DISPLAY
+   - Show visual indicator for task type:
+     - 🔒 for Fixed-Length tasks
+     - ⚡ for Flexible tasks
+   - Display in task list alongside task name or status
+
+7. DETAILS BUTTON
+   - When clicked, show modal/dialog with:
+     - Task Type: "Fixed-Length Task 🔒" or "Flexible Task ⚡"
+     - Duration Calculation: Explain how duration was calculated
+     - Capacity Breakdown: Show per-person capacity allocation
+     - Example: "This 10-day Fixed-Length task with 2 assignees allocates 50% capacity to each person over 10 days"
+
+CALCULATION LOGIC CHANGES
+--------------------------
+
+8. getProjectedTickets() FUNCTION
+   - Check task.isFixedLength property
+   - IF isFixedLength === true (or undefined for backwards compatibility):
+     * endDate = startDate + full task size (in work days)
+     * Duration does NOT depend on number of assignees
+   - ELSE (flexible task):
+     * endDate = startDate + (task size / number of assignees)
+     * Duration splits among assignees (current behavior)
+
+9. calculateWorkloadHeatMap() FUNCTION
+   - For Fixed-Length tasks:
+     * Spread workload over full duration
+     * Daily capacity per person = task size / (duration × number of assignees)
+     * Example: 10-day task, 2 people = 10 / (10 × 2) = 0.5 (50% per day)
+   - For Flexible tasks:
+     * Concentrate workload in shorter time
+     * Daily capacity per person = 100% over shorter duration
+   - Handle mixed scenarios (same person has both types):
+     * Sum capacities from all assigned tasks
+     * Show >100% when overallocated
+
+MIXED TASK SCENARIOS
+--------------------
+
+10. SINGLE PERSON, MULTIPLE TASKS
+    Example: Alice has 3 tasks:
+    - Task A: Fixed-Length, 10 days, 1 person → 100% daily for 10 days
+    - Task B: Fixed-Length, 10 days, 2 people → 50% daily for 10 days
+    - Task C: Flexible, 10 days, 2 people → 100% daily for 5 days
+    
+    Heat map should show:
+    - Days 1-5: 150% (Task A: 100% + Task B: 50% overlapping with Task C: 100%)
+    - Days 6-10: 150% (Task A: 100% + Task B: 50%)
+    - Highlight as overallocation (>100%)
+
+11. CAPACITY VISUALIZATION
+    - Show daily capacity percentages in heat map
+    - Color code: Green (<80%), Yellow (80-100%), Red (>100%)
+    - Display exact percentage on hover or in details
+
+IMPORT/EXPORT CHANGES
+---------------------
+
+12. CSV EXPORT (exportData function)
+    - Add new column: "Task Type"
+    - Values: "Fixed" or "Flexible"
+    - Column order: After existing columns (e.g., after Status or Sizing)
+    - Example row: Task1,Alice;Bob,In Progress,Medium,2024-01-01,Fixed
+
+13. CSV IMPORT (handleTaskImport function)
+    - Parse "Task Type" column if present
+    - Map "Fixed" → isFixedLength = true
+    - Map "Flexible" → isFixedLength = false
+    - DEFAULT: If column missing or value invalid, default to Fixed (isFixedLength = true)
+    - Backwards compatibility: Old CSVs without this column work as Fixed-Length
+
+14. CONFIGURATION EXPORT (exportConfiguration function)
+    - Include isFixedLength property in JSON export
+    - Example:
+      ```json
+      {
+        "tickets": [
+          {
+            "id": "...",
+            "taskName": "...",
+            "isFixedLength": true,
+            // ... other properties
+          }
+        ]
+      }
+      ```
+
+15. CONFIGURATION IMPORT (handleConfigImport function)
+    - Parse isFixedLength from imported JSON
+    - DEFAULT: If property missing, set isFixedLength = true
+    - Backwards compatibility: Old configs without this property work as Fixed-Length
+
+BACKWARDS COMPATIBILITY
+-----------------------
+
+16. EXISTING DATA
+    - All existing tasks without isFixedLength property should be treated as Fixed-Length
+    - Add migration logic: When loading data, if isFixedLength is undefined, set it to true
+    - This preserves current behavior for old data
+
+17. DEFAULT BEHAVIOR
+    - New tasks default to Fixed-Length (isFixedLength = true)
+    - Users must explicitly check "Flexible Task" checkbox to create Flexible tasks
+    - This matches the requirement for Fixed-Length to be the default
+
+TESTING REQUIREMENTS
+--------------------
+
+18. NEW TESTS (54 tests estimated)
+    
+    A. Task Creation Tests (6 tests)
+       - Test creating Fixed-Length task (default)
+       - Test creating Flexible task (checkbox checked)
+       - Test isFixedLength property is stored correctly
+       - Test backwards compatibility (undefined → true)
+       - Test checkbox state reflects isFixedLength value
+       - Test visual indicator (🔒/⚡) displays correctly
+    
+    B. End Date Calculation Tests (10 tests)
+       - Fixed-Length: 1 person, various sizes
+       - Fixed-Length: 2 people, same duration as 1 person
+       - Fixed-Length: 5 people, same duration
+       - Flexible: 1 person (baseline)
+       - Flexible: 2 people, half duration
+       - Flexible: 5 people, one-fifth duration
+       - Edge case: 0 assignees
+       - Edge case: Very large task size
+       - Comparison: Same task as Fixed vs Flexible
+       - Date boundary tests (weekends, etc.)
+    
+    C. Capacity Calculation Tests (15 tests)
+       - Fixed: 1 person, 100% capacity
+       - Fixed: 2 people, 50% each
+       - Fixed: 5 people, 20% each
+       - Flexible: 1 person, 100% capacity (shorter duration)
+       - Flexible: 2 people, 100% each (half duration)
+       - Mixed: Same person, 1 Fixed + 1 Flexible task
+       - Mixed: Same person, 2 Fixed tasks
+       - Mixed: Same person, 2 Flexible tasks
+       - Overallocation: Total >100%
+       - Underallocation: Total <100%
+       - Edge case: 0% capacity calculation
+       - Edge case: Rounding/precision in percentages
+       - Heat map structure for Fixed tasks
+       - Heat map structure for Flexible tasks
+       - Heat map structure for mixed tasks
+    
+    D. UI/Display Tests (7 tests)
+       - Fixed-Length icon displays correctly
+       - Flexible icon displays correctly
+       - Checkbox defaults to unchecked
+       - Checkbox state changes isFixedLength
+       - Details button shows task type
+       - Details button shows capacity breakdown
+       - Details button shows duration explanation
+    
+    E. Import/Export Tests (8 tests)
+       - CSV export includes Task Type column
+       - CSV export shows "Fixed" for Fixed-Length
+       - CSV export shows "Flexible" for Flexible
+       - CSV import parses "Fixed" correctly
+       - CSV import parses "Flexible" correctly
+       - CSV import defaults to Fixed if column missing
+       - Config export includes isFixedLength
+       - Config import parses isFixedLength (with default)
+    
+    F. Edge Cases (8 tests)
+       - Task with no assignees (shouldn't crash)
+       - Task with 1 assignee (Fixed = Flexible in this case)
+       - Very small task size (e.g., 0.5 days)
+       - Very large task size (e.g., 100 days)
+       - Changing task type after creation
+       - Deleting task with specific type
+       - Status changes don't affect task type
+       - Filtering works with both task types
+
+DOCUMENTATION REQUIREMENTS
+---------------------------
+
+19. ACCEPTANCE CRITERIA DOCUMENT
+    - Create: docs/acceptance-criteria/07-fixed-length-tasks.md
+    - Format: Given-When-Then scenarios
+    - Cover all 18 test categories above
+    - Include examples and expected behaviors
+    - Link from docs/acceptance-criteria/README.md
+
+20. UPDATE EXISTING DOCS
+    - Update TEST_COVERAGE_ANALYSIS.md with new feature
+    - Update EXTENDED_TEST_COVERAGE.md with 54 new tests
+    - Add section to DOCUMENTATION_SUMMARY.md
+
+IMPLEMENTATION PHASES
+---------------------
+
+PHASE 1: Data Model & UI (Priority 1)
+- [ ] Add isFixedLength property to task creation (default true)
+- [ ] Add "Flexible Task" checkbox to addTicket form (unchecked default)
+- [ ] Update task object structure in localStorage
+- [ ] Add backwards compatibility migration logic
+- [ ] Add visual indicators (🔒/⚡) to task display
+
+PHASE 2: Calculation Logic (Priority 1)
+- [ ] Update getProjectedTickets() with dual logic
+- [ ] Update calculateWorkloadHeatMap() for mixed scenarios
+- [ ] Test end date calculations for both types
+- [ ] Test capacity calculations for both types
+- [ ] Test mixed task scenarios
+
+PHASE 3: Details Button (Priority 2)
+- [ ] Update details button handler to show task type
+- [ ] Add duration calculation explanation
+- [ ] Add capacity per person breakdown
+- [ ] Test modal displays correctly
+
+PHASE 4: Import/Export (Priority 2)
+- [ ] Update exportData() - add "Task Type" column
+- [ ] Update handleTaskImport() - parse task type with default
+- [ ] Update exportConfiguration() - include isFixedLength
+- [ ] Update handleConfigImport() - parse isFixedLength with default
+- [ ] Test import/export with both types
+- [ ] Test backwards compatibility
+
+PHASE 5: Testing (Priority 1 - Throughout)
+- [ ] Create 6 task creation tests
+- [ ] Create 10 end date calculation tests
+- [ ] Create 15 capacity calculation tests
+- [ ] Create 7 UI/display tests
+- [ ] Create 8 import/export tests
+- [ ] Create 8 edge case tests
+- [ ] Verify all 54 tests pass
+- [ ] Verify original 110 tests still pass
+
+PHASE 6: Documentation (Priority 3)
+- [ ] Create docs/acceptance-criteria/07-fixed-length-tasks.md
+- [ ] Update existing documentation
+- [ ] Add examples and screenshots if needed
+
+SUCCESS CRITERIA
+-----------------
+✅ All 54 new tests passing
+✅ All 110 original tests still passing (164 total)
+✅ Fixed-Length is default behavior
+✅ Flexible tasks work correctly
+✅ Mixed task scenarios calculate correctly
+✅ Import/export preserves task type
+✅ Backwards compatibility maintained
+✅ UI shows task type indicators
+✅ Details button shows complete information
+✅ Documentation complete
+
+NOTES
+-----
+- Default behavior is Fixed-Length (isFixedLength = true)
+- Users must explicitly opt into Flexible tasks
+- All existing tasks are treated as Fixed-Length
+- Heat map must handle >100% capacity scenarios
+- Maintain existing functionality for non-task-type features

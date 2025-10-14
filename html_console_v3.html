@@ -1001,8 +1001,16 @@
                             </div>
                         </div>
                         
+                        <!-- Task Type Checkbox -->
+                        <div class="lg:col-span-1 flex items-end pb-1">
+                            <label class="flex items-center gap-1 text-xs font-medium text-gray-700 cursor-pointer" title="Check to make task duration split among assignees. Unchecked (default) keeps fixed duration regardless of assignees.">
+                                <input type="checkbox" id="new-ticket-flexible" class="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500 rounded">
+                                <span>Flexible</span>
+                            </label>
+                        </div>
+                        
                         <!-- Assignment -->
-                        <div class="lg:col-span-3">
+                        <div class="lg:col-span-2">
                             <label class="block text-xs font-medium text-gray-700 mb-1">Assign to:</label>
                             <div id="new-ticket-assigned" class="flex flex-wrap gap-1 p-2 border border-gray-300 rounded-md bg-gray-50 min-h-[36px] items-center transition-all hover:bg-white focus-within:bg-white focus-within:border-blue-500">
                                 <!-- Checkboxes populated by JS -->
@@ -1566,6 +1574,12 @@
                         ticket = initializeStartDateHistory(ticket);
                         ticket = initializeEndDateHistory(ticket);
                         ticket = initializeSizeHistory(ticket);
+                        
+                        // Add backwards compatibility for isFixedLength field
+                        if (ticket.isFixedLength === undefined) {
+                            ticket.isFixedLength = true; // Default to Fixed-Length for existing tasks
+                        }
+                        
                         return ticket;
                     });
                     estimationBaseHours = data.estimationBaseHours || 5;
@@ -2337,6 +2351,49 @@
                     return result;
                 }
                 
+                // NEW: Handle Fixed-Length tasks (isFixedLength = true or undefined for backwards compatibility)
+                const isFixedLength = ticket.isFixedLength !== false; // Default to true
+                
+                if (isFixedLength && ticket.assigned.length > 0) {
+                    console.log(`🔒 Fixed-Length task ${ticket.id}: Duration is fixed regardless of assignees`);
+                    
+                    // Get task duration in business days
+                    const taskDays = taskSizeDefinitions[ticket.size]?.days || 0;
+                    const totalEffortHours = effortMap[ticket.size] || 0;
+                    
+                    // Calculate start date
+                    let taskStartDate;
+                    if (useCommonStartDate) {
+                        const commonDate = document.getElementById('common-start-date').value;
+                        taskStartDate = commonDate ? new Date(commonDate) : getEffectiveStartDate();
+                    } else {
+                        taskStartDate = new Date(ticket.startDate || getEffectiveStartDate());
+                    }
+                    taskStartDate = getNextBusinessDay(taskStartDate);
+                    
+                    // Fixed-Length: End date = Start date + task size (in business days)
+                    const endDate = addBusinessDays(new Date(taskStartDate), taskDays);
+                    
+                    const explanation = `🔒 Fixed-Length Task\n` +
+                        `Task Size: ${ticket.size} = ${taskDays} business days\n` +
+                        `Total Effort: ${totalEffortHours} hours\n` +
+                        `Assigned to: ${ticket.assigned.join(', ')} (${ticket.assigned.length} person(s))\n` +
+                        `Start Date: ${formatDate(taskStartDate.toISOString().split('T')[0])}\n` +
+                        `Duration: ${taskDays} business days (fixed, regardless of team size)\n` +
+                        `Daily Capacity per Person: ${(totalEffortHours / (taskDays * ticket.assigned.length)).toFixed(1)} hours/day (${((totalEffortHours / (taskDays * ticket.assigned.length)) / projectHoursPerDay * 100).toFixed(0)}% of ${projectHoursPerDay}h day)\n` +
+                        `End Date: ${formatDate(endDate.toISOString().split('T')[0])}\n\n` +
+                        `Note: Fixed-Length tasks maintain the same duration regardless of how many people are assigned.\n` +
+                        `Each person works on the task proportionally over the full duration.`;
+                    
+                    return {
+                        ...ticket,
+                        endDate: endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                        rawEndDate: endDate,
+                        explanation: explanation,
+                        isDelayed: false
+                    };
+                }
+                
                 const totalEffortHours = effortMap[ticket.size] || 0;
                 const assignedCount = ticket.assigned.length;
                 
@@ -3092,9 +3149,15 @@
                     `;
                 }
                 
+                // Determine task type indicator
+                const taskTypeIcon = (ticket.isFixedLength === false) ? '⚡' : '🔒';
+                const taskTypeTitle = (ticket.isFixedLength === false) ? 'Flexible Task' : 'Fixed-Length Task';
+                
                 tr.innerHTML = `
                     <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-500">${ticket.id}</td>
-                    <td class="px-3 py-2 text-sm text-gray-900 w-1/3">${ticket.description}</td>
+                    <td class="px-3 py-2 text-sm text-gray-900 w-1/3">
+                        <span title="${taskTypeTitle}">${taskTypeIcon}</span> ${ticket.description}
+                    </td>
                     <td class="px-3 py-2 whitespace-nowrap text-sm text-gray-600">${startDateInput}</td>
                     <td class="px-3 py-2 whitespace-nowrap text-sm font-medium">
                         <select 
@@ -3178,7 +3241,7 @@
             }
 
             // 1. Generate the CSV content
-            let csvContent = "Ticket ID,Description,Start Date,Size,Priority,Status,Pause Comments,Person Days,Total Hours,Assigned Team,Projected End Date,Detailed Explanation\n";
+            let csvContent = "Ticket ID,Description,Start Date,Size,Priority,Status,Task Type,Pause Comments,Person Days,Total Hours,Assigned Team,Projected End Date,Detailed Explanation\n";
 
             projectedTickets.forEach(ticket => {
                 const totalHours = effortMap[ticket.size] || 0;
@@ -3192,6 +3255,10 @@
                     ? ticket.pauseComments.map(pc => `[${pc.timestamp}] ${pc.comment}`).join(' | ')
                     : '';
 
+                // NEW: Determine task type for export
+                const isFixedLength = ticket.isFixedLength !== false; // Default to true
+                const taskType = isFixedLength ? 'Fixed' : 'Flexible';
+
                 const row = [
                     ticket.id,
                     escapeCSV(ticket.description),
@@ -3199,6 +3266,7 @@
                     ticket.size,
                     ticket.priority || 'P3',
                     escapeCSV(ticket.status || 'To Do'),
+                    taskType, // NEW: Task Type column
                     escapeCSV(pauseCommentsText),
                     personDays,
                     totalHours,
@@ -3291,11 +3359,13 @@
             
             // Tickets section (non-closed)
             csvContent += "SECTION,TICKETS\n";
-            csvContent += "ID,Description,Start Date,Size,Priority,Assigned Team,Status,Pause Comments,Start Date History,End Date History,Size History,Custom End Date\n";
+            csvContent += "ID,Description,Start Date,Size,Priority,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date\n";
             configData.tickets.filter(ticket => (ticket.status || 'To Do') !== 'Closed').forEach(ticket => {
                 const assignedTeam = ticket.assigned.join(';');
                 const priority = ticket.priority || 'P3';
                 const status = ticket.status || 'To Do';
+                const isFixedLength = ticket.isFixedLength !== false; // Default to true
+                const taskType = isFixedLength ? 'Fixed' : 'Flexible'; // NEW: Task Type
                 const pauseCommentsText = ticket.pauseComments && ticket.pauseComments.length > 0 
                     ? ticket.pauseComments.map(pc => `[${pc.timestamp}] ${pc.comment}`).join(' | ')
                     : '';
@@ -3315,7 +3385,7 @@
                     ).join(' | ')
                     : '';
                 const customEndDate = ticket.customEndDate || '';
-                csvContent += `${ticket.id},"${ticket.description.replace(/"/g, '""')}",${ticket.startDate},${ticket.size},${priority},"${assignedTeam}","${status}","${pauseCommentsText}","${startDateHistoryText}","${endDateHistoryText}","${sizeHistoryText}","${customEndDate}"\n`;
+                csvContent += `${ticket.id},"${ticket.description.replace(/"/g, '""')}",${ticket.startDate},${ticket.size},${priority},"${assignedTeam}","${status}","${taskType}","${pauseCommentsText}","${startDateHistoryText}","${endDateHistoryText}","${sizeHistoryText}","${customEndDate}"\n`;
             });
             // Download the configuration file (non-closed)
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -3373,11 +3443,13 @@
 
             // Tickets section (closed only)
             closedCsvContent += "SECTION,TICKETS\n";
-            closedCsvContent += "ID,Description,Start Date,Size,Priority,Assigned Team,Status,Pause Comments,Start Date History,End Date History,Size History,Custom End Date\n";
+            closedCsvContent += "ID,Description,Start Date,Size,Priority,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date\n";
             configData.tickets.filter(ticket => (ticket.status || 'To Do') === 'Closed').forEach(ticket => {
                 const assignedTeam = ticket.assigned.join(';');
                 const priority = ticket.priority || 'P3';
                 const status = ticket.status || 'Closed';
+                const isFixedLength = ticket.isFixedLength !== false; // Default to true
+                const taskType = isFixedLength ? 'Fixed' : 'Flexible'; // NEW: Task Type
                 const pauseCommentsText = ticket.pauseComments && ticket.pauseComments.length > 0 
                     ? ticket.pauseComments.map(pc => `[${pc.timestamp}] ${pc.comment}`).join(' | ')
                     : '';
@@ -3397,7 +3469,7 @@
                     ).join(' | ')
                     : '';
                 const customEndDate = ticket.customEndDate || '';
-                closedCsvContent += `${ticket.id},"${ticket.description.replace(/"/g, '""')}",${ticket.startDate},${ticket.size},${priority},"${assignedTeam}","${status}","${pauseCommentsText}","${startDateHistoryText}","${endDateHistoryText}","${sizeHistoryText}","${customEndDate}"\n`;
+                closedCsvContent += `${ticket.id},"${ticket.description.replace(/"/g, '""')}",${ticket.startDate},${ticket.size},${priority},"${assignedTeam}","${status}","${taskType}","${pauseCommentsText}","${startDateHistoryText}","${endDateHistoryText}","${sizeHistoryText}","${customEndDate}"\n`;
             });
             // Download the closed tasks file
             if (closedCsvContent.trim().length > 0) {
@@ -3606,11 +3678,21 @@
                     else if (currentSection === 'TICKETS') {
                         const columns = parseCSVLine(line);
                         
-                        // Handle backward compatibility - older CSV files may not have customEndDate column
-                        const [id, description, startDate, size, priority, assignedTeam, status, pauseComments, startDateHistory, endDateHistory, sizeHistory, customEndDate] = columns;
+                        // Handle backward compatibility - older CSV files may not have customEndDate or taskType columns
+                        const [id, description, startDate, size, priority, assignedTeam, status, taskType, pauseComments, startDateHistory, endDateHistory, sizeHistory, customEndDate] = columns;
                         
                         // Normalize assigned names: trim and remove quotes
                         const assigned = assignedTeam ? assignedTeam.split(';').map(name => name.trim().replace(/^"|"$/g, '')).filter(name => name) : [];
+                        
+                        // NEW: Parse task type (default to Fixed if missing or invalid)
+                        let isFixedLength = true; // Default to Fixed-Length
+                        if (taskType) {
+                            const taskTypeNormalized = taskType.trim().toLowerCase();
+                            if (taskTypeNormalized === 'flexible' || taskTypeNormalized === 'flex') {
+                                isFixedLength = false;
+                            }
+                            // Any other value (including 'fixed') maps to isFixedLength = true
+                        }
                         
                         // Parse pause comments
                         const parsedPauseComments = [];
@@ -3684,6 +3766,7 @@
                             priority: priority || 'P3',
                             assigned: assigned,
                             status: status || 'To Do',
+                            isFixedLength: isFixedLength, // NEW: Add task type property
                             pauseComments: parsedPauseComments,
                             startDateHistory: parsedStartDateHistory,
                             endDateHistory: parsedEndDateHistory,
@@ -4489,6 +4572,7 @@
             const sizeSelect = document.getElementById('new-ticket-size');
             const prioritySelect = document.getElementById('new-ticket-priority');
             const assignedContainer = document.getElementById('new-ticket-assigned');
+            const flexibleCheckbox = document.getElementById('new-ticket-flexible');
 
             const description = descInput.value.trim();
             
@@ -4504,6 +4588,7 @@
             const size = sizeSelect.value;
             const priority = prioritySelect.value;
             const assigned = Array.from(assignedContainer.querySelectorAll('input[type="checkbox"]:checked')).map(checkbox => checkbox.value);
+            const isFixedLength = !flexibleCheckbox.checked; // Unchecked = Fixed-Length (true), Checked = Flexible (false)
 
             if (!description) {
                 alert("Ticket description cannot be empty.");
@@ -4531,7 +4616,8 @@
                 priority: priority,
                 assigned: assigned,
                 status: "To Do", // Default status for new tickets
-                pauseComments: [] // Initialize empty pause comments array
+                pauseComments: [], // Initialize empty pause comments array
+                isFixedLength: isFixedLength // NEW: Task type property (default true for Fixed-Length)
             };
             
             // Initialize start date history for new ticket
@@ -4543,6 +4629,7 @@
             startDateInput.value = '';
             sizeSelect.value = 'L';
             prioritySelect.value = 'P3'; // Reset to default priority
+            flexibleCheckbox.checked = false; // Reset to unchecked (Fixed-Length default)
             // Clear all checkboxes
             assignedContainer.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
 
@@ -4973,9 +5060,19 @@
                 return;
             }
             
+            // Determine task type
+            const isFixedLength = ticket.isFixedLength !== false;
+            const taskTypeIcon = isFixedLength ? '🔒' : '⚡';
+            const taskTypeName = isFixedLength ? 'Fixed-Length Task' : 'Flexible Task';
+            const taskTypeDescription = isFixedLength 
+                ? 'Duration is fixed regardless of team size. Each person contributes proportionally over the full duration.'
+                : 'Duration splits among assignees. Each person works at full capacity for a shorter time.';
+            
             // Create enhanced content with better formatting
             const enhancedContent = `
 🎯 TICKET: ${ticket.description} (ID: ${ticket.id})
+${taskTypeIcon} TASK TYPE: ${taskTypeName}
+   ${taskTypeDescription}
 📊 SIZE: ${ticket.size} 
 📅 START DATE: ${formatDate(ticket.startDate)}
 👥 ASSIGNED TO: ${ticket.assigned.join(', ')}
@@ -4989,6 +5086,7 @@ ${ticket.explanation}
 
 💡 HOW TO READ this calculation:
 • Week numbers correspond to the planning horizon (8 weeks total)
+• ${isFixedLength ? 'Fixed-Length: Duration stays constant, capacity per person scales with team size' : 'Flexible: Duration splits among team members, each works at full capacity'}
 • Pooled Capacity = combined hours available from all assigned team members
 • Hours are distributed proportionally based on each person's availability
 • Task completes when all required hours are allocated
@@ -5412,13 +5510,28 @@ ${ticket.explanation}
                         if (ticket.assigned.includes(person.name)) {
                             let taskStart = new Date(ticket.startDate);
                             
-                            // Calculate the ideal task end date based on size and assignees
-                            // This is the theoretical minimum duration if resources work full-time
+                            // NEW: Check if this is a Fixed-Length or Flexible task
+                            const isFixedLength = ticket.isFixedLength !== false; // Default to true
                             const totalTaskDays = taskSizeDefinitions[ticket.size]?.days || ticketDays[ticket.size] || 1;
-                            const daysPerPerson = totalTaskDays / Math.max(ticket.assigned.length, 1);
-                            // Calculate business days needed for this person's portion
-                            const businessDaysNeeded = Math.ceil(daysPerPerson);
-                            const taskEnd = addBusinessDays(new Date(taskStart), businessDaysNeeded - 1);
+                            const totalTaskEffort = effortMap[ticket.size] || (totalTaskDays * estimationBaseHours);
+                            
+                            let taskEnd;
+                            let dailyHoursForPerson;
+                            
+                            if (isFixedLength) {
+                                // 🔒 Fixed-Length: Duration stays the same, capacity per person scales
+                                // End date = start + full task duration
+                                taskEnd = addBusinessDays(new Date(taskStart), totalTaskDays - 1);
+                                // Daily hours per person = total effort / (duration * number of people)
+                                dailyHoursForPerson = totalTaskEffort / (totalTaskDays * Math.max(ticket.assigned.length, 1));
+                            } else {
+                                // ⚡ Flexible: Duration splits among assignees
+                                const daysPerPerson = totalTaskDays / Math.max(ticket.assigned.length, 1);
+                                const businessDaysNeeded = Math.ceil(daysPerPerson);
+                                taskEnd = addBusinessDays(new Date(taskStart), businessDaysNeeded - 1);
+                                // Each person works full daily capacity
+                                dailyHoursForPerson = estimationBaseHours;
+                            }
                             
                             // Apply weekend adjustment for consistent work week assignment
                             const taskStartDay = taskStart.getDay();
@@ -5447,18 +5560,9 @@ ${ticket.explanation}
                                     currentDate.setDate(currentDate.getDate() + 1);
                                 }
                                 
-                                // Calculate hours for this person for this task
-                                // Each person works at full daily capacity (estimationBaseHours) for their portion of days
-                                const totalTaskDays = taskSizeDefinitions[ticket.size]?.days || ticketDays[ticket.size] || 1;
-                                const daysPerPersonForTask = totalTaskDays / Math.max(ticket.assigned.length, 1);
-                                const dailyHours = estimationBaseHours; // Each person works full capacity per day
-                                
-                                // Calculate business days this person needs (already calculated above as businessDaysNeeded)
-                                const taskBusinessDays = Math.max(calculateBusinessDays(taskStart, taskEnd), 1);
-                                
-                                // Ensure we have valid numbers
-                                if (!isNaN(dailyHours) && !isNaN(businessDays)) {
-                                    assignedHours += dailyHours * businessDays;
+                                // Assign hours based on daily hours and overlap days
+                                if (!isNaN(dailyHoursForPerson) && !isNaN(businessDays)) {
+                                    assignedHours += dailyHoursForPerson * businessDays;
                                 }
                             }
                         }
