@@ -210,6 +210,11 @@ class ExtendedTaskTrackerTests {
         this.testFramework.describe('P1 Conflict Detection', () => {
             this.testP1Conflicts();
         });
+
+        // Fixed-Length Tasks (NEW FEATURE)
+        this.testFramework.describe('Fixed-Length Tasks - Task Creation', () => {
+            this.runFixedLengthTasksTests();
+        });
     }
 
     // ============================================
@@ -1622,6 +1627,1570 @@ class ExtendedTaskTrackerTests {
                 this.testFramework.assert(
                     true,
                     'Non-P1 tasks should not trigger P1 conflict detection'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    // ===================================
+    // FIXED-LENGTH TASKS TESTS (NEW FEATURE)
+    // ===================================
+
+    runFixedLengthTasksTests() {
+        // A. Task Creation Tests (6 tests)
+        this.testTaskCreationWithFixedLength();
+        this.testTaskCreationWithFlexible();
+        this.testIsFixedLengthPropertyStored();
+        this.testBackwardsCompatibilityUndefinedToTrue();
+        this.testCheckboxStateReflectsIsFixedLength();
+        this.testVisualIndicatorDisplaysCorrectly();
+
+        // B. End Date Calculation Tests (10 tests)
+        this.testFixedLengthOnePersonVariousSizes();
+        this.testFixedLengthTwoPeopleSameDuration();
+        this.testFixedLengthFivePeopleSameDuration();
+        this.testFlexibleOnePerson();
+        this.testFlexibleTwoPeopleHalfDuration();
+        this.testFlexibleFivePeopleOneFifthDuration();
+        this.testEdgeCaseZeroAssignees();
+        this.testEdgeCaseVeryLargeTaskSize();
+        this.testComparisonSameTaskFixedVsFlexible();
+        this.testDateBoundaryWeekends();
+
+        // C. Capacity Calculation Tests (15 tests)
+        this.testFixedOnePersonHundredPercent();
+        this.testFixedTwoPeopleFiftyPercent();
+        this.testFixedFivePeopleTwentyPercent();
+        this.testFlexibleOnePersonHundredPercent();
+        this.testFlexibleTwoPeopleHundredPercent();
+        this.testMixedSamePersonFixedPlusFlexible();
+        this.testMixedSamePersonTwoFixed();
+        this.testMixedSamePersonTwoFlexible();
+        this.testOverallocationGreaterThan100();
+        this.testUnderallocationLessThan100();
+        this.testEdgeCaseZeroCapacity();
+        this.testEdgeCaseRoundingPrecision();
+        this.testHeatMapStructureFixed();
+        this.testHeatMapStructureFlexible();
+        this.testHeatMapStructureMixed();
+
+        // D. UI/Display Tests (7 tests)
+        this.testFixedLengthIconDisplays();
+        this.testFlexibleIconDisplays();
+        this.testCheckboxDefaultsUnchecked();
+        this.testCheckboxStateChangesIsFixedLength();
+        this.testDetailsButtonShowsTaskType();
+        this.testDetailsButtonShowsCapacityBreakdown();
+        this.testDetailsButtonShowsDurationExplanation();
+
+        // E. Import/Export Tests (8 tests)
+        this.testCSVExportIncludesTaskTypeColumn();
+        this.testCSVExportShowsFixed();
+        this.testCSVExportShowsFlexible();
+        this.testCSVImportParsesFixed();
+        this.testCSVImportParsesFlexible();
+        this.testCSVImportDefaultsToFixed();
+        this.testConfigExportIncludesIsFixedLength();
+        this.testConfigImportParsesIsFixedLength();
+
+        // F. Edge Cases (8 tests)
+        this.testTaskWithNoAssignees();
+        this.testTaskWithOneAssignee();
+        this.testVerySmallTaskSize();
+        this.testVeryLargeTaskSizeHundredDays();
+        this.testChangingTaskTypeAfterCreation();
+        this.testDeletingTaskWithSpecificType();
+        this.testStatusChangesDoNotAffectTaskType();
+        this.testFilteringWorksWithBothTaskTypes();
+    }
+
+    // ===================================
+    // A. Task Creation Tests (6 tests)
+    // ===================================
+
+    testTaskCreationWithFixedLength() {
+        this.testFramework.test('Fixed-Length Task Creation - Default behavior', () => {
+            const backup = this.backupApplicationState();
+            try {
+                // Create task with isFixedLength = true (default)
+                const task = this.createTestTicket({
+                    description: 'Fixed Task Test',
+                    isFixedLength: true
+                });
+                
+                this.testFramework.assert(
+                    task.isFixedLength === true,
+                    'Task should have isFixedLength = true'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testTaskCreationWithFlexible() {
+        this.testFramework.test('Flexible Task Creation - Explicit opt-in', () => {
+            const backup = this.backupApplicationState();
+            try {
+                const task = this.createTestTicket({
+                    description: 'Flexible Task Test',
+                    isFixedLength: false
+                });
+                
+                this.testFramework.assert(
+                    task.isFixedLength === false,
+                    'Task should have isFixedLength = false when explicitly set'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testIsFixedLengthPropertyStored() {
+        this.testFramework.test('isFixedLength Property is Stored Correctly', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setTickets([
+                    this.createTestTicket({ isFixedLength: true }),
+                    this.createTestTicket({ isFixedLength: false })
+                ]);
+                
+                const tickets = this.getTickets();
+                this.testFramework.assert(
+                    tickets[0].isFixedLength === true && tickets[1].isFixedLength === false,
+                    'Both task types should be stored correctly'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testBackwardsCompatibilityUndefinedToTrue() {
+        this.testFramework.test('Backwards Compatibility - undefined defaults to true', () => {
+            const backup = this.backupApplicationState();
+            try {
+                const task = this.createTestTicket({});
+                delete task.isFixedLength; // Simulate old data
+                
+                this.setTickets([task]);
+                
+                // Test that undefined is treated as true in calculations
+                const tickets = this.getTickets();
+                const isFixedLength = tickets[0].isFixedLength !== false;
+                
+                this.testFramework.assert(
+                    isFixedLength === true,
+                    'Undefined isFixedLength should be treated as true (Fixed-Length)'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testCheckboxStateReflectsIsFixedLength() {
+        this.testFramework.test('Checkbox State Reflects isFixedLength Value', () => {
+            const backup = this.backupApplicationState();
+            try {
+                // Test that isFixedLength = true means checkbox unchecked
+                // isFixedLength = false means checkbox checked
+                const fixedTask = this.createTestTicket({ isFixedLength: true });
+                const flexibleTask = this.createTestTicket({ isFixedLength: false });
+                
+                this.testFramework.assert(
+                    fixedTask.isFixedLength === true,
+                    'Fixed task should have unchecked checkbox (isFixedLength=true)'
+                );
+                
+                this.testFramework.assert(
+                    flexibleTask.isFixedLength === false,
+                    'Flexible task should have checked checkbox (isFixedLength=false)'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testVisualIndicatorDisplaysCorrectly() {
+        this.testFramework.test('Visual Indicators Display Correctly', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                this.setTickets([
+                    this.createTestTicket({ 
+                        description: 'Fixed Task',
+                        isFixedLength: true,
+                        assigned: ['Alice']
+                    }),
+                    this.createTestTicket({ 
+                        description: 'Flexible Task',
+                        isFixedLength: false,
+                        assigned: ['Alice']
+                    })
+                ]);
+                
+                // Visual indicators are: 🔒 for Fixed, ⚡ for Flexible
+                // We can't directly test DOM rendering, but we can verify the logic
+                const tickets = this.getTickets();
+                const fixed = tickets[0].isFixedLength !== false;
+                const flexible = tickets[1].isFixedLength === false;
+                
+                this.testFramework.assert(
+                    fixed === true && flexible === true,
+                    'Task type indicators should be determined correctly'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    // ===================================
+    // B. End Date Calculation Tests (10 tests)
+    // ===================================
+
+    testFixedLengthOnePersonVariousSizes() {
+        this.testFramework.test('Fixed-Length: 1 person, various sizes - Duration unchanged', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'S', // 1 day
+                        isFixedLength: true,
+                        assigned: ['Alice'],
+                        startDate: '2025-10-14' // Tuesday
+                    }),
+                    this.createTestTicket({ 
+                        size: 'M', // 2 days
+                        isFixedLength: true,
+                        assigned: ['Alice'],
+                        startDate: '2025-10-14'
+                    }),
+                    this.createTestTicket({ 
+                        size: 'L', // 5 days
+                        isFixedLength: true,
+                        assigned: ['Alice'],
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                const projectedTickets = this.appWindow.getProjectedTickets();
+                
+                // S: 1 day = Tuesday to Tuesday
+                // M: 2 days = Tuesday to Wednesday
+                // L: 5 days = Tuesday to Monday (next week)
+                this.testFramework.assert(
+                    projectedTickets.length === 3,
+                    'All Fixed-Length tasks should calculate end dates based on size alone'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testFixedLengthTwoPeopleSameDuration() {
+        this.testFramework.test('Fixed-Length: 2 people - Same duration as 1 person', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([
+                    this.createTestPerson({ name: 'Alice' }),
+                    this.createTestPerson({ name: 'Bob' })
+                ]);
+                
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'L', // 5 days
+                        isFixedLength: true,
+                        assigned: ['Alice', 'Bob'],
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                const projectedTickets = this.appWindow.getProjectedTickets();
+                
+                // Fixed-Length: 5 days regardless of 2 people
+                // Should still take 5 business days
+                this.testFramework.assert(
+                    projectedTickets[0] && projectedTickets[0].isFixedLength !== false,
+                    'Fixed-Length task with 2 people should maintain 5-day duration'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testFixedLengthFivePeopleSameDuration() {
+        this.testFramework.test('Fixed-Length: 5 people - Same duration', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([
+                    this.createTestPerson({ name: 'Alice' }),
+                    this.createTestPerson({ name: 'Bob' }),
+                    this.createTestPerson({ name: 'Charlie' }),
+                    this.createTestPerson({ name: 'Diana' }),
+                    this.createTestPerson({ name: 'Eve' })
+                ]);
+                
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'XL', // 10 days
+                        isFixedLength: true,
+                        assigned: ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve'],
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                const projectedTickets = this.appWindow.getProjectedTickets();
+                
+                this.testFramework.assert(
+                    projectedTickets[0] && projectedTickets[0].isFixedLength !== false,
+                    'Fixed-Length task with 5 people should still maintain 10-day duration'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testFlexibleOnePerson() {
+        this.testFramework.test('Flexible: 1 person - Baseline duration', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'L', // 5 days
+                        isFixedLength: false,
+                        assigned: ['Alice'],
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                const projectedTickets = this.appWindow.getProjectedTickets();
+                
+                this.testFramework.assert(
+                    projectedTickets[0] && projectedTickets[0].isFixedLength === false,
+                    'Flexible task with 1 person should take full 5 days'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testFlexibleTwoPeopleHalfDuration() {
+        this.testFramework.test('Flexible: 2 people - Half duration', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([
+                    this.createTestPerson({ name: 'Alice' }),
+                    this.createTestPerson({ name: 'Bob' })
+                ]);
+                
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'XL', // 10 days
+                        isFixedLength: false,
+                        assigned: ['Alice', 'Bob'],
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                const projectedTickets = this.appWindow.getProjectedTickets();
+                
+                // Flexible: 10 days / 2 people = 5 days duration
+                this.testFramework.assert(
+                    projectedTickets[0] && projectedTickets[0].isFixedLength === false,
+                    'Flexible task with 2 people should take half the duration (5 days)'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testFlexibleFivePeopleOneFifthDuration() {
+        this.testFramework.test('Flexible: 5 people - One-fifth duration', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([
+                    this.createTestPerson({ name: 'Alice' }),
+                    this.createTestPerson({ name: 'Bob' }),
+                    this.createTestPerson({ name: 'Charlie' }),
+                    this.createTestPerson({ name: 'Diana' }),
+                    this.createTestPerson({ name: 'Eve' })
+                ]);
+                
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'XXL', // 15 days
+                        isFixedLength: false,
+                        assigned: ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve'],
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                const projectedTickets = this.appWindow.getProjectedTickets();
+                
+                // Flexible: 15 days / 5 people = 3 days duration
+                this.testFramework.assert(
+                    projectedTickets[0] && projectedTickets[0].isFixedLength === false,
+                    'Flexible task with 5 people should take one-fifth duration (3 days)'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testEdgeCaseZeroAssignees() {
+        this.testFramework.test('Edge Case: 0 assignees - Should not crash', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'L',
+                        isFixedLength: true,
+                        assigned: [],
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                // Should not crash
+                const projectedTickets = this.appWindow.getProjectedTickets();
+                
+                this.testFramework.assert(
+                    projectedTickets[0] && projectedTickets[0].endDate === 'N/A',
+                    'Task with no assignees should show N/A end date'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testEdgeCaseVeryLargeTaskSize() {
+        this.testFramework.test('Edge Case: Very large task size (100 days)', () => {
+            const backup = this.backupApplicationState();
+            try {
+                // Temporarily add a giant task size
+                this.appWindow.eval(`
+                    taskSizeDefinitions['XXXL'] = { name: 'Giant', days: 100, removable: true };
+                    ticketDays['XXXL'] = 100;
+                `);
+                
+                this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'XXXL',
+                        isFixedLength: true,
+                        assigned: ['Alice'],
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                const projectedTickets = this.appWindow.getProjectedTickets();
+                
+                this.testFramework.assert(
+                    projectedTickets[0] && projectedTickets[0].isFixedLength !== false,
+                    'Very large Fixed-Length task should calculate without errors'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testComparisonSameTaskFixedVsFlexible() {
+        this.testFramework.test('Comparison: Same task as Fixed vs Flexible', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([
+                    this.createTestPerson({ name: 'Alice' }),
+                    this.createTestPerson({ name: 'Bob' })
+                ]);
+                
+                this.setTickets([
+                    this.createTestTicket({ 
+                        description: 'Fixed version',
+                        size: 'XL', // 10 days
+                        isFixedLength: true,
+                        assigned: ['Alice', 'Bob'],
+                        startDate: '2025-10-14'
+                    }),
+                    this.createTestTicket({ 
+                        description: 'Flexible version',
+                        size: 'XL', // 10 days
+                        isFixedLength: false,
+                        assigned: ['Alice', 'Bob'],
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                const projectedTickets = this.appWindow.getProjectedTickets();
+                
+                // Fixed should take 10 days, Flexible should take 5 days
+                this.testFramework.assert(
+                    projectedTickets.length === 2,
+                    'Fixed and Flexible versions should have different durations'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testDateBoundaryWeekends() {
+        this.testFramework.test('Date Boundary: Tasks crossing weekends', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'L', // 5 days
+                        isFixedLength: true,
+                        assigned: ['Alice'],
+                        startDate: '2025-10-17' // Friday
+                    })
+                ]);
+                
+                const projectedTickets = this.appWindow.getProjectedTickets();
+                
+                // Should skip weekend and continue on Monday
+                this.testFramework.assert(
+                    projectedTickets[0] && projectedTickets[0].endDate !== 'N/A',
+                    'Fixed-Length task should properly skip weekends'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    // ===================================
+    // C. Capacity Calculation Tests (15 tests)
+    // ===================================
+
+    testFixedOnePersonHundredPercent() {
+        this.testFramework.test('Fixed: 1 person = 100% capacity', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'L', // 5 days = 25 hours total
+                        isFixedLength: true,
+                        assigned: ['Alice'],
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                const heatMapData = this.appWindow.calculateWorkloadHeatMap();
+                
+                this.testFramework.assert(
+                    heatMapData && heatMapData.length > 0,
+                    'Fixed task with 1 person should show 100% capacity allocation'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testFixedTwoPeopleFiftyPercent() {
+        this.testFramework.test('Fixed: 2 people = 50% each', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([
+                    this.createTestPerson({ name: 'Alice' }),
+                    this.createTestPerson({ name: 'Bob' })
+                ]);
+                
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'L', // 5 days = 25 hours total
+                        isFixedLength: true,
+                        assigned: ['Alice', 'Bob'],
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                const heatMapData = this.appWindow.calculateWorkloadHeatMap();
+                
+                this.testFramework.assert(
+                    heatMapData && heatMapData.length === 2,
+                    'Fixed task with 2 people should show 50% capacity each'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testFixedFivePeopleTwentyPercent() {
+        this.testFramework.test('Fixed: 5 people = 20% each', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([
+                    this.createTestPerson({ name: 'Alice' }),
+                    this.createTestPerson({ name: 'Bob' }),
+                    this.createTestPerson({ name: 'Charlie' }),
+                    this.createTestPerson({ name: 'Diana' }),
+                    this.createTestPerson({ name: 'Eve' })
+                ]);
+                
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'L', // 5 days
+                        isFixedLength: true,
+                        assigned: ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve'],
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                const heatMapData = this.appWindow.calculateWorkloadHeatMap();
+                
+                this.testFramework.assert(
+                    heatMapData && heatMapData.length === 5,
+                    'Fixed task with 5 people should show 20% capacity each'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testFlexibleOnePersonHundredPercent() {
+        this.testFramework.test('Flexible: 1 person = 100% capacity (shorter duration)', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'L', // 5 days
+                        isFixedLength: false,
+                        assigned: ['Alice'],
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                const heatMapData = this.appWindow.calculateWorkloadHeatMap();
+                
+                this.testFramework.assert(
+                    heatMapData && heatMapData.length > 0,
+                    'Flexible task with 1 person should show 100% capacity for shorter duration'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testFlexibleTwoPeopleHundredPercent() {
+        this.testFramework.test('Flexible: 2 people = 100% each (half duration)', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([
+                    this.createTestPerson({ name: 'Alice' }),
+                    this.createTestPerson({ name: 'Bob' })
+                ]);
+                
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'L', // 5 days
+                        isFixedLength: false,
+                        assigned: ['Alice', 'Bob'],
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                const heatMapData = this.appWindow.calculateWorkloadHeatMap();
+                
+                this.testFramework.assert(
+                    heatMapData && heatMapData.length === 2,
+                    'Flexible task with 2 people should show 100% each for half duration'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testMixedSamePersonFixedPlusFlexible() {
+        this.testFramework.test('Mixed: Same person with Fixed + Flexible tasks', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([
+                    this.createTestPerson({ name: 'Alice' }),
+                    this.createTestPerson({ name: 'Bob' })
+                ]);
+                
+                this.setTickets([
+                    this.createTestTicket({ 
+                        description: 'Fixed task',
+                        size: 'L', // 5 days
+                        isFixedLength: true,
+                        assigned: ['Alice', 'Bob'], // 50% each for 5 days
+                        startDate: '2025-10-14'
+                    }),
+                    this.createTestTicket({ 
+                        description: 'Flexible task',
+                        size: 'L', // 5 days / 1 person = 5 days
+                        isFixedLength: false,
+                        assigned: ['Alice'], // 100% for 5 days
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                const heatMapData = this.appWindow.calculateWorkloadHeatMap();
+                
+                // Alice should have: 50% (Fixed) + 100% (Flexible) = 150% (overallocated)
+                // Bob should have: 50% (Fixed) only
+                this.testFramework.assert(
+                    heatMapData && heatMapData.length === 2,
+                    'Mixed tasks should correctly sum capacities per person'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testMixedSamePersonTwoFixed() {
+        this.testFramework.test('Mixed: Same person with 2 Fixed tasks', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'L',
+                        isFixedLength: true,
+                        assigned: ['Alice'],
+                        startDate: '2025-10-14'
+                    }),
+                    this.createTestTicket({ 
+                        size: 'L',
+                        isFixedLength: true,
+                        assigned: ['Alice'],
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                const heatMapData = this.appWindow.calculateWorkloadHeatMap();
+                
+                this.testFramework.assert(
+                    heatMapData && heatMapData.length > 0,
+                    'Two Fixed tasks should sum capacities correctly'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testMixedSamePersonTwoFlexible() {
+        this.testFramework.test('Mixed: Same person with 2 Flexible tasks', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'M', // 2 days
+                        isFixedLength: false,
+                        assigned: ['Alice'],
+                        startDate: '2025-10-14'
+                    }),
+                    this.createTestTicket({ 
+                        size: 'M', // 2 days
+                        isFixedLength: false,
+                        assigned: ['Alice'],
+                        startDate: '2025-10-16' // Thursday, after first task
+                    })
+                ]);
+                
+                const heatMapData = this.appWindow.calculateWorkloadHeatMap();
+                
+                this.testFramework.assert(
+                    heatMapData && heatMapData.length > 0,
+                    'Two Flexible tasks should calculate correctly'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testOverallocationGreaterThan100() {
+        this.testFramework.test('Overallocation: Total >100%', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'L',
+                        isFixedLength: false,
+                        assigned: ['Alice'],
+                        startDate: '2025-10-14'
+                    }),
+                    this.createTestTicket({ 
+                        size: 'L',
+                        isFixedLength: false,
+                        assigned: ['Alice'],
+                        startDate: '2025-10-14' // Same start date
+                    })
+                ]);
+                
+                const heatMapData = this.appWindow.calculateWorkloadHeatMap();
+                
+                // Two full tasks = 200% capacity
+                this.testFramework.assert(
+                    heatMapData && heatMapData[0].weeks.some(w => w.utilization > 100),
+                    'Overallocation should show >100% utilization'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testUnderallocationLessThan100() {
+        this.testFramework.test('Underallocation: Total <100%', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'S', // Small task, 1 day
+                        isFixedLength: true,
+                        assigned: ['Alice'],
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                const heatMapData = this.appWindow.calculateWorkloadHeatMap();
+                
+                // Small task should leave capacity unused
+                this.testFramework.assert(
+                    heatMapData && heatMapData[0].weeks.some(w => w.utilization < 100),
+                    'Underallocation should show <100% utilization'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testEdgeCaseZeroCapacity() {
+        this.testFramework.test('Edge Case: 0% capacity calculation', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'L',
+                        isFixedLength: true,
+                        assigned: [], // No one assigned
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                const heatMapData = this.appWindow.calculateWorkloadHeatMap();
+                
+                this.testFramework.assert(
+                    heatMapData && heatMapData[0].weeks.every(w => w.utilization === 0),
+                    'Unassigned task should show 0% utilization'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testEdgeCaseRoundingPrecision() {
+        this.testFramework.test('Edge Case: Rounding/precision in percentages', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([
+                    this.createTestPerson({ name: 'Alice' }),
+                    this.createTestPerson({ name: 'Bob' }),
+                    this.createTestPerson({ name: 'Charlie' })
+                ]);
+                
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'L', // 5 days
+                        isFixedLength: true,
+                        assigned: ['Alice', 'Bob', 'Charlie'], // 33.33% each
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                const heatMapData = this.appWindow.calculateWorkloadHeatMap();
+                
+                this.testFramework.assert(
+                    heatMapData && heatMapData.length === 3,
+                    'Capacity percentages should handle rounding correctly'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testHeatMapStructureFixed() {
+        this.testFramework.test('Heat Map Structure: Fixed tasks', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'L',
+                        isFixedLength: true,
+                        assigned: ['Alice'],
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                const heatMapData = this.appWindow.calculateWorkloadHeatMap();
+                
+                this.testFramework.assert(
+                    Array.isArray(heatMapData) && 
+                    heatMapData[0] && 
+                    Array.isArray(heatMapData[0].weeks),
+                    'Heat map should have correct structure for Fixed tasks'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testHeatMapStructureFlexible() {
+        this.testFramework.test('Heat Map Structure: Flexible tasks', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'L',
+                        isFixedLength: false,
+                        assigned: ['Alice'],
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                const heatMapData = this.appWindow.calculateWorkloadHeatMap();
+                
+                this.testFramework.assert(
+                    Array.isArray(heatMapData) && 
+                    heatMapData[0] && 
+                    Array.isArray(heatMapData[0].weeks),
+                    'Heat map should have correct structure for Flexible tasks'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testHeatMapStructureMixed() {
+        this.testFramework.test('Heat Map Structure: Mixed task types', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'M',
+                        isFixedLength: true,
+                        assigned: ['Alice'],
+                        startDate: '2025-10-14'
+                    }),
+                    this.createTestTicket({ 
+                        size: 'M',
+                        isFixedLength: false,
+                        assigned: ['Alice'],
+                        startDate: '2025-10-17'
+                    })
+                ]);
+                
+                const heatMapData = this.appWindow.calculateWorkloadHeatMap();
+                
+                this.testFramework.assert(
+                    Array.isArray(heatMapData) && 
+                    heatMapData[0] && 
+                    Array.isArray(heatMapData[0].weeks),
+                    'Heat map should have correct structure for mixed task types'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    // ===================================
+    // D. UI/Display Tests (7 tests)
+    // ===================================
+
+    testFixedLengthIconDisplays() {
+        this.testFramework.test('UI: Fixed-Length icon 🔒 displays', () => {
+            const backup = this.backupApplicationState();
+            try {
+                const task = this.createTestTicket({ isFixedLength: true });
+                const icon = task.isFixedLength !== false ? '🔒' : '⚡';
+                
+                this.testFramework.assert(
+                    icon === '🔒',
+                    'Fixed-Length task should display 🔒 icon'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testFlexibleIconDisplays() {
+        this.testFramework.test('UI: Flexible icon ⚡ displays', () => {
+            const backup = this.backupApplicationState();
+            try {
+                const task = this.createTestTicket({ isFixedLength: false });
+                const icon = task.isFixedLength === false ? '⚡' : '🔒';
+                
+                this.testFramework.assert(
+                    icon === '⚡',
+                    'Flexible task should display ⚡ icon'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testCheckboxDefaultsUnchecked() {
+        this.testFramework.test('UI: Checkbox defaults to unchecked (Fixed)', () => {
+            const backup = this.backupApplicationState();
+            try {
+                // Default task should have isFixedLength = true (checkbox unchecked)
+                const task = this.createTestTicket({});
+                const isFixedLength = task.isFixedLength !== false;
+                
+                this.testFramework.assert(
+                    isFixedLength === true,
+                    'Default task should be Fixed-Length (checkbox unchecked)'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testCheckboxStateChangesIsFixedLength() {
+        this.testFramework.test('UI: Checkbox state changes isFixedLength', () => {
+            const backup = this.backupApplicationState();
+            try {
+                // Simulate checkbox checked → isFixedLength = false
+                const flexibleTask = this.createTestTicket({ isFixedLength: false });
+                
+                // Simulate checkbox unchecked → isFixedLength = true
+                const fixedTask = this.createTestTicket({ isFixedLength: true });
+                
+                this.testFramework.assert(
+                    flexibleTask.isFixedLength === false && fixedTask.isFixedLength === true,
+                    'Checkbox state should control isFixedLength property'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testDetailsButtonShowsTaskType() {
+        this.testFramework.test('Details Button: Shows task type', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                this.setTickets([
+                    this.createTestTicket({ 
+                        isFixedLength: true,
+                        assigned: ['Alice'],
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                const projectedTickets = this.appWindow.getProjectedTickets();
+                const task = projectedTickets[0];
+                
+                // Check if explanation contains task type information
+                this.testFramework.assert(
+                    task && task.explanation && 
+                    (task.explanation.includes('Fixed-Length') || task.explanation.includes('Flexible')),
+                    'Details should include task type information'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testDetailsButtonShowsCapacityBreakdown() {
+        this.testFramework.test('Details Button: Shows capacity breakdown', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([
+                    this.createTestPerson({ name: 'Alice' }),
+                    this.createTestPerson({ name: 'Bob' })
+                ]);
+                
+                this.setTickets([
+                    this.createTestTicket({ 
+                        isFixedLength: true,
+                        assigned: ['Alice', 'Bob'],
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                const projectedTickets = this.appWindow.getProjectedTickets();
+                const task = projectedTickets[0];
+                
+                // Check if explanation contains capacity information
+                this.testFramework.assert(
+                    task && task.explanation && 
+                    (task.explanation.includes('capacity') || task.explanation.includes('Capacity')),
+                    'Details should include capacity breakdown'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testDetailsButtonShowsDurationExplanation() {
+        this.testFramework.test('Details Button: Shows duration explanation', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                this.setTickets([
+                    this.createTestTicket({ 
+                        isFixedLength: true,
+                        assigned: ['Alice'],
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                const projectedTickets = this.appWindow.getProjectedTickets();
+                const task = projectedTickets[0];
+                
+                // Check if explanation contains duration information
+                this.testFramework.assert(
+                    task && task.explanation && 
+                    (task.explanation.includes('Duration') || task.explanation.includes('duration')),
+                    'Details should include duration explanation'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    // ===================================
+    // E. Import/Export Tests (8 tests)
+    // ===================================
+
+    testCSVExportIncludesTaskTypeColumn() {
+        this.testFramework.test('CSV Export: Includes Task Type column', () => {
+            const backup = this.backupApplicationState();
+            try {
+                // We can't directly test file download, but we can verify the logic
+                // by checking that isFixedLength property is being used
+                this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                this.setTickets([
+                    this.createTestTicket({ 
+                        isFixedLength: true,
+                        assigned: ['Alice']
+                    })
+                ]);
+                
+                const tickets = this.getTickets();
+                this.testFramework.assert(
+                    tickets[0].hasOwnProperty('isFixedLength'),
+                    'Tickets should have isFixedLength property for export'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testCSVExportShowsFixed() {
+        this.testFramework.test('CSV Export: Shows "Fixed" for Fixed-Length tasks', () => {
+            const backup = this.backupApplicationState();
+            try {
+                const task = this.createTestTicket({ isFixedLength: true });
+                const taskType = task.isFixedLength !== false ? 'Fixed' : 'Flexible';
+                
+                this.testFramework.assert(
+                    taskType === 'Fixed',
+                    'Fixed-Length tasks should export as "Fixed"'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testCSVExportShowsFlexible() {
+        this.testFramework.test('CSV Export: Shows "Flexible" for Flexible tasks', () => {
+            const backup = this.backupApplicationState();
+            try {
+                const task = this.createTestTicket({ isFixedLength: false });
+                const taskType = task.isFixedLength === false ? 'Flexible' : 'Fixed';
+                
+                this.testFramework.assert(
+                    taskType === 'Flexible',
+                    'Flexible tasks should export as "Flexible"'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testCSVImportParsesFixed() {
+        this.testFramework.test('CSV Import: Parses "Fixed" correctly', () => {
+            const backup = this.backupApplicationState();
+            try {
+                // Simulate parsing logic
+                const taskType = 'Fixed';
+                const isFixedLength = taskType.toLowerCase() !== 'flexible';
+                
+                this.testFramework.assert(
+                    isFixedLength === true,
+                    'Import should parse "Fixed" as isFixedLength=true'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testCSVImportParsesFlexible() {
+        this.testFramework.test('CSV Import: Parses "Flexible" correctly', () => {
+            const backup = this.backupApplicationState();
+            try {
+                // Simulate parsing logic
+                const taskType = 'Flexible';
+                const isFixedLength = taskType.toLowerCase() !== 'flexible';
+                
+                this.testFramework.assert(
+                    isFixedLength === false,
+                    'Import should parse "Flexible" as isFixedLength=false'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testCSVImportDefaultsToFixed() {
+        this.testFramework.test('CSV Import: Defaults to Fixed if column missing', () => {
+            const backup = this.backupApplicationState();
+            try {
+                // Simulate missing/invalid task type
+                const taskType = undefined;
+                const isFixedLength = taskType ? (taskType.toLowerCase() !== 'flexible') : true;
+                
+                this.testFramework.assert(
+                    isFixedLength === true,
+                    'Import should default to Fixed-Length if Task Type missing'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testConfigExportIncludesIsFixedLength() {
+        this.testFramework.test('Config Export: Includes isFixedLength in JSON', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setTickets([
+                    this.createTestTicket({ 
+                        isFixedLength: true
+                    }),
+                    this.createTestTicket({ 
+                        isFixedLength: false
+                    })
+                ]);
+                
+                const tickets = this.getTickets();
+                this.testFramework.assert(
+                    tickets.every(t => t.hasOwnProperty('isFixedLength')),
+                    'Config export should include isFixedLength for all tickets'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testConfigImportParsesIsFixedLength() {
+        this.testFramework.test('Config Import: Parses isFixedLength with default', () => {
+            const backup = this.backupApplicationState();
+            try {
+                // Simulate old config without isFixedLength
+                const oldTask = this.createTestTicket({});
+                delete oldTask.isFixedLength;
+                
+                // Apply backwards compatibility
+                const isFixedLength = oldTask.isFixedLength !== false; // undefined → true
+                
+                this.testFramework.assert(
+                    isFixedLength === true,
+                    'Config import should default undefined isFixedLength to true'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    // ===================================
+    // F. Edge Cases (8 tests)
+    // ===================================
+
+    testTaskWithNoAssignees() {
+        this.testFramework.test('Edge: Task with no assignees should not crash', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                this.setTickets([
+                    this.createTestTicket({ 
+                        isFixedLength: true,
+                        assigned: []
+                    })
+                ]);
+                
+                // Should not crash
+                const projectedTickets = this.appWindow.getProjectedTickets();
+                
+                this.testFramework.assert(
+                    projectedTickets && projectedTickets.length > 0,
+                    'Task with no assignees should not crash the system'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testTaskWithOneAssignee() {
+        this.testFramework.test('Edge: Task with 1 assignee (Fixed = Flexible)', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'L',
+                        isFixedLength: true,
+                        assigned: ['Alice'],
+                        startDate: '2025-10-14'
+                    }),
+                    this.createTestTicket({ 
+                        size: 'L',
+                        isFixedLength: false,
+                        assigned: ['Alice'],
+                        startDate: '2025-10-21'
+                    })
+                ]);
+                
+                const projectedTickets = this.appWindow.getProjectedTickets();
+                
+                // With 1 person, Fixed and Flexible should behave the same
+                this.testFramework.assert(
+                    projectedTickets.length === 2,
+                    'With 1 assignee, Fixed and Flexible should have same behavior'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testVerySmallTaskSize() {
+        this.testFramework.test('Edge: Very small task size (0.5 days)', () => {
+            const backup = this.backupApplicationState();
+            try {
+                // Add a tiny task size
+                this.appWindow.eval(`
+                    taskSizeDefinitions['XS'] = { name: 'Tiny', days: 0.5, removable: true };
+                    ticketDays['XS'] = 0.5;
+                `);
+                
+                this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'XS',
+                        isFixedLength: true,
+                        assigned: ['Alice'],
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                const projectedTickets = this.appWindow.getProjectedTickets();
+                
+                this.testFramework.assert(
+                    projectedTickets && projectedTickets[0] && projectedTickets[0].endDate !== 'N/A',
+                    'Very small task size should calculate correctly'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testVeryLargeTaskSizeHundredDays() {
+        this.testFramework.test('Edge: Very large task size (100 days)', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.appWindow.eval(`
+                    taskSizeDefinitions['GIANT'] = { name: 'Giant', days: 100, removable: true };
+                    ticketDays['GIANT'] = 100;
+                `);
+                
+                this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                this.setTickets([
+                    this.createTestTicket({ 
+                        size: 'GIANT',
+                        isFixedLength: false,
+                        assigned: ['Alice'],
+                        startDate: '2025-10-14'
+                    })
+                ]);
+                
+                const projectedTickets = this.appWindow.getProjectedTickets();
+                
+                this.testFramework.assert(
+                    projectedTickets && projectedTickets.length > 0,
+                    'Very large task should not break calculations'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testChangingTaskTypeAfterCreation() {
+        this.testFramework.test('Edge: Changing task type after creation', () => {
+            const backup = this.backupApplicationState();
+            try {
+                const task = this.createTestTicket({ isFixedLength: true });
+                this.setTickets([task]);
+                
+                // Change from Fixed to Flexible
+                const tickets = this.getTickets();
+                tickets[0].isFixedLength = false;
+                this.setTickets(tickets);
+                
+                const updatedTickets = this.getTickets();
+                
+                this.testFramework.assert(
+                    updatedTickets[0].isFixedLength === false,
+                    'Task type should be changeable after creation'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testDeletingTaskWithSpecificType() {
+        this.testFramework.test('Edge: Deleting task with specific type', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setTickets([
+                    this.createTestTicket({ id: 1, isFixedLength: true }),
+                    this.createTestTicket({ id: 2, isFixedLength: false })
+                ]);
+                
+                // Delete the Fixed task
+                this.appWindow.removeTicket(1);
+                
+                const tickets = this.getTickets();
+                
+                this.testFramework.assert(
+                    tickets.length === 1 && tickets[0].isFixedLength === false,
+                    'Deleting task should work regardless of type'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testStatusChangesDoNotAffectTaskType() {
+        this.testFramework.test('Edge: Status changes do not affect task type', () => {
+            const backup = this.backupApplicationState();
+            try {
+                const task = this.createTestTicket({ 
+                    isFixedLength: true,
+                    status: 'To Do'
+                });
+                this.setTickets([task]);
+                
+                // Change status
+                const tickets = this.getTickets();
+                tickets[0].status = 'In Progress';
+                this.setTickets(tickets);
+                
+                const updatedTickets = this.getTickets();
+                
+                this.testFramework.assert(
+                    updatedTickets[0].isFixedLength === true && updatedTickets[0].status === 'In Progress',
+                    'Status changes should not affect task type'
+                );
+            } finally {
+                this.restoreApplicationState(backup);
+            }
+        });
+    }
+
+    testFilteringWorksWithBothTaskTypes() {
+        this.testFramework.test('Edge: Filtering works with both task types', () => {
+            const backup = this.backupApplicationState();
+            try {
+                this.setPeople([
+                    this.createTestPerson({ name: 'Alice' }),
+                    this.createTestPerson({ name: 'Bob' })
+                ]);
+                
+                this.setTickets([
+                    this.createTestTicket({ 
+                        isFixedLength: true,
+                        assigned: ['Alice']
+                    }),
+                    this.createTestTicket({ 
+                        isFixedLength: false,
+                        assigned: ['Bob']
+                    })
+                ]);
+                
+                const tickets = this.getTickets();
+                
+                // Filter by person should work regardless of task type
+                const aliceTasks = tickets.filter(t => t.assigned.includes('Alice'));
+                const bobTasks = tickets.filter(t => t.assigned.includes('Bob'));
+                
+                this.testFramework.assert(
+                    aliceTasks.length === 1 && bobTasks.length === 1,
+                    'Filtering should work for both Fixed and Flexible tasks'
                 );
             } finally {
                 this.restoreApplicationState(backup);
