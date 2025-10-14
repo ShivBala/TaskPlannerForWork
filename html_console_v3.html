@@ -789,6 +789,12 @@
         <div class="enterprise-header flex justify-between items-center mb-4 p-4 rounded-lg">
             <h1 class="text-2xl font-bold">Enterprise Project Tracking Console</h1>
             <div class="flex gap-2">
+                <button id="export-closed-btn" onclick="exportClosedItems()" class="btn-enterprise flex items-center" disabled>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Export Closed
+                </button>
                 <button onclick="exportConfiguration()" class="btn-enterprise flex items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
@@ -1515,6 +1521,9 @@
             S: 1, M: 2, L: 5, XL: 10, XXL: 15
         };
         
+        // Track if closed items have been exported in this session
+        let closedItemsExported = false;
+        
         // Enhanced task sizing with display names and presets
         let taskSizeDefinitions = {
             S: { name: 'Small', days: 1, removable: false },
@@ -1660,6 +1669,9 @@
         function markDirty() {
             if (!isDirty) {
                 setDirtyState(true);
+                // Reset closed items export flag when entering dirty state
+                closedItemsExported = false;
+                updateExportButtonsState();
             }
         }
         
@@ -3495,6 +3507,9 @@
                     statusBadge.title = 'Left click: Change status\nRight click: Add pause comment';
                 }
             });
+            
+            // Update export buttons state based on closed items
+            updateExportButtonsState();
         }
 
         // --- CSV EXPORT FUNCTION ---
@@ -3566,7 +3581,159 @@
 
         // --- COMPREHENSIVE CONFIGURATION EXPORT/IMPORT ---
 
+        function updateExportButtonsState() {
+            const closedTickets = tickets.filter(ticket => (ticket.status || 'To Do') === 'Closed');
+            const exportClosedBtn = document.getElementById('export-closed-btn');
+            
+            if (exportClosedBtn) {
+                // Enable/disable based on whether there are closed items
+                if (closedTickets.length > 0 && !closedItemsExported) {
+                    exportClosedBtn.disabled = false;
+                    exportClosedBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else if (closedTickets.length === 0) {
+                    exportClosedBtn.disabled = true;
+                    exportClosedBtn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            }
+        }
+
+        window.exportClosedItems = () => {
+            const timestamp = new Date().toISOString().slice(0, 19).replace('T', '_').replace(/:/g, '-');
+            
+            // Check if there are closed items
+            const closedTickets = tickets.filter(ticket => (ticket.status || 'To Do') === 'Closed');
+            if (closedTickets.length === 0) {
+                return; // Button should be disabled anyway, but just in case
+            }
+            
+            // Create comprehensive configuration data
+            const configData = {
+                metadata: {
+                    exportDate: new Date().toISOString(),
+                    version: '2.0',
+                    description: 'Enterprise Project Tracking Console Configuration Export - Closed Items'
+                },
+                settings: {
+                    estimationBaseHours: estimationBaseHours,
+                    projectHoursPerDay: projectHoursPerDay,
+                    useCommonStartDate: useCommonStartDate,
+                    commonStartDate: document.getElementById('common-start-date')?.value || '',
+                    currentTicketId: currentTicketId
+                },
+                taskSizeDefinitions: taskSizeDefinitions,
+                people: people,
+                tickets: closedTickets
+            };
+            
+            let csvContent = '';
+            // Metadata section
+            csvContent += "SECTION,METADATA\n";
+            csvContent += "Key,Value\n";
+            csvContent += `Export Date,${configData.metadata.exportDate}\n`;
+            csvContent += `Version,${configData.metadata.version}\n`;
+            csvContent += `Description,${configData.metadata.description}\n`;
+            csvContent += "\n";
+
+            // Settings section
+            csvContent += "SECTION,SETTINGS\n";
+            csvContent += "Key,Value\n";
+            csvContent += `Estimation Base Hours,${configData.settings.estimationBaseHours}\n`;
+            csvContent += `Project Hours Per Day,${configData.settings.projectHoursPerDay}\n`;
+            csvContent += `Use Common Start Date,${configData.settings.useCommonStartDate}\n`;
+            csvContent += `Common Start Date,${configData.settings.commonStartDate}\n`;
+            csvContent += `Current Ticket ID,${configData.settings.currentTicketId}\n`;
+            csvContent += "\n";
+
+            // Task Size Definitions section
+            csvContent += "SECTION,TASK_SIZES\n";
+            csvContent += "Size Key,Name,Days,Removable\n";
+            Object.keys(configData.taskSizeDefinitions).forEach(key => {
+                const size = configData.taskSizeDefinitions[key];
+                csvContent += `${key},"${size.name}",${size.days},${size.removable}\n`;
+            });
+            csvContent += "\n";
+
+            // People section
+            csvContent += "SECTION,PEOPLE\n";
+            csvContent += "Name,Week1,Week2,Week3,Week4,Week5,Week6,Week7,Week8,Project Ready\n";
+            configData.people.forEach(person => {
+                const availability = [...person.availability];
+                while (availability.length < 8) {
+                    availability.push(25);
+                }
+                const isProjectReady = person.isProjectReady !== undefined ? person.isProjectReady : true;
+                csvContent += `"${person.name}",${availability.slice(0, 8).join(',')},${isProjectReady ? 'Yes' : 'No'}\n`;
+            });
+            csvContent += "\n";
+
+            // Tickets section (closed only)
+            csvContent += "SECTION,TICKETS\n";
+            csvContent += "ID,Description,Start Date,Size,Priority,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Details: Description,Details: Positives,Details: Negatives\n";
+            configData.tickets.forEach(ticket => {
+                const assignedTeam = ticket.assigned.join(';');
+                const priority = ticket.priority || 'P3';
+                const status = ticket.status || 'Closed';
+                const isFixedLength = ticket.isFixedLength !== false;
+                const taskType = isFixedLength ? 'Fixed' : 'Flexible';
+                const pauseCommentsText = ticket.pauseComments && ticket.pauseComments.length > 0
+                    ? ticket.pauseComments.map(pc => `[${pc.timestamp}] ${pc.comment}`).join(' | ')
+                    : '';
+                const startDateHistoryText = ticket.startDateHistory && ticket.startDateHistory.length > 0
+                    ? ticket.startDateHistory.map(entry =>
+                        `${entry.date}(${entry.reason}@${entry.timestamp})`
+                    ).join(' | ')
+                    : '';
+                const endDateHistoryText = ticket.endDateHistory && ticket.endDateHistory.length > 0
+                    ? ticket.endDateHistory.map(entry =>
+                        `${entry.date}(${entry.reason}@${entry.timestamp})`
+                    ).join(' | ')
+                    : '';
+                const sizeHistoryText = ticket.sizeHistory && ticket.sizeHistory.length > 0
+                    ? ticket.sizeHistory.map(entry =>
+                        `${entry.size}:${entry.days}d(${entry.reason}@${entry.timestamp})`
+                    ).join(' | ')
+                    : '';
+                const customEndDate = ticket.customEndDate || '';
+                const taskDetails = ticket.taskDetails || {};
+                const detailsDescription = (taskDetails.description || '').replace(/"/g, '""');
+                const detailsPositives = (taskDetails.positives || '').replace(/"/g, '""');
+                const detailsNegatives = (taskDetails.negatives || '').replace(/"/g, '""');
+                csvContent += `${ticket.id},"${ticket.description.replace(/"/g, '""')}",${ticket.startDate},${ticket.size},${priority},"${assignedTeam}","${status}","${taskType}","${pauseCommentsText}","${startDateHistoryText}","${endDateHistoryText}","${sizeHistoryText}","${customEndDate}","${detailsDescription}","${detailsPositives}","${detailsNegatives}"\n`;
+            });
+            
+            // Download the closed tasks file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `project_config_closed_${timestamp}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Mark that closed items have been exported
+            closedItemsExported = true;
+            
+            // Disable the Export Closed button
+            const exportClosedBtn = document.getElementById('export-closed-btn');
+            if (exportClosedBtn) {
+                exportClosedBtn.disabled = true;
+                exportClosedBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+            
+            // Show success message
+            alert(`✅ Closed items exported successfully!\n\nFile: project_config_closed_${timestamp}.csv\n\nNow you can click "Export Config" to export active tasks.`);
+        }
+
         window.exportConfiguration = () => {
+            // Check if there are closed items and if they haven't been exported yet
+            const closedTickets = tickets.filter(ticket => (ticket.status || 'To Do') === 'Closed');
+            if (closedTickets.length > 0 && !closedItemsExported) {
+                alert('⚠️ Please export closed items first!\n\nClick the "Export Closed" button before exporting the configuration.\n\nThis prevents the browser from blocking multiple file downloads.');
+                return;
+            }
+            
             const timestamp = new Date().toISOString().slice(0, 19).replace('T', '_').replace(/:/g, '-');
             
             // Create comprehensive configuration data
@@ -3678,102 +3845,22 @@
             link.click();
             document.body.removeChild(link);
 
-            // --- Export closed tasks as separate file ---
-            let closedCsvContent = '';
-            // Metadata section
-            closedCsvContent += "SECTION,METADATA\n";
-            closedCsvContent += "Key,Value\n";
-            closedCsvContent += `Export Date,${configData.metadata.exportDate}\n`;
-            closedCsvContent += `Version,${configData.metadata.version}\n`;
-            closedCsvContent += `Description,${configData.metadata.description}\n`;
-            closedCsvContent += "\n";
-
-            // Settings section
-            closedCsvContent += "SECTION,SETTINGS\n";
-            closedCsvContent += "Key,Value\n";
-            closedCsvContent += `Estimation Base Hours,${configData.settings.estimationBaseHours}\n`;
-            closedCsvContent += `Project Hours Per Day,${configData.settings.projectHoursPerDay}\n`;
-            closedCsvContent += `Use Common Start Date,${configData.settings.useCommonStartDate}\n`;
-            closedCsvContent += `Common Start Date,${configData.settings.commonStartDate}\n`;
-            closedCsvContent += `Current Ticket ID,${configData.settings.currentTicketId}\n`;
-            closedCsvContent += "\n";
-
-            // Task Size Definitions section
-            closedCsvContent += "SECTION,TASK_SIZES\n";
-            closedCsvContent += "Size Key,Name,Days,Removable\n";
-            Object.keys(configData.taskSizeDefinitions).forEach(key => {
-                const size = configData.taskSizeDefinitions[key];
-                closedCsvContent += `${key},"${size.name}",${size.days},${size.removable}\n`;
-            });
-            closedCsvContent += "\n";
-
-            // People section
-            closedCsvContent += "SECTION,PEOPLE\n";
-            closedCsvContent += "Name,Week1,Week2,Week3,Week4,Week5,Week6,Week7,Week8,Project Ready\n";
-            configData.people.forEach(person => {
-                // Ensure person has 8-week availability
-                const availability = [...person.availability];
-                while (availability.length < 8) {
-                    availability.push(25);
-                }
-                const isProjectReady = person.isProjectReady !== undefined ? person.isProjectReady : true;
-                closedCsvContent += `"${person.name}",${availability.slice(0, 8).join(',')},${isProjectReady ? 'Yes' : 'No'}\n`;
-            });
-            closedCsvContent += "\n";
-
-            // Tickets section (closed only)
-            closedCsvContent += "SECTION,TICKETS\n";
-            closedCsvContent += "ID,Description,Start Date,Size,Priority,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Details: Description,Details: Positives,Details: Negatives\n";
-            configData.tickets.filter(ticket => (ticket.status || 'To Do') === 'Closed').forEach(ticket => {
-                const assignedTeam = ticket.assigned.join(';');
-                const priority = ticket.priority || 'P3';
-                const status = ticket.status || 'Closed';
-                const isFixedLength = ticket.isFixedLength !== false; // Default to true
-                const taskType = isFixedLength ? 'Fixed' : 'Flexible'; // NEW: Task Type
-                const pauseCommentsText = ticket.pauseComments && ticket.pauseComments.length > 0 
-                    ? ticket.pauseComments.map(pc => `[${pc.timestamp}] ${pc.comment}`).join(' | ')
-                    : '';
-                const startDateHistoryText = ticket.startDateHistory && ticket.startDateHistory.length > 0
-                    ? ticket.startDateHistory.map(entry => 
-                        `${entry.date}(${entry.reason}@${entry.timestamp})`
-                    ).join(' | ')
-                    : '';
-                const endDateHistoryText = ticket.endDateHistory && ticket.endDateHistory.length > 0
-                    ? ticket.endDateHistory.map(entry => 
-                        `${entry.date}(${entry.reason}@${entry.timestamp})`
-                    ).join(' | ')
-                    : '';
-                const sizeHistoryText = ticket.sizeHistory && ticket.sizeHistory.length > 0
-                    ? ticket.sizeHistory.map(entry => 
-                        `${entry.size}:${entry.days}d(${entry.reason}@${entry.timestamp})`
-                    ).join(' | ')
-                    : '';
-                const customEndDate = ticket.customEndDate || '';
-                // Get task details (if any)
-                const taskDetails = ticket.taskDetails || {};
-                const detailsDescription = (taskDetails.description || '').replace(/"/g, '""');
-                const detailsPositives = (taskDetails.positives || '').replace(/"/g, '""');
-                const detailsNegatives = (taskDetails.negatives || '').replace(/"/g, '""');
-                closedCsvContent += `${ticket.id},"${ticket.description.replace(/"/g, '""')}",${ticket.startDate},${ticket.size},${priority},"${assignedTeam}","${status}","${taskType}","${pauseCommentsText}","${startDateHistoryText}","${endDateHistoryText}","${sizeHistoryText}","${customEndDate}","${detailsDescription}","${detailsPositives}","${detailsNegatives}"\n`;
-            });
-            // Download the closed tasks file
-            if (closedCsvContent.trim().length > 0) {
-                const closedBlob = new Blob([closedCsvContent], { type: 'text/csv;charset=utf-8;' });
-                const closedLink = document.createElement("a");
-                const closedUrl = URL.createObjectURL(closedBlob);
-                closedLink.setAttribute("href", closedUrl);
-                closedLink.setAttribute("download", `project_config_closed_${timestamp}.csv`);
-                closedLink.style.visibility = 'hidden';
-                document.body.appendChild(closedLink);
-                closedLink.click();
-                document.body.removeChild(closedLink);
-            }
-
             // Mark as clean since configuration has been exported
             markClean();
+            
+            // Reset the closed items export flag for next dirty cycle
+            closedItemsExported = false;
+            
+            // Re-enable the Export Closed button if there are closed items
+            const hasClosedItems = tickets.some(ticket => (ticket.status || 'To Do') === 'Closed');
+            const exportClosedBtn = document.getElementById('export-closed-btn');
+            if (exportClosedBtn && hasClosedItems) {
+                exportClosedBtn.disabled = false;
+                exportClosedBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
 
             // Show success message
-            alert(`✅ Configuration exported successfully!\n\nFile: project_config_${timestamp}.csv\nFile: project_config_closed_${timestamp}.csv\n\nThe first file contains all active and non-closed tasks.\nThe second file contains all closed tasks only.\nBoth files use the same format.\n\nUse "Import Config" to restore this configuration later.`);
+            alert(`✅ Configuration exported successfully!\n\nFile: project_config_${timestamp}.csv\n\nThis file contains all active and non-closed tasks.\n\nUse "Import Config" to restore this configuration later.`);
         }
 
         // Update task start date from heat map popup
@@ -5868,6 +5955,7 @@ ${ticket.explanation}
             // Initialize UI components
             updateTicketSizeDropdown(); // Populate the task size dropdown
             updateFilterUI();
+            updateExportButtonsState(); // Update export buttons based on closed items
             
             // Update form field displays
             document.getElementById('estimation-base-hours').value = estimationBaseHours;
