@@ -147,9 +147,33 @@ This directory contains comprehensive Given-When-Then acceptance criteria for al
 
 ---
 
+### 🔒 [07 - Fixed-Length Tasks](./07-fixed-length-tasks.md)
+**54 Scenarios** covering:
+- Fixed-Length vs Flexible task types
+- Task creation with type selection
+- End date calculations for both types
+- Capacity calculations for mixed scenarios
+- Visual indicators (🔒 Fixed, ⚡ Flexible)
+- Details modal with task type information
+- CSV import/export with Task Type column
+- Configuration import/export
+- Backwards compatibility
+
+**Key Scenarios:**
+- Fixed-Length: Duration constant regardless of assignees
+- Flexible: Duration splits among assignees
+- Default behavior: Fixed-Length (checkbox unchecked)
+- Mixed scenario: Same person with both types = additive capacity
+- Capacity per person in Fixed: Total effort / (duration × assignees)
+- Heat map handles >100% overallocation
+- Import defaults to Fixed if Task Type column missing
+- Visual indicators show task type at a glance
+
+---
+
 ## Additional Feature Areas (To Be Documented)
 
-### 📅 07 - Date Management & History (Planned)
+### 📅 08 - Date Management & History (Planned)
 - Start date history tracking
 - End date history tracking
 - Size change history
@@ -157,7 +181,7 @@ This directory contains comprehensive Given-When-Then acceptance criteria for al
 - Common vs individual start dates
 - Date validation and formatting
 
-### 🎯 08 - P1 Conflict Detection (Planned)
+### 🎯 09 - P1 Conflict Detection (Planned)
 - Detect multiple P1 tasks for same person
 - Overlapping date range calculation
 - Warning modal with conflict details
@@ -205,7 +229,8 @@ This directory contains comprehensive Given-When-Then acceptance criteria for al
 | Capacity Calculations | 33 | ✅ Complete | ~6% (2 tests) |
 | Filtering System | 30 | ✅ Complete | ~7% (2 tests) |
 | Data Persistence | 34 | ✅ Complete | ~3% (1 test) |
-| **TOTAL DOCUMENTED** | **193** | **6 Docs** | **~7% (10/193)** |
+| Fixed-Length Tasks | 54 | ✅ Complete | 100% (54 tests) |
+| **TOTAL DOCUMENTED** | **247** | **7 Docs** | **~26% (64/247)** |
 | Date Management | TBD | 🔄 Planned | ~3% (1 test) |
 | P1 Conflict Detection | TBD | 🔄 Planned | ~0% (0 tests) |
 | Delay Analysis | TBD | 🔄 Planned | ~3% (1 test) |
