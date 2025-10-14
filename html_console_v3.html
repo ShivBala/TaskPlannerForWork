@@ -1001,12 +1001,15 @@
                             </div>
                         </div>
                         
-                        <!-- Task Type Checkbox -->
-                        <div class="lg:col-span-1 flex items-end pb-1">
+                        <!-- Task Type Checkbox and Details Icon -->
+                        <div class="lg:col-span-1 flex items-end pb-1 gap-2">
                             <label class="flex items-center gap-1 text-xs font-medium text-gray-700 cursor-pointer" title="Check to make task duration split among assignees. Unchecked (default) keeps fixed duration regardless of assignees.">
                                 <input type="checkbox" id="new-ticket-flexible" class="w-4 h-4 text-blue-600 focus:ring-2 focus:ring-blue-500 rounded">
                                 <span>Flexible</span>
                             </label>
+                            <button type="button" id="new-ticket-details-icon" onclick="openNewTicketDetailsModal()" class="text-gray-400 hover:text-blue-600 transition-colors" title="Add task details (description, positives, negatives)">
+                                <span style="font-size: 1.2em;">📝</span>
+                            </button>
                         </div>
                         
                         <!-- Assignment -->
@@ -1163,6 +1166,93 @@
                     </button>
                     <button onclick="handleOverdueTasksAction('skip')" class="btn-enterprise" style="flex: 1; min-width: 180px;">
                         ⏭️ Skip / Dismiss
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Task Details (Existing Tasks) -->
+    <div id="task-details-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3 class="modal-title">📝 Task Details</h3>
+                <button class="modal-close" onclick="closeTaskDetailsModal()">&times;</button>
+            </div>
+            <div style="padding: 20px;">
+                <input type="hidden" id="details-modal-task-id">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">📄 Description</label>
+                        <textarea id="details-modal-description" 
+                                  rows="4" 
+                                  placeholder="Enter task description..."
+                                  class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-green-700 mb-2">✅ Positives</label>
+                        <textarea id="details-modal-positives" 
+                                  rows="4" 
+                                  placeholder="Benefits, positive outcomes, advantages..."
+                                  class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-red-700 mb-2">⚠️ Negatives</label>
+                        <textarea id="details-modal-negatives" 
+                                  rows="4" 
+                                  placeholder="Risks, challenges, concerns..."
+                                  class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"></textarea>
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-6 justify-end">
+                    <button onclick="closeTaskDetailsModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                        Cancel
+                    </button>
+                    <button onclick="saveTaskDetails()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        💾 Save Details
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for New Ticket Details -->
+    <div id="new-ticket-details-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <h3 class="modal-title">📝 Add Task Details (Optional)</h3>
+                <button class="modal-close" onclick="closeNewTicketDetailsModal()">&times;</button>
+            </div>
+            <div style="padding: 20px;">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">📄 Description</label>
+                        <textarea id="new-ticket-details-description" 
+                                  rows="4" 
+                                  placeholder="Enter task description..."
+                                  class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-green-700 mb-2">✅ Positives</label>
+                        <textarea id="new-ticket-details-positives" 
+                                  rows="4" 
+                                  placeholder="Benefits, positive outcomes, advantages..."
+                                  class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-sm"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-red-700 mb-2">⚠️ Negatives</label>
+                        <textarea id="new-ticket-details-negatives" 
+                                  rows="4" 
+                                  placeholder="Risks, challenges, concerns..."
+                                  class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 text-sm"></textarea>
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-6 justify-end">
+                    <button onclick="closeNewTicketDetailsModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                        Cancel
+                    </button>
+                    <button onclick="saveNewTicketDetails()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        💾 Save Details
                     </button>
                 </div>
             </div>
@@ -3228,11 +3318,16 @@
                         </div>
                     </td>
                     <td class="px-3 py-2 whitespace-nowrap text-right text-sm font-medium">
-                        <button onclick="removeTicket(${ticket.id})" class="text-red-500 hover:text-red-700 transition">
-                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                        </button>
+                        <div class="flex items-center justify-end gap-2">
+                            <button onclick="openTaskDetailsModal(${ticket.id})" class="${ticket.taskDetails && (ticket.taskDetails.description || ticket.taskDetails.positives || ticket.taskDetails.negatives) ? 'text-blue-600 hover:text-blue-800' : 'text-gray-400 hover:text-gray-600'} transition" title="Edit task details">
+                                <span style="font-size: 1.2em;">📝</span>
+                            </button>
+                            <button onclick="removeTicket(${ticket.id})" class="text-red-500 hover:text-red-700 transition" title="Delete task">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                            </button>
+                        </div>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -3266,7 +3361,7 @@
             }
 
             // 1. Generate the CSV content
-            let csvContent = "Ticket ID,Description,Start Date,Size,Priority,Status,Task Type,Pause Comments,Person Days,Total Hours,Assigned Team,Projected End Date,Detailed Explanation\n";
+            let csvContent = "Ticket ID,Description,Start Date,Size,Priority,Status,Task Type,Pause Comments,Person Days,Total Hours,Assigned Team,Projected End Date,Detailed Explanation,Details: Description,Details: Positives,Details: Negatives\n";
 
             projectedTickets.forEach(ticket => {
                 const totalHours = effortMap[ticket.size] || 0;
@@ -3284,6 +3379,12 @@
                 const isFixedLength = ticket.isFixedLength !== false; // Default to true
                 const taskType = isFixedLength ? 'Fixed' : 'Flexible';
 
+                // Get task details (if any)
+                const taskDetails = ticket.taskDetails || {};
+                const detailsDescription = escapeCSV(taskDetails.description || '');
+                const detailsPositives = escapeCSV(taskDetails.positives || '');
+                const detailsNegatives = escapeCSV(taskDetails.negatives || '');
+
                 const row = [
                     ticket.id,
                     escapeCSV(ticket.description),
@@ -3297,7 +3398,10 @@
                     totalHours,
                     escapeCSV(ticket.assigned.join('; ')),
                     ticket.endDate.replace(/,/g, ''),
-                    escapeCSV(ticket.explanation.replace(/\n/g, ' | ')) // Replace newlines for single-cell explanation
+                    escapeCSV(ticket.explanation.replace(/\n/g, ' | ')), // Replace newlines for single-cell explanation
+                    detailsDescription, // NEW: Task Details - Description
+                    detailsPositives, // NEW: Task Details - Positives
+                    detailsNegatives // NEW: Task Details - Negatives
                 ].join(',');
                 csvContent += row + "\n";
             });
@@ -3384,7 +3488,7 @@
             
             // Tickets section (non-closed)
             csvContent += "SECTION,TICKETS\n";
-            csvContent += "ID,Description,Start Date,Size,Priority,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date\n";
+            csvContent += "ID,Description,Start Date,Size,Priority,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Details: Description,Details: Positives,Details: Negatives\n";
             configData.tickets.filter(ticket => (ticket.status || 'To Do') !== 'Closed').forEach(ticket => {
                 const assignedTeam = ticket.assigned.join(';');
                 const priority = ticket.priority || 'P3';
@@ -3410,7 +3514,12 @@
                     ).join(' | ')
                     : '';
                 const customEndDate = ticket.customEndDate || '';
-                csvContent += `${ticket.id},"${ticket.description.replace(/"/g, '""')}",${ticket.startDate},${ticket.size},${priority},"${assignedTeam}","${status}","${taskType}","${pauseCommentsText}","${startDateHistoryText}","${endDateHistoryText}","${sizeHistoryText}","${customEndDate}"\n`;
+                // Get task details (if any)
+                const taskDetails = ticket.taskDetails || {};
+                const detailsDescription = (taskDetails.description || '').replace(/"/g, '""');
+                const detailsPositives = (taskDetails.positives || '').replace(/"/g, '""');
+                const detailsNegatives = (taskDetails.negatives || '').replace(/"/g, '""');
+                csvContent += `${ticket.id},"${ticket.description.replace(/"/g, '""')}",${ticket.startDate},${ticket.size},${priority},"${assignedTeam}","${status}","${taskType}","${pauseCommentsText}","${startDateHistoryText}","${endDateHistoryText}","${sizeHistoryText}","${customEndDate}","${detailsDescription}","${detailsPositives}","${detailsNegatives}"\n`;
             });
             // Download the configuration file (non-closed)
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -3468,7 +3577,7 @@
 
             // Tickets section (closed only)
             closedCsvContent += "SECTION,TICKETS\n";
-            closedCsvContent += "ID,Description,Start Date,Size,Priority,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date\n";
+            closedCsvContent += "ID,Description,Start Date,Size,Priority,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Details: Description,Details: Positives,Details: Negatives\n";
             configData.tickets.filter(ticket => (ticket.status || 'To Do') === 'Closed').forEach(ticket => {
                 const assignedTeam = ticket.assigned.join(';');
                 const priority = ticket.priority || 'P3';
@@ -3494,7 +3603,12 @@
                     ).join(' | ')
                     : '';
                 const customEndDate = ticket.customEndDate || '';
-                closedCsvContent += `${ticket.id},"${ticket.description.replace(/"/g, '""')}",${ticket.startDate},${ticket.size},${priority},"${assignedTeam}","${status}","${taskType}","${pauseCommentsText}","${startDateHistoryText}","${endDateHistoryText}","${sizeHistoryText}","${customEndDate}"\n`;
+                // Get task details (if any)
+                const taskDetails = ticket.taskDetails || {};
+                const detailsDescription = (taskDetails.description || '').replace(/"/g, '""');
+                const detailsPositives = (taskDetails.positives || '').replace(/"/g, '""');
+                const detailsNegatives = (taskDetails.negatives || '').replace(/"/g, '""');
+                closedCsvContent += `${ticket.id},"${ticket.description.replace(/"/g, '""')}",${ticket.startDate},${ticket.size},${priority},"${assignedTeam}","${status}","${taskType}","${pauseCommentsText}","${startDateHistoryText}","${endDateHistoryText}","${sizeHistoryText}","${customEndDate}","${detailsDescription}","${detailsPositives}","${detailsNegatives}"\n`;
             });
             // Download the closed tasks file
             if (closedCsvContent.trim().length > 0) {
@@ -3703,8 +3817,8 @@
                     else if (currentSection === 'TICKETS') {
                         const columns = parseCSVLine(line);
                         
-                        // Handle backward compatibility - older CSV files may not have customEndDate or taskType columns
-                        const [id, description, startDate, size, priority, assignedTeam, status, taskType, pauseComments, startDateHistory, endDateHistory, sizeHistory, customEndDate] = columns;
+                        // Handle backward compatibility - older CSV files may not have customEndDate, taskType, or taskDetails columns
+                        const [id, description, startDate, size, priority, assignedTeam, status, taskType, pauseComments, startDateHistory, endDateHistory, sizeHistory, customEndDate, detailsDescription, detailsPositives, detailsNegatives] = columns;
                         
                         // Normalize assigned names: trim and remove quotes
                         const assigned = assignedTeam ? assignedTeam.split(';').map(name => name.trim().replace(/^"|"$/g, '')).filter(name => name) : [];
@@ -3798,6 +3912,15 @@
                             sizeHistory: parsedSizeHistory,
                             customEndDate: (customEndDate && customEndDate.trim()) ? customEndDate : undefined
                         };
+                        
+                        // NEW: Parse task details if present (backward compatible - only add if at least one field exists)
+                        if (detailsDescription || detailsPositives || detailsNegatives) {
+                            ticket.taskDetails = {
+                                description: detailsDescription || '',
+                                positives: detailsPositives || '',
+                                negatives: detailsNegatives || ''
+                            };
+                        }
                         
                         importedData.tickets.push(ticket);
                     }
@@ -4633,6 +4756,11 @@
                 }
             }
 
+            // Capture task details if any field has content
+            const detailsDescription = document.getElementById('new-ticket-details-description').value.trim();
+            const detailsPositives = document.getElementById('new-ticket-details-positives').value.trim();
+            const detailsNegatives = document.getElementById('new-ticket-details-negatives').value.trim();
+
             const newTicket = {
                 id: currentTicketId++,
                 description: description,
@@ -4644,6 +4772,15 @@
                 pauseComments: [], // Initialize empty pause comments array
                 isFixedLength: isFixedLength // NEW: Task type property (default true for Fixed-Length)
             };
+
+            // Add task details only if at least one field has content
+            if (detailsDescription || detailsPositives || detailsNegatives) {
+                newTicket.taskDetails = {
+                    description: detailsDescription,
+                    positives: detailsPositives,
+                    negatives: detailsNegatives
+                };
+            }
             
             // Initialize start date history for new ticket
             initializeStartDateHistory(newTicket);
@@ -4655,6 +4792,12 @@
             sizeSelect.value = 'L';
             prioritySelect.value = 'P3'; // Reset to default priority
             flexibleCheckbox.checked = false; // Reset to unchecked (Fixed-Length default)
+            // Clear task details fields
+            document.getElementById('new-ticket-details-description').value = '';
+            document.getElementById('new-ticket-details-positives').value = '';
+            document.getElementById('new-ticket-details-negatives').value = '';
+            // Update icon color after clearing
+            updateNewTicketDetailsIconColor();
             // Clear all checkboxes
             assignedContainer.querySelectorAll('input[type="checkbox"]').forEach(checkbox => checkbox.checked = false);
 
@@ -4681,6 +4824,108 @@
             
             calculateProjection();
             saveToLocalStorage();
+        }
+
+        // Task Details Modal Functions
+        window.openTaskDetailsModal = (taskId) => {
+            const task = tickets.find(t => t.id === taskId);
+            if (!task) {
+                alert("Task not found.");
+                return;
+            }
+
+            // Store the task ID in the hidden input
+            document.getElementById('details-modal-task-id').value = taskId;
+
+            // Populate the modal fields with existing details (or empty if none)
+            const details = task.taskDetails || {};
+            document.getElementById('details-modal-description').value = details.description || '';
+            document.getElementById('details-modal-positives').value = details.positives || '';
+            document.getElementById('details-modal-negatives').value = details.negatives || '';
+
+            // Show the modal
+            document.getElementById('task-details-modal').classList.add('active');
+        }
+
+        window.closeTaskDetailsModal = () => {
+            // Hide the modal
+            document.getElementById('task-details-modal').classList.remove('active');
+
+            // Clear the modal fields
+            document.getElementById('details-modal-task-id').value = '';
+            document.getElementById('details-modal-description').value = '';
+            document.getElementById('details-modal-positives').value = '';
+            document.getElementById('details-modal-negatives').value = '';
+        }
+
+        window.saveTaskDetails = () => {
+            const taskId = parseInt(document.getElementById('details-modal-task-id').value);
+            const task = tickets.find(t => t.id === taskId);
+            
+            if (!task) {
+                alert("Task not found.");
+                return;
+            }
+
+            // Get the values from the modal
+            const description = document.getElementById('details-modal-description').value.trim();
+            const positives = document.getElementById('details-modal-positives').value.trim();
+            const negatives = document.getElementById('details-modal-negatives').value.trim();
+
+            // Update or remove taskDetails based on whether any field has content
+            if (description || positives || negatives) {
+                task.taskDetails = {
+                    description: description,
+                    positives: positives,
+                    negatives: negatives
+                };
+            } else {
+                // Remove taskDetails if all fields are empty
+                delete task.taskDetails;
+            }
+
+            // Save and refresh
+            markDirty();
+            saveToLocalStorage();
+            calculateProjection(); // This will trigger renderTickets which updates the icon color
+
+            // Close the modal
+            closeTaskDetailsModal();
+        }
+
+        // New Ticket Details Modal Functions (for Add Ticket form)
+        window.openNewTicketDetailsModal = () => {
+            // Just show the modal - fields may already have content
+            document.getElementById('new-ticket-details-modal').classList.add('active');
+            
+            // Update icon color based on whether fields have content
+            updateNewTicketDetailsIconColor();
+        }
+
+        window.closeNewTicketDetailsModal = () => {
+            // Hide the modal
+            document.getElementById('new-ticket-details-modal').classList.remove('active');
+        }
+
+        window.saveNewTicketDetails = () => {
+            // Just close the modal - values are kept in the form fields
+            closeNewTicketDetailsModal();
+            
+            // Update icon color based on whether fields have content
+            updateNewTicketDetailsIconColor();
+        }
+
+        window.updateNewTicketDetailsIconColor = () => {
+            const description = document.getElementById('new-ticket-details-description').value.trim();
+            const positives = document.getElementById('new-ticket-details-positives').value.trim();
+            const negatives = document.getElementById('new-ticket-details-negatives').value.trim();
+            
+            const icon = document.getElementById('new-ticket-details-icon');
+            if (description || positives || negatives) {
+                icon.className = 'text-blue-600 hover:text-blue-700 transition-colors';
+            } else {
+                icon.className = 'text-gray-400 hover:text-blue-600 transition-colors';
+            }
         }
 
         window.updateTicketAssignment = (id, newAssignedArray) => {
