@@ -1413,6 +1413,39 @@
     </div>
 
     <script>
+        // Detect test mode and suppress alerts
+        const IS_TEST_MODE = window.self !== window.top;
+        
+        // Override alert in test mode to suppress dialogs
+        const originalAlert = window.alert;
+        const originalConfirm = window.confirm;
+        
+        if (IS_TEST_MODE) {
+            console.log('🧪 Test mode detected (running in iframe) - suppressing alerts and clearing localStorage...');
+            
+            // Suppress alert dialogs in test mode
+            window.alert = function(message) {
+                console.log('🔕 [Alert suppressed in test mode]:', message);
+            };
+            
+            // Auto-accept confirm dialogs in test mode
+            window.confirm = function(message) {
+                console.log('🔕 [Confirm auto-accepted in test mode]:', message);
+                return true;
+            };
+            
+            // Clear localStorage
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (key.startsWith('taskScheduler_') || key.startsWith('projectScheduler'))) {
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(key => localStorage.removeItem(key));
+            console.log(`✅ Cleared ${keysToRemove.length} localStorage keys for testing`);
+        }
+        
         // --- GLOBAL CONFIG & STATE ---
         const STORAGE_KEY = 'projectSchedulerDataV2';
         let people = [];

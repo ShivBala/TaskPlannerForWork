@@ -286,6 +286,18 @@
     <script src="html/extended-task-tracker-tests.js"></script>
     
     <script>
+        // Clear localStorage BEFORE loading the app to prevent CSV import prompts
+        console.log('🧹 Clearing localStorage before app loads...');
+        const keysToRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (key.startsWith('taskScheduler_') || key.startsWith('projectScheduler'))) {
+                keysToRemove.push(key);
+            }
+        }
+        keysToRemove.forEach(key => localStorage.removeItem(key));
+        console.log(`✅ Cleared ${keysToRemove.length} localStorage keys`);
+        
         class TestRunner extends TestFramework {
             constructor() {
                 console.log('🔍 TestRunner constructor called');
@@ -405,6 +417,20 @@
                 try {
                     this.appWindow = this.appFrame.contentWindow;
                     console.log('🔍 Got contentWindow:', this.appWindow ? 'Yes' : 'No');
+                    
+                    // Clear localStorage before initializing the app to avoid CSV import errors
+                    if (this.appWindow && this.appWindow.localStorage) {
+                        console.log('🧹 Clearing localStorage to prevent CSV import prompts...');
+                        const keysToRemove = [];
+                        for (let i = 0; i < this.appWindow.localStorage.length; i++) {
+                            const key = this.appWindow.localStorage.key(i);
+                            if (key && (key.startsWith('taskScheduler_') || key.startsWith('projectScheduler'))) {
+                                keysToRemove.push(key);
+                            }
+                        }
+                        keysToRemove.forEach(key => this.appWindow.localStorage.removeItem(key));
+                        console.log(`✅ Cleared ${keysToRemove.length} localStorage keys`);
+                    }
                     
                     // Check if the app has the expected functions/variables
                     // Note: tickets and people are declared with 'let' so they're not on window object
