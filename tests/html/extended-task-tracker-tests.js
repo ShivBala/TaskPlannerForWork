@@ -212,9 +212,7 @@ class ExtendedTaskTrackerTests {
         });
 
         // Fixed-Length Tasks (NEW FEATURE)
-        this.testFramework.describe('Fixed-Length Tasks - Task Creation', () => {
-            this.runFixedLengthTasksTests();
-        });
+        this.runFixedLengthTasksTests();
     }
 
     // ============================================
