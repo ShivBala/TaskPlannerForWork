@@ -283,6 +283,7 @@
     
     <!-- Load HTML-specific tests -->
     <script src="html/html-task-tracker-tests.js"></script>
+    <script src="html/extended-task-tracker-tests.js"></script>
     
     <script>
         class TestRunner extends TestFramework {
@@ -508,6 +509,12 @@
                     const htmlTests = new HTMLTaskTrackerTests(this.appWindow);
                     htmlTests.runTests(this);
                 }
+                
+                // Extended tests for comprehensive coverage
+                if (typeof ExtendedTaskTrackerTests !== 'undefined') {
+                    const extendedTests = new ExtendedTaskTrackerTests(this.appWindow);
+                    extendedTests.runTests(this);
+                }
             }
             
             async runAllTests() {
@@ -544,6 +551,14 @@
                         htmlTests.runTests(this);
                     } else {
                         console.error('HTML tests not available or app not loaded');
+                    }
+                    
+                    // Also run extended tests
+                    if (typeof ExtendedTaskTrackerTests !== 'undefined' && this.appWindow) {
+                        const extendedTests = new ExtendedTaskTrackerTests(this.appWindow);
+                        extendedTests.runTests(this);
+                    } else {
+                        console.error('Extended tests not available or app not loaded');
                     }
                     
                     const endTime = Date.now();
