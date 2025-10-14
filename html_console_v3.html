@@ -1088,6 +1088,12 @@
                                         <span id="start-date-column-header">Start Date</span>
                                     </th>
                                     <th class="px-3 py-2 text-left w-20">Size</th>
+                                    <th class="px-3 py-2 text-left w-24 tooltip-container">Task Type
+                                        <div class="tooltip-text">
+                                            🔒 Fixed-Length: Duration constant regardless of assignees<br>
+                                            ⚡ Flexible: Duration splits among assignees
+                                        </div>
+                                    </th>
                                     <th class="px-3 py-2 text-left w-20">Priority</th>
                                     <th class="px-3 py-2 text-left w-24">Status</th>
                                     <th class="px-3 py-2 text-left w-48">Assigned</th>
@@ -3172,6 +3178,20 @@
                         >
                             ${sizeOptions}
                         </select>
+                    </td>
+                    <td class="px-3 py-2 whitespace-nowrap text-center">
+                        <div class="flex items-center justify-center gap-2">
+                            <span style="font-size: 1.2em;">${taskTypeIcon}</span>
+                            <label class="flex items-center cursor-pointer" title="Check for Flexible, uncheck for Fixed-Length">
+                                <input 
+                                    type="checkbox" 
+                                    ${ticket.isFixedLength === false ? 'checked' : ''}
+                                    onchange="toggleTaskType(${ticket.id})"
+                                    class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
+                                >
+                                <span class="ml-1 text-xs text-gray-600">Flex</span>
+                            </label>
+                        </div>
                     </td>
                     <td class="px-3 py-2 whitespace-nowrap text-sm font-medium">
                         <select 
