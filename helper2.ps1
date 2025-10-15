@@ -16,7 +16,12 @@
     
 .NOTES
     V9 Only - Does not support legacy CSV format
+    Config files are synced from Downloads to Output folder automatically
 #>
+
+# Configuration - Define paths as variables for easy customization
+$script:OutputFolderPath = Join-Path $PSScriptRoot "Output"
+$script:DownloadsFolderPath = "$HOME/Downloads"
 
 # Import V9 adapter
 . "$PSScriptRoot/v9_csv_adapter.ps1"
@@ -30,15 +35,16 @@ $global:V9ConfigPath = $null
 function Initialize-V9Config {
     <#
     .SYNOPSIS
-        Loads the latest V9 config from Downloads folder
+        Loads the latest V9 config from Output folder (syncing from Downloads if needed)
     #>
     
     Write-Host "`n🔍 Looking for V9 config..." -ForegroundColor Cyan
     
+    # This will automatically sync from Downloads to Output if needed
     $configFile = Get-LatestV9ConfigFile
     if ($null -eq $configFile) {
-        Write-Host "❌ No V9 config found in Downloads folder" -ForegroundColor Red
-        Write-Host "   Please export config from html_console_v9.html first" -ForegroundColor Yellow
+        Write-Host "❌ No V9 config found" -ForegroundColor Red
+        Write-Host "   Please export config from html_console_v9.html to Downloads folder first" -ForegroundColor Yellow
         return $false
     }
     
@@ -730,8 +736,8 @@ function Invoke-Command {
         }
         
         Write-Host "`nAdd or Modify task for $personName?" -ForegroundColor Cyan
-        Write-Host "  1. Add    (or type: a, ad, add)" -ForegroundColor White
-        Write-Host "  2. Modify (or type: m, mo, mod, modi, modif, modify)" -ForegroundColor White
+        Write-Host "  1. Add    :" -ForegroundColor White
+        Write-Host "  2. Modify :" -ForegroundColor White
         Write-Host "Choose: " -NoNewline -ForegroundColor Yellow
         $choice = Read-Host
         

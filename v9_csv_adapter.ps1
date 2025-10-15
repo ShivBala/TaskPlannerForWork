@@ -20,7 +20,10 @@
     between PowerShell task management and HTML console.
 #>
 
-# Global configuration
+# Global configuration - Define paths as variables for easy customization
+$script:OutputFolderPath = Join-Path $PSScriptRoot "Output"
+$script:DownloadsFolderPath = "$HOME/Downloads"
+
 $script:V9ConfigCache = @{
     LastConfigFile = $null
     Metadata = $null
@@ -33,14 +36,18 @@ $script:V9ConfigCache = @{
 function Get-LatestV9ConfigFile {
     <#
     .SYNOPSIS
-        Auto-detects the latest project_config_*.csv file in Downloads folder
+        Auto-detects the latest project_config_*.csv file from Output folder, syncing from Downloads if needed
     
     .DESCRIPTION
-        Finds the most recent project_config_*.csv file (excluding closed items files)
-        from the user's Downloads folder. Returns the full path or $null if not found.
+        Finds the most recent project_config_*.csv file (excluding closed items files).
+        First checks Downloads folder for new files and copies them to Output if they're newer.
+        Then returns the latest file from Output folder.
     
     .PARAMETER DownloadsPath
-        Optional custom Downloads folder path. Defaults to ~/Downloads
+        Optional custom Downloads folder path. Defaults to the global $script:DownloadsFolderPath
+    
+    .PARAMETER OutputPath
+        Optional custom Output folder path. Defaults to the global $script:OutputFolderPath
     
     .EXAMPLE
         $configFile = Get-LatestV9ConfigFile
@@ -49,23 +56,67 @@ function Get-LatestV9ConfigFile {
         }
     #>
     param(
-        [string]$DownloadsPath = "$HOME/Downloads"
+        [string]$DownloadsPath = $script:DownloadsFolderPath,
+        [string]$OutputPath = $script:OutputFolderPath
     )
     
     try {
-        # Find all project_config_*.csv files (excluding closed)
-        $configFiles = Get-ChildItem -Path $DownloadsPath -Filter "project_config_*.csv" -ErrorAction SilentlyContinue |
+        # Ensure Output folder exists
+        if (-not (Test-Path $OutputPath)) {
+            New-Item -Path $OutputPath -ItemType Directory -Force | Out-Null
+            Write-Host "📁 Created Output folder: $OutputPath" -ForegroundColor Cyan
+        }
+        
+        # Check Downloads folder for new files
+        $downloadsFiles = Get-ChildItem -Path $DownloadsPath -Filter "project_config_*.csv" -ErrorAction SilentlyContinue |
             Where-Object { $_.Name -notmatch '_closed_' } |
             Sort-Object LastWriteTime -Descending
         
-        if ($configFiles.Count -eq 0) {
-            Write-Host "⚠️  No project_config_*.csv files found in: $DownloadsPath" -ForegroundColor Yellow
+        # Check Output folder for existing files
+        $outputFiles = Get-ChildItem -Path $OutputPath -Filter "project_config_*.csv" -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -notmatch '_closed_' } |
+            Sort-Object LastWriteTime -Descending
+        
+        # Sync from Downloads to Output if needed
+        if ($downloadsFiles.Count -gt 0) {
+            $latestDownloadFile = $downloadsFiles[0]
+            
+            # Check if this file is newer than what's in Output
+            $needsCopy = $false
+            if ($outputFiles.Count -eq 0) {
+                $needsCopy = $true
+                Write-Host "📥 No files in Output folder, copying from Downloads..." -ForegroundColor Cyan
+            } else {
+                $latestOutputFile = $outputFiles[0]
+                if ($latestDownloadFile.LastWriteTime -gt $latestOutputFile.LastWriteTime) {
+                    $needsCopy = $true
+                    Write-Host "📥 Newer file found in Downloads, copying to Output..." -ForegroundColor Cyan
+                }
+            }
+            
+            if ($needsCopy) {
+                $destPath = Join-Path $OutputPath $latestDownloadFile.Name
+                Copy-Item -Path $latestDownloadFile.FullName -Destination $destPath -Force
+                Write-Host "✅ Copied: $($latestDownloadFile.Name)" -ForegroundColor Green
+                Write-Host "   From: Downloads (modified: $($latestDownloadFile.LastWriteTime))" -ForegroundColor Gray
+                Write-Host "   To: Output" -ForegroundColor Gray
+                
+                # Refresh output files list
+                $outputFiles = Get-ChildItem -Path $OutputPath -Filter "project_config_*.csv" -ErrorAction SilentlyContinue |
+                    Where-Object { $_.Name -notmatch '_closed_' } |
+                    Sort-Object LastWriteTime -Descending
+            }
+        }
+        
+        # Return latest file from Output folder
+        if ($outputFiles.Count -eq 0) {
+            Write-Host "⚠️  No project_config_*.csv files found in Downloads or Output" -ForegroundColor Yellow
             Write-Host "   Please export configuration from html_console_v9.html first." -ForegroundColor Yellow
             return $null
         }
         
-        $latestFile = $configFiles[0]
-        Write-Host "✅ Found latest config: $($latestFile.Name) (modified: $($latestFile.LastWriteTime))" -ForegroundColor Green
+        $latestFile = $outputFiles[0]
+        Write-Host "✅ Using config from Output: $($latestFile.Name) (modified: $($latestFile.LastWriteTime))" -ForegroundColor Green
         return $latestFile.FullName
         
     } catch {
@@ -375,14 +426,21 @@ function Write-V9ConfigFile {
         [void]$csvContent.AppendLine("ID,Description,Start Date,Size,Priority,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Details: Description,Details: Positives,Details: Negatives")
         
         foreach ($ticket in $ConfigData.Tickets) {
-            # Escape quotes in fields
-            $desc = $ticket.Description -replace '"', '""'
-            $assignedTeam = ($ticket.AssignedTeam -join ';')
-            $detailsDesc = ($ticket.DetailsDescription -replace '"', '""')
-            $detailsPos = ($ticket.DetailsPositives -replace '"', '""')
-            $detailsNeg = ($ticket.DetailsNegatives -replace '"', '""')
+            # Escape quotes in fields and handle null/empty values
+            $desc = if ($ticket.Description) { $ticket.Description -replace '"', '""' } else { "" }
+            $assignedTeam = if ($ticket.AssignedTeam) { ($ticket.AssignedTeam -join ';') } else { "" }
+            $detailsDesc = if ($ticket.DetailsDescription) { $ticket.DetailsDescription -replace '"', '""' } else { "" }
+            $detailsPos = if ($ticket.DetailsPositives) { $ticket.DetailsPositives -replace '"', '""' } else { "" }
+            $detailsNeg = if ($ticket.DetailsNegatives) { $ticket.DetailsNegatives -replace '"', '""' } else { "" }
+            $pauseComments = if ($ticket.PauseComments) { $ticket.PauseComments -replace '"', '""' } else { "" }
+            $startDateHistory = if ($ticket.StartDateHistory) { $ticket.StartDateHistory -replace '"', '""' } else { "" }
+            $endDateHistory = if ($ticket.EndDateHistory) { $ticket.EndDateHistory -replace '"', '""' } else { "" }
+            $sizeHistory = if ($ticket.SizeHistory) { $ticket.SizeHistory -replace '"', '""' } else { "" }
+            $customEndDate = if ($ticket.CustomEndDate) { $ticket.CustomEndDate } else { "" }
+            $startDate = if ($ticket.StartDate) { $ticket.StartDate } else { "" }
+            $taskType = if ($ticket.TaskType) { $ticket.TaskType } else { "Fixed" }
             
-            $line = "$($ticket.ID),`"$desc`",$($ticket.StartDate),$($ticket.Size),$($ticket.Priority),`"$assignedTeam`",`"$($ticket.Status)`",`"$($ticket.TaskType)`",`"$($ticket.PauseComments)`",`"$($ticket.StartDateHistory)`",`"$($ticket.EndDateHistory)`",`"$($ticket.SizeHistory)`",`"$($ticket.CustomEndDate)`",`"$detailsDesc`",`"$detailsPos`",`"$detailsNeg`""
+            $line = "$($ticket.ID),`"$desc`",$startDate,$($ticket.Size),$($ticket.Priority),`"$assignedTeam`",`"$($ticket.Status)`",`"$taskType`",`"$pauseComments`",`"$startDateHistory`",`"$endDateHistory`",`"$sizeHistory`",`"$customEndDate`",`"$detailsDesc`",`"$detailsPos`",`"$detailsNeg`""
             [void]$csvContent.AppendLine($line)
         }
         
