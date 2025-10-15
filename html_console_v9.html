@@ -741,6 +741,33 @@
         // Track if closed items have been exported in this session
         let closedItemsExported = false;
 
+        // ===== PERFORMANCE FIX: Debounced Render =====
+        // Prevents excessive re-renders when multiple changes happen quickly
+        // Reduces scrolling freeze with 56+ tasks
+        let renderDebounceTimer = null;
+        let renderPending = false;
+        
+        function scheduleRender() {
+            if (!renderPending) {
+                renderPending = true;
+                // Use requestAnimationFrame for smooth rendering sync with browser paint
+                requestAnimationFrame(() => {
+                    clearTimeout(renderDebounceTimer);
+                    renderDebounceTimer = setTimeout(() => {
+                        renderPending = false;
+                        calculateProjection();
+                    }, 50); // 50ms delay allows batching multiple rapid changes
+                });
+            }
+        }
+        
+        function immediateRender() {
+            clearTimeout(renderDebounceTimer);
+            renderPending = false;
+            calculateProjection();
+        }
+        // ===== END PERFORMANCE FIX =====
+
         // Enhanced task sizing with display names and presets
         let taskSizeDefinitions = {
             S: { name: 'Small', days: 1, removable: false },
@@ -1466,7 +1493,8 @@
 
         // Alias for compatibility with the filtering functions
         function updateTable() {
-            calculateProjection();
+            // Use scheduled render for better performance
+            scheduleRender();
         }
 
         function getDefaultTaskStartDate() {
