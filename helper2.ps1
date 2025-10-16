@@ -1,21 +1,23 @@
-# PowerShell Interface for html_console_v9.html - V9 Config Only
-# Purpose: Simplified task management for V9 exported configs
+# PowerShell Interface for html_console_v9/v10.html - V9/V10 Config Support
+# Purpose: Simplified task management for V9/V10 exported configs
 # Author: GitHub Copilot
-# Date: October 15, 2025
+# Date: October 16, 2025
 
 <#
 .SYNOPSIS
-    Clean PowerShell interface for V9 config file management
+    Clean PowerShell interface for V9/V10 config file management
 
 .DESCRIPTION
     This script provides a regex-based command interface for managing tasks
-    in V9 config files exported from html_console_v9.html. It supports:
+    in V9/V10 config files exported from html_console_v9/v10.html. It supports:
     - Quick task add/modify by person name
     - Capacity queries
     - Availability checks
+    - V10: Stakeholders and Initiatives management
+    - V10: UUID-based task tracking
     
 .NOTES
-    V9 Only - Does not support legacy CSV format
+    V9/V10 Support - Automatically detects format version
     Config files are synced from Downloads to Output folder automatically
 #>
 
@@ -185,6 +187,109 @@ function Save-V9Config {
     }
 }
 
+#region V10 Management Functions
+
+function Add-Stakeholder {
+    <#
+    .SYNOPSIS
+        Adds a new stakeholder to V10 config
+    #>
+    param([string]$Name)
+    
+    if ([string]::IsNullOrWhiteSpace($Name)) {
+        Write-Host "❌ Stakeholder name is required" -ForegroundColor Red
+        return
+    }
+    
+    if (-not $global:V9Config.Stakeholders) {
+        $global:V9Config.Stakeholders = @()
+    }
+    
+    if ($global:V9Config.Stakeholders -contains $Name) {
+        Write-Host "❌ Stakeholder '$Name' already exists" -ForegroundColor Red
+        return
+    }
+    
+    $global:V9Config.Stakeholders += $Name
+    
+    if (Save-V9Config) {
+        Write-Host "✅ Stakeholder '$Name' added successfully!" -ForegroundColor Green
+    }
+}
+
+function Add-Initiative {
+    <#
+    .SYNOPSIS
+        Adds a new initiative to V10 config
+    #>
+    param([string]$Name)
+    
+    if ([string]::IsNullOrWhiteSpace($Name)) {
+        Write-Host "❌ Initiative name is required" -ForegroundColor Red
+        return
+    }
+    
+    if (-not $global:V9Config.Initiatives) {
+        $global:V9Config.Initiatives = @()
+    }
+    
+    if ($global:V9Config.Initiatives | Where-Object { $_.Name -eq $Name }) {
+        Write-Host "❌ Initiative '$Name' already exists" -ForegroundColor Red
+        return
+    }
+    
+    $newInitiative = [PSCustomObject]@{
+        Name = $Name
+        CreationDate = (Get-Date -Format "yyyy-MM-dd")
+        StartDate = $null
+    }
+    
+    $global:V9Config.Initiatives += $newInitiative
+    
+    if (Save-V9Config) {
+        Write-Host "✅ Initiative '$Name' added successfully!" -ForegroundColor Green
+    }
+}
+
+function List-Stakeholders {
+    <#
+    .SYNOPSIS
+        Lists all stakeholders in V10 config
+    #>
+    
+    if (-not $global:V9Config.Stakeholders -or $global:V9Config.Stakeholders.Count -eq 0) {
+        Write-Host "No stakeholders found (V9 config or empty)" -ForegroundColor Yellow
+        return
+    }
+    
+    Write-Host "`n📊 Stakeholders ($($global:V9Config.Stakeholders.Count)):" -ForegroundColor Cyan
+    foreach ($sh in $global:V9Config.Stakeholders) {
+        $taskCount = ($global:V9Config.Tickets | Where-Object { $_.Stakeholder -eq $sh }).Count
+        Write-Host "  👥 $sh ($taskCount tasks)" -ForegroundColor White
+    }
+}
+
+function List-Initiatives {
+    <#
+    .SYNOPSIS
+        Lists all initiatives in V10 config
+    #>
+    
+    if (-not $global:V9Config.Initiatives -or $global:V9Config.Initiatives.Count -eq 0) {
+        Write-Host "No initiatives found (V9 config or empty)" -ForegroundColor Yellow
+        return
+    }
+    
+    Write-Host "`n📊 Initiatives ($($global:V9Config.Initiatives.Count)):" -ForegroundColor Cyan
+    foreach ($init in $global:V9Config.Initiatives) {
+        $taskCount = ($global:V9Config.Tickets | Where-Object { $_.Initiative -eq $init.Name }).Count
+        $startInfo = if ($init.StartDate) { "starts: $($init.StartDate)" } else { "no start date" }
+        Write-Host "  📈 $($init.Name) ($taskCount tasks, created: $($init.CreationDate), $startInfo)" -ForegroundColor White
+    }
+}
+
+#endregion
+
 function Get-PersonByName {
     <#
     .SYNOPSIS
@@ -314,7 +419,46 @@ function Add-TaskForPerson {
     $maxId = ($global:V9Config.Tickets | ForEach-Object { [int]$_.ID } | Measure-Object -Maximum).Maximum
     $newId = $maxId + 1
     
-    # Create new ticket
+    # V10: Generate UUID
+    $uuid = [guid]::NewGuid().ToString()
+    
+    # V10: Stakeholder selection (if V10 config)
+    $stakeholder = "General"  # Default
+    if ($global:V9Config.Stakeholders -and $global:V9Config.Stakeholders.Count -gt 0) {
+        Write-Host "`nAvailable Stakeholders:" -ForegroundColor Yellow
+        for ($i = 0; $i -lt $global:V9Config.Stakeholders.Count; $i++) {
+            Write-Host "  $($i + 1). $($global:V9Config.Stakeholders[$i])" -ForegroundColor White
+        }
+        Write-Host "Choose stakeholder (1-$($global:V9Config.Stakeholders.Count), default: 1 for General): " -NoNewline -ForegroundColor Yellow
+        $stakeholderChoice = Read-Host
+        if (-not [string]::IsNullOrWhiteSpace($stakeholderChoice) -and $stakeholderChoice -match '^\d+$') {
+            $index = [int]$stakeholderChoice - 1
+            if ($index -ge 0 -and $index -lt $global:V9Config.Stakeholders.Count) {
+                $stakeholder = $global:V9Config.Stakeholders[$index]
+            }
+        }
+    }
+    
+    # V10: Initiative selection (if V10 config)
+    $initiative = "General"  # Default
+    if ($global:V9Config.Initiatives -and $global:V9Config.Initiatives.Count -gt 0) {
+        Write-Host "`nAvailable Initiatives:" -ForegroundColor Yellow
+        for ($i = 0; $i -lt $global:V9Config.Initiatives.Count; $i++) {
+            $init = $global:V9Config.Initiatives[$i]
+            $startInfo = if ($init.StartDate) { " (starts: $($init.StartDate))" } else { " (no start date yet)" }
+            Write-Host "  $($i + 1). $($init.Name)$startInfo" -ForegroundColor White
+        }
+        Write-Host "Choose initiative (1-$($global:V9Config.Initiatives.Count), default: 1 for General): " -NoNewline -ForegroundColor Yellow
+        $initiativeChoice = Read-Host
+        if (-not [string]::IsNullOrWhiteSpace($initiativeChoice) -and $initiativeChoice -match '^\d+$') {
+            $index = [int]$initiativeChoice - 1
+            if ($index -ge 0 -and $index -lt $global:V9Config.Initiatives.Count) {
+                $initiative = $global:V9Config.Initiatives[$index].Name
+            }
+        }
+    }
+    
+    # Create new ticket (V10-aware)
     $newTicket = [PSCustomObject]@{
         ID = $newId
         Description = $description
@@ -334,6 +478,16 @@ function Add-TaskForPerson {
         DetailsNegatives = ""
     }
     
+    # Add V10 fields if this is a V10 config
+    $isV10 = $global:V9Config.Tickets.Count -gt 0 -and 
+             ($global:V9Config.Tickets[0].PSObject.Properties.Name -contains 'UUID')
+    
+    if ($isV10 -or $global:V9Config.Stakeholders.Count -gt 0 -or $global:V9Config.Initiatives.Count -gt 0) {
+        $newTicket | Add-Member -NotePropertyName 'UUID' -NotePropertyValue $uuid
+        $newTicket | Add-Member -NotePropertyName 'Stakeholder' -NotePropertyValue $stakeholder
+        $newTicket | Add-Member -NotePropertyName 'Initiative' -NotePropertyValue $initiative
+    }
+    
     # Add to config
     $global:V9Config.Tickets += $newTicket
     
@@ -342,6 +496,10 @@ function Add-TaskForPerson {
         Write-Host "`n✅ Task #$newId added successfully!" -ForegroundColor Green
         Write-Host "   $description" -ForegroundColor Cyan
         Write-Host "   Status: $status | Size: $size | Start: $startDate" -ForegroundColor Gray
+        if ($newTicket.PSObject.Properties.Name -contains 'UUID') {
+            Write-Host "   Stakeholder: $stakeholder | Initiative: $initiative" -ForegroundColor Gray
+            Write-Host "   UUID: $uuid" -ForegroundColor DarkGray
+        }
     }
 }
 
@@ -711,6 +869,279 @@ function Show-MostAvailable {
     Write-Host "`n   🌟 Most Available: $($mostAvailable.Name) ($($mostAvailable.Available)h free, $($mostAvailable.Utilization)% utilized)" -ForegroundColor $utilColor
 }
 
+function Manage-Stakeholders {
+    <#
+    .SYNOPSIS
+        Interactive stakeholder management for V10 config
+    #>
+    
+    # First, list current stakeholders
+    List-Stakeholders
+    
+    Write-Host "`n📝 Stakeholder Management" -ForegroundColor Cyan
+    Write-Host "  1. Add new stakeholder" -ForegroundColor White
+    Write-Host "  2. Remove stakeholder" -ForegroundColor White
+    Write-Host "  3. Cancel" -ForegroundColor White
+    Write-Host "`nChoose (1/2/3): " -NoNewline -ForegroundColor Yellow
+    $choice = Read-Host
+    
+    switch ($choice) {
+        "1" {
+            # Add stakeholder
+            Write-Host "`nEnter stakeholder name: " -NoNewline -ForegroundColor Yellow
+            $name = Read-Host
+            if (-not [string]::IsNullOrWhiteSpace($name)) {
+                Add-Stakeholder -Name $name
+            } else {
+                Write-Host "❌ Name cannot be empty" -ForegroundColor Red
+            }
+        }
+        "2" {
+            # Remove stakeholder
+            if (-not $global:V9Config.Stakeholders -or $global:V9Config.Stakeholders.Count -eq 0) {
+                Write-Host "❌ No stakeholders to remove" -ForegroundColor Red
+                return
+            }
+            
+            Write-Host "`n📋 Select stakeholder to remove:" -ForegroundColor Cyan
+            for ($i = 0; $i -lt $global:V9Config.Stakeholders.Count; $i++) {
+                $sh = $global:V9Config.Stakeholders[$i]
+                $taskCount = ($global:V9Config.Tickets | Where-Object { $_.Stakeholder -eq $sh }).Count
+                Write-Host "  $($i + 1). $sh ($taskCount tasks)" -ForegroundColor White
+            }
+            Write-Host "`nChoose (1-$($global:V9Config.Stakeholders.Count)): " -NoNewline -ForegroundColor Yellow
+            $selection = Read-Host
+            
+            if ($selection -match '^\d+$') {
+                $index = [int]$selection - 1
+                if ($index -ge 0 -and $index -lt $global:V9Config.Stakeholders.Count) {
+                    $stakeholderToRemove = $global:V9Config.Stakeholders[$index]
+                    $taskCount = ($global:V9Config.Tickets | Where-Object { $_.Stakeholder -eq $stakeholderToRemove }).Count
+                    
+                    if ($taskCount -gt 0) {
+                        Write-Host "`n⚠️  Warning: $taskCount tasks are assigned to '$stakeholderToRemove'" -ForegroundColor Yellow
+                        Write-Host "These tasks will be reassigned to 'General'" -ForegroundColor Yellow
+                        Write-Host "`nContinue? (y/n): " -NoNewline -ForegroundColor Yellow
+                        $confirm = Read-Host
+                        if ($confirm -ne 'y') {
+                            Write-Host "Cancelled" -ForegroundColor Gray
+                            return
+                        }
+                        
+                        # Reassign tasks
+                        foreach ($ticket in $global:V9Config.Tickets) {
+                            if ($ticket.Stakeholder -eq $stakeholderToRemove) {
+                                $ticket.Stakeholder = "General"
+                            }
+                        }
+                    }
+                    
+                    # Remove stakeholder
+                    $global:V9Config.Stakeholders = $global:V9Config.Stakeholders | Where-Object { $_ -ne $stakeholderToRemove }
+                    
+                    if (Save-V9Config) {
+                        Write-Host "✅ Stakeholder '$stakeholderToRemove' removed successfully!" -ForegroundColor Green
+                    }
+                } else {
+                    Write-Host "❌ Invalid selection" -ForegroundColor Red
+                }
+            } else {
+                Write-Host "❌ Invalid input" -ForegroundColor Red
+            }
+        }
+        "3" {
+            Write-Host "Cancelled" -ForegroundColor Gray
+        }
+        default {
+            Write-Host "❌ Invalid choice" -ForegroundColor Red
+        }
+    }
+}
+
+function Manage-Initiatives {
+    <#
+    .SYNOPSIS
+        Interactive initiative management for V10 config
+    #>
+    
+    # First, list current initiatives
+    List-Initiatives
+    
+    Write-Host "`n📝 Initiative Management" -ForegroundColor Cyan
+    Write-Host "  1. Add new initiative" -ForegroundColor White
+    Write-Host "  2. Modify initiative" -ForegroundColor White
+    Write-Host "  3. Remove initiative" -ForegroundColor White
+    Write-Host "  4. Cancel" -ForegroundColor White
+    Write-Host "`nChoose (1/2/3/4): " -NoNewline -ForegroundColor Yellow
+    $choice = Read-Host
+    
+    switch ($choice) {
+        "1" {
+            # Add initiative
+            Write-Host "`nEnter initiative name: " -NoNewline -ForegroundColor Yellow
+            $name = Read-Host
+            if (-not [string]::IsNullOrWhiteSpace($name)) {
+                Add-Initiative -Name $name
+            } else {
+                Write-Host "❌ Name cannot be empty" -ForegroundColor Red
+            }
+        }
+        "2" {
+            # Modify initiative
+            if (-not $global:V9Config.Initiatives -or $global:V9Config.Initiatives.Count -eq 0) {
+                Write-Host "❌ No initiatives to modify" -ForegroundColor Red
+                return
+            }
+            
+            Write-Host "`n📋 Select initiative to modify:" -ForegroundColor Cyan
+            for ($i = 0; $i -lt $global:V9Config.Initiatives.Count; $i++) {
+                $init = $global:V9Config.Initiatives[$i]
+                $taskCount = ($global:V9Config.Tickets | Where-Object { $_.Initiative -eq $init.Name }).Count
+                $startInfo = if ($init.StartDate) { "starts: $($init.StartDate)" } else { "no start date" }
+                Write-Host "  $($i + 1). $($init.Name) ($taskCount tasks, $startInfo)" -ForegroundColor White
+            }
+            Write-Host "`nChoose (1-$($global:V9Config.Initiatives.Count)): " -NoNewline -ForegroundColor Yellow
+            $selection = Read-Host
+            
+            if ($selection -match '^\d+$') {
+                $index = [int]$selection - 1
+                if ($index -ge 0 -and $index -lt $global:V9Config.Initiatives.Count) {
+                    $initiative = $global:V9Config.Initiatives[$index]
+                    
+                    Write-Host "`n📝 Modifying: $($initiative.Name)" -ForegroundColor Cyan
+                    Write-Host "  1. Change name" -ForegroundColor White
+                    Write-Host "  2. Set start date" -ForegroundColor White
+                    Write-Host "  3. Cancel" -ForegroundColor White
+                    Write-Host "`nChoose (1/2/3): " -NoNewline -ForegroundColor Yellow
+                    $modChoice = Read-Host
+                    
+                    switch ($modChoice) {
+                        "1" {
+                            Write-Host "`nEnter new name: " -NoNewline -ForegroundColor Yellow
+                            $newName = Read-Host
+                            if (-not [string]::IsNullOrWhiteSpace($newName)) {
+                                # Check if name already exists
+                                if ($global:V9Config.Initiatives | Where-Object { $_.Name -eq $newName -and $_.Name -ne $initiative.Name }) {
+                                    Write-Host "❌ Initiative '$newName' already exists" -ForegroundColor Red
+                                    return
+                                }
+                                
+                                $oldName = $initiative.Name
+                                $initiative.Name = $newName
+                                
+                                # Update all tasks with this initiative
+                                foreach ($ticket in $global:V9Config.Tickets) {
+                                    if ($ticket.Initiative -eq $oldName) {
+                                        $ticket.Initiative = $newName
+                                    }
+                                }
+                                
+                                if (Save-V9Config) {
+                                    Write-Host "✅ Initiative renamed from '$oldName' to '$newName'!" -ForegroundColor Green
+                                }
+                            } else {
+                                Write-Host "❌ Name cannot be empty" -ForegroundColor Red
+                            }
+                        }
+                        "2" {
+                            Write-Host "`nEnter start date (yyyy-MM-dd or 'today'): " -NoNewline -ForegroundColor Yellow
+                            $dateInput = Read-Host
+                            if (-not [string]::IsNullOrWhiteSpace($dateInput)) {
+                                if ($dateInput -eq 'today') {
+                                    $initiative.StartDate = Get-Date -Format "yyyy-MM-dd"
+                                } else {
+                                    try {
+                                        $parsedDate = [DateTime]::ParseExact($dateInput, 'yyyy-MM-dd', $null)
+                                        $initiative.StartDate = $parsedDate.ToString('yyyy-MM-dd')
+                                    } catch {
+                                        Write-Host "❌ Invalid date format. Use yyyy-MM-dd or 'today'" -ForegroundColor Red
+                                        return
+                                    }
+                                }
+                                
+                                if (Save-V9Config) {
+                                    Write-Host "✅ Initiative start date set to $($initiative.StartDate)!" -ForegroundColor Green
+                                }
+                            } else {
+                                Write-Host "❌ Date cannot be empty" -ForegroundColor Red
+                            }
+                        }
+                        "3" {
+                            Write-Host "Cancelled" -ForegroundColor Gray
+                        }
+                        default {
+                            Write-Host "❌ Invalid choice" -ForegroundColor Red
+                        }
+                    }
+                } else {
+                    Write-Host "❌ Invalid selection" -ForegroundColor Red
+                }
+            } else {
+                Write-Host "❌ Invalid input" -ForegroundColor Red
+            }
+        }
+        "3" {
+            # Remove initiative
+            if (-not $global:V9Config.Initiatives -or $global:V9Config.Initiatives.Count -eq 0) {
+                Write-Host "❌ No initiatives to remove" -ForegroundColor Red
+                return
+            }
+            
+            Write-Host "`n📋 Select initiative to remove:" -ForegroundColor Cyan
+            for ($i = 0; $i -lt $global:V9Config.Initiatives.Count; $i++) {
+                $init = $global:V9Config.Initiatives[$i]
+                $taskCount = ($global:V9Config.Tickets | Where-Object { $_.Initiative -eq $init.Name }).Count
+                Write-Host "  $($i + 1). $($init.Name) ($taskCount tasks)" -ForegroundColor White
+            }
+            Write-Host "`nChoose (1-$($global:V9Config.Initiatives.Count)): " -NoNewline -ForegroundColor Yellow
+            $selection = Read-Host
+            
+            if ($selection -match '^\d+$') {
+                $index = [int]$selection - 1
+                if ($index -ge 0 -and $index -lt $global:V9Config.Initiatives.Count) {
+                    $initiativeToRemove = $global:V9Config.Initiatives[$index].Name
+                    $taskCount = ($global:V9Config.Tickets | Where-Object { $_.Initiative -eq $initiativeToRemove }).Count
+                    
+                    if ($taskCount -gt 0) {
+                        Write-Host "`n⚠️  Warning: $taskCount tasks are assigned to '$initiativeToRemove'" -ForegroundColor Yellow
+                        Write-Host "These tasks will be reassigned to 'General'" -ForegroundColor Yellow
+                        Write-Host "`nContinue? (y/n): " -NoNewline -ForegroundColor Yellow
+                        $confirm = Read-Host
+                        if ($confirm -ne 'y') {
+                            Write-Host "Cancelled" -ForegroundColor Gray
+                            return
+                        }
+                        
+                        # Reassign tasks
+                        foreach ($ticket in $global:V9Config.Tickets) {
+                            if ($ticket.Initiative -eq $initiativeToRemove) {
+                                $ticket.Initiative = "General"
+                            }
+                        }
+                    }
+                    
+                    # Remove initiative
+                    $global:V9Config.Initiatives = $global:V9Config.Initiatives | Where-Object { $_.Name -ne $initiativeToRemove }
+                    
+                    if (Save-V9Config) {
+                        Write-Host "✅ Initiative '$initiativeToRemove' removed successfully!" -ForegroundColor Green
+                    }
+                } else {
+                    Write-Host "❌ Invalid selection" -ForegroundColor Red
+                }
+            } else {
+                Write-Host "❌ Invalid input" -ForegroundColor Red
+            }
+        }
+        "4" {
+            Write-Host "Cancelled" -ForegroundColor Gray
+        }
+        default {
+            Write-Host "❌ Invalid choice" -ForegroundColor Red
+        }
+    }
+}
+
 #endregion
 
 #region Command Dispatcher
@@ -776,6 +1207,18 @@ function Invoke-Command {
         return
     }
     
+    # V10: Initiative management
+    if ($inputText -match "^initiative$|^initiatives$") {
+        Manage-Initiatives
+        return
+    }
+    
+    # V10: Stakeholder (owner) management
+    if ($inputText -match "^owner$|^owners$|^stakeholder$|^stakeholders$") {
+        Manage-Stakeholders
+        return
+    }
+    
     # Help
     if ($inputText -match "^help$") {
         Show-Help
@@ -803,10 +1246,10 @@ function Invoke-Command {
 function Open-HTMLConsole {
     <#
     .SYNOPSIS
-        Opens html_console_v9.html in the default browser
+        Opens html_console_v10.html in the default browser
     #>
     
-    $htmlPath = Join-Path $PSScriptRoot "html_console_v9.html"
+    $htmlPath = Join-Path $PSScriptRoot "html_console_v10.html"
     
     if (-not (Test-Path $htmlPath)) {
         Write-Host "❌ HTML console not found: $htmlPath" -ForegroundColor Red
@@ -837,7 +1280,13 @@ function Show-Help {
     Write-Host ""
     Write-Host "Task Management:" -ForegroundColor Yellow
     Write-Host "  siva|vipul|peter|sameet|sharanya|divya" -ForegroundColor White
-    Write-Host "    → Add or modify tasks for a person" -ForegroundColor Gray
+    Write-Host "    → Add or modify tasks for a person (V10: prompts for Stakeholder & Initiative)" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "V10 Management:" -ForegroundColor Yellow
+    Write-Host "  initiative | initiatives" -ForegroundColor White
+    Write-Host "    → List/add/modify initiatives" -ForegroundColor Gray
+    Write-Host "  owner | stakeholder | owners | stakeholders" -ForegroundColor White
+    Write-Host "    → List/add/remove stakeholders" -ForegroundColor Gray
     Write-Host ""
     Write-Host "Capacity & Availability:" -ForegroundColor Yellow
     Write-Host "  capacity <name>" -ForegroundColor White
@@ -848,7 +1297,7 @@ function Show-Help {
     Write-Host ""
     Write-Host "System:" -ForegroundColor Yellow
     Write-Host "  html | console | open" -ForegroundColor White
-    Write-Host "    → Open html_console_v9.html in browser" -ForegroundColor Gray
+    Write-Host "    → Open html_console_v10.html in browser" -ForegroundColor Gray
     Write-Host "  reload" -ForegroundColor White
     Write-Host "    → Reload config from Downloads" -ForegroundColor Gray
     Write-Host "  help" -ForegroundColor White
@@ -862,9 +1311,9 @@ function Show-Help {
 
 function Start-InteractiveMode {
     Write-Host ""
-    Write-Host "╔═══════════════════════════════════════════════╗" -ForegroundColor Cyan
-    Write-Host "║  PowerShell Helper for html_console_v9.html  ║" -ForegroundColor Cyan
-    Write-Host "╚═══════════════════════════════════════════════╝" -ForegroundColor Cyan
+    Write-Host "╔════════════════════════════════════════════════╗" -ForegroundColor Cyan
+    Write-Host "║  PowerShell Helper for html_console_v10.html  ║" -ForegroundColor Cyan
+    Write-Host "╚════════════════════════════════════════════════╝" -ForegroundColor Cyan
     Write-Host ""
     
     # Initialize V9 config

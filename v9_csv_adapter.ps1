@@ -1,23 +1,26 @@
-# V9 CSV Adapter Module
-# Purpose: Provides compatibility layer between helper.ps1 and html_console_v9.html export format
+# V9/V10 CSV Adapter Module
+# Purpose: Provides compatibility layer between helper.ps1 and html_console_v9/v10.html export format
 # Author: GitHub Copilot
 # Date: 2025
 
 <#
 .SYNOPSIS
-    Multi-section CSV parser for V9 HTML export format
+    Multi-section CSV parser for V9/V10 HTML export format
 
 .DESCRIPTION
-    The V9 HTML console exports configuration in a multi-section CSV format:
+    The V9/V10 HTML console exports configuration in a multi-section CSV format:
     - SECTION,METADATA: Export metadata (date, version, description)
     - SECTION,SETTINGS: Application settings (base hours, project hours, start date, ticket ID)
     - SECTION,TASK_SIZES: Size definitions (S, M, L, XL with days and removable flag)
     - SECTION,PEOPLE: Team members with weekly availability and project readiness
-    - SECTION,TICKETS: Task tickets with full history and details
+    - SECTION,STAKEHOLDERS: (V10) Stakeholder names
+    - SECTION,INITIATIVES: (V10) Initiative names with creation and start dates
+    - SECTION,TICKETS: Task tickets with full history and details (V10 adds UUID, Stakeholder, Initiative)
 
 .NOTES
     This adapter preserves all sections when reading/writing to ensure full round-trip compatibility
     between PowerShell task management and HTML console.
+    Supports both V9 and V10 formats with backward compatibility.
 #>
 
 # Global configuration - Define paths as variables for easy customization
@@ -30,6 +33,8 @@ $script:V9ConfigCache = @{
     Settings = $null
     TaskSizes = $null
     People = $null
+    Stakeholders = $null  # V10
+    Initiatives = $null   # V10
     Tickets = $null
 }
 
@@ -167,6 +172,8 @@ function Read-V9ConfigFile {
             Settings = $script:V9ConfigCache.Settings
             TaskSizes = $script:V9ConfigCache.TaskSizes
             People = $script:V9ConfigCache.People
+            Stakeholders = $script:V9ConfigCache.Stakeholders
+            Initiatives = $script:V9ConfigCache.Initiatives
             Tickets = $script:V9ConfigCache.Tickets
         }
     }
@@ -196,6 +203,8 @@ function Read-V9ConfigFile {
             Settings = @{}
             TaskSizes = @()
             People = @()
+            Stakeholders = @()  # V10
+            Initiatives = @()   # V10
             Tickets = @()
         }
         
@@ -283,19 +292,56 @@ function Read-V9ConfigFile {
                     }
                 }
                 
-                'TICKETS' {
+                'STAKEHOLDERS' {
+                    # V10: Parse stakeholders
                     if ($sectionHeaders -eq $null) {
                         $sectionHeaders = $true
+                        if (-not $result.ContainsKey('Stakeholders')) {
+                            $result.Stakeholders = @()
+                        }
+                        continue  # Skip "Name" header
+                    }
+                    # Parse: "Stakeholder Name"
+                    if ($line -match '^"([^"]+)"$') {
+                        $result.Stakeholders += $Matches[1]
+                    }
+                }
+                
+                'INITIATIVES' {
+                    # V10: Parse initiatives
+                    if ($sectionHeaders -eq $null) {
+                        $sectionHeaders = $true
+                        if (-not $result.ContainsKey('Initiatives')) {
+                            $result.Initiatives = @()
+                        }
+                        continue  # Skip "Name,Creation Date,Start Date" header
+                    }
+                    # Parse: "Initiative Name","2025-10-16","2025-11-01"
+                    if ($line -match '^"([^"]+)","([^"]*)","([^"]*)"$') {
+                        $result.Initiatives += [PSCustomObject]@{
+                            Name = $Matches[1]
+                            CreationDate = $Matches[2]
+                            StartDate = if ($Matches[3]) { $Matches[3] } else { $null }
+                        }
+                    }
+                }
+                
+                'TICKETS' {
+                    if ($sectionHeaders -eq $null) {
+                        # Store actual header to detect V9 vs V10 format
+                        $sectionHeaders = $line
                         continue  # Skip header row
                     }
                     
                     # Parse ticket line (complex due to CSV quoting)
                     # Use PowerShell's ConvertFrom-Csv for proper CSV parsing
-                    $tempCsv = "ID,Description,Start Date,Size,Priority,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Details: Description,Details: Positives,Details: Negatives`n$line"
+                    # V10 format includes: UUID,ID,Description,... (before ID)
+                    # V10 format also adds: ...,Stakeholder,Initiative (after Assigned Team)
+                    $tempCsv = "$sectionHeaders`n$line"
                     $ticket = $tempCsv | ConvertFrom-Csv
                     
                     if ($ticket) {
-                        $result.Tickets += [PSCustomObject]@{
+                        $ticketObj = [PSCustomObject]@{
                             ID = $ticket.ID
                             Description = $ticket.Description
                             StartDate = $ticket.'Start Date'
@@ -313,6 +359,19 @@ function Read-V9ConfigFile {
                             DetailsPositives = $ticket.'Details: Positives'
                             DetailsNegatives = $ticket.'Details: Negatives'
                         }
+                        
+                        # V10 fields (if present)
+                        if ($ticket.PSObject.Properties.Name -contains 'UUID') {
+                            $ticketObj | Add-Member -NotePropertyName 'UUID' -NotePropertyValue $ticket.UUID
+                        }
+                        if ($ticket.PSObject.Properties.Name -contains 'Stakeholder') {
+                            $ticketObj | Add-Member -NotePropertyName 'Stakeholder' -NotePropertyValue $ticket.Stakeholder
+                        }
+                        if ($ticket.PSObject.Properties.Name -contains 'Initiative') {
+                            $ticketObj | Add-Member -NotePropertyName 'Initiative' -NotePropertyValue $ticket.Initiative
+                        }
+                        
+                        $result.Tickets += $ticketObj
                     }
                 }
             }
@@ -324,9 +383,13 @@ function Read-V9ConfigFile {
         $script:V9ConfigCache.Settings = $result.Settings
         $script:V9ConfigCache.TaskSizes = $result.TaskSizes
         $script:V9ConfigCache.People = $result.People
+        $script:V9ConfigCache.Stakeholders = $result.Stakeholders
+        $script:V9ConfigCache.Initiatives = $result.Initiatives
         $script:V9ConfigCache.Tickets = $result.Tickets
         
-        Write-Host "✅ Parsed V9 config: $($result.Tickets.Count) tickets, $($result.People.Count) people, $($result.TaskSizes.Count) task sizes" -ForegroundColor Green
+        $formatVersion = if ($result.Stakeholders.Count -gt 0 -or $result.Initiatives.Count -gt 0) { "V10" } else { "V9" }
+        $v10Info = if ($formatVersion -eq "V10") { ", $($result.Stakeholders.Count) stakeholders, $($result.Initiatives.Count) initiatives" } else { "" }
+        Write-Host "✅ Parsed $formatVersion config: $($result.Tickets.Count) tickets, $($result.People.Count) people$v10Info" -ForegroundColor Green
         
         return $result
         
@@ -421,9 +484,38 @@ function Write-V9ConfigFile {
         }
         [void]$csvContent.AppendLine()
         
-        # Tickets section
+        # V10: Stakeholders section (if present)
+        if ($ConfigData.ContainsKey('Stakeholders') -and $ConfigData.Stakeholders.Count -gt 0) {
+            [void]$csvContent.AppendLine("SECTION,STAKEHOLDERS")
+            [void]$csvContent.AppendLine("Name")
+            foreach ($stakeholder in $ConfigData.Stakeholders) {
+                [void]$csvContent.AppendLine("`"$stakeholder`"")
+            }
+            [void]$csvContent.AppendLine()
+        }
+        
+        # V10: Initiatives section (if present)
+        if ($ConfigData.ContainsKey('Initiatives') -and $ConfigData.Initiatives.Count -gt 0) {
+            [void]$csvContent.AppendLine("SECTION,INITIATIVES")
+            [void]$csvContent.AppendLine("Name,Creation Date,Start Date")
+            foreach ($initiative in $ConfigData.Initiatives) {
+                $creationDate = if ($initiative.CreationDate) { $initiative.CreationDate } else { "" }
+                $startDate = if ($initiative.StartDate) { $initiative.StartDate } else { "" }
+                [void]$csvContent.AppendLine("`"$($initiative.Name)`",`"$creationDate`",`"$startDate`"")
+            }
+            [void]$csvContent.AppendLine()
+        }
+        
+        # Tickets section - Detect if V10 format (has UUID, Stakeholder, Initiative fields)
+        $isV10 = $ConfigData.Tickets.Count -gt 0 -and 
+                 ($ConfigData.Tickets[0].PSObject.Properties.Name -contains 'UUID')
+        
         [void]$csvContent.AppendLine("SECTION,TICKETS")
-        [void]$csvContent.AppendLine("ID,Description,Start Date,Size,Priority,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Details: Description,Details: Positives,Details: Negatives")
+        if ($isV10) {
+            [void]$csvContent.AppendLine("UUID,ID,Description,Start Date,Size,Priority,Assigned Team,Stakeholder,Initiative,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Details: Description,Details: Positives,Details: Negatives")
+        } else {
+            [void]$csvContent.AppendLine("ID,Description,Start Date,Size,Priority,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Details: Description,Details: Positives,Details: Negatives")
+        }
         
         foreach ($ticket in $ConfigData.Tickets) {
             # Escape quotes in fields and handle null/empty values
@@ -440,14 +532,25 @@ function Write-V9ConfigFile {
             $startDate = if ($ticket.StartDate) { $ticket.StartDate } else { "" }
             $taskType = if ($ticket.TaskType) { $ticket.TaskType } else { "Fixed" }
             
-            $line = "$($ticket.ID),`"$desc`",$startDate,$($ticket.Size),$($ticket.Priority),`"$assignedTeam`",`"$($ticket.Status)`",`"$taskType`",`"$pauseComments`",`"$startDateHistory`",`"$endDateHistory`",`"$sizeHistory`",`"$customEndDate`",`"$detailsDesc`",`"$detailsPos`",`"$detailsNeg`""
+            if ($isV10) {
+                # V10 format with UUID, Stakeholder, Initiative
+                $uuid = if ($ticket.UUID) { $ticket.UUID } else { "" }
+                $stakeholder = if ($ticket.Stakeholder) { $ticket.Stakeholder } else { "General" }
+                $initiative = if ($ticket.Initiative) { $ticket.Initiative } else { "General" }
+                $line = "`"$uuid`",$($ticket.ID),`"$desc`",$startDate,$($ticket.Size),$($ticket.Priority),`"$assignedTeam`",`"$stakeholder`",`"$initiative`",`"$($ticket.Status)`",`"$taskType`",`"$pauseComments`",`"$startDateHistory`",`"$endDateHistory`",`"$sizeHistory`",`"$customEndDate`",`"$detailsDesc`",`"$detailsPos`",`"$detailsNeg`""
+            } else {
+                # V9 format
+                $line = "$($ticket.ID),`"$desc`",$startDate,$($ticket.Size),$($ticket.Priority),`"$assignedTeam`",`"$($ticket.Status)`",`"$taskType`",`"$pauseComments`",`"$startDateHistory`",`"$endDateHistory`",`"$sizeHistory`",`"$customEndDate`",`"$detailsDesc`",`"$detailsPos`",`"$detailsNeg`""
+            }
             [void]$csvContent.AppendLine($line)
         }
         
         # Write to file
         $csvContent.ToString() | Set-Content -Path $FilePath -Encoding UTF8 -NoNewline
         
-        Write-Host "✅ V9 config saved successfully: $($ConfigData.Tickets.Count) tickets" -ForegroundColor Green
+        $formatVersion = if ($isV10) { "V10" } else { "V9" }
+        $v10Info = if ($isV10) { ", $($ConfigData.Stakeholders.Count) stakeholders, $($ConfigData.Initiatives.Count) initiatives" } else { "" }
+        Write-Host "✅ $formatVersion config saved successfully: $($ConfigData.Tickets.Count) tickets$v10Info" -ForegroundColor Green
         
         return $true
         
