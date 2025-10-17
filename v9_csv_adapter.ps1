@@ -271,18 +271,30 @@ function Read-V9ConfigFile {
                         continue  # Skip header row
                     }
                     # Parse: Name,Week1-Week8,Project Ready
-                    # Example: "Person Name",25,25,25,25,25,25,25,25,Yes
+                    # Supports: "Person Name",25,25... OR Person Name,25,25...
+                    
+                    $name = $null
+                    $values = $null
+                    
+                    # Try quoted format first
                     if ($line -match '^"([^"]+)",(.+)$') {
                         $name = $Matches[1]
                         $values = $Matches[2] -split ','
-                        
+                    }
+                    # Try unquoted format
+                    elseif ($line -match '^([^,]+),(.+)$') {
+                        $name = $Matches[1].Trim()
+                        $values = $Matches[2] -split ','
+                    }
+                    
+                    if ($name -and $values) {
                         # Extract 8 weeks of availability and project ready status
                         $availability = @()
                         for ($w = 0; $w -lt 8 -and $w -lt $values.Count; $w++) {
-                            $availability += [int]$values[$w]
+                            $availability += [int]$values[$w].Trim()
                         }
                         
-                        $projectReady = $values.Count -gt 8 ? $values[8] -eq 'Yes' : $true
+                        $projectReady = $values.Count -gt 8 ? $values[8].Trim() -eq 'Yes' : $true
                         
                         $result.People += [PSCustomObject]@{
                             Name = $name
