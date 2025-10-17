@@ -1280,44 +1280,44 @@ function Show-InitiativeChart {
         .header {
             background: linear-gradient(135deg, #003d82 0%, #0056b3 100%);
             color: white;
-            padding: 20px 30px;
+            padding: 10px 20px;
             border-bottom: 3px solid #002855;
         }
         .header h1 {
-            font-size: 1.6em;
+            font-size: 1.2em;
             font-weight: 600;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
             letter-spacing: -0.3px;
         }
         .header p {
-            font-size: 0.85em;
+            font-size: 0.75em;
             opacity: 0.95;
             font-weight: 300;
         }
         .content {
-            padding: 20px 30px;
+            padding: 12px 20px;
         }
         .stats {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            margin-bottom: 20px;
+            gap: 8px;
+            margin-bottom: 10px;
         }
         .stat-card {
             background: #f8f9fa;
             border-left: 3px solid #0056b3;
-            padding: 12px 16px;
+            padding: 8px 12px;
             border-radius: 2px;
         }
         .stat-value {
-            font-size: 1.8em;
+            font-size: 1.4em;
             font-weight: 700;
             color: #003d82;
             margin-bottom: 2px;
             line-height: 1;
         }
         .stat-label {
-            font-size: 0.75em;
+            font-size: 0.65em;
             color: #666;
             font-weight: 500;
             text-transform: uppercase;
@@ -1326,9 +1326,9 @@ function Show-InitiativeChart {
         .legend {
             display: flex;
             justify-content: center;
-            gap: 30px;
-            margin-bottom: 16px;
-            padding: 10px;
+            gap: 16px;
+            margin-bottom: 8px;
+            padding: 6px;
             background: #f8f9fa;
             border-radius: 2px;
             border: 1px solid #e0e0e0;
@@ -1336,14 +1336,14 @@ function Show-InitiativeChart {
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             font-weight: 500;
-            font-size: 0.8em;
+            font-size: 0.7em;
             color: #333;
         }
         .legend-color {
-            width: 28px;
-            height: 14px;
+            width: 22px;
+            height: 12px;
             border-radius: 2px;
             border: 1px solid rgba(0,0,0,0.1);
         }
@@ -1351,46 +1351,37 @@ function Show-InitiativeChart {
             margin-top: 12px;
         }
         .initiative {
-            margin-bottom: 14px;
+            display: grid;
+            grid-template-columns: 260px 1fr 320px;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 4px;
+            padding: 6px 0;
             border-bottom: 1px solid #e8e8e8;
-            padding-bottom: 14px;
         }
         .initiative:last-child {
             border-bottom: none;
-            padding-bottom: 0;
-            margin-bottom: 0;
-        }
-        .initiative-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            margin-bottom: 6px;
         }
         .initiative-name {
-            font-size: 0.95em;
+            font-size: 0.85em;
             font-weight: 600;
             color: #1a1a1a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .initiative-meta {
-            display: flex;
-            gap: 10px;
-            font-size: 0.75em;
+            font-size: 0.7em;
             color: #666;
-        }
-        .meta-item {
-            background: #f5f5f5;
-            padding: 3px 8px;
-            border-radius: 2px;
-            font-weight: 500;
-        }
-        .bar-wrapper {
-            margin-bottom: 4px;
+            text-align: right;
+            white-space: nowrap;
+            overflow: visible;
         }
         .bar-container {
             position: relative;
             background: #f0f0f0;
             border-radius: 2px;
-            height: 24px;
+            height: 20px;
             border: 1px solid #d0d0d0;
         }
         .bar {
@@ -1398,11 +1389,10 @@ function Show-InitiativeChart {
             border-radius: 2px;
             display: flex;
             align-items: center;
-            justify-content: flex-end;
-            padding: 0 10px;
+            padding: 0 8px;
             color: white;
             font-weight: 600;
-            font-size: 0.7em;
+            font-size: 0.65em;
             transition: all 0.3s ease;
             box-shadow: inset 0 -1px 2px rgba(0,0,0,0.1);
             text-shadow: 0 1px 1px rgba(0,0,0,0.2);
@@ -1413,32 +1403,18 @@ function Show-InitiativeChart {
         .bar-label {
             font-weight: 600;
             white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .date-labels {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.7em;
-            color: #777;
-            font-weight: 500;
-        }
-        .date-label {
-            display: flex;
-            align-items: center;
-            gap: 4px;
         }
         .footer {
-            margin-top: 16px;
-            padding: 16px 30px;
+            margin-top: 10px;
+            padding: 8px 20px;
             background: #f8f9fa;
             text-align: center;
             color: #666;
-            font-size: 0.7em;
+            font-size: 0.65em;
             border-top: 1px solid #e0e0e0;
         }
         .footer p {
-            margin: 4px 0;
+            margin: 2px 0;
         }
     </style>
 </head>
@@ -1493,34 +1469,24 @@ function Show-InitiativeChart {
     
     # Add each initiative with variable-width bars
     foreach ($init in $initiativeData) {
-        $startStr = $init.StartDate.ToString('MMM dd, yyyy')
-        $endStr = $init.EndDate.ToString('MMM dd, yyyy')
-        $duration = "$($init.DurationDays) days"
+        $startStr = $init.StartDate.ToString('MMM dd')
+        $endStr = $init.EndDate.ToString('MMM dd')
+        $duration = "$($init.DurationDays)d"
+        $dateRange = "▶ $startStr - ■ $endStr"
+        $meta = "$dateRange | $duration | $($init.TaskCount) tasks | $($init.Status)"
         
         # Calculate bar width as percentage of max duration (minimum 20% for visibility)
         $barWidthPercent = [Math]::Max(20, [Math]::Round(($init.DurationDays / $maxDuration) * 100))
         
         $html += @"
             <div class="initiative">
-                <div class="initiative-header">
-                    <div class="initiative-name">$($init.Name)</div>
-                    <div class="initiative-meta">
-                        <span class="meta-item">$duration</span>
-                        <span class="meta-item">$($init.TaskCount) tasks</span>
-                        <span class="meta-item">$($init.Status)</span>
+                <div class="initiative-name">$($init.Name)</div>
+                <div class="bar-container">
+                    <div class="bar" style="background: $($init.Color); width: ${barWidthPercent}%;">
+                        <span class="bar-label">$duration</span>
                     </div>
                 </div>
-                <div class="bar-wrapper">
-                    <div class="bar-container">
-                        <div class="bar" style="background: $($init.Color); width: ${barWidthPercent}%;">
-                            <span class="bar-label">$duration</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="date-labels">
-                    <span class="date-label">▶ $startStr</span>
-                    <span class="date-label">■ $endStr</span>
-                </div>
+                <div class="initiative-meta">$meta</div>
             </div>
 "@
     }
