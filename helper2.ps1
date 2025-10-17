@@ -1243,6 +1243,10 @@ function Show-InitiativeChart {
         return
     }
     
+    # Calculate max duration for scaling bars
+    $maxDuration = ($initiativeData | Measure-Object -Property DurationDays -Maximum).Maximum
+    if ($maxDuration -eq 0) { $maxDuration = 1 }
+    
     # Generate HTML
     $htmlPath = Join-Path $PSScriptRoot "initChart.html"
     
@@ -1252,7 +1256,7 @@ function Show-InitiativeChart {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Initiative Timeline Chart</title>
+    <title>Initiative Timeline - Strategic Overview</title>
     <style>
         * {
             margin: 0;
@@ -1260,231 +1264,276 @@ function Show-InitiativeChart {
             box-sizing: border-box;
         }
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 20px;
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Arial', sans-serif;
+            background: #f0f2f5;
+            padding: 30px 20px;
             min-height: 100vh;
         }
         .container {
-            max-width: 1400px;
+            max-width: 1600px;
             margin: 0 auto;
             background: white;
-            border-radius: 12px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            padding: 30px;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
         }
         .header {
-            text-align: center;
-            margin-bottom: 30px;
-            border-bottom: 3px solid #667eea;
-            padding-bottom: 20px;
+            background: linear-gradient(135deg, #003d82 0%, #0056b3 100%);
+            color: white;
+            padding: 40px 50px;
+            border-bottom: 4px solid #002855;
         }
         .header h1 {
-            color: #333;
-            font-size: 2.5em;
-            margin-bottom: 10px;
+            font-size: 2.2em;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
         }
         .header p {
+            font-size: 1em;
+            opacity: 0.95;
+            font-weight: 300;
+        }
+        .content {
+            padding: 40px 50px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            border-left: 4px solid #0056b3;
+            padding: 20px 24px;
+            border-radius: 2px;
+        }
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #003d82;
+            margin-bottom: 4px;
+            line-height: 1;
+        }
+        .stat-label {
+            font-size: 0.9em;
             color: #666;
-            font-size: 1.1em;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
         .legend {
             display: flex;
             justify-content: center;
-            gap: 30px;
-            margin-bottom: 30px;
-            padding: 15px;
+            gap: 40px;
+            margin-bottom: 40px;
+            padding: 20px;
             background: #f8f9fa;
-            border-radius: 8px;
+            border-radius: 2px;
+            border: 1px solid #e0e0e0;
         }
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             font-weight: 500;
+            font-size: 0.95em;
+            color: #333;
         }
         .legend-color {
-            width: 30px;
-            height: 20px;
-            border-radius: 4px;
-            border: 1px solid #ddd;
+            width: 36px;
+            height: 18px;
+            border-radius: 2px;
+            border: 1px solid rgba(0,0,0,0.1);
         }
         .chart {
-            margin-top: 20px;
+            margin-top: 30px;
         }
         .initiative {
-            margin-bottom: 25px;
-            padding: 15px;
-            background: #fafafa;
-            border-radius: 8px;
-            transition: transform 0.2s, box-shadow 0.2s;
+            margin-bottom: 32px;
+            border-bottom: 1px solid #e8e8e8;
+            padding-bottom: 32px;
         }
-        .initiative:hover {
-            transform: translateX(5px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        .initiative:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
         }
         .initiative-header {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
+            align-items: baseline;
+            margin-bottom: 12px;
         }
         .initiative-name {
-            font-size: 1.2em;
+            font-size: 1.1em;
             font-weight: 600;
-            color: #333;
+            color: #1a1a1a;
         }
-        .initiative-info {
+        .initiative-meta {
             display: flex;
-            gap: 20px;
-            font-size: 0.9em;
+            gap: 16px;
+            font-size: 0.85em;
             color: #666;
         }
-        .info-badge {
-            background: white;
-            padding: 4px 12px;
-            border-radius: 12px;
-            border: 1px solid #ddd;
+        .meta-item {
+            background: #f5f5f5;
+            padding: 4px 10px;
+            border-radius: 2px;
+            font-weight: 500;
+        }
+        .bar-wrapper {
+            margin-bottom: 8px;
         }
         .bar-container {
             position: relative;
-            height: 40px;
-            background: #e9ecef;
-            border-radius: 6px;
-            overflow: hidden;
+            background: #f0f0f0;
+            border-radius: 2px;
+            height: 36px;
+            border: 1px solid #d0d0d0;
         }
         .bar {
             height: 100%;
-            border-radius: 6px;
+            border-radius: 2px;
             display: flex;
             align-items: center;
-            padding: 0 15px;
-            color: #333;
+            justify-content: flex-end;
+            padding: 0 16px;
+            color: white;
             font-weight: 600;
-            font-size: 0.9em;
-            transition: opacity 0.3s;
+            font-size: 0.85em;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 -2px 4px rgba(0,0,0,0.1);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
         }
         .bar:hover {
-            opacity: 0.8;
+            opacity: 0.85;
+            transform: translateY(-1px);
+            box-shadow: inset 0 -2px 4px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .bar-label {
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .date-labels {
             display: flex;
             justify-content: space-between;
-            margin-top: 5px;
-            font-size: 0.85em;
-            color: #666;
+            font-size: 0.8em;
+            color: #777;
+            font-weight: 500;
+        }
+        .date-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
         .footer {
-            margin-top: 30px;
+            margin-top: 50px;
+            padding: 30px 50px;
+            background: #f8f9fa;
             text-align: center;
             color: #666;
-            font-size: 0.9em;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
+            font-size: 0.85em;
+            border-top: 1px solid #e0e0e0;
         }
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        .stat-value {
-            font-size: 2em;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .stat-label {
-            font-size: 0.9em;
-            opacity: 0.9;
+        .footer p {
+            margin: 4px 0;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>📊 Initiative Timeline</h1>
-            <p>Current and Future Initiatives - Generated on $(Get-Date -Format 'MMMM dd, yyyy HH:mm')</p>
+            <h1>Initiative Timeline Dashboard</h1>
+            <p>Strategic Overview - Generated $(Get-Date -Format 'MMMM dd, yyyy')</p>
         </div>
         
-        <div class="stats">
-            <div class="stat-card">
-                <div class="stat-value">$(($initiativeData | Where-Object { $_.Status -eq 'Active' }).Count)</div>
-                <div class="stat-label">Active Initiatives</div>
-            </div>
+        <div class="content">
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value">$(($initiativeData | Where-Object { $_.Status -eq 'Active' }).Count)</div>
+                    <div class="stat-label">Active Now</div>
+                </div>
             <div class="stat-card">
                 <div class="stat-value">$(($initiativeData | Where-Object { $_.Status -eq 'Future' }).Count)</div>
                 <div class="stat-label">Future Initiatives</div>
             </div>
-            <div class="stat-card">
-                <div class="stat-value">$(($initiativeData | Where-Object { $_.Status -like 'Paused*' }).Count)</div>
-                <div class="stat-label">Paused Initiatives</div>
+                <div class="stat-card">
+                    <div class="stat-value">$(($initiativeData | Where-Object { $_.Status -eq 'Future' }).Count)</div>
+                    <div class="stat-label">Upcoming</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">$(($initiativeData | Where-Object { $_.Status -like 'Paused*' }).Count)</div>
+                    <div class="stat-label">Paused</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">$(($initiativeData | Measure-Object -Property TaskCount -Sum).Sum)</div>
+                    <div class="stat-label">Total Tasks</div>
+                </div>
             </div>
-            <div class="stat-card">
-                <div class="stat-value">$(($initiativeData | Measure-Object -Property TaskCount -Sum).Sum)</div>
-                <div class="stat-label">Total Tasks</div>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #6B8E23;"></div>
+                    <span>Active Now</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #87CEEB;"></div>
+                    <span>Future</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #FFB6C1;"></div>
+                    <span>Paused (>50%)</span>
+                </div>
             </div>
-        </div>
-        
-        <div class="legend">
-            <div class="legend-item">
-                <div class="legend-color" style="background: #6B8E23;"></div>
-                <span>Active Now</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background: #87CEEB;"></div>
-                <span>Future</span>
-            </div>
-            <div class="legend-item">
-                <div class="legend-color" style="background: #FFB6C1;"></div>
-                <span>Paused (>50%)</span>
-            </div>
-        </div>
-        
-        <div class="chart">
+            
+            <div class="chart">
 "@
     
-    # Add each initiative
+    # Add each initiative with variable-width bars
     foreach ($init in $initiativeData) {
         $startStr = $init.StartDate.ToString('MMM dd, yyyy')
         $endStr = $init.EndDate.ToString('MMM dd, yyyy')
         $duration = "$($init.DurationDays) days"
         
+        # Calculate bar width as percentage of max duration (minimum 20% for visibility)
+        $barWidthPercent = [Math]::Max(20, [Math]::Round(($init.DurationDays / $maxDuration) * 100))
+        
         $html += @"
             <div class="initiative">
                 <div class="initiative-header">
                     <div class="initiative-name">$($init.Name)</div>
-                    <div class="initiative-info">
-                        <span class="info-badge">📅 $duration</span>
-                        <span class="info-badge">📋 $($init.TaskCount) tasks</span>
-                        <span class="info-badge">$($init.Status)</span>
+                    <div class="initiative-meta">
+                        <span class="meta-item">$duration</span>
+                        <span class="meta-item">$($init.TaskCount) tasks</span>
+                        <span class="meta-item">$($init.Status)</span>
                     </div>
                 </div>
-                <div class="bar-container">
-                    <div class="bar" style="background: $($init.Color); width: 100%;">
-                        $($init.Name)
+                <div class="bar-wrapper">
+                    <div class="bar-container">
+                        <div class="bar" style="background: $($init.Color); width: ${barWidthPercent}%;">
+                            <span class="bar-label">$duration</span>
+                        </div>
                     </div>
                 </div>
                 <div class="date-labels">
-                    <span>🏁 Start: $startStr</span>
-                    <span>🎯 End: $endStr</span>
+                    <span class="date-label">▶ $startStr</span>
+                    <span class="date-label">■ $endStr</span>
                 </div>
             </div>
 "@
     }
     
     $html += @"
+            </div>
         </div>
         
         <div class="footer">
-            <p>Generated from V10 Configuration | Total Initiatives: $($initiativeData.Count)</p>
-            <p style="margin-top: 5px; color: #999;">Past initiatives are hidden from this view</p>
+            <p><strong>Initiative Timeline Dashboard</strong> | Generated from V10 Configuration</p>
+            <p>Displaying $($initiativeData.Count) current and future initiatives | Past initiatives hidden</p>
+            <p style="margin-top: 8px; font-size: 0.8em; color: #999;">Bar length represents initiative duration</p>
         </div>
     </div>
 </body>
