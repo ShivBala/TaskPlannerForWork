@@ -1266,11 +1266,11 @@ function Show-InitiativeChart {
         body {
             font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Arial', sans-serif;
             background: #f0f2f5;
-            padding: 30px 20px;
+            padding: 15px;
             min-height: 100vh;
         }
         .container {
-            max-width: 1600px;
+            max-width: 1800px;
             margin: 0 auto;
             background: white;
             border-radius: 4px;
@@ -1280,44 +1280,44 @@ function Show-InitiativeChart {
         .header {
             background: linear-gradient(135deg, #003d82 0%, #0056b3 100%);
             color: white;
-            padding: 40px 50px;
-            border-bottom: 4px solid #002855;
+            padding: 20px 30px;
+            border-bottom: 3px solid #002855;
         }
         .header h1 {
-            font-size: 2.2em;
+            font-size: 1.6em;
             font-weight: 600;
-            margin-bottom: 8px;
-            letter-spacing: -0.5px;
+            margin-bottom: 4px;
+            letter-spacing: -0.3px;
         }
         .header p {
-            font-size: 1em;
+            font-size: 0.85em;
             opacity: 0.95;
             font-weight: 300;
         }
         .content {
-            padding: 40px 50px;
+            padding: 20px 30px;
         }
         .stats {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
-            margin-bottom: 40px;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
         }
         .stat-card {
             background: #f8f9fa;
-            border-left: 4px solid #0056b3;
-            padding: 20px 24px;
+            border-left: 3px solid #0056b3;
+            padding: 12px 16px;
             border-radius: 2px;
         }
         .stat-value {
-            font-size: 2.5em;
+            font-size: 1.8em;
             font-weight: 700;
             color: #003d82;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
             line-height: 1;
         }
         .stat-label {
-            font-size: 0.9em;
+            font-size: 0.75em;
             color: #666;
             font-weight: 500;
             text-transform: uppercase;
@@ -1326,9 +1326,9 @@ function Show-InitiativeChart {
         .legend {
             display: flex;
             justify-content: center;
-            gap: 40px;
-            margin-bottom: 40px;
-            padding: 20px;
+            gap: 30px;
+            margin-bottom: 16px;
+            padding: 10px;
             background: #f8f9fa;
             border-radius: 2px;
             border: 1px solid #e0e0e0;
@@ -1336,60 +1336,61 @@ function Show-InitiativeChart {
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             font-weight: 500;
-            font-size: 0.95em;
+            font-size: 0.8em;
             color: #333;
         }
         .legend-color {
-            width: 36px;
-            height: 18px;
+            width: 28px;
+            height: 14px;
             border-radius: 2px;
             border: 1px solid rgba(0,0,0,0.1);
         }
         .chart {
-            margin-top: 30px;
+            margin-top: 12px;
         }
         .initiative {
-            margin-bottom: 32px;
+            margin-bottom: 14px;
             border-bottom: 1px solid #e8e8e8;
-            padding-bottom: 32px;
+            padding-bottom: 14px;
         }
         .initiative:last-child {
             border-bottom: none;
             padding-bottom: 0;
+            margin-bottom: 0;
         }
         .initiative-header {
             display: flex;
             justify-content: space-between;
             align-items: baseline;
-            margin-bottom: 12px;
+            margin-bottom: 6px;
         }
         .initiative-name {
-            font-size: 1.1em;
+            font-size: 0.95em;
             font-weight: 600;
             color: #1a1a1a;
         }
         .initiative-meta {
             display: flex;
-            gap: 16px;
-            font-size: 0.85em;
+            gap: 10px;
+            font-size: 0.75em;
             color: #666;
         }
         .meta-item {
             background: #f5f5f5;
-            padding: 4px 10px;
+            padding: 3px 8px;
             border-radius: 2px;
             font-weight: 500;
         }
         .bar-wrapper {
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
         .bar-container {
             position: relative;
             background: #f0f0f0;
             border-radius: 2px;
-            height: 36px;
+            height: 24px;
             border: 1px solid #d0d0d0;
         }
         .bar {
@@ -1398,18 +1399,16 @@ function Show-InitiativeChart {
             display: flex;
             align-items: center;
             justify-content: flex-end;
-            padding: 0 16px;
+            padding: 0 10px;
             color: white;
             font-weight: 600;
-            font-size: 0.85em;
+            font-size: 0.7em;
             transition: all 0.3s ease;
-            box-shadow: inset 0 -2px 4px rgba(0,0,0,0.1);
-            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+            box-shadow: inset 0 -1px 2px rgba(0,0,0,0.1);
+            text-shadow: 0 1px 1px rgba(0,0,0,0.2);
         }
         .bar:hover {
             opacity: 0.85;
-            transform: translateY(-1px);
-            box-shadow: inset 0 -2px 4px rgba(0,0,0,0.15), 0 2px 4px rgba(0,0,0,0.1);
         }
         .bar-label {
             font-weight: 600;
@@ -1420,22 +1419,22 @@ function Show-InitiativeChart {
         .date-labels {
             display: flex;
             justify-content: space-between;
-            font-size: 0.8em;
+            font-size: 0.7em;
             color: #777;
             font-weight: 500;
         }
         .date-label {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
         }
         .footer {
-            margin-top: 50px;
-            padding: 30px 50px;
+            margin-top: 16px;
+            padding: 16px 30px;
             background: #f8f9fa;
             text-align: center;
             color: #666;
-            font-size: 0.85em;
+            font-size: 0.7em;
             border-top: 1px solid #e0e0e0;
         }
         .footer p {
