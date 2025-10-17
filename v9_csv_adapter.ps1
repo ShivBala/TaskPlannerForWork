@@ -318,8 +318,12 @@ function Read-V9ConfigFile {
                         }
                         continue  # Skip "Name,Creation Date,Start Date" header
                     }
-                    # Parse: "Initiative Name","2025-10-16","2025-11-01" OR Initiative Name,2025-10-16,2025-11-01
-                    # Try quoted format first
+                    # Parse various CSV formats:
+                    # 1. Fully quoted: "Initiative Name","2025-10-16","2025-11-01"
+                    # 2. Mixed: "Initiative Name",2025-10-16,2025-11-01
+                    # 3. Unquoted: Initiative Name,2025-10-16,2025-11-01
+                    
+                    # Try fully quoted format
                     if ($line -match '^"([^"]+)","([^"]*)","([^"]*)"$') {
                         $result.Initiatives += [PSCustomObject]@{
                             Name = $Matches[1]
@@ -327,12 +331,20 @@ function Read-V9ConfigFile {
                             StartDate = if ($Matches[3]) { $Matches[3] } else { $null }
                         }
                     }
-                    # Try unquoted format (comma-separated)
-                    elseif ($line -match '^([^,]+),([^,]*),([^,]*)$') {
+                    # Try mixed format (quoted name, unquoted dates)
+                    elseif ($line -match '^"([^"]+)",([^,]*),([^,]*)$') {
                         $result.Initiatives += [PSCustomObject]@{
                             Name = $Matches[1]
-                            CreationDate = $Matches[2]
-                            StartDate = if ($Matches[3]) { $Matches[3] } else { $null }
+                            CreationDate = $Matches[2].Trim()
+                            StartDate = if ($Matches[3].Trim()) { $Matches[3].Trim() } else { $null }
+                        }
+                    }
+                    # Try fully unquoted format
+                    elseif ($line -match '^([^,]+),([^,]*),([^,]*)$') {
+                        $result.Initiatives += [PSCustomObject]@{
+                            Name = $Matches[1].Trim()
+                            CreationDate = $Matches[2].Trim()
+                            StartDate = if ($Matches[3].Trim()) { $Matches[3].Trim() } else { $null }
                         }
                     }
                 }
