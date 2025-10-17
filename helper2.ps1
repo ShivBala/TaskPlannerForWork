@@ -1,23 +1,24 @@
-# PowerShell Interface for html_console_v9/v10.html - V9/V10 Config Support
-# Purpose: Simplified task management for V9/V10 exported configs
+# PowerShell Interface for html_console_v10.html - V10 Config Management
+# Purpose: Simplified task management for V10 exported configs (with V9 backward compatibility)
 # Author: GitHub Copilot
-# Date: October 16, 2025
+# Date: October 17, 2025
 
 <#
 .SYNOPSIS
-    Clean PowerShell interface for V9/V10 config file management
+    Clean PowerShell interface for V10 config file management
 
 .DESCRIPTION
     This script provides a regex-based command interface for managing tasks
-    in V9/V10 config files exported from html_console_v9/v10.html. It supports:
+    in V10 config files exported from html_console_v10.html. It supports:
     - Quick task add/modify by person name
     - Capacity queries
     - Availability checks
     - V10: Stakeholders and Initiatives management
     - V10: UUID-based task tracking
+    - V10: Duplicate detection
     
 .NOTES
-    V9/V10 Support - Automatically detects format version
+    V10 Primary - Also supports V9 configs for backward compatibility
     Config files are synced from Downloads to Output folder automatically
 #>
 
@@ -37,16 +38,16 @@ $global:V9ConfigPath = $null
 function Initialize-V9Config {
     <#
     .SYNOPSIS
-        Loads the latest V9 config from Output folder (syncing from Downloads if needed)
+        Loads the latest V10/V9 config from Output folder (syncing from Downloads if needed)
     #>
     
-    Write-Host "`n🔍 Looking for V9 config..." -ForegroundColor Cyan
+    Write-Host "`n🔍 Looking for V10/V9 config..." -ForegroundColor Cyan
     
     # This will automatically sync from Downloads to Output if needed
     $configFile = Get-LatestV9ConfigFile
     if ($null -eq $configFile) {
-        Write-Host "❌ No V9 config found" -ForegroundColor Red
-        Write-Host "   Please export config from html_console_v9.html to Downloads folder first" -ForegroundColor Yellow
+        Write-Host "❌ No V10/V9 config found" -ForegroundColor Red
+        Write-Host "   Please export config from html_console_v10.html to Downloads folder first" -ForegroundColor Yellow
         return $false
     }
     

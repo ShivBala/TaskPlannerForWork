@@ -184,7 +184,7 @@ function Read-V9ConfigFile {
     }
     
     try {
-        Write-Host "📖 Reading V9 config from: $(Split-Path $FilePath -Leaf)" -ForegroundColor Cyan
+        Write-Host "📖 Reading config from: $(Split-Path $FilePath -Leaf)" -ForegroundColor Cyan
         
         try {
             $content = Get-Content -Path $FilePath -Raw -ErrorAction Stop
@@ -749,5 +749,6 @@ Export-ModuleMember -Function @(
     'Test-V9ConfigFile'
 )
 
-Write-Host "✅ V9 CSV Adapter module loaded" -ForegroundColor Green
+Write-Host "✅ V10/V9 CSV Adapter module loaded" -ForegroundColor Green
 Write-Host "   Available functions: Get-LatestV9ConfigFile, Read-V9ConfigFile, Write-V9ConfigFile, Convert-V9TicketToLegacyTask, Test-V9ConfigFile" -ForegroundColor Cyan
+Write-Host "   📌 V10 primary with V9 backward compatibility" -ForegroundColor DarkCyan
