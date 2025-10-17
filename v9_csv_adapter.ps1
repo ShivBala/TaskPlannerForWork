@@ -301,9 +301,11 @@ function Read-V9ConfigFile {
                         }
                         continue  # Skip "Name" header
                     }
-                    # Parse: "Stakeholder Name"
+                    # Parse: "Stakeholder Name" OR Stakeholder Name
                     if ($line -match '^"([^"]+)"$') {
                         $result.Stakeholders += $Matches[1]
+                    } elseif (-not [string]::IsNullOrWhiteSpace($line)) {
+                        $result.Stakeholders += $line
                     }
                 }
                 
@@ -316,8 +318,17 @@ function Read-V9ConfigFile {
                         }
                         continue  # Skip "Name,Creation Date,Start Date" header
                     }
-                    # Parse: "Initiative Name","2025-10-16","2025-11-01"
+                    # Parse: "Initiative Name","2025-10-16","2025-11-01" OR Initiative Name,2025-10-16,2025-11-01
+                    # Try quoted format first
                     if ($line -match '^"([^"]+)","([^"]*)","([^"]*)"$') {
+                        $result.Initiatives += [PSCustomObject]@{
+                            Name = $Matches[1]
+                            CreationDate = $Matches[2]
+                            StartDate = if ($Matches[3]) { $Matches[3] } else { $null }
+                        }
+                    }
+                    # Try unquoted format (comma-separated)
+                    elseif ($line -match '^([^,]+),([^,]*),([^,]*)$') {
                         $result.Initiatives += [PSCustomObject]@{
                             Name = $Matches[1]
                             CreationDate = $Matches[2]
