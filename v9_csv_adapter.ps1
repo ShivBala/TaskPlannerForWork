@@ -512,7 +512,7 @@ function Write-V9ConfigFile {
         
         [void]$csvContent.AppendLine("SECTION,TICKETS")
         if ($isV10) {
-            [void]$csvContent.AppendLine("UUID,ID,Description,Start Date,Size,Priority,Assigned Team,Stakeholder,Initiative,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Details: Description,Details: Positives,Details: Negatives")
+            [void]$csvContent.AppendLine("UUID,ID,Description,Start Date,Size,Priority,Stakeholder,Initiative,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Details Description,Details Positives,Details Negatives")
         } else {
             [void]$csvContent.AppendLine("ID,Description,Start Date,Size,Priority,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Details: Description,Details: Positives,Details: Negatives")
         }
@@ -537,7 +537,7 @@ function Write-V9ConfigFile {
                 $uuid = if ($ticket.UUID) { $ticket.UUID } else { "" }
                 $stakeholder = if ($ticket.Stakeholder) { $ticket.Stakeholder } else { "General" }
                 $initiative = if ($ticket.Initiative) { $ticket.Initiative } else { "General" }
-                $line = "`"$uuid`",$($ticket.ID),`"$desc`",$startDate,$($ticket.Size),$($ticket.Priority),`"$assignedTeam`",`"$stakeholder`",`"$initiative`",`"$($ticket.Status)`",`"$taskType`",`"$pauseComments`",`"$startDateHistory`",`"$endDateHistory`",`"$sizeHistory`",`"$customEndDate`",`"$detailsDesc`",`"$detailsPos`",`"$detailsNeg`""
+                $line = "`"$uuid`",$($ticket.ID),`"$desc`",$startDate,$($ticket.Size),$($ticket.Priority),`"$stakeholder`",`"$initiative`",`"$assignedTeam`",`"$($ticket.Status)`",`"$taskType`",`"$pauseComments`",`"$startDateHistory`",`"$endDateHistory`",`"$sizeHistory`",`"$customEndDate`",`"$detailsDesc`",`"$detailsPos`",`"$detailsNeg`""
             } else {
                 # V9 format
                 $line = "$($ticket.ID),`"$desc`",$startDate,$($ticket.Size),$($ticket.Priority),`"$assignedTeam`",`"$($ticket.Status)`",`"$taskType`",`"$pauseComments`",`"$startDateHistory`",`"$endDateHistory`",`"$sizeHistory`",`"$customEndDate`",`"$detailsDesc`",`"$detailsPos`",`"$detailsNeg`""
