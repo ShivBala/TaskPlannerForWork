@@ -1143,6 +1143,378 @@ function Manage-Initiatives {
     }
 }
 
+function Show-InitiativeChart {
+    <#
+    .SYNOPSIS
+        Generates an interactive HTML chart showing initiative timelines
+    .DESCRIPTION
+        Creates a horizontal bar chart of initiatives with:
+        - Olive green: Currently active initiatives
+        - Light blue: Future initiatives
+        - Light pink: Initiatives with >50% paused tasks
+        - Past initiatives are hidden
+        - Sorted by start date
+    #>
+    
+    Write-Host "`n📊 Generating Initiative Timeline Chart..." -ForegroundColor Cyan
+    
+    if ($null -eq $global:V9Config) {
+        Write-Host "❌ No config loaded. Run 'reload' first." -ForegroundColor Red
+        return
+    }
+    
+    if ($global:V9Config.Initiatives.Count -eq 0) {
+        Write-Host "❌ No initiatives found in config." -ForegroundColor Red
+        return
+    }
+    
+    $today = Get-Date
+    
+    # Calculate initiative data
+    $initiativeData = @()
+    
+    foreach ($initiative in $global:V9Config.Initiatives) {
+        # Get all tasks for this initiative
+        $tasks = $global:V9Config.Tickets | Where-Object { $_.Initiative -eq $initiative.Name }
+        
+        if ($tasks.Count -eq 0) {
+            continue
+        }
+        
+        # Calculate start and end dates from tasks
+        $taskStartDates = $tasks | Where-Object { $_.StartDate } | ForEach-Object { [DateTime]::Parse($_.StartDate) }
+        $taskEndDates = $tasks | Where-Object { $_.EndDate } | ForEach-Object { [DateTime]::Parse($_.EndDate) }
+        
+        if ($taskStartDates.Count -eq 0) {
+            continue
+        }
+        
+        $startDate = ($taskStartDates | Measure-Object -Minimum).Minimum
+        $endDate = if ($taskEndDates.Count -gt 0) { 
+            ($taskEndDates | Measure-Object -Maximum).Maximum 
+        } else { 
+            $today.AddDays(30) # Default 30 days if no end dates
+        }
+        
+        # Skip past initiatives
+        if ($endDate -lt $today) {
+            continue
+        }
+        
+        # Determine status and color
+        $pausedTasks = ($tasks | Where-Object { $_.Status -eq 'Paused' }).Count
+        $pausedPercentage = if ($tasks.Count -gt 0) { ($pausedTasks / $tasks.Count) * 100 } else { 0 }
+        
+        $color = if ($pausedPercentage -gt 50) {
+            '#FFB6C1' # Light pink - mostly paused
+        } elseif ($startDate -le $today -and $endDate -ge $today) {
+            '#6B8E23' # Olive green - currently active
+        } else {
+            '#87CEEB' # Light blue - future
+        }
+        
+        $status = if ($pausedPercentage -gt 50) {
+            "Paused (${pausedPercentage:N0}%)"
+        } elseif ($startDate -le $today -and $endDate -ge $today) {
+            "Active"
+        } else {
+            "Future"
+        }
+        
+        $durationDays = ($endDate - $startDate).Days
+        
+        $initiativeData += [PSCustomObject]@{
+            Name = $initiative.Name
+            StartDate = $startDate
+            EndDate = $endDate
+            DurationDays = $durationDays
+            TaskCount = $tasks.Count
+            Status = $status
+            Color = $color
+            PausedPercentage = $pausedPercentage
+        }
+    }
+    
+    # Sort by start date
+    $initiativeData = $initiativeData | Sort-Object StartDate
+    
+    if ($initiativeData.Count -eq 0) {
+        Write-Host "❌ No current or future initiatives to display." -ForegroundColor Yellow
+        return
+    }
+    
+    # Generate HTML
+    $htmlPath = Join-Path $PSScriptRoot "initChart.html"
+    
+    $html = @"
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Initiative Timeline Chart</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 30px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 20px;
+        }
+        .header h1 {
+            color: #333;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+        .legend-color {
+            width: 30px;
+            height: 20px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .chart {
+            margin-top: 20px;
+        }
+        .initiative {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #fafafa;
+            border-radius: 8px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .initiative:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .initiative-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .initiative-name {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+        }
+        .initiative-info {
+            display: flex;
+            gap: 20px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        .info-badge {
+            background: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            border: 1px solid #ddd;
+        }
+        .bar-container {
+            position: relative;
+            height: 40px;
+            background: #e9ecef;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        .bar {
+            height: 100%;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+            color: #333;
+            font-weight: 600;
+            font-size: 0.9em;
+            transition: opacity 0.3s;
+        }
+        .bar:hover {
+            opacity: 0.8;
+        }
+        .date-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 0.85em;
+            color: #666;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Initiative Timeline</h1>
+            <p>Current and Future Initiatives - Generated on $(Get-Date -Format 'MMMM dd, yyyy HH:mm')</p>
+        </div>
+        
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-value">$(($initiativeData | Where-Object { $_.Status -eq 'Active' }).Count)</div>
+                <div class="stat-label">Active Initiatives</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">$(($initiativeData | Where-Object { $_.Status -eq 'Future' }).Count)</div>
+                <div class="stat-label">Future Initiatives</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">$(($initiativeData | Where-Object { $_.Status -like 'Paused*' }).Count)</div>
+                <div class="stat-label">Paused Initiatives</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">$(($initiativeData | Measure-Object -Property TaskCount -Sum).Sum)</div>
+                <div class="stat-label">Total Tasks</div>
+            </div>
+        </div>
+        
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #6B8E23;"></div>
+                <span>Active Now</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #87CEEB;"></div>
+                <span>Future</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FFB6C1;"></div>
+                <span>Paused (>50%)</span>
+            </div>
+        </div>
+        
+        <div class="chart">
+"@
+    
+    # Add each initiative
+    foreach ($init in $initiativeData) {
+        $startStr = $init.StartDate.ToString('MMM dd, yyyy')
+        $endStr = $init.EndDate.ToString('MMM dd, yyyy')
+        $duration = "$($init.DurationDays) days"
+        
+        $html += @"
+            <div class="initiative">
+                <div class="initiative-header">
+                    <div class="initiative-name">$($init.Name)</div>
+                    <div class="initiative-info">
+                        <span class="info-badge">📅 $duration</span>
+                        <span class="info-badge">📋 $($init.TaskCount) tasks</span>
+                        <span class="info-badge">$($init.Status)</span>
+                    </div>
+                </div>
+                <div class="bar-container">
+                    <div class="bar" style="background: $($init.Color); width: 100%;">
+                        $($init.Name)
+                    </div>
+                </div>
+                <div class="date-labels">
+                    <span>🏁 Start: $startStr</span>
+                    <span>🎯 End: $endStr</span>
+                </div>
+            </div>
+"@
+    }
+    
+    $html += @"
+        </div>
+        
+        <div class="footer">
+            <p>Generated from V10 Configuration | Total Initiatives: $($initiativeData.Count)</p>
+            <p style="margin-top: 5px; color: #999;">Past initiatives are hidden from this view</p>
+        </div>
+    </div>
+</body>
+</html>
+"@
+    
+    # Write HTML file
+    $html | Set-Content -Path $htmlPath -Encoding UTF8
+    
+    Write-Host "✅ Chart generated: $htmlPath" -ForegroundColor Green
+    Write-Host "   📊 Showing $($initiativeData.Count) current/future initiatives" -ForegroundColor Cyan
+    
+    # Open in browser
+    Write-Host "`n🌐 Opening chart in browser..." -ForegroundColor Cyan
+    
+    try {
+        if ($IsMacOS) {
+            Start-Process "open" -ArgumentList "`"$htmlPath`""
+        } elseif ($IsLinux) {
+            Start-Process "xdg-open" -ArgumentList "`"$htmlPath`""
+        } else {
+            Start-Process "`"$htmlPath`""
+        }
+        Write-Host "✅ Chart opened successfully" -ForegroundColor Green
+    } catch {
+        Write-Host "❌ Failed to open chart: $_" -ForegroundColor Red
+        Write-Host "   Please open manually: $htmlPath" -ForegroundColor Yellow
+    }
+}
+
 #endregion
 
 #region Command Dispatcher
@@ -1220,6 +1592,12 @@ function Invoke-Command {
         return
     }
     
+    # V10: Initiative Timeline Chart
+    if ($inputText -match "^initchart$") {
+        Show-InitiativeChart
+        return
+    }
+    
     # Help
     if ($inputText -match "^help$") {
         Show-Help
@@ -1288,6 +1666,8 @@ function Show-Help {
     Write-Host "    → List/add/modify initiatives" -ForegroundColor Gray
     Write-Host "  owner | stakeholder | owners | stakeholders" -ForegroundColor White
     Write-Host "    → List/add/remove stakeholders" -ForegroundColor Gray
+    Write-Host "  initchart" -ForegroundColor White
+    Write-Host "    → Generate initiative timeline chart (HTML)" -ForegroundColor Gray
     Write-Host ""
     Write-Host "Capacity & Availability:" -ForegroundColor Yellow
     Write-Host "  capacity <name>" -ForegroundColor White
