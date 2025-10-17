@@ -4062,7 +4062,20 @@
                 estimationBaseHours = importedData.settings.estimationBaseHours || 5;
                 projectHoursPerDay = importedData.settings.projectHoursPerDay || importedData.settings.hoursPerDay || 8; // Legacy support
                 useCommonStartDate = importedData.settings.useCommonStartDate || false;
-                currentTicketId = importedData.settings.currentTicketId || 1;
+                
+                // Renumber all task IDs sequentially starting from 1
+                // This ensures clean sequential IDs regardless of gaps in the imported file
+                let newId = 1;
+                importedData.tickets.forEach(ticket => {
+                    const oldId = ticket.id;
+                    ticket.id = newId;
+                    console.log(`🔢 Renumbered task: ${oldId} → ${newId} (${ticket.description})`);
+                    newId++;
+                });
+                
+                // Set next ticket ID to continue from renumbered sequence
+                currentTicketId = importedData.tickets.length + 1;
+                console.log(`🔢 Set currentTicketId to ${currentTicketId} (renumbered ${importedData.tickets.length} tickets)`);
 
                 // Apply configurations
                 console.log('🔄 IMPORT: About to replace taskSizeDefinitions');
