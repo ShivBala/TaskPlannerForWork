@@ -4204,6 +4204,8 @@
                 alert(`✅ Configuration imported successfully (V10)!\n\n• ${Object.keys(taskSizeDefinitions).length} task sizes loaded\n• ${people.length} team members configured\n• ${stakeholders.length} stakeholders loaded\n• ${initiatives.length} initiatives loaded\n• ${tickets.length} tickets imported\n\nAll data has been restored and calculations updated.`);
 
             } catch (error) {
+                console.error('❌ IMPORT ERROR:', error);
+                console.error('❌ ERROR STACK:', error.stack);
                 alert(`❌ Error applying configuration: ${error.message}\n\nPlease check your file and try again.`);
             }
         }
@@ -6358,13 +6360,13 @@ ${ticket.explanation}
 
                         // Scale down ONLY flexible task allocations
                         flexibleTasks.forEach(task => {
-                            const allocated = capacityTracker[person.name][weekIndex].allocations[task.id];
+                            const allocated = capacityTracker[person.name][weekIndex].allocations[task.id] || 0;
                             const reduced = allocated * scaleFactor;
                             const returned = allocated - reduced;
 
                             capacityTracker[person.name][weekIndex].allocations[task.id] = reduced;
                             capacityTracker[person.name][weekIndex].used -= returned;
-                            taskRemainingEffort[task.id][person.name] += returned; // Return unused effort
+                            taskRemainingEffort[task.id][person.name] = (taskRemainingEffort[task.id][person.name] || 0) + returned; // Return unused effort
                             
                             // Update P1/other tracking
                             if (task.priority === 'P1') {
