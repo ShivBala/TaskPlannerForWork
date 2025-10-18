@@ -2864,6 +2864,9 @@
             renderStakeholdersList();
             populateStakeholderDropdowns();
             
+            // Refresh table to update dropdowns in existing rows
+            calculateProjection();
+            
             console.log(`✅ Added stakeholder: "${name}"`);
         }
         
@@ -2936,6 +2939,9 @@
             saveToLocalStorage();
             renderInitiativesList();
             populateInitiativeDropdowns();
+            
+            // Refresh table to update dropdowns in existing rows
+            calculateProjection();
             
             console.log(`✅ Added initiative: "${name}"`);
         }

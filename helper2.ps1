@@ -85,7 +85,40 @@ function Initialize-V9Config {
     Write-Host "   📊 $($config.Tickets.Count) tickets | $($config.People.Count) people" -ForegroundColor Cyan
     Write-Host "   ⏰ Project Hours/Day: $global:ProjectHoursPerDay" -ForegroundColor Cyan
     
+    # Store file timestamp for change detection
+    if (Test-Path $configFile) {
+        $global:V9ConfigTimestamp = (Get-Item $configFile).LastWriteTime
+    }
+    
     return $true
+}
+
+function Test-ConfigChanged {
+    <#
+    .SYNOPSIS
+        Checks if the config file has been modified since last load
+    #>
+    if ($null -eq $global:V9ConfigPath -or -not (Test-Path $global:V9ConfigPath)) {
+        return $false
+    }
+    
+    $currentTimestamp = (Get-Item $global:V9ConfigPath).LastWriteTime
+    if ($null -eq $global:V9ConfigTimestamp -or $currentTimestamp -gt $global:V9ConfigTimestamp) {
+        return $true
+    }
+    
+    return $false
+}
+
+function Ensure-ConfigCurrent {
+    <#
+    .SYNOPSIS
+        Reloads config if the CSV file has been modified externally (e.g., by HTML console)
+    #>
+    if (Test-ConfigChanged) {
+        Write-Host "🔄 Config file was modified externally, reloading..." -ForegroundColor Cyan
+        Initialize-V9Config
+    }
 }
 
 function Get-BusinessDays {
@@ -424,6 +457,7 @@ function Add-TaskForPerson {
     $uuid = [guid]::NewGuid().ToString()
     
     # V10: Stakeholder selection (if V10 config)
+    Ensure-ConfigCurrent  # Auto-reload if CSV was modified externally
     $stakeholder = "General"  # Default
     if ($global:V9Config.Stakeholders -and $global:V9Config.Stakeholders.Count -gt 0) {
         Write-Host "`nAvailable Stakeholders:" -ForegroundColor Yellow
@@ -441,6 +475,7 @@ function Add-TaskForPerson {
     }
     
     # V10: Initiative selection (if V10 config)
+    Ensure-ConfigCurrent  # Auto-reload if CSV was modified externally
     $initiative = "General"  # Default
     if ($global:V9Config.Initiatives -and $global:V9Config.Initiatives.Count -gt 0) {
         Write-Host "`nAvailable Initiatives:" -ForegroundColor Yellow
