@@ -1557,14 +1557,25 @@ function Get-FuzzyMatches {
         return $result
     }
     
+    # Check if config is loaded
+    if ($null -eq $global:V9Config) {
+        Write-Host "⚠️  Config not loaded. Please load a config first." -ForegroundColor Yellow
+        return $result
+    }
+    
     $searchLower = $SearchTerm.ToLower()
     
     # Search in People
-    foreach ($person in $global:V9Config.People) {
-        $fullName = "$($person.FirstName) $($person.LastName)".ToLower()
-        $firstName = $person.FirstName.ToLower()
-        $lastName = $person.LastName.ToLower()
-        $compactName = "$($person.FirstName)$($person.LastName)".ToLower()
+    if ($null -ne $global:V9Config.People -and $global:V9Config.People.Count -gt 0) {
+        foreach ($person in $global:V9Config.People) {
+            if ($null -eq $person.FirstName -or $null -eq $person.LastName) {
+                continue
+            }
+            
+            $fullName = "$($person.FirstName) $($person.LastName)".ToLower()
+            $firstName = $person.FirstName.ToLower()
+            $lastName = $person.LastName.ToLower()
+            $compactName = "$($person.FirstName)$($person.LastName)".ToLower()
         
         $score = 0
         # Exact match (highest priority)
@@ -1602,13 +1613,19 @@ function Get-FuzzyMatches {
             }
         }
     }
+    }
     
     # Search in Stakeholders
-    foreach ($stakeholder in $global:V9Config.Stakeholders) {
-        $stakeholderLower = $stakeholder.ToLower()
-        $stakeholderCompact = ($stakeholder -replace '\s+', '').ToLower()
-        
-        $score = 0
+    if ($null -ne $global:V9Config.Stakeholders -and $global:V9Config.Stakeholders.Count -gt 0) {
+        foreach ($stakeholder in $global:V9Config.Stakeholders) {
+            if ([string]::IsNullOrWhiteSpace($stakeholder)) {
+                continue
+            }
+            
+            $stakeholderLower = $stakeholder.ToLower()
+            $stakeholderCompact = ($stakeholder -replace '\s+', '').ToLower()
+            
+            $score = 0
         # Exact match
         if ($stakeholderLower -eq $searchLower) {
             $score = 100
@@ -1632,6 +1649,7 @@ function Get-FuzzyMatches {
                 Score = $score
             }
         }
+    }
     }
     
     # Sort by score descending
