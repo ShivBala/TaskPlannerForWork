@@ -6163,13 +6163,25 @@ ${ticket.explanation}
             });
 
             // Initialize remaining effort for each task-person pair
+            // Also track task metadata for Fixed-Length constraints
+            const taskMetadata = {}; // { taskId: { isFixedLength, dailyHoursPerPerson, totalDays } }
+            
             activeTickets.forEach(ticket => {
                 taskRemainingEffort[ticket.id] = {};
+                const totalTaskDays = taskSizeDefinitions[ticket.size]?.days || 1;
+                const totalTaskEffort = effortMap[ticket.size] || (totalTaskDays * estimationBaseHours);
+                const isFixedLength = ticket.isFixedLength !== false;
+                
+                // Store task metadata for Fixed-Length constraint enforcement
+                taskMetadata[ticket.id] = {
+                    isFixedLength: isFixedLength,
+                    totalDays: totalTaskDays,
+                    dailyHoursPerPerson: isFixedLength 
+                        ? (totalTaskEffort / (totalTaskDays * Math.max(ticket.assigned.length, 1)))
+                        : null
+                };
+                
                 ticket.assigned.forEach(personName => {
-                    const totalTaskDays = taskSizeDefinitions[ticket.size]?.days || 1;
-                    const totalTaskEffort = effortMap[ticket.size] || (totalTaskDays * estimationBaseHours);
-                    const isFixedLength = ticket.isFixedLength !== false;
-
                     if (isFixedLength) {
                         // Fixed-Length: effort split among assignees
                         taskRemainingEffort[ticket.id][personName] = totalTaskEffort / Math.max(ticket.assigned.length, 1);
@@ -6178,7 +6190,7 @@ ${ticket.explanation}
                         taskRemainingEffort[ticket.id][personName] = totalTaskEffort;
                     }
                     
-                    console.log(`📊 Task ${ticket.id} (${ticket.priority}): ${personName} has ${taskRemainingEffort[ticket.id][personName].toFixed(1)}h effort`);
+                    console.log(`📊 Task ${ticket.id} (${ticket.priority}${isFixedLength ? ' 🔒Fixed' : ' ⚡Flex'}): ${personName} has ${taskRemainingEffort[ticket.id][personName].toFixed(1)}h effort${isFixedLength ? ` (${taskMetadata[ticket.id].dailyHoursPerPerson.toFixed(1)}h/day max)` : ''}`);
                 });
             });
 
@@ -6225,85 +6237,142 @@ ${ticket.explanation}
                         return;
                     }
 
-                    // Group by priority
-                    const p1Tasks = activeTasksThisWeek.filter(t => t.priority === 'P1');
-                    const otherTasks = activeTasksThisWeek.filter(t => t.priority !== 'P1');
+                    // STEP 1: Separate Fixed-Length tasks from Flexible tasks
+                    // Fixed-Length tasks IGNORE No OT constraint (will show >100% if overloaded)
+                    // Flexible tasks RESPECT No OT constraint
+                    const fixedTasks = activeTasksThisWeek.filter(t => taskMetadata[t.id].isFixedLength);
+                    const flexibleTasks = activeTasksThisWeek.filter(t => !taskMetadata[t.id].isFixedLength);
                     
-                    console.log(`  🎯 P1 Tasks: ${p1Tasks.length}, Other Tasks: ${otherTasks.length}`);
+                    console.log(`  📌 Fixed-Length Tasks: ${fixedTasks.length}, Flexible Tasks: ${flexibleTasks.length}`);
 
-                    // Calculate capacity allocation based on P1 priority weighting
-                    let p1Capacity = 0;
-                    let otherCapacity = 0;
+                    // STEP 2: Allocate Fixed-Length tasks FIRST (based on their duration requirements)
+                    fixedTasks.forEach(task => {
+                        const effortRemaining = taskRemainingEffort[task.id][person.name];
+                        const dailyHours = taskMetadata[task.id].dailyHoursPerPerson;
+                        
+                        // For Fixed-Length, allocate the daily required hours (ignore capacity limits)
+                        const hoursThisWeek = Math.min(effortRemaining, dailyHours * 5); // 5 working days
 
-                    if (p1Tasks.length > 0) {
-                        // P1 tasks get 80% of capacity
-                        p1Capacity = weekCapacity * 0.8;
-                        otherCapacity = weekCapacity * 0.2;
-                        console.log(`  📊 P1 Capacity: ${p1Capacity.toFixed(1)}h (80%), Other: ${otherCapacity.toFixed(1)}h (20%)`);
-                    } else {
-                        // No P1 tasks - others get 100%
-                        otherCapacity = weekCapacity;
-                        console.log(`  📊 Other Capacity: ${otherCapacity.toFixed(1)}h (100% - no P1 tasks)`);
+                        capacityTracker[person.name][weekIndex].allocations[task.id] = hoursThisWeek;
+                        capacityTracker[person.name][weekIndex].used += hoursThisWeek;
+                        
+                        // Track as P1 or other
+                        if (task.priority === 'P1') {
+                            capacityTracker[person.name][weekIndex].p1Hours += hoursThisWeek;
+                        } else {
+                            capacityTracker[person.name][weekIndex].otherHours += hoursThisWeek;
+                        }
+                        
+                        taskRemainingEffort[task.id][person.name] -= hoursThisWeek;
+                        
+                        console.log(`    📌 FIXED ${task.priority} Task ${task.id}: Allocated ${hoursThisWeek.toFixed(1)}h (${dailyHours.toFixed(1)}h/day required), Remaining: ${taskRemainingEffort[task.id][person.name].toFixed(1)}h`);
+                    });
+
+                    // STEP 3: Calculate remaining capacity for Flexible tasks
+                    const capacityUsedByFixed = capacityTracker[person.name][weekIndex].used;
+                    const remainingCapacity = Math.max(0, weekCapacity - capacityUsedByFixed);
+                    
+                    console.log(`  🔄 After Fixed tasks: Used ${capacityUsedByFixed.toFixed(1)}h, Remaining: ${remainingCapacity.toFixed(1)}h`);
+
+                    // STEP 4: Allocate Flexible tasks with priority weighting (only if capacity remains)
+                    if (flexibleTasks.length > 0 && remainingCapacity > 0) {
+                        // Group flexible tasks by priority
+                        const flexP1Tasks = flexibleTasks.filter(t => t.priority === 'P1');
+                        const flexOtherTasks = flexibleTasks.filter(t => t.priority !== 'P1');
+                        
+                        console.log(`  🎯 Flexible P1: ${flexP1Tasks.length}, Flexible Other: ${flexOtherTasks.length}`);
+
+                        // Calculate capacity allocation based on P1 priority weighting
+                        let p1Capacity = 0;
+                        let otherCapacity = 0;
+
+                        if (flexP1Tasks.length > 0) {
+                            // P1 tasks get 80% of remaining capacity
+                            p1Capacity = remainingCapacity * 0.8;
+                            otherCapacity = remainingCapacity * 0.2;
+                            console.log(`  📊 Flexible P1 Capacity: ${p1Capacity.toFixed(1)}h (80%), Other: ${otherCapacity.toFixed(1)}h (20%)`);
+                        } else {
+                            // No P1 tasks - others get 100% of remaining
+                            otherCapacity = remainingCapacity;
+                            console.log(`  📊 Flexible Other Capacity: ${otherCapacity.toFixed(1)}h (100% - no P1 tasks)`);
+                        }
+
+                        // Allocate to Flexible P1 tasks (split equally)
+                        const capacityPerP1 = flexP1Tasks.length > 0 ? p1Capacity / flexP1Tasks.length : 0;
+
+                        flexP1Tasks.forEach(task => {
+                            const effortRemaining = taskRemainingEffort[task.id][person.name];
+                            const hoursThisWeek = Math.min(effortRemaining, capacityPerP1);
+
+                            capacityTracker[person.name][weekIndex].allocations[task.id] = hoursThisWeek;
+                            capacityTracker[person.name][weekIndex].used += hoursThisWeek;
+                            capacityTracker[person.name][weekIndex].p1Hours += hoursThisWeek;
+                            taskRemainingEffort[task.id][person.name] -= hoursThisWeek;
+                            
+                            console.log(`    ✅ Flexible P1 Task ${task.id}: Allocated ${hoursThisWeek.toFixed(1)}h, Remaining: ${taskRemainingEffort[task.id][person.name].toFixed(1)}h`);
+                        });
+
+                        // Allocate to Flexible other tasks (proportional to effort needed)
+                        const totalOtherEffort = flexOtherTasks.reduce((sum, task) => 
+                            sum + taskRemainingEffort[task.id][person.name], 0
+                        );
+
+                        flexOtherTasks.forEach(task => {
+                            const effortRemaining = taskRemainingEffort[task.id][person.name];
+                            const effortRatio = totalOtherEffort > 0 ? effortRemaining / totalOtherEffort : 0;
+                            const hoursThisWeek = Math.min(effortRemaining, otherCapacity * effortRatio);
+
+                            capacityTracker[person.name][weekIndex].allocations[task.id] = hoursThisWeek;
+                            capacityTracker[person.name][weekIndex].used += hoursThisWeek;
+                            capacityTracker[person.name][weekIndex].otherHours += hoursThisWeek;
+                            taskRemainingEffort[task.id][person.name] -= hoursThisWeek;
+                            
+                            console.log(`    ✅ Flexible ${task.priority} Task ${task.id}: Allocated ${hoursThisWeek.toFixed(1)}h, Remaining: ${taskRemainingEffort[task.id][person.name].toFixed(1)}h`);
+                        });
                     }
 
-                    // Allocate to P1 tasks (split equally)
-                    const capacityPerP1 = p1Tasks.length > 0 ? p1Capacity / p1Tasks.length : 0;
-
-                    p1Tasks.forEach(task => {
-                        const effortRemaining = taskRemainingEffort[task.id][person.name];
-                        const hoursThisWeek = Math.min(effortRemaining, capacityPerP1);
-
-                        capacityTracker[person.name][weekIndex].allocations[task.id] = hoursThisWeek;
-                        capacityTracker[person.name][weekIndex].used += hoursThisWeek;
-                        capacityTracker[person.name][weekIndex].p1Hours += hoursThisWeek;
-                        taskRemainingEffort[task.id][person.name] -= hoursThisWeek;
+                    // STEP 5: Apply No OT constraint ONLY to Flexible tasks (if enabled and over capacity)
+                    if (noOvertimeEnabled && flexibleTasks.length > 0 && capacityTracker[person.name][weekIndex].used > weekCapacity) {
+                        const totalUsed = capacityTracker[person.name][weekIndex].used;
+                        const flexibleUsed = totalUsed - capacityUsedByFixed;
                         
-                        console.log(`    ✅ P1 Task ${task.id}: Allocated ${hoursThisWeek.toFixed(1)}h, Remaining: ${taskRemainingEffort[task.id][person.name].toFixed(1)}h`);
-                    });
-
-                    // Allocate to other tasks (proportional to effort needed)
-                    const totalOtherEffort = otherTasks.reduce((sum, task) => 
-                        sum + taskRemainingEffort[task.id][person.name], 0
-                    );
-
-                    otherTasks.forEach(task => {
-                        const effortRemaining = taskRemainingEffort[task.id][person.name];
-                        const effortRatio = totalOtherEffort > 0 ? effortRemaining / totalOtherEffort : 0;
-                        const hoursThisWeek = Math.min(effortRemaining, otherCapacity * effortRatio);
-
-                        capacityTracker[person.name][weekIndex].allocations[task.id] = hoursThisWeek;
-                        capacityTracker[person.name][weekIndex].used += hoursThisWeek;
-                        capacityTracker[person.name][weekIndex].otherHours += hoursThisWeek;
-                        taskRemainingEffort[task.id][person.name] -= hoursThisWeek;
+                        console.log(`  🚫 NO OT CONSTRAINT: Total ${totalUsed.toFixed(1)}h (Fixed: ${capacityUsedByFixed.toFixed(1)}h, Flexible: ${flexibleUsed.toFixed(1)}h)`);
+                        console.log(`  🚫 Scaling down Flexible tasks only...`);
                         
-                        console.log(`    ✅ ${task.priority} Task ${task.id}: Allocated ${hoursThisWeek.toFixed(1)}h, Remaining: ${taskRemainingEffort[task.id][person.name].toFixed(1)}h`);
-                    });
+                        // Calculate how much to scale down flexible allocations
+                        const flexibleCapacityLimit = Math.max(0, weekCapacity - capacityUsedByFixed);
+                        const scaleFactor = flexibleUsed > 0 ? flexibleCapacityLimit / flexibleUsed : 0;
 
-                    // Apply No OT constraint if enabled
-                    if (noOvertimeEnabled && capacityTracker[person.name][weekIndex].used > weekCapacity) {
-                        console.log(`  🚫 NO OT CONSTRAINT: Capping ${capacityTracker[person.name][weekIndex].used.toFixed(1)}h at ${weekCapacity}h`);
-                        
-                        const scaleFactor = weekCapacity / capacityTracker[person.name][weekIndex].used;
-
-                        // Scale down all allocations proportionally and return unused effort
-                        Object.keys(capacityTracker[person.name][weekIndex].allocations).forEach(taskId => {
-                            const allocated = capacityTracker[person.name][weekIndex].allocations[taskId];
+                        // Scale down ONLY flexible task allocations
+                        flexibleTasks.forEach(task => {
+                            const allocated = capacityTracker[person.name][weekIndex].allocations[task.id];
                             const reduced = allocated * scaleFactor;
                             const returned = allocated - reduced;
 
-                            capacityTracker[person.name][weekIndex].allocations[taskId] = reduced;
-                            taskRemainingEffort[taskId][person.name] += returned; // Return unused effort
+                            capacityTracker[person.name][weekIndex].allocations[task.id] = reduced;
+                            capacityTracker[person.name][weekIndex].used -= returned;
+                            taskRemainingEffort[task.id][person.name] += returned; // Return unused effort
                             
-                            console.log(`      📉 Task ${taskId}: Scaled from ${allocated.toFixed(1)}h to ${reduced.toFixed(1)}h, Returned: ${returned.toFixed(1)}h`);
+                            // Update P1/other tracking
+                            if (task.priority === 'P1') {
+                                capacityTracker[person.name][weekIndex].p1Hours -= returned;
+                            } else {
+                                capacityTracker[person.name][weekIndex].otherHours -= returned;
+                            }
+                            
+                            console.log(`      📉 Flexible Task ${task.id}: Scaled from ${allocated.toFixed(1)}h to ${reduced.toFixed(1)}h, Returned: ${returned.toFixed(1)}h`);
                         });
-
-                        // Scale P1 and other hours tracking
-                        capacityTracker[person.name][weekIndex].p1Hours *= scaleFactor;
-                        capacityTracker[person.name][weekIndex].otherHours *= scaleFactor;
-                        capacityTracker[person.name][weekIndex].used = weekCapacity;
                     }
                     
-                    console.log(`  📈 Total Used: ${capacityTracker[person.name][weekIndex].used.toFixed(1)}h / ${weekCapacity}h (${Math.round((capacityTracker[person.name][weekIndex].used / weekCapacity) * 100)}%)`);
+                    const totalUsed = capacityTracker[person.name][weekIndex].used;
+                    const percentUsed = Math.round((totalUsed / weekCapacity) * 100);
+                    const overCapacity = totalUsed > weekCapacity;
+                    
+                    if (overCapacity) {
+                        console.log(`  ⚠️ OVER CAPACITY: ${totalUsed.toFixed(1)}h / ${weekCapacity}h (${percentUsed}%) - Fixed-Length tasks exceed capacity!`);
+                    } else {
+                        console.log(`  📈 Total Used: ${totalUsed.toFixed(1)}h / ${weekCapacity}h (${percentUsed}%)`);
+                    }
                 });
             }
 
