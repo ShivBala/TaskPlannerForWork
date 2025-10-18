@@ -88,7 +88,7 @@ class NodeTestRunner extends TestFramework {
 
     testProjectStructure() {
         this.it('should have main HTML file', () => {
-            const htmlFile = path.join(this.projectRoot, 'html_console_v9.html');
+            const htmlFile = path.join(this.projectRoot, 'html_console_v10.html');
             this.assert(fs.existsSync(htmlFile), 'Main HTML file should exist');
         });
 
