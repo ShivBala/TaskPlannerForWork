@@ -1,0 +1,152 @@
+SECTION,METADATA
+Key,Value
+Export Date,2025-10-18T05:31:19.540Z
+Version,2.0
+Description,Enterprise Project Tracking Console Configuration Export
+
+SECTION,SETTINGS
+Key,Value
+Estimation Base Hours,5
+Project Hours Per Day,8
+Use Common Start Date,false
+Common Start Date,2025-10-20
+Current Ticket ID,83
+
+SECTION,TASK_SIZES
+Size Key,Name,Days,Removable
+L,"Large",5,false
+XL,"Extra Large",10,false
+XXL,"Extra Extra Large",15,false
+S,"S",1,true
+M,"M",3,true
+
+SECTION,PEOPLE
+Name,Week1,Week2,Week3,Week4,Week5,Week6,Week7,Week8,Project Ready
+"Marcus Johnson",40,40,32,40,40,40,40,40,Yes
+"Priya Patel",40,40,40,40,40,40,40,32,Yes
+"David Kim",32,40,40,40,40,40,32,40,Yes
+"Lisa Rodriguez",40,32,40,40,40,40,40,40,Yes
+"Ahmed Hassan",40,40,40,32,40,40,40,40,Yes
+"Emma Williams",40,40,40,40,40,32,40,40,Yes
+"James Brown",40,40,40,40,40,40,40,40,Yes
+"Olivia Taylor",32,40,40,40,40,40,40,40,Yes
+"Robert Zhang",40,40,40,40,32,40,40,40,Yes
+"sarah",25,25,25,25,25,25,25,25,Yes
+
+SECTION,STAKEHOLDERS
+Name
+"Engineering Leadership"
+"Finance Team"
+"Customer Success"
+"Marketing"
+"Sales Operations"
+"IT Security"
+"Legal & Compliance"
+"Human Resources"
+"External Partners"
+"Service and Support"
+
+SECTION,INITIATIVES
+Name,Creation Date,Start Date
+"Cloud Migration Phase 1",2025-09-15,2025-10-01
+"API Modernization",2025-09-20,2025-10-15
+"Security Hardening",2025-09-25,2025-11-01
+"Customer Portal Redesign",2025-10-01,2025-10-20
+"Payment Gateway Integration",2025-10-05,2025-11-10
+"Mobile App Development",2025-10-08,2025-11-15
+"Data Analytics Platform",2025-10-10,2025-10-24
+"CI/CD Pipeline Enhancement",2025-09-18,2025-10-10
+"Technical Debt Reduction",2025-09-22,2025-10-25
+"Performance Optimization",2025-10-12,2025-11-20
+"Compliance & Audit",2025-10-03,2025-11-05
+"Machine Learning Integration",2025-10-15,2025-12-15
+"Infrastructure Automation",2025-09-28,2025-10-18
+"Documentation Overhaul",2025-10-07,2025-11-01
+"Testing Framework Upgrade",2025-10-09,2025-10-30
+"Testing init addition",2025-10-18,2025-10-19
+"Testing init addition from html",2025-10-18,
+
+SECTION,TICKETS
+UUID,ID,Description,Start Date,Size,Priority,Stakeholder,Initiative,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Details: Description,Details: Positives,Details: Negatives
+a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d,1,"Migrate authentication service to AWS Lambda",2025-10-01,L,P1,"Engineering Leadership","Cloud Migration Phase 1","Marcus Johnson","Done","Fixed","","2025-10-01(Initial planning@2025-10-01T08:00:00.000Z)","","L:5d(Initial sizing@2025-10-01T08:00:00.000Z)","","2025-10-18","",""
+b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e,2,"Set up Redis cache layer for session management",2025-10-03,M,P1,"Engineering Leadership","Cloud Migration Phase 1","Ahmed Hassan","Done","Fixed","","2025-10-03(Initial planning@2025-10-03T08:00:00.000Z)","","M:2d(Initial sizing@2025-10-03T08:00:00.000Z)","","2025-10-18","",""
+c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f,3,"Configure API Gateway with custom domain",2025-10-05,S,P2,"Engineering Leadership","Cloud Migration Phase 1","David Kim","Done","Fixed","","2025-10-05(Initial planning@2025-10-05T08:00:00.000Z)","","S:1d(Initial sizing@2025-10-05T08:00:00.000Z)","","2025-10-18","",""
+d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a,4,"Implement rate limiting and throttling policies",2025-10-06,M,P1,"IT Security","Cloud Migration Phase 1","sarah","In Progress","Fixed","","2025-10-06(Initial planning@2025-10-06T08:00:00.000Z)","","M:2d(Initial sizing@2025-10-06T08:00:00.000Z)","","2025-10-18","",""
+e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b,5,"Create CloudWatch dashboards for monitoring",2025-10-08,M,P2,"Engineering Leadership","Cloud Migration Phase 1","Marcus Johnson","In Progress","Fixed","","2025-10-08(Initial planning@2025-10-08T08:00:00.000Z)","","M:2d(Initial sizing@2025-10-08T08:00:00.000Z)","","2025-10-18","",""
+f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c,6,"Set up automated backup strategy",2025-10-18,L,P1,"Engineering Leadership","Cloud Migration Phase 1","Ahmed Hassan","To Do","Fixed","","2025-10-10(Initial planning@2025-10-10T08:00:00.000Z) | 2025-10-18(Overdue task correction@2025-10-18T04:47:52.381Z)","","L:5d(Initial sizing@2025-10-10T08:00:00.000Z)","","2025-10-18","",""
+a7b8c9d0-e1f2-4a3b-4c5d-6e7f8a9b0c1d,7,"Design RESTful API endpoints for v2",2025-10-15,XL,P1,"Product Management","API Modernization","Priya Patel;Lisa Rodriguez","In Progress","Fixed","","2025-10-15(Initial planning@2025-10-15T08:00:00.000Z)","","XL:10d(Initial sizing@2025-10-15T08:00:00.000Z)","","2025-10-18","",""
+b8c9d0e1-f2a3-4b4c-5d6e-7f8a9b0c1d2e,8,"Implement GraphQL layer for flexible queries",2025-10-28,XXL,P2,"Product Management","API Modernization","James Brown;Olivia Taylor","To Do","Fixed","","2025-10-17(Initial planning@2025-10-17T08:00:00.000Z) | 2025-10-18(Overdue task correction@2025-10-18T04:47:52.966Z) | 2025-10-28(Changed from heat map popup@2025-10-18T05:01:34.537Z)","","XXL:15d(Initial sizing@2025-10-17T08:00:00.000Z)","","2025-10-18","",""
+c9d0e1f2-a3b4-4c5d-6e7f-8a9b0c1d2e3f,9,"Add API versioning strategy",2025-10-19,M,P1,"Engineering Leadership","API Modernization","sarah","To Do","Fixed","","2025-10-19(Initial planning@2025-10-19T08:00:00.000Z)","","M:2d(Initial sizing@2025-10-19T08:00:00.000Z)","","2025-10-18","",""
+d0e1f2a3-b4c5-4d6e-7f8a-9b0c1d2e3f4a,10,"Create API documentation portal",2025-10-21,L,P2,"Product Management","API Modernization","Robert Zhang","To Do","Fixed","","2025-10-21(Initial planning@2025-10-21T08:00:00.000Z)","","L:5d(Initial sizing@2025-10-21T08:00:00.000Z)","","2025-10-18","",""
+e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b,11,"Implement OAuth 2.0 authentication",2025-11-01,XL,P1,"IT Security","Security Hardening","Emma Williams;Ahmed Hassan","To Do","Fixed","","2025-11-01(Initial planning@2025-11-01T08:00:00.000Z)","","XL:10d(Initial sizing@2025-11-01T08:00:00.000Z)","","2025-10-18","",""
+f2a3b4c5-d6e7-4f8a-9b0c-1d2e3f4a5b6c,12,"Set up WAF rules for common attacks",2025-11-03,M,P1,"IT Security","Security Hardening","David Kim","To Do","Fixed","","2025-11-03(Initial planning@2025-11-03T08:00:00.000Z)","","M:2d(Initial sizing@2025-11-03T08:00:00.000Z)","","2025-10-18","",""
+a3b4c5d6-e7f8-4a9b-0c1d-2e3f4a5b6c7d,13,"Enable encryption at rest for all databases",2025-11-05,L,P1,"IT Security","Security Hardening","Marcus Johnson","To Do","Fixed","","2025-11-05(Initial planning@2025-11-05T08:00:00.000Z)","","L:5d(Initial sizing@2025-11-05T08:00:00.000Z)","","2025-10-18","",""
+b4c5d6e7-f8a9-4b0c-1d2e-3f4a5b6c7d8e,14,"Implement audit logging for all API calls",2025-11-07,M,P1,"Legal & Compliance","Security Hardening","sarah","To Do","Fixed","","2025-11-07(Initial planning@2025-11-07T08:00:00.000Z)","","M:2d(Initial sizing@2025-11-07T08:00:00.000Z)","","2025-10-18","",""
+c5d6e7f8-a9b0-4c1d-2e3f-4a5b6c7d8e9f,15,"Conduct penetration testing",2025-11-10,L,P1,"IT Security","Security Hardening","External Partners","To Do","Fixed","","2025-11-10(Initial planning@2025-11-10T08:00:00.000Z)","","L:5d(Initial sizing@2025-11-10T08:00:00.000Z)","","2025-10-18","",""
+d6e7f8a9-b0c1-4d2e-3f4a-5b6c7d8e9f0a,16,"Redesign user dashboard with modern UI",2025-10-20,XXL,P1,"Product Management","Customer Portal Redesign","Priya Patel;Lisa Rodriguez;Emma Williams","In Progress","Fixed","","2025-10-20(Initial planning@2025-10-20T08:00:00.000Z)","","XXL:15d(Initial sizing@2025-10-20T08:00:00.000Z)","","2025-10-18","",""
+e7f8a9b0-c1d2-4e3f-4a5b-6c7d8e9f0a1b,17,"Implement dark mode toggle",2025-10-23,S,P3,"Product Management","Customer Portal Redesign","Olivia Taylor","Done","Fixed","","2025-10-23(Initial planning@2025-10-23T08:00:00.000Z)","","S:1d(Initial sizing@2025-10-23T08:00:00.000Z)","","2025-10-18","",""
+f8a9b0c1-d2e3-4f4a-5b6c-7d8e9f0a1b2c,18,"Add advanced filtering and search",2025-10-25,L,P2,"Product Management","Customer Portal Redesign","James Brown","In Progress","Fixed","","2025-10-25(Initial planning@2025-10-25T08:00:00.000Z)","","L:5d(Initial sizing@2025-10-25T08:00:00.000Z)","","2025-10-18","",""
+a9b0c1d2-e3f4-4a5b-6c7d-8e9f0a1b2c3d,19,"Create customizable widget dashboard",2025-10-27,XL,P2,"Product Management","Customer Portal Redesign","Robert Zhang;David Kim","To Do","Fixed","","2025-10-27(Initial planning@2025-10-27T08:00:00.000Z)","","XL:10d(Initial sizing@2025-10-27T08:00:00.000Z)","","2025-10-18","",""
+b0c1d2e3-f4a5-4b6c-7d8e-9f0a1b2c3d4e,20,"Implement real-time notifications",2025-10-29,M,P2,"Product Management","Customer Portal Redesign","Ahmed Hassan","To Do","Fixed","","2025-10-29(Initial planning@2025-10-29T08:00:00.000Z)","","M:2d(Initial sizing@2025-10-29T08:00:00.000Z)","","2025-10-18","",""
+c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f,21,"Integrate Stripe payment processing",2025-11-10,XL,P1,"Finance Team","Payment Gateway Integration","Marcus Johnson","To Do","Fixed","","2025-11-10(Initial planning@2025-11-10T08:00:00.000Z)","","XL:10d(Initial sizing@2025-11-10T08:00:00.000Z)","","2025-10-18","",""
+d2e3f4a5-b6c7-4d8e-9f0a-1b2c3d4e5f6a,22,"Add PayPal checkout option",2025-11-12,M,P2,"Finance Team","Payment Gateway Integration","Priya Patel","To Do","Fixed","","2025-11-12(Initial planning@2025-11-12T08:00:00.000Z)","","M:2d(Initial sizing@2025-11-12T08:00:00.000Z)","","2025-10-18","",""
+e3f4a5b6-c7d8-4e9f-0a1b-2c3d4e5f6a7b,23,"Implement recurring subscription billing",2025-11-14,L,P1,"Finance Team","Payment Gateway Integration","Lisa Rodriguez","To Do","Fixed","","2025-11-14(Initial planning@2025-11-14T08:00:00.000Z)","","L:5d(Initial sizing@2025-11-14T08:00:00.000Z)","","2025-10-18","",""
+f4a5b6c7-d8e9-4f0a-1b2c-3d4e5f6a7b8c,24,"Create invoice generation system",2025-11-16,M,P2,"Finance Team","Payment Gateway Integration","Emma Williams","To Do","Fixed","","2025-11-16(Initial planning@2025-11-16T08:00:00.000Z)","","M:2d(Initial sizing@2025-11-16T08:00:00.000Z)","","2025-10-18","",""
+a5b6c7d8-e9f0-4a1b-2c3d-4e5f6a7b8c9d,25,"Set up payment webhook handlers",2025-11-18,M,P1,"Engineering Leadership","Payment Gateway Integration","David Kim","To Do","Fixed","","2025-11-18(Initial planning@2025-11-18T08:00:00.000Z)","","M:2d(Initial sizing@2025-11-18T08:00:00.000Z)","","2025-10-18","",""
+b6c7d8e9-f0a1-4b2c-3d4e-5f6a7b8c9d0e,26,"Design iOS app architecture",2025-11-15,L,P1,"Product Management","Mobile App Development","James Brown;Olivia Taylor","To Do","Fixed","","2025-11-15(Initial planning@2025-11-15T08:00:00.000Z)","","L:5d(Initial sizing@2025-11-15T08:00:00.000Z)","","2025-10-18","",""
+c7d8e9f0-a1b2-4c3d-4e5f-6a7b8c9d0e1f,27,"Design Android app architecture",2025-11-17,L,P1,"Product Management","Mobile App Development","Ahmed Hassan;Robert Zhang","To Do","Fixed","","2025-11-17(Initial planning@2025-11-17T08:00:00.000Z)","","L:5d(Initial sizing@2025-11-17T08:00:00.000Z)","","2025-10-18","",""
+d8e9f0a1-b2c3-4d4e-5f6a-7b8c9d0e1f2a,28,"Implement offline mode with local storage",2025-11-19,XL,P2,"Engineering Leadership","Mobile App Development","sarah","To Do","Fixed","","2025-11-19(Initial planning@2025-11-19T08:00:00.000Z)","","XL:10d(Initial sizing@2025-11-19T08:00:00.000Z)","","2025-10-18","",""
+e9f0a1b2-c3d4-4e5f-6a7b-8c9d0e1f2a3b,29,"Add biometric authentication",2025-11-21,M,P2,"IT Security","Mobile App Development","Marcus Johnson","To Do","Fixed","","2025-11-21(Initial planning@2025-11-21T08:00:00.000Z)","","M:2d(Initial sizing@2025-11-21T08:00:00.000Z)","","2025-10-18","",""
+f0a1b2c3-d4e5-4f6a-7b8c-9d0e1f2a3b4c,30,"Implement push notifications",2025-11-23,M,P2,"Product Management","Mobile App Development","Priya Patel","To Do","Fixed","","2025-11-23(Initial planning@2025-11-23T08:00:00.000Z)","","M:2d(Initial sizing@2025-11-23T08:00:00.000Z)","","2025-10-18","",""
+a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d,31,"Build data warehouse with Snowflake",2025-12-01,XXL,P1,"Engineering Leadership","Data Analytics Platform","Lisa Rodriguez;Emma Williams;David Kim","To Do","Fixed","","2025-12-01(Initial planning@2025-12-01T08:00:00.000Z)","","XXL:15d(Initial sizing@2025-12-01T08:00:00.000Z)","","2025-10-18","",""
+b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e,32,"Create ETL pipelines with Airflow",2025-12-03,XL,P1,"Engineering Leadership","Data Analytics Platform","Ahmed Hassan","To Do","Fixed","","2025-12-03(Initial planning@2025-12-03T08:00:00.000Z)","","XL:10d(Initial sizing@2025-12-03T08:00:00.000Z)","","2025-10-18","",""
+c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f,33,"Implement Tableau dashboards",2025-12-05,L,P2,"Product Management","Data Analytics Platform","James Brown","To Do","Fixed","","2025-12-05(Initial planning@2025-12-05T08:00:00.000Z)","","L:5d(Initial sizing@2025-12-05T08:00:00.000Z)","","2025-10-18","",""
+d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a,34,"Set up dbt for data transformations",2025-12-07,M,P2,"Engineering Leadership","Data Analytics Platform","Olivia Taylor","To Do","Fixed","","2025-12-07(Initial planning@2025-12-07T08:00:00.000Z)","","M:2d(Initial sizing@2025-12-07T08:00:00.000Z)","","2025-10-18","",""
+e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b,35,"Create real-time analytics with Kafka",2025-12-09,XL,P2,"Engineering Leadership","Data Analytics Platform","Robert Zhang","To Do","Fixed","","2025-12-09(Initial planning@2025-12-09T08:00:00.000Z)","","XL:10d(Initial sizing@2025-12-09T08:00:00.000Z)","","2025-10-18","",""
+f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c,36,"Migrate to GitHub Actions from Jenkins",2025-10-10,L,P1,"Engineering Leadership","CI/CD Pipeline Enhancement","Marcus Johnson","Done","Fixed","","2025-10-10(Initial planning@2025-10-10T08:00:00.000Z)","","L:5d(Initial sizing@2025-10-10T08:00:00.000Z)","","2025-10-18","",""
+a7b8c9d0-e1f2-4a3b-4c5d-6e7f8a9b0c1d,37,"Implement automated security scanning",2025-10-12,M,P1,"IT Security","CI/CD Pipeline Enhancement","David Kim","Done","Fixed","","2025-10-12(Initial planning@2025-10-12T08:00:00.000Z)","","M:2d(Initial sizing@2025-10-12T08:00:00.000Z)","","2025-10-18","",""
+b8c9d0e1-f2a3-4b4c-5d6e-7f8a9b0c1d2e,38,"Set up Docker multi-stage builds",2025-10-14,M,P2,"Engineering Leadership","CI/CD Pipeline Enhancement","Priya Patel","In Progress","Fixed","","2025-10-14(Initial planning@2025-10-14T08:00:00.000Z)","","M:2d(Initial sizing@2025-10-14T08:00:00.000Z)","","2025-10-18","",""
+c9d0e1f2-a3b4-4c5d-6e7f-8a9b0c1d2e3f,39,"Implement blue-green deployment",2025-10-16,L,P1,"Engineering Leadership","CI/CD Pipeline Enhancement","Ahmed Hassan","In Progress","Fixed","","2025-10-16(Initial planning@2025-10-16T08:00:00.000Z)","","L:5d(Initial sizing@2025-10-16T08:00:00.000Z)","","2025-10-18","",""
+d0e1f2a3-b4c5-4d6e-7f8a-9b0c1d2e3f4a,40,"Add automated rollback on failures",2025-10-18,M,P1,"Engineering Leadership","CI/CD Pipeline Enhancement","Lisa Rodriguez","To Do","Fixed","","2025-10-18(Initial planning@2025-10-18T08:00:00.000Z)","","M:2d(Initial sizing@2025-10-18T08:00:00.000Z)","","2025-10-18","",""
+e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b,41,"Refactor authentication module",2025-10-25,L,P2,"Engineering Leadership","Technical Debt Reduction","Emma Williams;James Brown","To Do","Fixed","","2025-10-25(Initial planning@2025-10-25T08:00:00.000Z)","","L:5d(Initial sizing@2025-10-25T08:00:00.000Z)","","2025-10-18","",""
+f2a3b4c5-d6e7-4f8a-9b0c-1d2e3f4a5b6c,42,"Remove deprecated API endpoints",2025-10-27,M,P3,"Engineering Leadership","Technical Debt Reduction","Olivia Taylor","To Do","Fixed","","2025-10-27(Initial planning@2025-10-27T08:00:00.000Z)","","M:2d(Initial sizing@2025-10-27T08:00:00.000Z)","","2025-10-18","",""
+a3b4c5d6-e7f8-4a9b-0c1d-2e3f4a5b6c7d,43,"Upgrade Node.js dependencies",2025-10-29,M,P2,"Engineering Leadership","Technical Debt Reduction","Robert Zhang","To Do","Fixed","","2025-10-29(Initial planning@2025-10-29T08:00:00.000Z)","","M:2d(Initial sizing@2025-10-29T08:00:00.000Z)","","2025-10-18","",""
+b4c5d6e7-f8a9-4b0c-1d2e-3f4a5b6c7d8e,44,"Consolidate duplicate utility functions",2025-10-31,S,P3,"Engineering Leadership","Technical Debt Reduction","sarah","To Do","Fixed","","2025-10-31(Initial planning@2025-10-31T08:00:00.000Z)","","S:1d(Initial sizing@2025-10-31T08:00:00.000Z)","","2025-10-18","",""
+c5d6e7f8-a9b0-4c1d-2e3f-4a5b6c7d8e9f,45,"Add TypeScript to legacy JavaScript code",2025-11-02,XXL,P3,"Engineering Leadership","Technical Debt Reduction","Marcus Johnson;David Kim","To Do","Fixed","","2025-11-02(Initial planning@2025-11-02T08:00:00.000Z)","","XXL:15d(Initial sizing@2025-11-02T08:00:00.000Z)","","2025-10-18","",""
+d6e7f8a9-b0c1-4d2e-3f4a-5b6c7d8e9f0a,46,"Optimize database query performance",2025-11-20,XL,P1,"Engineering Leadership","Performance Optimization","Priya Patel;Ahmed Hassan","To Do","Fixed","","2025-11-20(Initial planning@2025-11-20T08:00:00.000Z)","","XL:10d(Initial sizing@2025-11-20T08:00:00.000Z)","","2025-10-18","",""
+e7f8a9b0-c1d2-4e3f-4a5b-6c7d8e9f0a1b,47,"Implement lazy loading for images",2025-11-22,S,P2,"Engineering Leadership","Performance Optimization","Lisa Rodriguez","To Do","Fixed","","2025-11-22(Initial planning@2025-11-22T08:00:00.000Z)","","S:1d(Initial sizing@2025-11-22T08:00:00.000Z)","","2025-10-18","",""
+f8a9b0c1-d2e3-4f4a-5b6c-7d8e9f0a1b2c,48,"Add CDN for static assets",2025-11-24,M,P1,"Engineering Leadership","Performance Optimization","Emma Williams","To Do","Fixed","","2025-11-24(Initial planning@2025-11-24T08:00:00.000Z)","","M:2d(Initial sizing@2025-11-24T08:00:00.000Z)","","2025-10-18","",""
+a9b0c1d2-e3f4-4a5b-6c7d-8e9f0a1b2c3d,49,"Implement code splitting",2025-11-26,M,P2,"Engineering Leadership","Performance Optimization","James Brown","To Do","Fixed","","2025-11-26(Initial planning@2025-11-26T08:00:00.000Z)","","M:2d(Initial sizing@2025-11-26T08:00:00.000Z)","","2025-10-18","",""
+b0c1d2e3-f4a5-4b6c-7d8e-9f0a1b2c3d4e,50,"Optimize React component rendering",2025-11-28,L,P2,"Engineering Leadership","Performance Optimization","Olivia Taylor","To Do","Fixed","","2025-11-28(Initial planning@2025-11-28T08:00:00.000Z)","","L:5d(Initial sizing@2025-11-28T08:00:00.000Z)","","2025-10-18","",""
+c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f,51,"GDPR compliance audit and updates",2025-11-05,XL,P1,"Legal & Compliance","Compliance & Audit","Robert Zhang","To Do","Fixed","","2025-11-05(Initial planning@2025-11-05T08:00:00.000Z)","","XL:10d(Initial sizing@2025-11-05T08:00:00.000Z)","","2025-10-18","",""
+d2e3f4a5-b6c7-4d8e-9f0a-1b2c3d4e5f6a,52,"Implement data retention policies",2025-11-07,M,P1,"Legal & Compliance","Compliance & Audit","Marcus Johnson","To Do","Fixed","","2025-11-07(Initial planning@2025-11-07T08:00:00.000Z)","","M:2d(Initial sizing@2025-11-07T08:00:00.000Z)","","2025-10-18","",""
+e3f4a5b6-c7d8-4e9f-0a1b-2c3d4e5f6a7b,53,"Create audit trail system",2025-11-09,L,P1,"Legal & Compliance","Compliance & Audit","David Kim","To Do","Fixed","","2025-11-09(Initial planning@2025-11-09T08:00:00.000Z)","","L:5d(Initial sizing@2025-11-09T08:00:00.000Z)","","2025-10-18","",""
+f4a5b6c7-d8e9-4f0a-1b2c-3d4e5f6a7b8c,54,"SOC 2 Type II certification prep",2025-11-11,XXL,P1,"Legal & Compliance","Compliance & Audit","Priya Patel;Ahmed Hassan","To Do","Fixed","","2025-11-11(Initial planning@2025-11-11T08:00:00.000Z)","","XXL:15d(Initial sizing@2025-11-11T08:00:00.000Z)","","2025-10-18","",""
+a5b6c7d8-e9f0-4a1b-2c3d-4e5f6a7b8c9d,55,"Cookie consent management system",2025-11-13,M,P2,"Legal & Compliance","Compliance & Audit","Lisa Rodriguez","To Do","Fixed","","2025-11-13(Initial planning@2025-11-13T08:00:00.000Z)","","M:2d(Initial sizing@2025-11-13T08:00:00.000Z)","","2025-10-18","",""
+b6c7d8e9-f0a1-4b2c-3d4e-5f6a7b8c9d0e,56,"Build recommendation engine",2025-12-15,XXL,P2,"Product Management","Machine Learning Integration","Emma Williams;James Brown;Olivia Taylor","To Do","Fixed","","2025-12-15(Initial planning@2025-12-15T08:00:00.000Z)","","XXL:15d(Initial sizing@2025-12-15T08:00:00.000Z)","","2025-10-18","",""
+c7d8e9f0-a1b2-4c3d-4e5f-6a7b8c9d0e1f,57,"Implement sentiment analysis",2025-12-17,L,P3,"Customer Success","Machine Learning Integration","Robert Zhang","To Do","Fixed","","2025-12-17(Initial planning@2025-12-17T08:00:00.000Z)","","L:5d(Initial sizing@2025-12-17T08:00:00.000Z)","","2025-10-18","",""
+d8e9f0a1-b2c3-4d4e-5f6a-7b8c9d0e1f2a,58,"Create anomaly detection system",2025-12-19,XL,P2,"Engineering Leadership","Machine Learning Integration","sarah","To Do","Fixed","","2025-12-19(Initial planning@2025-12-19T08:00:00.000Z)","","XL:10d(Initial sizing@2025-12-19T08:00:00.000Z)","","2025-10-18","",""
+e9f0a1b2-c3d4-4e5f-6a7b-8c9d0e1f2a3b,59,"Add image recognition for support",2025-12-21,L,P3,"Customer Success","Machine Learning Integration","Marcus Johnson","To Do","Fixed","","2025-12-21(Initial planning@2025-12-21T08:00:00.000Z)","","L:5d(Initial sizing@2025-12-21T08:00:00.000Z)","","2025-10-18","",""
+f0a1b2c3-d4e5-4f6a-7b8c-9d0e1f2a3b4c,60,"Chatbot with NLP integration",2025-12-23,XL,P2,"Customer Success","Machine Learning Integration","David Kim","To Do","Fixed","","2025-12-23(Initial planning@2025-12-23T08:00:00.000Z)","","XL:10d(Initial sizing@2025-12-23T08:00:00.000Z)","","2025-10-18","",""
+a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d,61,"Terraform infrastructure as code",2025-10-18,L,P1,"Engineering Leadership","Infrastructure Automation","Priya Patel;Ahmed Hassan","Done","Fixed","","2025-10-18(Initial planning@2025-10-18T08:00:00.000Z)","","L:5d(Initial sizing@2025-10-18T08:00:00.000Z)","","2025-10-18","",""
+b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e,62,"Implement GitOps with ArgoCD",2025-10-20,M,P1,"Engineering Leadership","Infrastructure Automation","Lisa Rodriguez","In Progress","Fixed","","2025-10-20(Initial planning@2025-10-20T08:00:00.000Z)","","M:2d(Initial sizing@2025-10-20T08:00:00.000Z)","","2025-10-18","",""
+c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f,63,"Auto-scaling configuration",2025-10-22,M,P1,"Engineering Leadership","Infrastructure Automation","Emma Williams","In Progress","Fixed","","2025-10-22(Initial planning@2025-10-22T08:00:00.000Z)","","M:2d(Initial sizing@2025-10-22T08:00:00.000Z)","","2025-10-18","",""
+d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a,64,"Implement disaster recovery plan",2025-10-24,XL,P1,"Engineering Leadership","Infrastructure Automation","James Brown;Robert Zhang","To Do","Fixed","","2025-10-24(Initial planning@2025-10-24T08:00:00.000Z)","","XL:10d(Initial sizing@2025-10-24T08:00:00.000Z)","","2025-10-18","",""
+e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b,65,"Cost optimization automation",2025-10-26,M,P2,"Finance Team","Infrastructure Automation","Olivia Taylor","To Do","Fixed","","2025-10-26(Initial planning@2025-10-26T08:00:00.000Z)","","M:2d(Initial sizing@2025-10-26T08:00:00.000Z)","","2025-10-18","",""
+f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c,66,"API documentation migration to OpenAPI",2025-11-01,L,P2,"Engineering Leadership","Documentation Overhaul","Marcus Johnson","To Do","Fixed","","2025-11-01(Initial planning@2025-11-01T08:00:00.000Z)","","L:5d(Initial sizing@2025-11-01T08:00:00.000Z)","","2025-10-18","",""
+a7b8c9d0-e1f2-4a3b-4c5d-6e7f8a9b0c1d,67,"Create architecture decision records",2025-11-03,M,P2,"Engineering Leadership","Documentation Overhaul","David Kim","To Do","Fixed","","2025-11-03(Initial planning@2025-11-03T08:00:00.000Z)","","M:2d(Initial sizing@2025-11-03T08:00:00.000Z)","","2025-10-18","",""
+b8c9d0e1-f2a3-4b4c-5d6e-7f8a9b0c1d2e,68,"Write onboarding documentation",2025-11-05,L,P2,"Human Resources","Documentation Overhaul","Priya Patel","To Do","Fixed","","2025-11-05(Initial planning@2025-11-05T08:00:00.000Z)","","L:5d(Initial sizing@2025-11-05T08:00:00.000Z)","","2025-10-18","",""
+c9d0e1f2-a3b4-4c5d-6e7f-8a9b0c1d2e3f,69,"Document deployment runbooks",2025-11-07,M,P1,"Engineering Leadership","Documentation Overhaul","Ahmed Hassan","To Do","Fixed","","2025-11-07(Initial planning@2025-11-07T08:00:00.000Z)","","M:2d(Initial sizing@2025-11-07T08:00:00.000Z)","","2025-10-18","",""
+d0e1f2a3-b4c5-4d6e-7f8a-9b0c1d2e3f4a,70,"Create troubleshooting guides",2025-11-09,M,P2,"Engineering Leadership","Documentation Overhaul","Lisa Rodriguez","To Do","Fixed","","2025-11-09(Initial planning@2025-11-09T08:00:00.000Z)","","M:2d(Initial sizing@2025-11-09T08:00:00.000Z)","","2025-10-18","",""
+e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b,71,"Migrate from Mocha to Jest",2025-10-30,L,P2,"Engineering Leadership","Testing Framework Upgrade","Emma Williams;James Brown","To Do","Fixed","","2025-10-30(Initial planning@2025-10-30T08:00:00.000Z)","","L:5d(Initial sizing@2025-10-30T08:00:00.000Z)","","2025-10-18","",""
+f2a3b4c5-d6e7-4f8a-9b0c-1d2e3f4a5b6c,72,"Implement contract testing",2025-11-01,M,P2,"Engineering Leadership","Testing Framework Upgrade","Olivia Taylor","To Do","Fixed","","2025-11-01(Initial planning@2025-11-01T08:00:00.000Z)","","M:2d(Initial sizing@2025-11-01T08:00:00.000Z)","","2025-10-18","",""
+a3b4c5d6-e7f8-4a9b-0c1d-2e3f4a5b6c7d,73,"Set up visual regression testing",2025-11-03,M,P3,"Product Management","Testing Framework Upgrade","Robert Zhang","To Do","Fixed","","2025-11-03(Initial planning@2025-11-03T08:00:00.000Z)","","M:2d(Initial sizing@2025-11-03T08:00:00.000Z)","","2025-10-18","",""
+b4c5d6e7-f8a9-4b0c-1d2e-3f4a5b6c7d8e,74,"Add E2E tests with Playwright",2025-11-05,L,P2,"Engineering Leadership","Testing Framework Upgrade","sarah","To Do","Fixed","","2025-11-05(Initial planning@2025-11-05T08:00:00.000Z)","","L:5d(Initial sizing@2025-11-05T08:00:00.000Z)","","2025-10-18","",""
+c5d6e7f8-a9b0-4c1d-2e3f-4a5b6c7d8e9f,75,"Implement mutation testing",2025-11-07,M,P3,"Engineering Leadership","Testing Framework Upgrade","Marcus Johnson","To Do","Fixed","","2025-11-07(Initial planning@2025-11-07T08:00:00.000Z)","","M:2d(Initial sizing@2025-11-07T08:00:00.000Z)","","2025-10-18","",""
+d6e7f8a9-b0c1-4d2e-3f4a-5b6c7d8e9f0a,76,"Sales pipeline analytics dashboard",2025-10-22,M,P2,"Sales Operations","Customer Portal Redesign","David Kim","Done","Fixed","[2025-10-24T14:30:00.000Z] Waiting for sales data export from CRM","2025-10-22(Initial planning@2025-10-22T08:00:00.000Z)","","M:2d(Initial sizing@2025-10-22T08:00:00.000Z)","","2025-10-18","",""
+e7f8a9b0-c1d2-4e3f-4a5b-6c7d8e9f0a1b,77,"Customer health score system",2025-10-24,L,P1,"Customer Success","Data Analytics Platform","Priya Patel","Paused","Fixed","","","L:5d(Initial sizing@2025-10-24T08:00:00.000Z)","","Implement predictive customer health scoring based on usage patterns","2025-10-18","",""
+f8a9b0c1-d2e3-4f4a-5b6c-7d8e9f0a1b2c,78,"Marketing campaign attribution",2025-10-26,M,P2,"Sales Operations","Technical Debt Reduction","Ahmed Hassan","To Do","Fixed","","2025-10-26(Initial planning@2025-10-26T08:00:00.000Z)","","M:2d(Initial sizing@2025-10-26T08:00:00.000Z)","","2025-10-18","",""
+a9b0c1d2-e3f4-4a5b-6c7d-8e9f0a1b2c3d,79,"Partner API integration framework",2025-10-28,XL,P1,"External Partners","API Modernization","Lisa Rodriguez;Emma Williams","To Do","Fixed","","2025-10-28(Initial planning@2025-10-28T08:00:00.000Z)","","XL:10d(Initial sizing@2025-10-28T08:00:00.000Z)","","2025-10-18","",""
+b0c1d2e3-f4a5-4b6c-7d8e-9f0a1b2c3d4e,80,"Competitive intelligence dashboard",2025-10-30,M,P3,"Product Management","Data Analytics Platform","James Brown","To Do","Fixed","","","M:2d(Initial sizing@2025-10-30T08:00:00.000Z)","","Automated competitor tracking dashboard with pricing and feature analysis","2025-10-18","",""
+126c77d7-29c3-4eb5-ab32-06f9234aa4a5,81,"Testing task addition with first name",2025-10-19,M,P2,"General","Cloud Migration Phase 1","sarah","To Do","Fixed","","","","","","2025-10-18","",""
+2423b85e-2b29-4040-b10c-eb2aa100dd86,82,"Testing task with addtaskpriya",2025-10-19,M,P2,"Engineering Leadership","Testing init addition","Priya Patel","To Do","Fixed","","","","","","2025-10-18","",""
