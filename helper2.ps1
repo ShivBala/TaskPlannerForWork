@@ -557,6 +557,106 @@ function Add-TaskForPerson {
     }
 }
 
+function Add-QuickTask {
+    <#
+    .SYNOPSIS
+        Adds a quick task with minimal prompts (description + stakeholder only)
+    .DESCRIPTION
+        Quick task creation with smart defaults:
+        - Assigned Person: Unassigned (empty array)
+        - Initiative: General
+        - Status: To Do
+        - Start Date: Tomorrow
+        - Size: M (Medium)
+        - Priority: P2
+    #>
+    
+    Write-Host "`n⚡ Quick Task (minimal setup)" -ForegroundColor Cyan
+    
+    # Description (required)
+    Write-Host "`nDescription: " -NoNewline -ForegroundColor Yellow
+    $description = Read-Host
+    if ([string]::IsNullOrWhiteSpace($description)) {
+        Write-Host "❌ Description is required" -ForegroundColor Red
+        return
+    }
+    
+    # Stakeholder selection (required)
+    Ensure-ConfigCurrent  # Auto-reload if CSV was modified externally
+    $stakeholder = "General"  # Default
+    if ($global:V9Config.Stakeholders -and $global:V9Config.Stakeholders.Count -gt 0) {
+        Write-Host "`nStakeholder:" -ForegroundColor Yellow
+        for ($i = 0; $i -lt $global:V9Config.Stakeholders.Count; $i++) {
+            Write-Host "  $($i + 1). $($global:V9Config.Stakeholders[$i])" -ForegroundColor White
+        }
+        Write-Host "Choose (1-$($global:V9Config.Stakeholders.Count), or press Enter for General): " -NoNewline -ForegroundColor Yellow
+        $stakeholderChoice = Read-Host
+        if (-not [string]::IsNullOrWhiteSpace($stakeholderChoice) -and $stakeholderChoice -match '^\d+$') {
+            $index = [int]$stakeholderChoice - 1
+            if ($index -ge 0 -and $index -lt $global:V9Config.Stakeholders.Count) {
+                $stakeholder = $global:V9Config.Stakeholders[$index]
+            }
+        }
+    }
+    
+    # All defaults (no prompts)
+    $status = "To Do"
+    $startDate = Parse-DateAlias -DateInput "tomorrow"
+    $size = "M"
+    $priority = "P2"
+    $initiative = "General"
+    $assignedTeam = @()  # Unassigned - empty array for filtering in HTML
+    
+    # Generate new ID
+    $maxId = ($global:V9Config.Tickets | ForEach-Object { [int]$_.ID } | Measure-Object -Maximum).Maximum
+    $newId = $maxId + 1
+    
+    # Generate UUID
+    $uuid = [guid]::NewGuid().ToString()
+    
+    # Create new ticket
+    $newTicket = [PSCustomObject]@{
+        ID = $newId
+        Description = $description
+        StartDate = $startDate
+        Size = $size
+        Priority = $priority
+        AssignedTeam = $assignedTeam  # Unassigned
+        Status = $status
+        TaskType = "Fixed"
+        PauseComments = ""
+        StartDateHistory = ""
+        EndDateHistory = ""
+        SizeHistory = ""
+        CustomEndDate = ""
+        DetailsDescription = ""
+        DetailsPositives = ""
+        DetailsNegatives = ""
+    }
+    
+    # Add V10 fields
+    $isV10 = $global:V9Config.Tickets.Count -gt 0 -and 
+             ($global:V9Config.Tickets[0].PSObject.Properties.Name -contains 'UUID')
+    
+    if ($isV10 -or $global:V9Config.Stakeholders.Count -gt 0 -or $global:V9Config.Initiatives.Count -gt 0) {
+        $newTicket | Add-Member -NotePropertyName 'UUID' -NotePropertyValue $uuid
+        $newTicket | Add-Member -NotePropertyName 'Stakeholder' -NotePropertyValue $stakeholder
+        $newTicket | Add-Member -NotePropertyName 'Initiative' -NotePropertyValue $initiative
+    }
+    
+    # Add to config
+    $global:V9Config.Tickets += $newTicket
+    
+    # Save
+    if (Save-V9Config) {
+        Write-Host "`n✅ Quick task #$newId added!" -ForegroundColor Green
+        Write-Host "   $description" -ForegroundColor Cyan
+        Write-Host "   Status: $status | Size: $size ($((Get-TaskSize -SizeKey $size).Days) days) | Priority: $priority | Start: $startDate" -ForegroundColor Gray
+        Write-Host "   Stakeholder: $stakeholder | Initiative: $initiative | Assigned: Unassigned" -ForegroundColor Gray
+        Write-Host "   UUID: $uuid" -ForegroundColor DarkGray
+    }
+}
+
 function Modify-TaskForPerson {
     <#
     .SYNOPSIS
@@ -2108,6 +2208,12 @@ function Invoke-Command {
         return
     }
     
+    # Quick task (minimal prompts)
+    if ($inputText -match "^q(uick)?t(ask)?$") {
+        Add-QuickTask
+        return
+    }
+    
     # V10: Initiative management
     if ($inputText -match "^initiative$|^initiatives$") {
         Manage-Initiatives
@@ -2357,6 +2463,9 @@ function Show-Help {
     Write-Host "Task Management:" -ForegroundColor Yellow
     Write-Host "  siva|vipul|peter|sameet|sharanya|divya" -ForegroundColor White
     Write-Host "    → Add or modify tasks for a person (V10: prompts for Stakeholder & Initiative)" -ForegroundColor Gray
+    Write-Host "  qt | quick | quicktask" -ForegroundColor White
+    Write-Host "    → Quick task (minimal prompts: description + stakeholder, auto-defaults for rest)" -ForegroundColor Gray
+    Write-Host "    → Defaults: Unassigned, General, To Do, tomorrow, M size, P2 priority" -ForegroundColor DarkGray
     Write-Host ""
     Write-Host "V10 Management:" -ForegroundColor Yellow
     Write-Host "  initiative | initiatives" -ForegroundColor White
