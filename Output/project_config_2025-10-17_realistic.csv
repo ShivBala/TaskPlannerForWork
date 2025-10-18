@@ -1,13 +1,13 @@
 SECTION,METADATA
+Export Date,2025-10-18T15:43:40.845Z
 Version,10
+Description,Project Configuration
 
 SECTION,SETTINGS
-Use Common Start Date,false
 Common Start Date,2025-10-21
 Current Ticket ID,81
 
 SECTION,TASK_SIZES
-S,Small,1,false
 M,Medium,2,false
 L,Large,5,false
 XL,Extra Large,10,false
@@ -55,6 +55,7 @@ Name,Creation Date,Start Date
 "Infrastructure Automation","2025-09-28","2025-10-18"
 "Documentation Overhaul","2025-10-07","2025-11-01"
 "Testing Framework Upgrade","2025-10-09","2025-10-30"
+"Testing init addition","2025-10-18",""
 
 SECTION,TICKETS
 UUID,ID,Description,Start Date,Size,Priority,Stakeholder,Initiative,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Created Date,Details Description,Details Positives,Details Negatives
@@ -138,5 +139,5 @@ UUID,ID,Description,Start Date,Size,Priority,Stakeholder,Initiative,Assigned Tea
 "f8a9b0c1-d2e3-4f4a-5b6c-7d8e9f0a1b2c",78,"Marketing campaign attribution",2025-10-26,M,P2,"Marketing","Data Analytics Platform","Ahmed Hassan","To Do","Fixed","","2025-10-26(Initial planning@2025-10-26T08:00:00.000Z)","","M:2d(Initial sizing@2025-10-26T08:00:00.000Z)","","2025-10-18","","",""
 "a9b0c1d2-e3f4-4a5b-6c7d-8e9f0a1b2c3d",79,"Partner API integration framework",2025-10-28,XL,P1,"External Partners","API Modernization","Lisa Rodriguez;Emma Williams","To Do","Fixed","","2025-10-28(Initial planning@2025-10-28T08:00:00.000Z)","","XL:10d(Initial sizing@2025-10-28T08:00:00.000Z)","","2025-10-18","","",""
 "b0c1d2e3-f4a5-4b6c-7d8e-9f0a1b2c3d4e",80,"Competitive intelligence dashboard",2025-10-30,M,P3,"Product Management","Data Analytics Platform","James Brown","Closed","Fixed","2025-10-30(Initial planning@2025-10-30T08:00:00.000Z)","","M:2d(Initial sizing@2025-10-30T08:00:00.000Z)","","Automated competitor tracking dashboard with pricing and feature analysis","2025-10-18","","",""
-"126c77d7-29c3-4eb5-ab32-06f9234aa4a5",81,"Testing task addition with first name",2025-10-19,M,P2,"General","Cloud Migration Phase 1","Sarah Chen","To Do","Fixed","","","","","","2025-10-18","","",""
+"126c77d7-29c3-4eb5-ab32-06f9234aa4a5",81,"Testing task addition with first name",2025-10-19,M,P1,"General","Cloud Migration Phase 1","Sarah Chen","To Do","Fixed","","","","","","2025-10-18","","",""
 "2423b85e-2b29-4040-b10c-eb2aa100dd86",82,"Testing task with addtaskpriya",2025-10-19,M,P2,"Engineering Leadership","General","Priya Patel","To Do","Fixed","","","","","","2025-10-18","","",""

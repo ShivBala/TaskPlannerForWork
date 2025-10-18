@@ -579,11 +579,21 @@ function Modify-TaskForPerson {
                 Write-Host "✅ Status updated to: $newStatus" -ForegroundColor Green
             }
             "2" {
-                Write-Host "`nNew priority (P1-P9, current: $($selectedTask.Priority)): " -NoNewline -ForegroundColor Yellow
-                $newPriority = Read-Host
-                if (-not [string]::IsNullOrWhiteSpace($newPriority)) {
+                Write-Host "`nPriority (current: $($selectedTask.Priority)):" -ForegroundColor Yellow
+                Write-Host "  1. P1 (Highest)" -ForegroundColor White
+                Write-Host "  2. P2 (High)" -ForegroundColor White
+                Write-Host "  3. P3 (Medium)" -ForegroundColor White
+                Write-Host "  4. P4 (Low)" -ForegroundColor White
+                Write-Host "  5. P5 (Lowest)" -ForegroundColor White
+                Write-Host "Choose (1-5, or press Enter to keep current): " -NoNewline -ForegroundColor Yellow
+                $priorityChoice = Read-Host
+                
+                if (-not [string]::IsNullOrWhiteSpace($priorityChoice) -and $priorityChoice -match '^[1-5]$') {
+                    $newPriority = "P$priorityChoice"
                     $selectedTask.Priority = $newPriority
                     Write-Host "✅ Priority updated to: $newPriority" -ForegroundColor Green
+                } elseif (-not [string]::IsNullOrWhiteSpace($priorityChoice)) {
+                    Write-Host "❌ Invalid choice. Priority not changed." -ForegroundColor Red
                 }
             }
             "3" {
@@ -1909,7 +1919,18 @@ function Resolve-UserIntent {
         $remaining = $Matches[8]
     }
     
-    # Step 4: Fuzzy match remaining string
+    # Special handling for initiatives: they don't need entity matching
+    # If we have action + initiative but no remaining string, handle directly
+    if ($targetType -eq 'initiative' -and [string]::IsNullOrWhiteSpace($remaining)) {
+        return @{
+            Action = $action
+            TargetType = 'initiative'
+            Entity = $null
+            EntityType = $null
+        }
+    }
+    
+    # Step 4: Fuzzy match remaining string (only for tasks or if there's a remaining string)
     $matches = Get-FuzzyMatches -SearchTerm $remaining
     
     # Step 5: Determine ambiguity type and handle
@@ -2075,7 +2096,13 @@ function Invoke-Command {
     
     if ($null -ne $intent) {
         # Successfully resolved intent - route to appropriate worker
-        Write-Host "`n✨ Resolved: $($intent.Action) $($intent.TargetType) for $($intent.EntityType): $($intent.Entity.Name)" -ForegroundColor Green
+        if ($intent.TargetType -eq 'initiative') {
+            # Initiative doesn't have entity, show simpler message
+            Write-Host "`n✨ Resolved: $($intent.Action) $($intent.TargetType)" -ForegroundColor Green
+        } else {
+            # Task has entity (person/stakeholder)
+            Write-Host "`n✨ Resolved: $($intent.Action) $($intent.TargetType) for $($intent.EntityType): $($intent.Entity.Name)" -ForegroundColor Green
+        }
         
         if ($intent.TargetType -eq 'task') {
             if ($intent.EntityType -eq 'Person') {
@@ -2094,10 +2121,108 @@ function Invoke-Command {
             }
         }
         elseif ($intent.TargetType -eq 'initiative') {
-            # Initiative management
-            Write-Host "⚠️  Initiative add/modify via CLI not yet implemented" -ForegroundColor Yellow
-            Write-Host "   Opening initiative manager..." -ForegroundColor Cyan
-            Manage-Initiatives
+            # Initiative management (no entity/stakeholder needed)
+            if ($intent.Action -eq 'add') {
+                # Add initiative - prompt for name
+                Write-Host "`n➕ Adding new initiative" -ForegroundColor Cyan
+                Write-Host "`nEnter initiative name: " -NoNewline -ForegroundColor Yellow
+                $initName = Read-Host
+                
+                if ([string]::IsNullOrWhiteSpace($initName)) {
+                    Write-Host "❌ Initiative name cannot be empty" -ForegroundColor Red
+                } else {
+                    Add-Initiative -Name $initName
+                }
+            } else {
+                # Modify initiative - show list and let user pick
+                Write-Host "`n📝 Modifying initiative" -ForegroundColor Cyan
+                
+                if (-not $global:V9Config.Initiatives -or $global:V9Config.Initiatives.Count -eq 0) {
+                    Write-Host "❌ No initiatives to modify" -ForegroundColor Red
+                    return
+                }
+                
+                # List initiatives
+                Write-Host "`n📊 Current Initiatives:" -ForegroundColor Cyan
+                for ($i = 0; $i -lt $global:V9Config.Initiatives.Count; $i++) {
+                    $init = $global:V9Config.Initiatives[$i]
+                    $taskCount = ($global:V9Config.Tickets | Where-Object { $_.Initiative -eq $init.Name }).Count
+                    $startInfo = if ($init.StartDate) { "starts: $($init.StartDate)" } else { "no start date" }
+                    Write-Host "  $($i + 1). $($init.Name) ($taskCount tasks, $startInfo)" -ForegroundColor White
+                }
+                Write-Host "`nChoose initiative (1-$($global:V9Config.Initiatives.Count), or press Enter to cancel): " -NoNewline -ForegroundColor Yellow
+                $selection = Read-Host
+                
+                if ([string]::IsNullOrWhiteSpace($selection)) {
+                    Write-Host "❌ Cancelled" -ForegroundColor Yellow
+                    return
+                }
+                
+                if ($selection -match '^\d+$') {
+                    $index = [int]$selection - 1
+                    if ($index -ge 0 -and $index -lt $global:V9Config.Initiatives.Count) {
+                        $initiative = $global:V9Config.Initiatives[$index]
+                        
+                        Write-Host "`n📝 Modifying: $($initiative.Name)" -ForegroundColor Cyan
+                        Write-Host "  [1] Change name" -ForegroundColor White
+                        Write-Host "  [2] Set start date" -ForegroundColor White
+                        Write-Host "  [x] Cancel" -ForegroundColor Gray
+                        Write-Host "`nChoose (1/2/x): " -NoNewline -ForegroundColor Yellow
+                        $modChoice = Read-Host
+                        
+                        switch ($modChoice) {
+                            "1" {
+                                Write-Host "`nEnter new name: " -NoNewline -ForegroundColor Yellow
+                                $newName = Read-Host
+                                if (-not [string]::IsNullOrWhiteSpace($newName)) {
+                                    # Check if name already exists
+                                    if ($global:V9Config.Initiatives | Where-Object { $_.Name -eq $newName -and $_.Name -ne $initiative.Name }) {
+                                        Write-Host "❌ Initiative '$newName' already exists" -ForegroundColor Red
+                                        return
+                                    }
+                                    
+                                    $oldName = $initiative.Name
+                                    $initiative.Name = $newName
+                                    
+                                    # Update all tasks with this initiative
+                                    foreach ($ticket in $global:V9Config.Tickets) {
+                                        if ($ticket.Initiative -eq $oldName) {
+                                            $ticket.Initiative = $newName
+                                        }
+                                    }
+                                    
+                                    if (Save-V9Config) {
+                                        Write-Host "✅ Initiative renamed from '$oldName' to '$newName'!" -ForegroundColor Green
+                                    }
+                                } else {
+                                    Write-Host "❌ Name cannot be empty" -ForegroundColor Red
+                                }
+                            }
+                            "2" {
+                                Write-Host "`nEnter start date (yyyy-MM-dd or 'today'): " -NoNewline -ForegroundColor Yellow
+                                $dateInput = Read-Host
+                                if (-not [string]::IsNullOrWhiteSpace($dateInput)) {
+                                    $startDate = if ($dateInput -eq 'today') { Get-Date -Format 'yyyy-MM-dd' } else { $dateInput }
+                                    $initiative.StartDate = $startDate
+                                    
+                                    if (Save-V9Config) {
+                                        Write-Host "✅ Start date set to: $startDate" -ForegroundColor Green
+                                    }
+                                } else {
+                                    Write-Host "❌ Date cannot be empty" -ForegroundColor Red
+                                }
+                            }
+                            default {
+                                Write-Host "❌ Cancelled" -ForegroundColor Yellow
+                            }
+                        }
+                    } else {
+                        Write-Host "❌ Invalid selection" -ForegroundColor Red
+                    }
+                } else {
+                    Write-Host "❌ Invalid selection" -ForegroundColor Red
+                }
+            }
         }
         return
     }
