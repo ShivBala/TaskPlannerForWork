@@ -649,9 +649,13 @@ function Add-QuickTask {
     
     # Save
     if (Save-V9Config) {
+        # Get size days from config
+        $sizeInfo = $global:V9Config.TaskSizes | Where-Object { $_.Key -eq $size } | Select-Object -First 1
+        $sizeDays = if ($sizeInfo) { $sizeInfo.Days } else { "?" }
+        
         Write-Host "`n✅ Quick task #$newId added!" -ForegroundColor Green
         Write-Host "   $description" -ForegroundColor Cyan
-        Write-Host "   Status: $status | Size: $size ($((Get-TaskSize -SizeKey $size).Days) days) | Priority: $priority | Start: $startDate" -ForegroundColor Gray
+        Write-Host "   Status: $status | Size: $size ($sizeDays days) | Priority: $priority | Start: $startDate" -ForegroundColor Gray
         Write-Host "   Stakeholder: $stakeholder | Initiative: $initiative | Assigned: Unassigned" -ForegroundColor Gray
         Write-Host "   UUID: $uuid" -ForegroundColor DarkGray
     }
