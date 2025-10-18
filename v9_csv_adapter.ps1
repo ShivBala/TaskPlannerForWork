@@ -390,6 +390,7 @@ function Read-V9ConfigFile {
                             EndDateHistory = $ticket.'End Date History'
                             SizeHistory = $ticket.'Size History'
                             CustomEndDate = $ticket.'Custom End Date'
+                            CreatedDate = if ($ticket.'Created Date') { $ticket.'Created Date' } else { (Get-Date -Format 'yyyy-MM-dd') }
                             DetailsDescription = $ticket.'Details: Description'
                             DetailsPositives = $ticket.'Details: Positives'
                             DetailsNegatives = $ticket.'Details: Negatives'
@@ -547,9 +548,9 @@ function Write-V9ConfigFile {
         
         [void]$csvContent.AppendLine("SECTION,TICKETS")
         if ($isV10) {
-            [void]$csvContent.AppendLine("UUID,ID,Description,Start Date,Size,Priority,Stakeholder,Initiative,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Details Description,Details Positives,Details Negatives")
+            [void]$csvContent.AppendLine("UUID,ID,Description,Start Date,Size,Priority,Stakeholder,Initiative,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Created Date,Details Description,Details Positives,Details Negatives")
         } else {
-            [void]$csvContent.AppendLine("ID,Description,Start Date,Size,Priority,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Details: Description,Details: Positives,Details: Negatives")
+            [void]$csvContent.AppendLine("ID,Description,Start Date,Size,Priority,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Created Date,Details: Description,Details: Positives,Details: Negatives")
         }
         
         foreach ($ticket in $ConfigData.Tickets) {
@@ -566,16 +567,18 @@ function Write-V9ConfigFile {
             $customEndDate = if ($ticket.CustomEndDate) { $ticket.CustomEndDate } else { "" }
             $startDate = if ($ticket.StartDate) { $ticket.StartDate } else { "" }
             $taskType = if ($ticket.TaskType) { $ticket.TaskType } else { "Fixed" }
+            # Default CreatedDate to today if not present (backward compatibility)
+            $createdDate = if ($ticket.CreatedDate) { $ticket.CreatedDate } else { (Get-Date -Format 'yyyy-MM-dd') }
             
             if ($isV10) {
                 # V10 format with UUID, Stakeholder, Initiative
                 $uuid = if ($ticket.UUID) { $ticket.UUID } else { "" }
                 $stakeholder = if ($ticket.Stakeholder) { $ticket.Stakeholder } else { "General" }
                 $initiative = if ($ticket.Initiative) { $ticket.Initiative } else { "General" }
-                $line = "`"$uuid`",$($ticket.ID),`"$desc`",$startDate,$($ticket.Size),$($ticket.Priority),`"$stakeholder`",`"$initiative`",`"$assignedTeam`",`"$($ticket.Status)`",`"$taskType`",`"$pauseComments`",`"$startDateHistory`",`"$endDateHistory`",`"$sizeHistory`",`"$customEndDate`",`"$detailsDesc`",`"$detailsPos`",`"$detailsNeg`""
+                $line = "`"$uuid`",$($ticket.ID),`"$desc`",$startDate,$($ticket.Size),$($ticket.Priority),`"$stakeholder`",`"$initiative`",`"$assignedTeam`",`"$($ticket.Status)`",`"$taskType`",`"$pauseComments`",`"$startDateHistory`",`"$endDateHistory`",`"$sizeHistory`",`"$customEndDate`",`"$createdDate`",`"$detailsDesc`",`"$detailsPos`",`"$detailsNeg`""
             } else {
                 # V9 format
-                $line = "$($ticket.ID),`"$desc`",$startDate,$($ticket.Size),$($ticket.Priority),`"$assignedTeam`",`"$($ticket.Status)`",`"$taskType`",`"$pauseComments`",`"$startDateHistory`",`"$endDateHistory`",`"$sizeHistory`",`"$customEndDate`",`"$detailsDesc`",`"$detailsPos`",`"$detailsNeg`""
+                $line = "$($ticket.ID),`"$desc`",$startDate,$($ticket.Size),$($ticket.Priority),`"$assignedTeam`",`"$($ticket.Status)`",`"$taskType`",`"$pauseComments`",`"$startDateHistory`",`"$endDateHistory`",`"$sizeHistory`",`"$customEndDate`",`"$createdDate`",`"$detailsDesc`",`"$detailsPos`",`"$detailsNeg`""
             }
             [void]$csvContent.AppendLine($line)
         }

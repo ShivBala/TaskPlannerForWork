@@ -1531,50 +1531,405 @@ function Show-InitiativeChart {
 
 #endregion
 
+#region Smart Router and Ambiguity Handler
+
+function Get-FuzzyMatches {
+    <#
+    .SYNOPSIS
+        Performs fuzzy matching against People and Stakeholders
+    
+    .PARAMETER SearchTerm
+        The term to search for (after removing action and type keywords)
+    
+    .RETURNS
+        Hashtable with PersonMatches and StakeholderMatches arrays, each with Name and Score
+    #>
+    param(
+        [string]$SearchTerm
+    )
+    
+    $result = @{
+        PersonMatches = @()
+        StakeholderMatches = @()
+    }
+    
+    if ([string]::IsNullOrWhiteSpace($SearchTerm)) {
+        return $result
+    }
+    
+    $searchLower = $SearchTerm.ToLower()
+    
+    # Search in People
+    foreach ($person in $global:V9Config.People) {
+        $fullName = "$($person.FirstName) $($person.LastName)".ToLower()
+        $firstName = $person.FirstName.ToLower()
+        $lastName = $person.LastName.ToLower()
+        $compactName = "$($person.FirstName)$($person.LastName)".ToLower()
+        
+        $score = 0
+        # Exact match (highest priority)
+        if ($fullName -eq $searchLower -or $compactName -eq $searchLower) {
+            $score = 100
+        }
+        # First name exact match
+        elseif ($firstName -eq $searchLower) {
+            $score = 90
+        }
+        # Last name exact match
+        elseif ($lastName -eq $searchLower) {
+            $score = 85
+        }
+        # Contains in full name
+        elseif ($fullName -like "*$searchLower*") {
+            $score = 70
+        }
+        # Contains in compact name
+        elseif ($compactName -like "*$searchLower*") {
+            $score = 65
+        }
+        # Starts with in first or last name
+        elseif ($firstName -like "$searchLower*" -or $lastName -like "$searchLower*") {
+            $score = 60
+        }
+        
+        if ($score -gt 0) {
+            $result.PersonMatches += @{
+                Name = "$($person.FirstName) $($person.LastName)"
+                FirstName = $person.FirstName
+                LastName = $person.LastName
+                Score = $score
+                Object = $person
+            }
+        }
+    }
+    
+    # Search in Stakeholders
+    foreach ($stakeholder in $global:V9Config.Stakeholders) {
+        $stakeholderLower = $stakeholder.ToLower()
+        $stakeholderCompact = ($stakeholder -replace '\s+', '').ToLower()
+        
+        $score = 0
+        # Exact match
+        if ($stakeholderLower -eq $searchLower) {
+            $score = 100
+        }
+        # Exact match without spaces
+        elseif ($stakeholderCompact -eq $searchLower) {
+            $score = 95
+        }
+        # Contains
+        elseif ($stakeholderLower -like "*$searchLower*") {
+            $score = 70
+        }
+        # Starts with
+        elseif ($stakeholderLower -like "$searchLower*") {
+            $score = 60
+        }
+        
+        if ($score -gt 0) {
+            $result.StakeholderMatches += @{
+                Name = $stakeholder
+                Score = $score
+            }
+        }
+    }
+    
+    # Sort by score descending
+    $result.PersonMatches = $result.PersonMatches | Sort-Object -Property Score -Descending
+    $result.StakeholderMatches = $result.StakeholderMatches | Sort-Object -Property Score -Descending
+    
+    return $result
+}
+
+function Handle-AmbiguousInput {
+    <#
+    .SYNOPSIS
+        Handles ambiguous user input with case statements for each scenario
+    
+    .PARAMETER AmbiguityType
+        Type of ambiguity: NoActionOrType, NoTargetType, MultipleMatches, PersonAndStakeholder
+    
+    .PARAMETER Matches
+        Match data from fuzzy search
+    
+    .PARAMETER Action
+        Action if already determined (add/modify)
+    
+    .RETURNS
+        Hashtable with resolved Action, TargetType, Entity, and EntityType
+    #>
+    param(
+        [string]$AmbiguityType,
+        $Matches,
+        [string]$Action = $null
+    )
+    
+    $result = @{
+        Action = $Action
+        TargetType = $null
+        Entity = $null
+        EntityType = $null
+        Cancelled = $false
+    }
+    
+    switch ($AmbiguityType) {
+        'NoActionOrType' {
+            # Just a name, no action or type specified - Show menu
+            Write-Host "`n📋 What would you like to do?" -ForegroundColor Cyan
+            Write-Host "   [1] Add Task" -ForegroundColor White
+            Write-Host "   [2] Modify Task" -ForegroundColor White
+            Write-Host "   [3] Add Initiative" -ForegroundColor White
+            Write-Host "   [4] Modify Initiative" -ForegroundColor White
+            Write-Host "   [x] Cancel" -ForegroundColor Gray
+            
+            $choice = Read-Host "`nChoice"
+            switch ($choice) {
+                '1' { $result.Action = 'add'; $result.TargetType = 'task' }
+                '2' { $result.Action = 'modify'; $result.TargetType = 'task' }
+                '3' { $result.Action = 'add'; $result.TargetType = 'initiative' }
+                '4' { $result.Action = 'modify'; $result.TargetType = 'initiative' }
+                default { $result.Cancelled = $true }
+            }
+        }
+        
+        'NoTargetType' {
+            # Action specified but no task/initiative - Ask
+            Write-Host "`n❓ Task or Initiative?" -ForegroundColor Cyan
+            Write-Host "   [1] Task" -ForegroundColor White
+            Write-Host "   [2] Initiative" -ForegroundColor White
+            Write-Host "   [x] Cancel" -ForegroundColor Gray
+            
+            $choice = Read-Host "`nChoice"
+            switch ($choice) {
+                '1' { $result.TargetType = 'task' }
+                '2' { $result.TargetType = 'initiative' }
+                default { $result.Cancelled = $true }
+            }
+        }
+        
+        'MultipleMatches' {
+            # Multiple people or stakeholders matched - Show numbered list
+            $matchList = @()
+            
+            if ($Matches.PersonMatches.Count -gt 0) {
+                Write-Host "`n👥 Multiple people found:" -ForegroundColor Cyan
+                $index = 1
+                foreach ($match in $Matches.PersonMatches) {
+                    Write-Host "   [$index] $($match.Name)" -ForegroundColor White
+                    $matchList += @{ Index = $index; Type = 'Person'; Data = $match }
+                    $index++
+                }
+            }
+            
+            if ($Matches.StakeholderMatches.Count -gt 0) {
+                Write-Host "`n🏢 Multiple stakeholders found:" -ForegroundColor Cyan
+                foreach ($match in $Matches.StakeholderMatches) {
+                    Write-Host "   [$index] $($match.Name)" -ForegroundColor White
+                    $matchList += @{ Index = $index; Type = 'Stakeholder'; Data = $match }
+                    $index++
+                }
+            }
+            
+            Write-Host "   [x] Cancel" -ForegroundColor Gray
+            
+            $choice = Read-Host "`nChoice"
+            if ($choice -match '^\d+$' -and [int]$choice -le $matchList.Count) {
+                $selected = $matchList[[int]$choice - 1]
+                $result.EntityType = $selected.Type
+                $result.Entity = $selected.Data
+            } else {
+                $result.Cancelled = $true
+            }
+        }
+        
+        'PersonAndStakeholder' {
+            # Name matches both a person and stakeholder - Clarify
+            Write-Host "`n🔀 Name matches both person and stakeholder:" -ForegroundColor Yellow
+            Write-Host "   [1] Person: $($Matches.PersonMatches[0].Name)" -ForegroundColor White
+            Write-Host "   [2] Stakeholder: $($Matches.StakeholderMatches[0].Name)" -ForegroundColor White
+            Write-Host "   [x] Cancel" -ForegroundColor Gray
+            
+            $choice = Read-Host "`nChoice"
+            switch ($choice) {
+                '1' {
+                    $result.EntityType = 'Person'
+                    $result.Entity = $Matches.PersonMatches[0]
+                }
+                '2' {
+                    $result.EntityType = 'Stakeholder'
+                    $result.Entity = $Matches.StakeholderMatches[0]
+                }
+                default { $result.Cancelled = $true }
+            }
+        }
+    }
+    
+    return $result
+}
+
+function Resolve-UserIntent {
+    <#
+    .SYNOPSIS
+        Smart router that interprets flexible user input
+    
+    .DESCRIPTION
+        Parses user input to determine:
+        1. Action (add/modify/edit)
+        2. Target type (task/initiative)
+        3. Entity (person/stakeholder)
+        
+        Algorithm:
+        1. Remove spaces from input
+        2. Extract action keyword (add, mod, edit, etc.)
+        3. Extract target type (task, init, etc.)
+        4. Fuzzy match remaining string against people/stakeholders
+        5. Handle ambiguities
+    
+    .PARAMETER UserInput
+        Raw user input string
+    
+    .RETURNS
+        Hashtable with Action, TargetType, Entity, EntityType, or null if cancelled
+    #>
+    param(
+        [string]$UserInput
+    )
+    
+    # Step 1: Remove all spaces
+    $processed = $UserInput -replace '\s+', ''
+    $processedLower = $processed.ToLower()
+    
+    $action = $null
+    $targetType = $null
+    $remaining = $processedLower
+    
+    # Step 2: Extract ACTION
+    # Patterns: add, mod(ify), edit
+    if ($processedLower -match '^(add)(.*)$') {
+        $action = 'add'
+        $remaining = $Matches[2]
+    }
+    elseif ($processedLower -match '^(mod(i(f(y)?)?)?)(.*)$') {
+        $action = 'modify'
+        $remaining = $Matches[5]
+    }
+    elseif ($processedLower -match '^(ed(i(t)?)?)(.*)$') {
+        $action = 'modify'
+        $remaining = $Matches[4]
+    }
+    
+    # Step 3: Extract TARGET TYPE
+    # Patterns: task, init(iative)
+    if ($remaining -match '^(task)(.*)$') {
+        $targetType = 'task'
+        $remaining = $Matches[2]
+    }
+    elseif ($remaining -match '^(init(i(a(t(i(v(e)?)?)?)?)?)?)(.*)$') {
+        $targetType = 'initiative'
+        $remaining = $Matches[8]
+    }
+    
+    # Step 4: Fuzzy match remaining string
+    $matches = Get-FuzzyMatches -SearchTerm $remaining
+    
+    # Step 5: Determine ambiguity type and handle
+    $personCount = $matches.PersonMatches.Count
+    $stakeholderCount = $matches.StakeholderMatches.Count
+    $totalMatches = $personCount + $stakeholderCount
+    
+    # No matches found
+    if ($totalMatches -eq 0) {
+        Write-Host "❌ No person or stakeholder found matching '$UserInput'" -ForegroundColor Red
+        Write-Host "   Available people: $($global:V9Config.People.FirstName -join ', ')" -ForegroundColor Gray
+        Write-Host "   Available stakeholders: $($global:V9Config.Stakeholders -join ', ')" -ForegroundColor Gray
+        return $null
+    }
+    
+    # Determine result and handle ambiguity
+    $result = @{
+        Action = $action
+        TargetType = $targetType
+        Entity = $null
+        EntityType = $null
+    }
+    
+    # Single person match, no stakeholder
+    if ($personCount -eq 1 -and $stakeholderCount -eq 0) {
+        $result.Entity = $matches.PersonMatches[0]
+        $result.EntityType = 'Person'
+    }
+    # Single stakeholder match, no person
+    elseif ($stakeholderCount -eq 1 -and $personCount -eq 0) {
+        $result.Entity = $matches.StakeholderMatches[0]
+        $result.EntityType = 'Stakeholder'
+    }
+    # Both person and stakeholder matched
+    elseif ($personCount -gt 0 -and $stakeholderCount -gt 0) {
+        $resolved = Handle-AmbiguousInput -AmbiguityType 'PersonAndStakeholder' -Matches $matches -Action $action
+        if ($resolved.Cancelled) { return $null }
+        $result.Entity = $resolved.Entity
+        $result.EntityType = $resolved.EntityType
+        if ($resolved.Action) { $result.Action = $resolved.Action }
+        if ($resolved.TargetType) { $result.TargetType = $resolved.TargetType }
+    }
+    # Multiple matches (person or stakeholder)
+    elseif ($totalMatches -gt 1) {
+        $resolved = Handle-AmbiguousInput -AmbiguityType 'MultipleMatches' -Matches $matches -Action $action
+        if ($resolved.Cancelled) { return $null }
+        $result.Entity = $resolved.Entity
+        $result.EntityType = $resolved.EntityType
+        if ($resolved.Action) { $result.Action = $resolved.Action }
+        if ($resolved.TargetType) { $result.TargetType = $resolved.TargetType }
+    }
+    
+    # Handle missing action or target type
+    if (-not $result.Action -or -not $result.TargetType) {
+        if (-not $result.Action -and -not $result.TargetType) {
+            # No action and no type - show menu
+            $resolved = Handle-AmbiguousInput -AmbiguityType 'NoActionOrType' -Matches $matches -Action $null
+            if ($resolved.Cancelled) { return $null }
+            $result.Action = $resolved.Action
+            $result.TargetType = $resolved.TargetType
+        }
+        elseif (-not $result.TargetType) {
+            # Has action but no type - ask
+            $resolved = Handle-AmbiguousInput -AmbiguityType 'NoTargetType' -Matches $matches -Action $result.Action
+            if ($resolved.Cancelled) { return $null }
+            $result.TargetType = $resolved.TargetType
+        }
+        elseif (-not $result.Action) {
+            # Has type but no action - ask (repurpose NoActionOrType but filter by type)
+            Write-Host "`n📋 What would you like to do with this $($result.TargetType)?" -ForegroundColor Cyan
+            Write-Host "   [1] Add" -ForegroundColor White
+            Write-Host "   [2] Modify" -ForegroundColor White
+            Write-Host "   [x] Cancel" -ForegroundColor Gray
+            
+            $choice = Read-Host "`nChoice"
+            switch ($choice) {
+                '1' { $result.Action = 'add' }
+                '2' { $result.Action = 'modify' }
+                default { return $null }
+            }
+        }
+    }
+    
+    return $result
+}
+
+#endregion
+
 #region Command Dispatcher
 
 function Invoke-Command {
     <#
     .SYNOPSIS
-        Matches user input to commands using regex patterns
+        Matches user input to commands using regex patterns with smart routing
     #>
     param([string]$UserInput)
     
     $inputText = $UserInput.Trim().ToLower()
     
-    # Person name patterns (for add/modify tasks)
-    if ($inputText -match "^(siva|vipul|peter|sameet|sharanya|divya)$") {
-        $personName = (Get-Culture).TextInfo.ToTitleCase($matches[1])
-        
-        # Check if person exists in config
-        $person = Get-PersonByName -Name $personName
-        if ($null -eq $person) {
-            Write-Host "❌ Person not found in config: $personName" -ForegroundColor Red
-            return
-        }
-        
-        Write-Host "`nAdd or Modify task for $personName?" -ForegroundColor Cyan
-        Write-Host "  1. Add    :" -ForegroundColor White
-        Write-Host "  2. Modify :" -ForegroundColor White
-        Write-Host "Choose: " -NoNewline -ForegroundColor Yellow
-        $choice = Read-Host
-        
-        $choiceLower = $choice.Trim().ToLower()
-        
-        # Match add variants
-        if ($choiceLower -match "^(1|a|ad|add)$") {
-            Add-TaskForPerson -PersonName $personName
-        }
-        # Match modify variants
-        elseif ($choiceLower -match "^(2|m|mo|mod|modi|modif|modify)$") {
-            Modify-TaskForPerson -PersonName $personName
-        }
-        else {
-            Write-Host "❌ Invalid choice" -ForegroundColor Red
-        }
-        return
-    }
-    
+    # Special commands (process first before smart router)
     # Capacity query
     if ($inputText -match "^capacity\s+(.+)$") {
         $personName = (Get-Culture).TextInfo.ToTitleCase($matches[1].Trim())
@@ -1627,6 +1982,71 @@ function Invoke-Command {
     # Open HTML console
     if ($inputText -match "^html$|^console$|^open$") {
         Open-HTMLConsole
+        return
+    }
+    
+    # SMART ROUTER: Try to resolve user intent for task/initiative management
+    $intent = Resolve-UserIntent -UserInput $UserInput
+    
+    if ($null -ne $intent) {
+        # Successfully resolved intent - route to appropriate worker
+        Write-Host "`n✨ Resolved: $($intent.Action) $($intent.TargetType) for $($intent.EntityType): $($intent.Entity.Name)" -ForegroundColor Green
+        
+        if ($intent.TargetType -eq 'task') {
+            if ($intent.EntityType -eq 'Person') {
+                # Task for a person
+                $personName = $intent.Entity.Name
+                if ($intent.Action -eq 'add') {
+                    Add-TaskForPerson -PersonName $personName
+                } else {
+                    Modify-TaskForPerson -PersonName $personName
+                }
+            } else {
+                # Task for stakeholder (not yet implemented, fallback)
+                Write-Host "⚠️  Tasks for stakeholders not yet implemented" -ForegroundColor Yellow
+                Write-Host "   Please use HTML console for stakeholder task management" -ForegroundColor Gray
+                Open-HTMLConsole
+            }
+        }
+        elseif ($intent.TargetType -eq 'initiative') {
+            # Initiative management
+            Write-Host "⚠️  Initiative add/modify via CLI not yet implemented" -ForegroundColor Yellow
+            Write-Host "   Opening initiative manager..." -ForegroundColor Cyan
+            Manage-Initiatives
+        }
+        return
+    }
+    
+    # If smart router didn't match, try legacy person name patterns for backward compatibility
+    if ($inputText -match "^(siva|vipul|peter|sameet|sharanya|divya)$") {
+        $personName = (Get-Culture).TextInfo.ToTitleCase($matches[1])
+        
+        # Check if person exists in config
+        $person = Get-PersonByName -Name $personName
+        if ($null -eq $person) {
+            Write-Host "❌ Person not found in config: $personName" -ForegroundColor Red
+            return
+        }
+        
+        Write-Host "`nAdd or Modify task for $personName?" -ForegroundColor Cyan
+        Write-Host "  1. Add    :" -ForegroundColor White
+        Write-Host "  2. Modify :" -ForegroundColor White
+        Write-Host "Choose: " -NoNewline -ForegroundColor Yellow
+        $choice = Read-Host
+        
+        $choiceLower = $choice.Trim().ToLower()
+        
+        # Match add variants
+        if ($choiceLower -match "^(1|a|ad|add)$") {
+            Add-TaskForPerson -PersonName $personName
+        }
+        # Match modify variants
+        elseif ($choiceLower -match "^(2|m|mo|mod|modi|modif|modify)$") {
+            Modify-TaskForPerson -PersonName $personName
+        }
+        else {
+            Write-Host "❌ Invalid choice" -ForegroundColor Red
+        }
         return
     }
     
