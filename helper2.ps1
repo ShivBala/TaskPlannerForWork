@@ -441,13 +441,31 @@ function Add-TaskForPerson {
     $startDate = Parse-DateAlias -DateInput $startDateInput
     
     # Size (default M)
-    Write-Host "`nAvailable sizes:" -ForegroundColor Yellow
+    Write-Host "`nTask Size:" -ForegroundColor Yellow
+    $sizeIndex = 1
+    $sizeMap = @{}
     foreach ($size in $global:V9Config.TaskSizes) {
-        Write-Host "  $($size.Key) - $($size.Name): $($size.Days) days" -ForegroundColor White
+        Write-Host "  [$sizeIndex] $($size.Key) - $($size.Name) ($($size.Days) days)" -ForegroundColor White
+        $sizeMap[$sizeIndex.ToString()] = $size.Key
+        $sizeIndex++
     }
-    Write-Host "Size (default: M): " -NoNewline -ForegroundColor Yellow
+    
+    # Find the default index for 'M'
+    $defaultIndex = ($global:V9Config.TaskSizes | ForEach-Object -Begin { $i = 1 } -Process { 
+        if ($_.Key -eq 'M') { $i }; $i++ 
+    } | Select-Object -First 1)
+    
+    Write-Host "Choose (1-$($global:V9Config.TaskSizes.Count), or press Enter for M): " -NoNewline -ForegroundColor Yellow
     $sizeInput = Read-Host
-    $size = if ([string]::IsNullOrWhiteSpace($sizeInput)) { "M" } else { $sizeInput }
+    
+    if ([string]::IsNullOrWhiteSpace($sizeInput)) {
+        $size = "M"  # Default
+    } elseif ($sizeMap.ContainsKey($sizeInput)) {
+        $size = $sizeMap[$sizeInput]
+    } else {
+        Write-Host "⚠️  Invalid choice, using default (M)" -ForegroundColor Yellow
+        $size = "M"
+    }
     
     # Generate new ID
     $maxId = ($global:V9Config.Tickets | ForEach-Object { [int]$_.ID } | Measure-Object -Maximum).Maximum
