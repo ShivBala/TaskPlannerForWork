@@ -495,11 +495,12 @@ try {
     # Initialize test environment
     Initialize-TestEnvironment
     
-    # Source the helper2.ps1 script
-    $helper2Path = Join-Path (Split-Path $PSScriptRoot -Parent) "helper2.ps1"
+    # Source the helper2.ps1 script (go up two levels from tests/powershell/ to root)
+    $helper2Path = Join-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) "helper2.ps1"
     if (Test-Path $helper2Path) {
         Write-Host "📜 Loading helper2.ps1..." -ForegroundColor Cyan
-        # Note: Some functions require full initialization, so we'll test what we can
+        . $helper2Path
+        Write-Host "✅ helper2.ps1 loaded successfully" -ForegroundColor Green
     } else {
         Write-Host "⚠️  helper2.ps1 not found at: $helper2Path" -ForegroundColor Yellow
         Write-Host "   Some tests will be skipped" -ForegroundColor Yellow

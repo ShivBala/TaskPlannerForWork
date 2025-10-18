@@ -2542,5 +2542,7 @@ function Start-InteractiveMode {
 #endregion
 
 
-# Start the interactive mode
-Start-InteractiveMode
+# Start the interactive mode (unless being dot-sourced for testing)
+if ($MyInvocation.InvocationName -ne '.') {
+    Start-InteractiveMode
+}

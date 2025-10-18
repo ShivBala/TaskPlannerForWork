@@ -827,14 +827,16 @@ function Test-V9ConfigFile {
     return $result
 }
 
-# Export module functions
-Export-ModuleMember -Function @(
-    'Get-LatestV9ConfigFile',
-    'Read-V9ConfigFile',
-    'Write-V9ConfigFile',
-    'Convert-V9TicketToLegacyTask',
-    'Test-V9ConfigFile'
-)
+# Export module functions (only when loaded as a module, not dot-sourced)
+if ($MyInvocation.MyCommand.CommandType -eq 'ExternalScript' -and $MyInvocation.InvocationName -ne '.') {
+    Export-ModuleMember -Function @(
+        'Get-LatestV9ConfigFile',
+        'Read-V9ConfigFile',
+        'Write-V9ConfigFile',
+        'Convert-V9TicketToLegacyTask',
+        'Test-V9ConfigFile'
+    )
+}
 
 Write-Host "✅ V10/V9 CSV Adapter module loaded" -ForegroundColor Green
 Write-Host "   Available functions: Get-LatestV9ConfigFile, Read-V9ConfigFile, Write-V9ConfigFile, Convert-V9TicketToLegacyTask, Test-V9ConfigFile" -ForegroundColor Cyan

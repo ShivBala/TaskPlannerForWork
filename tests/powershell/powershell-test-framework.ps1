@@ -161,11 +161,13 @@ if ($MyInvocation.InvocationName -ne '.') {
     # Invoke-TaskTrackerPowerShellTests
 }
 
-# Export functions for module use
-Export-ModuleMember -Function @(
-    'Invoke-TaskTrackerPowerShellTests',
-    'Test-PowerShellScript',
-    'Test-PowerShellScriptWithMocking',
-    'Invoke-PowerShellCodeCoverage',
-    'Export-PowerShellTestResults'
-)
+# Export functions for module use (only when loaded as a module, not dot-sourced)
+if ($MyInvocation.MyCommand.CommandType -eq 'ExternalScript' -and $MyInvocation.InvocationName -ne '.') {
+    Export-ModuleMember -Function @(
+        'Invoke-TaskTrackerPowerShellTests',
+        'Test-PowerShellScript',
+        'Test-PowerShellScriptWithMocking',
+        'Invoke-PowerShellCodeCoverage',
+        'Export-PowerShellTestResults'
+    )
+}
