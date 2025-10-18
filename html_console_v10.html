@@ -6250,8 +6250,8 @@ ${ticket.explanation}
 
                     // STEP 2: Allocate Fixed-Length tasks FIRST (based on their duration requirements)
                     fixedTasks.forEach(task => {
-                        const effortRemaining = taskRemainingEffort[task.id][person.name];
-                        const dailyHours = taskMetadata[task.id].dailyHoursPerPerson;
+                        const effortRemaining = taskRemainingEffort[task.id][person.name] || 0;
+                        const dailyHours = taskMetadata[task.id]?.dailyHoursPerPerson || 0;
                         
                         // For Fixed-Length, allocate the daily required hours (ignore capacity limits)
                         const hoursThisWeek = Math.min(effortRemaining, dailyHours * 5); // 5 working days
@@ -6304,7 +6304,7 @@ ${ticket.explanation}
                         const capacityPerP1 = flexP1Tasks.length > 0 ? p1Capacity / flexP1Tasks.length : 0;
 
                         flexP1Tasks.forEach(task => {
-                            const effortRemaining = taskRemainingEffort[task.id][person.name];
+                            const effortRemaining = taskRemainingEffort[task.id]?.[person.name] || 0;
                             const hoursThisWeek = Math.min(effortRemaining, capacityPerP1);
 
                             capacityTracker[person.name][weekIndex].allocations[task.id] = hoursThisWeek;
@@ -6312,16 +6312,16 @@ ${ticket.explanation}
                             capacityTracker[person.name][weekIndex].p1Hours += hoursThisWeek;
                             taskRemainingEffort[task.id][person.name] -= hoursThisWeek;
                             
-                            console.log(`    ✅ Flexible P1 Task ${task.id}: Allocated ${hoursThisWeek.toFixed(1)}h, Remaining: ${taskRemainingEffort[task.id][person.name].toFixed(1)}h`);
+                            console.log(`    ✅ Flexible P1 Task ${task.id}: Allocated ${hoursThisWeek.toFixed(1)}h, Remaining: ${(taskRemainingEffort[task.id]?.[person.name] || 0).toFixed(1)}h`);
                         });
 
                         // Allocate to Flexible other tasks (proportional to effort needed)
                         const totalOtherEffort = flexOtherTasks.reduce((sum, task) => 
-                            sum + taskRemainingEffort[task.id][person.name], 0
+                            sum + (taskRemainingEffort[task.id]?.[person.name] || 0), 0
                         );
 
                         flexOtherTasks.forEach(task => {
-                            const effortRemaining = taskRemainingEffort[task.id][person.name];
+                            const effortRemaining = taskRemainingEffort[task.id]?.[person.name] || 0;
                             const effortRatio = totalOtherEffort > 0 ? effortRemaining / totalOtherEffort : 0;
                             const hoursThisWeek = Math.min(effortRemaining, otherCapacity * effortRatio);
 
@@ -6330,7 +6330,7 @@ ${ticket.explanation}
                             capacityTracker[person.name][weekIndex].otherHours += hoursThisWeek;
                             taskRemainingEffort[task.id][person.name] -= hoursThisWeek;
                             
-                            console.log(`    ✅ Flexible ${task.priority} Task ${task.id}: Allocated ${hoursThisWeek.toFixed(1)}h, Remaining: ${taskRemainingEffort[task.id][person.name].toFixed(1)}h`);
+                            console.log(`    ✅ Flexible ${task.priority} Task ${task.id}: Allocated ${hoursThisWeek.toFixed(1)}h, Remaining: ${(taskRemainingEffort[task.id]?.[person.name] || 0).toFixed(1)}h`);
                         });
                     }
 
