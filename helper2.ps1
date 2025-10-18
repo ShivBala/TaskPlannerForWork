@@ -2213,7 +2213,7 @@ function Invoke-Command {
     }
     
     # Quick task (minimal prompts)
-    if ($inputText -match "^q(uick)?t(ask)?$") {
+    if ($inputText -match "^(qt|quick|quicktask)$") {
         Add-QuickTask
         return
     }
