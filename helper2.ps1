@@ -1655,9 +1655,24 @@ function Get-FuzzyMatches {
     }
     }
     
-    # Sort by score descending
-    $result.PersonMatches = $result.PersonMatches | Sort-Object -Property Score -Descending
-    $result.StakeholderMatches = $result.StakeholderMatches | Sort-Object -Property Score -Descending
+    # Remove duplicates (by Name) and sort by score descending
+    if ($result.PersonMatches.Count -gt 0) {
+        $result.PersonMatches = @($result.PersonMatches | 
+            Group-Object -Property Name | 
+            ForEach-Object { 
+                $_.Group | Sort-Object -Property Score -Descending | Select-Object -First 1 
+            } |
+            Sort-Object -Property Score -Descending)
+    }
+    
+    if ($result.StakeholderMatches.Count -gt 0) {
+        $result.StakeholderMatches = @($result.StakeholderMatches | 
+            Group-Object -Property Name | 
+            ForEach-Object { 
+                $_.Group | Sort-Object -Property Score -Descending | Select-Object -First 1 
+            } |
+            Sort-Object -Property Score -Descending)
+    }
     
     return $result
 }
@@ -1695,21 +1710,59 @@ function Handle-AmbiguousInput {
     
     switch ($AmbiguityType) {
         'NoActionOrType' {
-            # Just a name, no action or type specified - Show menu
-            Write-Host "`n📋 What would you like to do?" -ForegroundColor Cyan
-            Write-Host "   [1] Add Task" -ForegroundColor White
-            Write-Host "   [2] Modify Task" -ForegroundColor White
-            Write-Host "   [3] Add Initiative" -ForegroundColor White
-            Write-Host "   [4] Modify Initiative" -ForegroundColor White
-            Write-Host "   [x] Cancel" -ForegroundColor Gray
+            # Just a name, no action or type specified - Show context-appropriate menu
+            # If it's a Person, only show task options
+            # If it's a Stakeholder, only show initiative options
             
-            $choice = Read-Host "`nChoice"
-            switch ($choice) {
-                '1' { $result.Action = 'add'; $result.TargetType = 'task' }
-                '2' { $result.Action = 'modify'; $result.TargetType = 'task' }
-                '3' { $result.Action = 'add'; $result.TargetType = 'initiative' }
-                '4' { $result.Action = 'modify'; $result.TargetType = 'initiative' }
-                default { $result.Cancelled = $true }
+            # Determine if it's a person or stakeholder from matches
+            $isPerson = $Matches.PersonMatches.Count -gt 0
+            $isStakeholder = $Matches.StakeholderMatches.Count -gt 0
+            
+            if ($isPerson -and -not $isStakeholder) {
+                # Person only - show task options
+                Write-Host "`n📋 What would you like to do?" -ForegroundColor Cyan
+                Write-Host "   [1] Add Task" -ForegroundColor White
+                Write-Host "   [2] Modify Task" -ForegroundColor White
+                Write-Host "   [x] Cancel" -ForegroundColor Gray
+                
+                $choice = Read-Host "`nChoice"
+                switch ($choice) {
+                    '1' { $result.Action = 'add'; $result.TargetType = 'task' }
+                    '2' { $result.Action = 'modify'; $result.TargetType = 'task' }
+                    default { $result.Cancelled = $true }
+                }
+            }
+            elseif ($isStakeholder -and -not $isPerson) {
+                # Stakeholder only - show initiative options
+                Write-Host "`n📋 What would you like to do?" -ForegroundColor Cyan
+                Write-Host "   [1] Add Initiative" -ForegroundColor White
+                Write-Host "   [2] Modify Initiative" -ForegroundColor White
+                Write-Host "   [x] Cancel" -ForegroundColor Gray
+                
+                $choice = Read-Host "`nChoice"
+                switch ($choice) {
+                    '1' { $result.Action = 'add'; $result.TargetType = 'initiative' }
+                    '2' { $result.Action = 'modify'; $result.TargetType = 'initiative' }
+                    default { $result.Cancelled = $true }
+                }
+            }
+            else {
+                # Both person and stakeholder - show all options (shouldn't happen often)
+                Write-Host "`n📋 What would you like to do?" -ForegroundColor Cyan
+                Write-Host "   [1] Add Task" -ForegroundColor White
+                Write-Host "   [2] Modify Task" -ForegroundColor White
+                Write-Host "   [3] Add Initiative" -ForegroundColor White
+                Write-Host "   [4] Modify Initiative" -ForegroundColor White
+                Write-Host "   [x] Cancel" -ForegroundColor Gray
+                
+                $choice = Read-Host "`nChoice"
+                switch ($choice) {
+                    '1' { $result.Action = 'add'; $result.TargetType = 'task' }
+                    '2' { $result.Action = 'modify'; $result.TargetType = 'task' }
+                    '3' { $result.Action = 'add'; $result.TargetType = 'initiative' }
+                    '4' { $result.Action = 'modify'; $result.TargetType = 'initiative' }
+                    default { $result.Cancelled = $true }
+                }
             }
         }
         
