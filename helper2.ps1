@@ -1568,54 +1568,57 @@ function Get-FuzzyMatches {
     # Search in People
     if ($null -ne $global:V9Config.People -and $global:V9Config.People.Count -gt 0) {
         foreach ($person in $global:V9Config.People) {
-            if ($null -eq $person.FirstName -or $null -eq $person.LastName) {
+            if ($null -eq $person.Name -or [string]::IsNullOrWhiteSpace($person.Name)) {
                 continue
             }
             
-            $fullName = "$($person.FirstName) $($person.LastName)".ToLower()
-            $firstName = $person.FirstName.ToLower()
-            $lastName = $person.LastName.ToLower()
-            $compactName = "$($person.FirstName)$($person.LastName)".ToLower()
+            # Split name into first and last
+            $nameParts = $person.Name -split '\s+', 2
+            $firstName = if ($nameParts.Count -gt 0) { $nameParts[0] } else { "" }
+            $lastName = if ($nameParts.Count -gt 1) { $nameParts[1] } else { "" }
+            
+            $fullName = $person.Name.ToLower()
+            $firstNameLower = $firstName.ToLower()
+            $lastNameLower = $lastName.ToLower()
+            $compactName = ($person.Name -replace '\s+', '').ToLower()
         
         $score = 0
         # Exact match (highest priority)
         if ($fullName -eq $searchLower -or $compactName -eq $searchLower) {
             $score = 100
         }
-        # First name exact match
-        elseif ($firstName -eq $searchLower) {
-            $score = 90
-        }
-        # Last name exact match
-        elseif ($lastName -eq $searchLower) {
-            $score = 85
-        }
-        # Contains in full name
-        elseif ($fullName -like "*$searchLower*") {
-            $score = 70
-        }
-        # Contains in compact name
-        elseif ($compactName -like "*$searchLower*") {
-            $score = 65
-        }
-        # Starts with in first or last name
-        elseif ($firstName -like "$searchLower*" -or $lastName -like "$searchLower*") {
-            $score = 60
-        }
-        
-        if ($score -gt 0) {
-            $result.PersonMatches += @{
-                Name = "$($person.FirstName) $($person.LastName)"
-                FirstName = $person.FirstName
-                LastName = $person.LastName
-                Score = $score
-                Object = $person
+            # First name exact match
+            elseif ($firstNameLower -eq $searchLower) {
+                $score = 90
+            }
+            # Last name exact match
+            elseif ($lastNameLower -eq $searchLower) {
+                $score = 85
+            }
+            # Contains in full name
+            elseif ($fullName -like "*$searchLower*") {
+                $score = 70
+            }
+            # Contains in compact name
+            elseif ($compactName -like "*$searchLower*") {
+                $score = 65
+            }
+            # Starts with in first or last name
+            elseif ($firstNameLower -like "$searchLower*" -or $lastNameLower -like "$searchLower*") {
+                $score = 60
+            }
+            
+            if ($score -gt 0) {
+                $result.PersonMatches += @{
+                    Name = $person.Name
+                    FirstName = $firstName
+                    LastName = $lastName
+                    Score = $score
+                    Object = $person
+                }
             }
         }
-    }
-    }
-    
-    # Search in Stakeholders
+    }    # Search in Stakeholders
     if ($null -ne $global:V9Config.Stakeholders -and $global:V9Config.Stakeholders.Count -gt 0) {
         foreach ($stakeholder in $global:V9Config.Stakeholders) {
             if ([string]::IsNullOrWhiteSpace($stakeholder)) {
@@ -1813,6 +1816,12 @@ function Resolve-UserIntent {
         [string]$UserInput
     )
     
+    # Check if config is loaded
+    if ($null -eq $global:V9Config) {
+        Write-Host "⚠️  Config not loaded. Please load a config first using 'reload' command." -ForegroundColor Yellow
+        return $null
+    }
+    
     # Step 1: Remove all spaces
     $processed = $UserInput -replace '\s+', ''
     $processedLower = $processed.ToLower()
@@ -1858,8 +1867,13 @@ function Resolve-UserIntent {
     # No matches found
     if ($totalMatches -eq 0) {
         Write-Host "❌ No person or stakeholder found matching '$UserInput'" -ForegroundColor Red
-        Write-Host "   Available people: $($global:V9Config.People.FirstName -join ', ')" -ForegroundColor Gray
-        Write-Host "   Available stakeholders: $($global:V9Config.Stakeholders -join ', ')" -ForegroundColor Gray
+        if ($null -ne $global:V9Config.People -and $global:V9Config.People.Count -gt 0) {
+            $peopleNames = $global:V9Config.People | ForEach-Object { ($_.Name -split '\s+')[0] }
+            Write-Host "   Available people: $($peopleNames -join ', ')" -ForegroundColor Gray
+        }
+        if ($null -ne $global:V9Config.Stakeholders -and $global:V9Config.Stakeholders.Count -gt 0) {
+            Write-Host "   Available stakeholders: $($global:V9Config.Stakeholders -join ', ')" -ForegroundColor Gray
+        }
         return $null
     }
     
