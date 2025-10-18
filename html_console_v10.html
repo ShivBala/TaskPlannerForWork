@@ -3048,6 +3048,19 @@
                             </span>
                         </label>
                     </div>
+                    <div class="flex items-center gap-2 mb-3 px-1">
+                        <label class="flex items-center gap-1 text-sm cursor-pointer">
+                            <input
+                                type="checkbox"
+                                ${person.noOvertime !== false ? 'checked' : ''}
+                                onchange="updatePersonNoOvertime('${person.name}', this.checked)"
+                                class="w-3 h-3 text-orange-600 border-gray-300 rounded focus:ring-orange-500 focus:ring-1"
+                            >
+                            <span class="text-orange-700 font-medium" title="When checked, this person cannot exceed 100% capacity in any week. Tasks will extend to subsequent weeks automatically to respect this constraint.">
+                                🚫 No Overtime Allowed
+                            </span>
+                        </label>
+                    </div>
                     <div class="overflow-x-auto">
                         <div class="flex gap-1 text-xs min-w-max">
                             ${availabilityInputs}
@@ -3467,14 +3480,15 @@
 
             // People section
             csvContent += "SECTION,PEOPLE\n";
-            csvContent += "Name,Week1,Week2,Week3,Week4,Week5,Week6,Week7,Week8,Project Ready\n";
+            csvContent += "Name,Week1,Week2,Week3,Week4,Week5,Week6,Week7,Week8,Project Ready,No OT\n";
             configData.people.forEach(person => {
                 const availability = [...person.availability];
                 while (availability.length < 8) {
                     availability.push(25);
                 }
                 const isProjectReady = person.isProjectReady !== undefined ? person.isProjectReady : true;
-                csvContent += `"${person.name}",${availability.slice(0, 8).join(',')},${isProjectReady ? 'Yes' : 'No'}\n`;
+                const noOvertime = person.noOvertime !== undefined ? person.noOvertime : true; // Default: true
+                csvContent += `"${person.name}",${availability.slice(0, 8).join(',')},${isProjectReady ? 'Yes' : 'No'},${noOvertime ? 'Yes' : 'No'}\n`;
             });
             csvContent += "\n";
 
@@ -3599,7 +3613,7 @@
 
             // People section
             csvContent += "SECTION,PEOPLE\n";
-            csvContent += "Name,Week1,Week2,Week3,Week4,Week5,Week6,Week7,Week8,Project Ready\n";
+            csvContent += "Name,Week1,Week2,Week3,Week4,Week5,Week6,Week7,Week8,Project Ready,No OT\n";
             configData.people.forEach(person => {
                 // Ensure person has 8-week availability
                 const availability = [...person.availability];
@@ -3607,7 +3621,8 @@
                     availability.push(25);
                 }
                 const isProjectReady = person.isProjectReady !== undefined ? person.isProjectReady : true;
-                csvContent += `"${person.name}",${availability.slice(0, 8).join(',')},${isProjectReady ? 'Yes' : 'No'}\n`;
+                const noOvertime = person.noOvertime !== undefined ? person.noOvertime : true; // Default: true
+                csvContent += `"${person.name}",${availability.slice(0, 8).join(',')},${isProjectReady ? 'Yes' : 'No'},${noOvertime ? 'Yes' : 'No'}\n`;
             });
             csvContent += "\n";
 
@@ -3891,11 +3906,20 @@
                         const parsed = parseCSVLine(line);
                         const name = parsed[0];
 
-                        // Handle both old 5-week and new 8-week format
-                        const availabilityValues = parsed.slice(1, -1).map(val => parseInt(val) || 0); // Exclude last column for project ready flag
+                        // Handle both old format and new format with No OT column
+                        // Old: Name,W1-W8,ProjectReady (10 columns)
+                        // New: Name,W1-W8,ProjectReady,NoOT (11 columns)
+                        
+                        const hasNoOTColumn = parsed.length >= 11;
+                        const availabilityEndIndex = hasNoOTColumn ? 9 : -1;
+                        const availabilityValues = parsed.slice(1, availabilityEndIndex).map(val => parseInt(val) || 0);
 
-                        // Get project ready flag (last column, default to true for backwards compatibility)
-                        const isProjectReady = parsed.length > 9 ? (parsed[parsed.length - 1] === 'true' || parsed[parsed.length - 1] === 'Yes') : true;
+                        // Get project ready flag (second to last column for new format, last for old)
+                        const projectReadyIndex = hasNoOTColumn ? 9 : parsed.length - 1;
+                        const isProjectReady = parsed.length > 9 ? (parsed[projectReadyIndex] === 'true' || parsed[projectReadyIndex] === 'Yes') : true;
+
+                        // Get No OT flag (last column if present, default to true)
+                        const noOvertime = hasNoOTColumn ? (parsed[10] === 'true' || parsed[10] === 'Yes') : true;
 
                         // Ensure we have exactly 8 weeks
                         while (availabilityValues.length < 8) {
@@ -3912,7 +3936,8 @@
                         importedData.people.push({
                             name: name,
                             availability: availabilityValues,
-                            isProjectReady: isProjectReady
+                            isProjectReady: isProjectReady,
+                            noOvertime: noOvertime  // NEW: No Overtime field
                         });
                     }
                     else if (currentSection === 'TICKETS') {
@@ -4596,7 +4621,8 @@
             people.push({
                 name: name,
                 availability: [25, 25, 25, 25, 25, 25, 25, 25],
-                isProjectReady: true // Default to true for new people
+                isProjectReady: true, // Default to true for new people
+                noOvertime: true // Default to true (No OT enabled by default)
             });
 
             nameInput.value = '';
@@ -4644,6 +4670,20 @@
                 calculateProjection();
                 saveToLocalStorage();
                 console.log(`✅ Recalculation triggered for project ready change`);
+            }
+        }
+
+        window.updatePersonNoOvertime = (name, noOvertime) => {
+            const person = people.find(p => p.name === name);
+            if (person) {
+                console.log(`🚫 NO OVERTIME UPDATE: ${name} changed from ${person.noOvertime !== false ? 'No OT Enabled' : 'No OT Disabled'} to ${noOvertime ? 'No OT Enabled' : 'No OT Disabled'}`);
+                person.noOvertime = noOvertime;
+                console.log(`📊 Updated ${name} no overtime status:`, person.noOvertime);
+                markDirty(); // Mark as having unsaved changes
+                calculateProjection();
+                renderWorkloadHeatMap(); // Update heat map immediately
+                saveToLocalStorage();
+                console.log(`✅ Recalculation triggered for no overtime change`);
             }
         }
 
