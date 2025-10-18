@@ -6190,7 +6190,10 @@ ${ticket.explanation}
                         taskRemainingEffort[ticket.id][personName] = totalTaskEffort;
                     }
                     
-                    console.log(`📊 Task ${ticket.id} (${ticket.priority}${isFixedLength ? ' 🔒Fixed' : ' ⚡Flex'}): ${personName} has ${taskRemainingEffort[ticket.id][personName].toFixed(1)}h effort${isFixedLength ? ` (${taskMetadata[ticket.id].dailyHoursPerPerson.toFixed(1)}h/day max)` : ''}`);
+                    const effortHours = taskRemainingEffort[ticket.id][personName] || 0;
+                    const dailyHours = taskMetadata[ticket.id].dailyHoursPerPerson;
+                    const dailyHoursStr = (dailyHours !== null && dailyHours !== undefined) ? ` (${dailyHours.toFixed(1)}h/day max)` : '';
+                    console.log(`📊 Task ${ticket.id} (${ticket.priority}${isFixedLength ? ' 🔒Fixed' : ' ⚡Flex'}): ${personName} has ${effortHours.toFixed(1)}h effort${isFixedLength ? dailyHoursStr : ''}`);
                 });
             });
 
