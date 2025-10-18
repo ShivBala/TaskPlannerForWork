@@ -6097,7 +6097,10 @@ ${ticket.explanation}
             const activeTickets = projectedTickets.filter(ticket =>
                 ticket.status !== 'Done' && ticket.status !== 'Paused' && ticket.status !== 'Closed'
             );
-            const heatMapData = [];
+            
+            if (activeTickets.length === 0 || people.length === 0) {
+                return [];
+            }
 
             // Get the start date for the heat map with smart baseline calculation
             let startDate = new Date();
@@ -6136,106 +6139,198 @@ ${ticket.explanation}
 
             // Store the baseline for header calculations
             heatMapStartDate = new Date(startDate);
+            
+            console.log('🔄 ===== CAPACITY ALLOCATION WITH P1 PRIORITY & NO OT =====');
+            console.log('📅 Heat Map Start Date:', startDate.toISOString().split('T')[0]);
+            console.log('🎫 Active Tickets:', activeTickets.length);
+            console.log('👥 People:', people.length);
 
-            // Calculate for each person
+            // NEW: Track capacity with priority weighting and No OT constraints
+            const capacityTracker = {}; // { personName: { weekIndex: { used, allocations: {taskId: hours}, p1Hours, otherHours } } }
+            const taskRemainingEffort = {}; // { taskId: { personName: hoursRemaining } }
+
+            // Initialize trackers
+            people.forEach(person => {
+                capacityTracker[person.name] = {};
+                for (let i = 0; i < 8; i++) {
+                    capacityTracker[person.name][i] = { 
+                        used: 0, 
+                        allocations: {}, 
+                        p1Hours: 0, 
+                        otherHours: 0 
+                    };
+                }
+            });
+
+            // Initialize remaining effort for each task-person pair
+            activeTickets.forEach(ticket => {
+                taskRemainingEffort[ticket.id] = {};
+                ticket.assigned.forEach(personName => {
+                    const totalTaskDays = taskSizeDefinitions[ticket.size]?.days || 1;
+                    const totalTaskEffort = effortMap[ticket.size] || (totalTaskDays * estimationBaseHours);
+                    const isFixedLength = ticket.isFixedLength !== false;
+
+                    if (isFixedLength) {
+                        // Fixed-Length: effort split among assignees
+                        taskRemainingEffort[ticket.id][personName] = totalTaskEffort / Math.max(ticket.assigned.length, 1);
+                    } else {
+                        // Flexible: each person gets full effort (duration splits)
+                        taskRemainingEffort[ticket.id][personName] = totalTaskEffort;
+                    }
+                    
+                    console.log(`📊 Task ${ticket.id} (${ticket.priority}): ${personName} has ${taskRemainingEffort[ticket.id][personName].toFixed(1)}h effort`);
+                });
+            });
+
+            // Sort tasks by start date for chronological processing
+            const sortedTickets = [...activeTickets].sort((a, b) => 
+                new Date(a.startDate) - new Date(b.startDate)
+            );
+            
+            console.log('📅 Processing tickets chronologically:');
+            sortedTickets.forEach(t => console.log(`  - Task ${t.id} (${t.priority}): ${t.description}, Start: ${t.startDate}`));
+
+            // Process each week chronologically
+            for (let weekIndex = 0; weekIndex < 8; weekIndex++) {
+                const weekStart = new Date(startDate);
+                weekStart.setDate(startDate.getDate() + (weekIndex * 7));
+                const weekEnd = new Date(weekStart);
+                weekEnd.setDate(weekStart.getDate() + 6);
+                
+                console.log(`\n📆 === WEEK ${weekIndex + 1} (${formatDate(weekStart)} - ${formatDate(weekEnd)}) ===`);
+
+                // Process each person for this week
+                people.forEach(person => {
+                    const weekCapacity = person.availability[weekIndex] || (projectHoursPerDay * 5);
+                    const noOvertimeEnabled = person.noOvertime !== false; // Default: true
+                    
+                    console.log(`\n👤 ${person.name}: ${weekCapacity}h capacity, No OT: ${noOvertimeEnabled ? 'ON' : 'OFF'}`);
+
+                    // Find all tasks active this week for this person with remaining effort
+                    const activeTasksThisWeek = sortedTickets.filter(ticket => {
+                        if (!ticket.assigned.includes(person.name)) return false;
+                        if (taskRemainingEffort[ticket.id][person.name] <= 0) return false;
+
+                        // Check if task has started by this week
+                        let taskStart = new Date(ticket.startDate);
+                        const taskStartDay = taskStart.getDay();
+                        if (taskStartDay === 0) taskStart.setDate(taskStart.getDate() + 1);
+                        else if (taskStartDay === 6) taskStart.setDate(taskStart.getDate() + 2);
+
+                        return taskStart <= weekEnd;
+                    });
+
+                    if (activeTasksThisWeek.length === 0) {
+                        console.log(`  ✓ No active tasks this week`);
+                        return;
+                    }
+
+                    // Group by priority
+                    const p1Tasks = activeTasksThisWeek.filter(t => t.priority === 'P1');
+                    const otherTasks = activeTasksThisWeek.filter(t => t.priority !== 'P1');
+                    
+                    console.log(`  🎯 P1 Tasks: ${p1Tasks.length}, Other Tasks: ${otherTasks.length}`);
+
+                    // Calculate capacity allocation based on P1 priority weighting
+                    let p1Capacity = 0;
+                    let otherCapacity = 0;
+
+                    if (p1Tasks.length > 0) {
+                        // P1 tasks get 80% of capacity
+                        p1Capacity = weekCapacity * 0.8;
+                        otherCapacity = weekCapacity * 0.2;
+                        console.log(`  📊 P1 Capacity: ${p1Capacity.toFixed(1)}h (80%), Other: ${otherCapacity.toFixed(1)}h (20%)`);
+                    } else {
+                        // No P1 tasks - others get 100%
+                        otherCapacity = weekCapacity;
+                        console.log(`  📊 Other Capacity: ${otherCapacity.toFixed(1)}h (100% - no P1 tasks)`);
+                    }
+
+                    // Allocate to P1 tasks (split equally)
+                    const capacityPerP1 = p1Tasks.length > 0 ? p1Capacity / p1Tasks.length : 0;
+
+                    p1Tasks.forEach(task => {
+                        const effortRemaining = taskRemainingEffort[task.id][person.name];
+                        const hoursThisWeek = Math.min(effortRemaining, capacityPerP1);
+
+                        capacityTracker[person.name][weekIndex].allocations[task.id] = hoursThisWeek;
+                        capacityTracker[person.name][weekIndex].used += hoursThisWeek;
+                        capacityTracker[person.name][weekIndex].p1Hours += hoursThisWeek;
+                        taskRemainingEffort[task.id][person.name] -= hoursThisWeek;
+                        
+                        console.log(`    ✅ P1 Task ${task.id}: Allocated ${hoursThisWeek.toFixed(1)}h, Remaining: ${taskRemainingEffort[task.id][person.name].toFixed(1)}h`);
+                    });
+
+                    // Allocate to other tasks (proportional to effort needed)
+                    const totalOtherEffort = otherTasks.reduce((sum, task) => 
+                        sum + taskRemainingEffort[task.id][person.name], 0
+                    );
+
+                    otherTasks.forEach(task => {
+                        const effortRemaining = taskRemainingEffort[task.id][person.name];
+                        const effortRatio = totalOtherEffort > 0 ? effortRemaining / totalOtherEffort : 0;
+                        const hoursThisWeek = Math.min(effortRemaining, otherCapacity * effortRatio);
+
+                        capacityTracker[person.name][weekIndex].allocations[task.id] = hoursThisWeek;
+                        capacityTracker[person.name][weekIndex].used += hoursThisWeek;
+                        capacityTracker[person.name][weekIndex].otherHours += hoursThisWeek;
+                        taskRemainingEffort[task.id][person.name] -= hoursThisWeek;
+                        
+                        console.log(`    ✅ ${task.priority} Task ${task.id}: Allocated ${hoursThisWeek.toFixed(1)}h, Remaining: ${taskRemainingEffort[task.id][person.name].toFixed(1)}h`);
+                    });
+
+                    // Apply No OT constraint if enabled
+                    if (noOvertimeEnabled && capacityTracker[person.name][weekIndex].used > weekCapacity) {
+                        console.log(`  🚫 NO OT CONSTRAINT: Capping ${capacityTracker[person.name][weekIndex].used.toFixed(1)}h at ${weekCapacity}h`);
+                        
+                        const scaleFactor = weekCapacity / capacityTracker[person.name][weekIndex].used;
+
+                        // Scale down all allocations proportionally and return unused effort
+                        Object.keys(capacityTracker[person.name][weekIndex].allocations).forEach(taskId => {
+                            const allocated = capacityTracker[person.name][weekIndex].allocations[taskId];
+                            const reduced = allocated * scaleFactor;
+                            const returned = allocated - reduced;
+
+                            capacityTracker[person.name][weekIndex].allocations[taskId] = reduced;
+                            taskRemainingEffort[taskId][person.name] += returned; // Return unused effort
+                            
+                            console.log(`      📉 Task ${taskId}: Scaled from ${allocated.toFixed(1)}h to ${reduced.toFixed(1)}h, Returned: ${returned.toFixed(1)}h`);
+                        });
+
+                        // Scale P1 and other hours tracking
+                        capacityTracker[person.name][weekIndex].p1Hours *= scaleFactor;
+                        capacityTracker[person.name][weekIndex].otherHours *= scaleFactor;
+                        capacityTracker[person.name][weekIndex].used = weekCapacity;
+                    }
+                    
+                    console.log(`  📈 Total Used: ${capacityTracker[person.name][weekIndex].used.toFixed(1)}h / ${weekCapacity}h (${Math.round((capacityTracker[person.name][weekIndex].used / weekCapacity) * 100)}%)`);
+                });
+            }
+
+            // Build heat map data using capacityTracker
+            const heatMapData = [];
             people.forEach(person => {
                 const personData = {
                     name: person.name,
                     weeks: []
                 };
 
-                // Calculate for next 8 weeks
                 for (let weekIndex = 0; weekIndex < 8; weekIndex++) {
                     const weekStart = new Date(startDate);
                     weekStart.setDate(startDate.getDate() + (weekIndex * 7));
-
                     const weekEnd = new Date(weekStart);
                     weekEnd.setDate(weekStart.getDate() + 6);
 
-                    // Get person's availability for this week
-                    const availability = person.availability && person.availability[weekIndex] !== undefined
-                        ? person.availability[weekIndex]
-                        : projectHoursPerDay * 5; // Default to full week if not defined
+                    const availability = person.availability[weekIndex] || (projectHoursPerDay * 5);
+                    const assignedHours = capacityTracker[person.name][weekIndex].used;
 
-                    // Calculate assigned hours for this week
-                    let assignedHours = 0;
-
-                    activeTickets.forEach(ticket => {
-                        if (ticket.assigned.includes(person.name)) {
-                            let taskStart = new Date(ticket.startDate);
-
-                            // NEW: Check if this is a Fixed-Length or Flexible task
-                            const isFixedLength = ticket.isFixedLength !== false; // Default to true
-                            const totalTaskDays = taskSizeDefinitions[ticket.size]?.days || ticketDays[ticket.size] || 1;
-                            const totalTaskEffort = effortMap[ticket.size] || (totalTaskDays * estimationBaseHours);
-
-                            let taskEnd;
-                            let dailyHoursForPerson;
-
-                            if (isFixedLength) {
-                                // 🔒 Fixed-Length: Duration stays the same, capacity per person scales
-                                // End date = start + full task duration
-                                taskEnd = addBusinessDays(new Date(taskStart), totalTaskDays - 1);
-                                // Daily hours per person = total effort / (duration * number of people)
-                                dailyHoursForPerson = totalTaskEffort / (totalTaskDays * Math.max(ticket.assigned.length, 1));
-                            } else {
-                                // ⚡ Flexible: Duration splits among assignees
-                                const daysPerPerson = totalTaskDays / Math.max(ticket.assigned.length, 1);
-                                const businessDaysNeeded = Math.ceil(daysPerPerson);
-                                taskEnd = addBusinessDays(new Date(taskStart), businessDaysNeeded - 1);
-                                // Each person works full daily capacity
-                                dailyHoursForPerson = estimationBaseHours;
-                            }
-
-                            // Apply weekend adjustment for consistent work week assignment
-                            const taskStartDay = taskStart.getDay();
-                            if (taskStartDay === 0) { // Sunday
-                                taskStart = new Date(taskStart);
-                                taskStart.setDate(taskStart.getDate() + 1); // Move to Monday
-                            } else if (taskStartDay === 6) { // Saturday
-                                taskStart = new Date(taskStart);
-                                taskStart.setDate(taskStart.getDate() + 2); // Move to Monday
-                            }
-
-                            // Check if task overlaps with this week
-                            if (taskStart <= weekEnd && taskEnd >= weekStart) {
-                                // Calculate overlap period
-                                const overlapStart = new Date(Math.max(taskStart.getTime(), weekStart.getTime()));
-                                const overlapEnd = new Date(Math.min(taskEnd.getTime(), weekEnd.getTime()));
-
-                                // Calculate business days in overlap period
-                                let businessDays = 0;
-                                const currentDate = new Date(overlapStart);
-                                while (currentDate <= overlapEnd) {
-                                    const dayOfWeek = currentDate.getDay();
-                                    if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday to Friday
-                                        businessDays++;
-                                    }
-                                    currentDate.setDate(currentDate.getDate() + 1);
-                                }
-
-                                // Assign hours based on daily hours and overlap days
-                                if (!isNaN(dailyHoursForPerson) && !isNaN(businessDays)) {
-                                    assignedHours += dailyHoursForPerson * businessDays;
-                                }
-                            }
-                        }
-                    });
-
-                    // Calculate utilization percentage with proper error handling
                     let utilization = 0;
-                    if (availability > 0 && !isNaN(assignedHours) && !isNaN(availability)) {
+                    if (availability > 0) {
                         utilization = Math.round((assignedHours / availability) * 100);
-                    } else if (assignedHours > 0 && availability === 0) {
-                        utilization = 999; // Indicate overload when no capacity but has assignments
+                    } else if (assignedHours > 0) {
+                        utilization = 999;
                     }
 
-                    // Ensure utilization is a valid number
-                    if (isNaN(utilization) || !isFinite(utilization)) {
-                        utilization = 0;
-                    }
-
-                    // Determine color based on utilization
                     let colorClass = 'bg-green-100 border-green-300 text-green-800';
                     if (utilization === 999 || utilization > 90) {
                         colorClass = 'bg-red-100 border-red-300 text-red-800';
@@ -6250,13 +6345,17 @@ ${ticket.explanation}
                         availability: availability,
                         assignedHours: Math.round(assignedHours * 10) / 10,
                         utilization: utilization,
-                        colorClass: colorClass
+                        colorClass: colorClass,
+                        taskBreakdown: capacityTracker[person.name][weekIndex].allocations, // NEW: Task-level details
+                        p1Hours: Math.round(capacityTracker[person.name][weekIndex].p1Hours * 10) / 10, // NEW: P1 hours
+                        otherHours: Math.round(capacityTracker[person.name][weekIndex].otherHours * 10) / 10 // NEW: Other hours
                     });
                 }
 
                 heatMapData.push(personData);
             });
-
+            
+            console.log('✅ Heat map calculation complete\n');
             return heatMapData;
         }
 
@@ -6332,16 +6431,32 @@ ${ticket.explanation}
                 html += `<td class="border border-gray-300 px-3 py-2 font-medium">${person.name}</td>`;
 
                 person.weeks.forEach((week, weekIndex) => {
-                    const tooltip = `Week ${week.weekIndex} (${week.weekStart} - ${week.weekEnd})\\nAvailable: ${week.availability}h\\nAssigned: ${week.assignedHours}h\\nUtilization: ${week.utilization === 999 ? 'Overloaded' : week.utilization + '%'}`;
+                    // Enhanced tooltip with P1 breakdown
+                    let tooltip = `Week ${week.weekIndex} (${week.weekStart} - ${week.weekEnd})\\nAvailable: ${week.availability}h\\nAssigned: ${week.assignedHours}h`;
+                    
+                    if (week.p1Hours > 0 || week.otherHours > 0) {
+                        tooltip += `\\n\\n🎯 P1 Tasks: ${week.p1Hours}h`;
+                        tooltip += `\\n📋 Other Tasks: ${week.otherHours}h`;
+                    }
+                    
+                    tooltip += `\\nUtilization: ${week.utilization === 999 ? 'Overloaded' : week.utilization + '%'}`;
 
                     // Format display value
                     const displayValue = week.utilization === 999 ? 'OVR' : `${week.utilization}%`;
+                    
+                    // NEW: Add P1 indicator if P1 tasks present
+                    let p1Badge = '';
+                    if (week.p1Hours > 0) {
+                        const p1Percent = week.assignedHours > 0 ? Math.round((week.p1Hours / week.assignedHours) * 100) : 0;
+                        p1Badge = `<div class="text-xs mt-1 text-red-600 font-bold">P1: ${p1Percent}%</div>`;
+                    }
 
                     html += `<td class="border border-gray-300 p-1">
                         <div class="${week.colorClass} rounded px-2 py-1 text-center text-sm font-medium cursor-pointer hover:opacity-80 transition-opacity"
                              title="${tooltip}"
                              onclick="showWeekTaskDetails('${person.name}', ${weekIndex}, '${week.weekStart}', '${week.weekEnd}')">
                             ${displayValue}
+                            ${p1Badge}
                         </div>
                     </td>`;
                 });
