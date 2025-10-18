@@ -254,13 +254,15 @@ function Read-V9ConfigFile {
                         continue  # Skip header row
                     }
                     # Parse: Size Key,Name,Days,Removable
-                    # Example: S,"Small",1,false
-                    if ($line -match '^([^,]+),"([^"]+)",(\d+),(true|false)$') {
+                    # Example: S,Small,1,false  OR  XL,Extra Large,10,false
+                    # Split by comma, but handle names with spaces
+                    $parts = $line -split ',', 4
+                    if ($parts.Count -eq 4) {
                         $result.TaskSizes += [PSCustomObject]@{
-                            Key = $Matches[1]
-                            Name = $Matches[2]
-                            Days = [int]$Matches[3]
-                            Removable = $Matches[4] -eq 'true'
+                            Key = $parts[0].Trim()
+                            Name = $parts[1].Trim()
+                            Days = [int]$parts[2].Trim()
+                            Removable = $parts[3].Trim() -eq 'true'
                         }
                     }
                 }
@@ -486,27 +488,60 @@ function Write-V9ConfigFile {
         
         $csvContent = [System.Text.StringBuilder]::new()
         
-        # Metadata section
+        # Metadata section - NO header row
         [void]$csvContent.AppendLine("SECTION,METADATA")
-        [void]$csvContent.AppendLine("Key,Value")
-        foreach ($key in $ConfigData.Metadata.Keys) {
-            [void]$csvContent.AppendLine("$key,$($ConfigData.Metadata[$key])")
+        if ($ConfigData.Metadata -and $ConfigData.Metadata.Count -gt 0) {
+            foreach ($key in $ConfigData.Metadata.Keys | Sort-Object) {
+                $value = $ConfigData.Metadata[$key]
+                [void]$csvContent.AppendLine("$key,$value")
+            }
+        } else {
+            # Default metadata if missing
+            [void]$csvContent.AppendLine("Export Date,$(Get-Date -Format 'yyyy-MM-ddTHH:mm:ss.fffZ')")
+            [void]$csvContent.AppendLine("Version,10")
+            [void]$csvContent.AppendLine("Description,Project Configuration")
         }
         [void]$csvContent.AppendLine()
         
-        # Settings section
+        # Settings section - NO header row
         [void]$csvContent.AppendLine("SECTION,SETTINGS")
-        [void]$csvContent.AppendLine("Key,Value")
-        foreach ($key in $ConfigData.Settings.Keys) {
-            [void]$csvContent.AppendLine("$key,$($ConfigData.Settings[$key])")
+        if ($ConfigData.Settings -and $ConfigData.Settings.Count -gt 0) {
+            # Write in specific order for consistency
+            $settingsOrder = @('Estimation Base Hours', 'Project Hours Per Day', 'Use Common Start Date', 'Common Start Date', 'Current Ticket ID')
+            foreach ($key in $settingsOrder) {
+                if ($ConfigData.Settings.ContainsKey($key)) {
+                    $value = $ConfigData.Settings[$key]
+                    [void]$csvContent.AppendLine("$key,$value")
+                }
+            }
+            # Write any additional settings not in the order list
+            foreach ($key in $ConfigData.Settings.Keys | Where-Object { $_ -notin $settingsOrder }) {
+                $value = $ConfigData.Settings[$key]
+                [void]$csvContent.AppendLine("$key,$value")
+            }
+        } else {
+            # Default settings if missing
+            [void]$csvContent.AppendLine("Estimation Base Hours,5")
+            [void]$csvContent.AppendLine("Project Hours Per Day,8")
+            [void]$csvContent.AppendLine("Use Common Start Date,false")
+            [void]$csvContent.AppendLine("Common Start Date,2025-10-21")
+            [void]$csvContent.AppendLine("Current Ticket ID,1")
         }
         [void]$csvContent.AppendLine()
         
         # Task Sizes section
         [void]$csvContent.AppendLine("SECTION,TASK_SIZES")
-        [void]$csvContent.AppendLine("Size Key,Name,Days,Removable")
-        foreach ($size in $ConfigData.TaskSizes) {
-            [void]$csvContent.AppendLine("$($size.Key),`"$($size.Name)`",$($size.Days),$($size.Removable.ToString().ToLower())")
+        if ($ConfigData.TaskSizes -and $ConfigData.TaskSizes.Count -gt 0) {
+            foreach ($size in $ConfigData.TaskSizes) {
+                [void]$csvContent.AppendLine("$($size.Key),$($size.Name),$($size.Days),$($size.Removable.ToString().ToLower())")
+            }
+        } else {
+            # Default task sizes if missing
+            [void]$csvContent.AppendLine("S,Small,1,false")
+            [void]$csvContent.AppendLine("M,Medium,2,false")
+            [void]$csvContent.AppendLine("L,Large,5,false")
+            [void]$csvContent.AppendLine("XL,Extra Large,10,false")
+            [void]$csvContent.AppendLine("XXL,Extra Extra Large,15,false")
         }
         [void]$csvContent.AppendLine()
         

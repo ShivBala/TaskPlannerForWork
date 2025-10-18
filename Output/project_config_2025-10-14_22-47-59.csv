@@ -1,0 +1,53 @@
+SECTION,METADATA
+Key,Value
+Export Date,2025-10-14T22:47:59.546Z
+Version,2.0
+Description,Enterprise Project Tracking Console Configuration Export
+
+SECTION,SETTINGS
+Key,Value
+Project Hours Per Day,8
+Use Common Start Date,false
+Common Start Date,2025-10-15
+Current Ticket ID,9
+Estimation Base Hours,5
+
+SECTION,TASK_SIZES
+Size Key,Name,Days,Removable
+S,"Small",1,false
+M,"Medium",2,false
+L,"Large",5,false
+XL,"X-Large",10,false
+XXL,"XX-Large",15,false
+
+SECTION,PEOPLE
+Name,Week1,Week2,Week3,Week4,Week5,Week6,Week7,Week8,Project Ready
+"Vipul",25,25,25,25,25,25,25,25,Yes
+"Sameet",25,25,25,25,25,25,25,25,Yes
+"Peter",25,25,25,25,25,25,25,25,Yes
+"Sharanya",25,25,25,25,25,25,25,25,Yes
+"Divya",25,25,25,25,25,25,25,25,Yes
+
+SECTION,TICKETS
+ID,Description,Start Date,Size,Priority,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Details: Description,Details: Positives,Details: Negatives
+1,"Design System Migration",2025-10-28,XL,P1,"Vipul;Peter;Sameet;Sharanya;Divya","To Do","Fixed","","2025-10-20(Initial planning@2025-10-14T13:44:15.460Z) | 2025-10-28(Changed from heat map popup@2025-10-14T21:54:52.418Z)","","XL:10d(Initial sizing@2025-10-14T13:44:15.460Z)","","","",""
+2,"Fix payment gateway bug",2025-10-20,S,P2,"Sameet","To Do","Fixed","","2025-10-20(Initial planning@2025-10-14T13:44:15.460Z)","","S:1d(Initial sizing@2025-10-14T13:44:15.460Z)","","","",""
+3,"Build new reporting dashboard",2025-10-29,XXL,P3,"Divya;Peter;Sameet;Vipul","To Do","Fixed","","2025-10-27(Initial planning@2025-10-14T13:44:15.460Z) | 2025-10-29(Changed from heat map popup@2025-10-14T21:54:55.696Z)","","XXL:15d(Initial sizing@2025-10-14T13:44:15.460Z)","","","",""
+4,"Update documentation",2025-10-15,M,P2,"Vipul","To Do","Fixed","","2025-10-12(Initial planning@2025-10-14T13:44:15.460Z) | 2025-10-15(Overdue task correction@2025-10-14T13:53:29.027Z)","","M:2d(Initial sizing@2025-10-14T13:44:15.460Z)","","","",""
+6,"API Security Audit",2025-10-10,M,P1,"Sameet","In Progress","Fixed","","2025-10-10(Initial planning@2025-10-14T13:44:15.460Z)","","M:2d(Initial sizing@2025-10-14T13:44:15.460Z)","","","",""
+7,"Performance Optimization",2025-10-12,S,P2,"Vipul","In Progress","Fixed","","2025-10-12(Initial planning@2025-10-14T13:44:15.460Z)","","S:1d(Initial sizing@2025-10-14T13:44:15.460Z)","","","",""
+8,"Database Migration Script",2025-10-07,L,P1,"Peter;Sharanya","In Progress","Fixed","","2025-10-07(Initial planning@2025-10-14T13:44:15.460Z)","","L:5d(Initial sizing@2025-10-14T13:44:15.460Z)","","","",""
+9,"Task 1",2025-10-17,M,P2,"Vipul","To Do","Fixed","","","","","","","",""
+10,"Test1 sameet",2025-10-22,M,P2,"Sameet","In Progress","Fixed","","","","","","","",""
+11,"Check date format",2025-10-23,M,P2,"Vipul","To Do","Fixed","","","","","","","",""
+12,"Design System Migration",2025-10-28,XL,P1,"Vipul;Peter;Sameet;Sharanya;Divya","To Do","Fixed","","2025-10-20(Initial planning@2025-10-14T13:44:15.460Z) | 2025-10-28(Changed from heat map popup@2025-10-14T21:54:52.418Z)","","XL:10d(Initial sizing@2025-10-14T13:44:15.460Z)","","","",""
+13,"Fix payment gateway bug",2025-10-20,S,P2,"Sameet","To Do","Fixed","","2025-10-20(Initial planning@2025-10-14T13:44:15.460Z)","","S:1d(Initial sizing@2025-10-14T13:44:15.460Z)","","","",""
+14,"Build new reporting dashboard",2025-10-29,XXL,P3,"Divya;Peter;Sameet;Vipul","To Do","Fixed","","2025-10-27(Initial planning@2025-10-14T13:44:15.460Z) | 2025-10-29(Changed from heat map popup@2025-10-14T21:54:55.696Z)","","XXL:15d(Initial sizing@2025-10-14T13:44:15.460Z)","","","",""
+15,"Update documentation",2025-10-15,M,P2,"Vipul","To Do","Fixed","","2025-10-12(Initial planning@2025-10-14T13:44:15.460Z) | 2025-10-15(Overdue task correction@2025-10-14T13:53:29.027Z)","","M:2d(Initial sizing@2025-10-14T13:44:15.460Z)","","","",""
+16,"API Security Audit",2025-10-10,M,P1,"Sameet","In Progress","Fixed","","2025-10-10(Initial planning@2025-10-14T13:44:15.460Z)","","M:2d(Initial sizing@2025-10-14T13:44:15.460Z)","","","",""
+17,"Performance Optimization",2025-10-12,S,P2,"Vipul","In Progress","Fixed","","2025-10-12(Initial planning@2025-10-14T13:44:15.460Z)","","S:1d(Initial sizing@2025-10-14T13:44:15.460Z)","","","",""
+18,"Database Migration Script",2025-10-07,L,P1,"Peter;Sharanya","In Progress","Fixed","","2025-10-07(Initial planning@2025-10-14T13:44:15.460Z)","","L:5d(Initial sizing@2025-10-14T13:44:15.460Z)","","","",""
+19,"Task 1",2025-10-17,M,P2,"Vipul","To Do","Fixed","","","","","","","",""
+20,"Test1 sameet",2025-10-22,M,P2,"Sameet","In Progress","Fixed","","","","","","","",""
+21,"Check date format",2025-10-23,M,P2,"Vipul","To Do","Fixed","","","","","","","",""
+

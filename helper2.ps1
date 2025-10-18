@@ -430,7 +430,7 @@ function Add-TaskForPerson {
         for ($i = 0; $i -lt $global:V9Config.Stakeholders.Count; $i++) {
             Write-Host "  $($i + 1). $($global:V9Config.Stakeholders[$i])" -ForegroundColor White
         }
-        Write-Host "Choose stakeholder (1-$($global:V9Config.Stakeholders.Count), default: 1 for General): " -NoNewline -ForegroundColor Yellow
+        Write-Host "Choose stakeholder (1-$($global:V9Config.Stakeholders.Count), or press Enter for General): " -NoNewline -ForegroundColor Yellow
         $stakeholderChoice = Read-Host
         if (-not [string]::IsNullOrWhiteSpace($stakeholderChoice) -and $stakeholderChoice -match '^\d+$') {
             $index = [int]$stakeholderChoice - 1
@@ -449,7 +449,7 @@ function Add-TaskForPerson {
             $startInfo = if ($init.StartDate) { " (starts: $($init.StartDate))" } else { " (no start date yet)" }
             Write-Host "  $($i + 1). $($init.Name)$startInfo" -ForegroundColor White
         }
-        Write-Host "Choose initiative (1-$($global:V9Config.Initiatives.Count), default: 1 for General): " -NoNewline -ForegroundColor Yellow
+        Write-Host "Choose initiative (1-$($global:V9Config.Initiatives.Count), or press Enter for General): " -NoNewline -ForegroundColor Yellow
         $initiativeChoice = Read-Host
         if (-not [string]::IsNullOrWhiteSpace($initiativeChoice) -and $initiativeChoice -match '^\d+$') {
             $index = [int]$initiativeChoice - 1
