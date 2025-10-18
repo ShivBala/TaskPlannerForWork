@@ -1,0 +1,38 @@
+SECTION,METADATA
+Version,2.0
+
+SECTION,SETTINGS
+Use Common Start Date,false
+Common Start Date,2025-10-20
+Current Ticket ID,83
+
+SECTION,TASK_SIZES
+S,"Small",3,false
+M,"Medium",5,false
+L,"Large",10,false
+XL,"Extra Large",20,false
+
+SECTION,PEOPLE
+Name,Week1,Week2,Week3,Week4,Week5,Week6,Week7,Week8,Project Ready,No OT
+"PersonA",20,20,20,20,20,20,20,20,Yes,Yes
+"PersonB",20,20,20,20,20,20,20,20,Yes,No
+"PersonC",20,20,20,20,20,20,20,20,Yes,Yes
+"PersonD",20,20,20,20,20,20,20,20,Yes,Yes
+
+SECTION,STAKEHOLDERS
+Name
+"Test Stakeholder"
+
+SECTION,INITIATIVES
+Name,Creation Date,Start Date
+"No OT Testing Initiative","2025-10-18","2025-10-20"
+
+SECTION,TICKETS
+UUID,ID,Description,Start Date,Size,Priority,Stakeholder,Initiative,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Created Date,Details Description,Details Positives,Details Negatives
+"test-uuid-001",1,"Fixed P1 task for PersonA (NoOT=Yes) - Medium size",2025-10-20,M,P1,"Test Stakeholder","No OT Testing Initiative","PersonA","To Do","Fixed","","2025-10-20(Initial planning@2025-10-20T08:00:00.000Z)","","M:5d(Initial sizing@2025-10-20T08:00:00.000Z)","","2025-10-18","Test Fixed task with No OT enabled. Expects 125% (25h/20h capacity)","","" 
+"test-uuid-002",2,"Fixed P1 task for PersonB (NoOT=No) - Medium size",2025-10-20,M,P1,"Test Stakeholder","No OT Testing Initiative","PersonB","To Do","Fixed","","2025-10-20(Initial planning@2025-10-20T08:00:00.000Z)","","M:5d(Initial sizing@2025-10-20T08:00:00.000Z)","","2025-10-18","Test Fixed task with No OT disabled. Expects 125% allowed","","" 
+"test-uuid-003",3,"Fixed P1 task for PersonC (NoOT=Yes) - Medium size",2025-10-20,M,P1,"Test Stakeholder","No OT Testing Initiative","PersonC","To Do","Fixed","","2025-10-20(Initial planning@2025-10-20T08:00:00.000Z)","","M:5d(Initial sizing@2025-10-20T08:00:00.000Z)","","2025-10-18","Test Fixed task with No OT enabled. Part of mixed workload","","" 
+"test-uuid-004",4,"Flexible P2 task for PersonC (NoOT=Yes) - Small size",2025-10-20,S,P2,"Test Stakeholder","No OT Testing Initiative","PersonC","To Do","Flexible","","2025-10-20(Initial planning@2025-10-20T08:00:00.000Z)","","S:3d(Initial sizing@2025-10-20T08:00:00.000Z)","","2025-10-18","Test Flexible P2 task. Should get squeezed by Fixed task (0h allocated)","","" 
+"test-uuid-005",5,"Flexible P1 task for PersonD (NoOT=Yes) - Small size",2025-10-20,S,P1,"Test Stakeholder","No OT Testing Initiative","PersonD","To Do","Flexible","","2025-10-20(Initial planning@2025-10-20T08:00:00.000Z)","","S:3d(Initial sizing@2025-10-20T08:00:00.000Z)","","2025-10-18","Test Flexible P1 task. Expects 80% time allocation (16h/20h)","","" 
+"test-uuid-006",6,"Flexible P2 task for PersonD (NoOT=Yes) - Small size",2025-10-20,S,P2,"Test Stakeholder","No OT Testing Initiative","PersonD","To Do","Flexible","","2025-10-20(Initial planning@2025-10-20T08:00:00.000Z)","","S:3d(Initial sizing@2025-10-20T08:00:00.000Z)","","2025-10-18","Test Flexible P2 task. Expects 20% time allocation (4h/20h)","","" 
+"test-uuid-007",7,"Fixed P1 task overload for PersonA (NoOT=Yes) - Small size",2025-10-20,S,P1,"Test Stakeholder","No OT Testing Initiative","PersonA","To Do","Fixed","","2025-10-20(Initial planning@2025-10-20T08:00:00.000Z)","","S:3d(Initial sizing@2025-10-20T08:00:00.000Z)","","2025-10-18","Second Fixed task for PersonA. Combined with TASK-1 expects 200% (40h/20h)","",""

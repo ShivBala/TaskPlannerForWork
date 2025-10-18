@@ -1311,7 +1311,11 @@
         function syncTaskSizes() {
             // Ensure ticketDays and taskSizeDefinitions stay in sync
             Object.keys(taskSizeDefinitions).forEach(key => {
-                ticketDays[key] = taskSizeDefinitions[key].days;
+                if (taskSizeDefinitions[key] && typeof taskSizeDefinitions[key].days === 'number') {
+                    ticketDays[key] = taskSizeDefinitions[key].days;
+                } else {
+                    console.warn(`⚠️ syncTaskSizes: Invalid task size for key "${key}":`, taskSizeDefinitions[key]);
+                }
             });
         }
 
@@ -3842,7 +3846,9 @@
                 // Check for section headers
                 if (line.startsWith('SECTION,')) {
                     currentSection = line.split(',')[1];
-                    skipHeader = true;
+                    // Only skip header for sections that have column headers
+                    // METADATA, SETTINGS, and TASK_SIZES go straight to data
+                    skipHeader = !['METADATA', 'SETTINGS', 'TASK_SIZES'].includes(currentSection);
                     continue;
                 }
 
@@ -3868,11 +3874,13 @@
                     }
                     else if (currentSection === 'TASK_SIZES') {
                         const [sizeKey, name, days, removable] = parseCSVLine(line);
+                        console.log(`📦 IMPORT TASK_SIZE: key="${sizeKey}", name="${name}", days="${days}" (parsed: ${parseFloat(days)}), removable="${removable}"`);
                         importedData.taskSizeDefinitions[sizeKey] = {
                             name: name,
                             days: parseFloat(days),
                             removable: removable === 'true'
                         };
+                        console.log(`📦 IMPORT TASK_SIZE RESULT:`, importedData.taskSizeDefinitions[sizeKey]);
                     }
                     else if (currentSection === 'STAKEHOLDERS') {
                         // V10: Parse stakeholders section
@@ -3952,12 +3960,13 @@
                         const isV10Format = firstCol && firstCol.includes('-'); // UUIDs contain hyphens
                         
                         if (isV10Format) {
-                            // V10 format with UUID
-                            [uuid, id, description, startDate, size, priority, stakeholder, initiative, assignedTeam, status, taskType, pauseComments, startDateHistory, endDateHistory, sizeHistory, customEndDate, detailsDescription, detailsPositives, detailsNegatives] = columns;
+                            // V10 format with UUID and Created Date
+                            [uuid, id, description, startDate, size, priority, stakeholder, initiative, assignedTeam, status, taskType, pauseComments, startDateHistory, endDateHistory, sizeHistory, customEndDate, createdDate, detailsDescription, detailsPositives, detailsNegatives] = columns;
                         } else {
                             // V9 format without UUID - generate one
                             [id, description, startDate, size, priority, assignedTeam, status, taskType, pauseComments, startDateHistory, endDateHistory, sizeHistory, customEndDate, detailsDescription, detailsPositives, detailsNegatives] = columns;
                             uuid = generateUUID();
+                            createdDate = ''; // V9 doesn't have created date
                             stakeholder = 'General'; // Default for V9 imports
                             initiative = 'General'; // Default for V9 imports
                         }
