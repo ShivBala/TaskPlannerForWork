@@ -479,9 +479,23 @@ function Write-V9ConfigFile {
     try {
         # Create backup if requested
         if ($CreateBackup -and (Test-Path $FilePath)) {
-            $backupPath = "$FilePath.backup_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+            # Get the parent directory of the file (Output folder)
+            $fileDir = Split-Path $FilePath -Parent
+            $parentDir = Split-Path $fileDir -Parent
+            $historyDir = Join-Path $parentDir "history"
+            
+            # Create history directory if it doesn't exist
+            if (-not (Test-Path $historyDir)) {
+                New-Item -Path $historyDir -ItemType Directory -Force | Out-Null
+            }
+            
+            # Create backup in history folder
+            $fileName = Split-Path $FilePath -Leaf
+            $backupFileName = "$fileName.backup_$(Get-Date -Format 'yyyyMMdd_HHmmss')"
+            $backupPath = Join-Path $historyDir $backupFileName
+            
             Copy-Item -Path $FilePath -Destination $backupPath -Force
-            Write-Host "💾 Backup created: $(Split-Path $backupPath -Leaf)" -ForegroundColor Cyan
+            Write-Host "💾 Backup created in history: $backupFileName" -ForegroundColor Cyan
         }
         
         Write-Host "💾 Writing V9 config to: $(Split-Path $FilePath -Leaf)" -ForegroundColor Cyan
