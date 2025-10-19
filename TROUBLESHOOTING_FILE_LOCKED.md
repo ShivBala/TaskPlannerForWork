@@ -5,7 +5,7 @@ When running `helper.ps1`, you see:
 ```
 ❌ The process cannot access the file because it is being used by another process
 ⚙️  Falling back to legacy mode
-```
+```test 
 
 ## Cause
 The V9 config file (`project_config_*.csv`) is open in another program:

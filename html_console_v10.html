@@ -1883,20 +1883,14 @@
             if (heatMapStartDate) {
                 startDate = new Date(heatMapStartDate);
             } else {
-                // Fallback to today-based calculation (avoid recursion)
-                startDate = new Date();
-                while (startDate.getDay() !== 1) {
-                    startDate.setDate(startDate.getDate() - 1);
-                }
+                // Fallback to today-based calculation using centralized function
+                startDate = getPreviousMonday(new Date());
             }
 
-            const weekStartDate = new Date(startDate);
-            weekStartDate.setDate(startDate.getDate() + (weekIndex * 7));
+            // Use centralized function to calculate week range
+            const { weekStart, weekEnd } = calculateWeekDateRange(startDate, weekIndex, false); // false = Friday only
 
-            const weekEndDate = new Date(weekStartDate);
-            weekEndDate.setDate(weekEndDate.getDate() + 4); // Friday
-
-            return `${weekStartDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEndDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+            return `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
         }
 
         function formatCompletionDate(startWeekIndex, remainingHours, totalWeeklyCapacity) {
@@ -2128,8 +2122,9 @@
             console.log('📊 Effort map:', effortMap);
             console.log('📊 Task size definitions:', taskSizeDefinitions);
 
-            // Create a deep clone of availability for resource tracking
-            const availabilityTracker = people.reduce((acc, p) => {
+            // Create a SHARED availability tracker for ALL tasks
+            // This ensures Flexible tasks see capacity already consumed by previously processed tasks
+            const sharedAvailabilityTracker = people.reduce((acc, p) => {
                 acc[p.name] = [...p.availability];
                 return acc;
             }, {});
@@ -2146,6 +2141,97 @@
                 console.log(`  - Ticket ${ticket.id}: ${ticket.description}, Start: ${ticket.startDate}, Size: ${ticket.size}`);
             });
 
+            // CRITICAL FIX: TWO-PASS PROCESSING
+            // Pass 1: All Fixed-Length tasks consume capacity from sharedAvailabilityTracker
+            // Pass 2: Process all tasks (Fixed get results from Pass 1, Flexible use remaining capacity)
+            
+            console.log('🔄 ========== PASS 1: Fixed-Length Capacity Consumption ==========');
+            const fixedLengthResults = new Map(); // Store results from Pass 1
+            
+            sortedTickets.forEach(ticket => {
+                const isFixedLength = ticket.isFixedLength !== false;
+                
+                // Skip if custom end date or not fixed-length or no assignees
+                if (ticket.customEndDate || !isFixedLength || ticket.assigned.length === 0) {
+                    return;
+                }
+                
+                console.log(`🔒 [PASS 1] Consuming capacity for Fixed-Length task ${ticket.id}: ${ticket.description}`);
+                
+                // Get task parameters
+                const taskDays = taskSizeDefinitions[ticket.size]?.days || 0;
+                const totalEffortHours = effortMap[ticket.size] || 0;
+                
+                // Calculate start date
+                let taskStartDate;
+                if (useCommonStartDate) {
+                    const commonDate = document.getElementById('common-start-date').value;
+                    taskStartDate = commonDate ? new Date(commonDate) : getEffectiveStartDate();
+                } else {
+                    taskStartDate = new Date(ticket.startDate || getEffectiveStartDate());
+                }
+                
+                const adjustedStartDate = getNextBusinessDay(new Date(taskStartDate));
+                const endDate = calculateTaskEndDate(taskStartDate, taskDays, true, ticket.assigned.length);
+                
+                // Calculate baseline for week indexing
+                let heatMapBaselineDate = new Date();
+                if (tickets.length > 0) {
+                    const earliestTask = tickets.reduce((earliest, task) =>
+                        new Date(task.startDate) < new Date(earliest.startDate) ? task : earliest
+                    );
+                    heatMapBaselineDate = new Date(earliestTask.startDate);
+                }
+                while (heatMapBaselineDate.getDay() !== 1) {
+                    heatMapBaselineDate.setDate(heatMapBaselineDate.getDate() - 1);
+                }
+                
+                // Consume capacity day by day
+                const hoursPerPersonPerDay = totalEffortHours / (taskDays * ticket.assigned.length);
+                let currentDate = new Date(adjustedStartDate);
+                
+                for (let day = 0; day < taskDays; day++) {
+                    const daysDiff = Math.round((currentDate.getTime() - heatMapBaselineDate.getTime()) / (1000 * 60 * 60 * 24));
+                    const weekIndex = Math.floor(daysDiff / 7);
+                    
+                    if (weekIndex >= 0 && weekIndex < 8) {
+                        ticket.assigned.forEach(personName => {
+                            if (sharedAvailabilityTracker[personName]?.[weekIndex] !== undefined) {
+                                sharedAvailabilityTracker[personName][weekIndex] -= hoursPerPersonPerDay;
+                                if (sharedAvailabilityTracker[personName][weekIndex] < 0) {
+                                    sharedAvailabilityTracker[personName][weekIndex] = 0;
+                                }
+                            }
+                        });
+                    }
+                    
+                    currentDate = addBusinessDays(currentDate, 1);
+                }
+                
+                console.log(`✅ [PASS 1] Task ${ticket.id} consumed ${totalEffortHours}h capacity (${hoursPerPersonPerDay.toFixed(1)}h/person/day × ${taskDays} days)`);
+                
+                // Store result for Pass 2
+                const explanation = `🔒 Fixed-Length Task\n` +
+                    `Task Size: ${ticket.size} = ${taskDays} business days\n` +
+                    `Total Effort: ${totalEffortHours} hours\n` +
+                    `Assigned to: ${ticket.assigned.join(', ')} (${ticket.assigned.length} person(s))\n` +
+                    `Start Date: ${formatDate(adjustedStartDate.toISOString().split('T')[0])}\n` +
+                    `Duration: ${taskDays} business days (fixed, regardless of team size)\n` +
+                    `Daily Capacity per Person: ${hoursPerPersonPerDay.toFixed(1)} hours/day (${((hoursPerPersonPerDay) / projectHoursPerDay * 100).toFixed(0)}% of ${projectHoursPerDay}h day)\n` +
+                    `End Date: ${formatDate(endDate.toISOString().split('T')[0])}\n\n` +
+                    `Note: Fixed-Length tasks maintain the same duration regardless of how many people are assigned.\n` +
+                    `Each person works on the task proportionally over the full duration.`;
+                
+                fixedLengthResults.set(ticket.id, {
+                    ...ticket,
+                    endDate: endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                    rawEndDate: endDate,
+                    explanation: explanation,
+                    isDelayed: false
+                });
+            });
+            
+            console.log('🔄 ========== PASS 2: Process All Tasks ==========');
             const projectedTickets = sortedTickets.map(ticket => {
                 console.log(`🎫 Processing ticket ${ticket.id}: ${ticket.description}`);
 
@@ -2164,48 +2250,15 @@
                     return result;
                 }
 
-                // NEW: Handle Fixed-Length tasks (isFixedLength = true or undefined for backwards compatibility)
-                const isFixedLength = ticket.isFixedLength !== false; // Default to true
-
-                if (isFixedLength && ticket.assigned.length > 0) {
-                    console.log(`🔒 Fixed-Length task ${ticket.id}: Duration is fixed regardless of assignees`);
-
-                    // Get task duration in business days
-                    const taskDays = taskSizeDefinitions[ticket.size]?.days || 0;
-                    const totalEffortHours = effortMap[ticket.size] || 0;
-
-                    // Calculate start date
-                    let taskStartDate;
-                    if (useCommonStartDate) {
-                        const commonDate = document.getElementById('common-start-date').value;
-                        taskStartDate = commonDate ? new Date(commonDate) : getEffectiveStartDate();
-                    } else {
-                        taskStartDate = new Date(ticket.startDate || getEffectiveStartDate());
-                    }
-                    taskStartDate = getNextBusinessDay(taskStartDate);
-
-                    // Fixed-Length: End date = Start date + task size (in business days)
-                    const endDate = addBusinessDays(new Date(taskStartDate), taskDays);
-
-                    const explanation = `🔒 Fixed-Length Task\n` +
-                        `Task Size: ${ticket.size} = ${taskDays} business days\n` +
-                        `Total Effort: ${totalEffortHours} hours\n` +
-                        `Assigned to: ${ticket.assigned.join(', ')} (${ticket.assigned.length} person(s))\n` +
-                        `Start Date: ${formatDate(taskStartDate.toISOString().split('T')[0])}\n` +
-                        `Duration: ${taskDays} business days (fixed, regardless of team size)\n` +
-                        `Daily Capacity per Person: ${(totalEffortHours / (taskDays * ticket.assigned.length)).toFixed(1)} hours/day (${((totalEffortHours / (taskDays * ticket.assigned.length)) / projectHoursPerDay * 100).toFixed(0)}% of ${projectHoursPerDay}h day)\n` +
-                        `End Date: ${formatDate(endDate.toISOString().split('T')[0])}\n\n` +
-                        `Note: Fixed-Length tasks maintain the same duration regardless of how many people are assigned.\n` +
-                        `Each person works on the task proportionally over the full duration.`;
-
-                    return {
-                        ...ticket,
-                        endDate: endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                        rawEndDate: endDate,
-                        explanation: explanation,
-                        isDelayed: false
-                    };
+                // Check if this was processed in Pass 1 (Fixed-Length)
+                if (fixedLengthResults.has(ticket.id)) {
+                    console.log(`✅ [PASS 2] Using Pass 1 result for Fixed-Length task ${ticket.id}`);
+                    return fixedLengthResults.get(ticket.id);
                 }
+
+                // At this point, we only handle Flexible tasks (Fixed-Length were handled in Pass 1)
+                // Flexible tasks will use the capacity remaining in sharedAvailabilityTracker
+                console.log(`⚡ [PASS 2] Processing Flexible task ${ticket.id}`);
 
                 const totalEffortHours = effortMap[ticket.size] || 0;
                 const assignedCount = ticket.assigned.length;
@@ -2231,31 +2284,10 @@
                     console.log(`📋 Tracked Only (Not Contributing): ${notProjectReadyPeople.join(', ')}`);
                 }
 
-                // Create fresh availability tracker for this task based on its start date
-                // This ensures each task starts with full availability from its start date onwards
-                const taskAvailabilityTracker = people.reduce((acc, p) => {
-                    acc[p.name] = [...p.availability];
-                    return acc;
-                }, {});
-
+                // Use SHARED availability tracker so this task sees capacity consumed by previous tasks
                 // Debug: Log availability for assigned people
                 ticket.assigned.forEach(personName => {
-                    console.log(`🔍 ${personName} availability:`, taskAvailabilityTracker[personName]);
-                });
-
-                // Apply capacity consumption from previous tasks that might overlap with this task
-                const thisTaskStartDate = new Date(ticket.startDate || getEffectiveStartDate());
-
-                // Only apply consumption from previous tasks that actually overlap with this task's timeline
-                sortedTickets.forEach(prevTicket => {
-                    if (prevTicket.id === ticket.id) return; // Skip self
-
-                    const prevStartDate = new Date(prevTicket.startDate || getEffectiveStartDate());
-                    if (prevStartDate >= thisTaskStartDate) return; // Skip future tasks
-
-                    // Check if this previous task overlaps with current task's timeline
-                    // For now, we'll simplify and let each task have fresh availability
-                    // This may need refinement for true overlapping task support
+                    console.log(`🔍 ${personName} availability:`, sharedAvailabilityTracker[personName]);
                 });
 
                 if (totalEffortHours === 0 || assignedCount === 0) {
@@ -2352,7 +2384,7 @@
 
                     // Only count capacity from project-ready resources
                     projectReadyAssigned.forEach(name => {
-                        const personCapacity = taskAvailabilityTracker[name] ? taskAvailabilityTracker[name][w] || 0 : 0;
+                        const personCapacity = sharedAvailabilityTracker[name] ? sharedAvailabilityTracker[name][w] || 0 : 0;
                         pooledCapacityThisWeek += personCapacity;
                         capacityBreakdown[name] = personCapacity;
                         console.log(`👤 ${name} Week ${w + 1}: ${personCapacity} hours available (Project Ready)`);
@@ -2360,7 +2392,7 @@
 
                     // Log non-project-ready resources for tracking but don't include in capacity
                     notProjectReadyAssigned.forEach(name => {
-                        const personCapacity = taskAvailabilityTracker[name] ? taskAvailabilityTracker[name][w] || 0 : 0;
+                        const personCapacity = sharedAvailabilityTracker[name] ? sharedAvailabilityTracker[name][w] || 0 : 0;
                         capacityBreakdown[name] = `${personCapacity} (Not Contributing)`;
                         console.log(`👤 ${name} Week ${w + 1}: ${personCapacity} hours available (Not Project Ready - Tracked Only)`);
                     });
@@ -2393,8 +2425,8 @@
                             if (personCapacity > 0) {
                                 const proportion = personCapacity / pooledCapacityThisWeek;
                                 const timeToDeduct = capacityUsed * proportion;
-                                taskAvailabilityTracker[name][w] -= timeToDeduct;
-                                explanation += `  - ${name} contribution: ${timeToDeduct.toFixed(1)} hours (Remaining: ${taskAvailabilityTracker[name][w].toFixed(1)}).\n`;
+                                sharedAvailabilityTracker[name][w] -= timeToDeduct;
+                                explanation += `  - ${name} contribution: ${timeToDeduct.toFixed(1)} hours (Remaining: ${sharedAvailabilityTracker[name][w].toFixed(1)}).\n`;
                             }
                         });
                         break;
@@ -2404,7 +2436,7 @@
                         console.log(`🔄 Week ${w + 1}: Used all ${pooledCapacityThisWeek} hours, ${currentHoursToConsume} hours remaining`);
 
                         ticket.assigned.forEach(name => {
-                            taskAvailabilityTracker[name][w] = 0;
+                            sharedAvailabilityTracker[name][w] = 0;
                         });
                     }
                 }
@@ -5401,6 +5433,14 @@
                 const oldType = wasFixed ? 'Fixed-Length' : 'Flexible';
 
                 console.log(`🔄 Ticket #${ticketId} task type changed from ${oldType} to ${newType}`);
+                console.log(`🔍 Task details:`, {
+                    id: ticket.id,
+                    description: ticket.description,
+                    size: ticket.size,
+                    assigned: ticket.assigned,
+                    startDate: ticket.startDate,
+                    isFixedLength: ticket.isFixedLength
+                });
 
                 // Clear any custom end date override when task type changes
                 // This allows the system to recalculate end dates based on the new type
@@ -5413,8 +5453,11 @@
                 markDirty();
 
                 // Recalculate and re-render immediately (task type affects timeline calculations)
+                console.log(`⚡ Triggering full recalculation for ticket #${ticketId}`);
                 calculateProjection();
                 saveToLocalStorage();
+                
+                console.log(`✅ Recalculation complete for ticket #${ticketId}`);
             }
         }
 
@@ -6114,39 +6157,8 @@ ${ticket.explanation}
             }
 
             // Get the start date for the heat map with smart baseline calculation
-            let startDate = new Date();
-
-            if (activeTickets.length > 0) {
-                // Find earliest task with weekend adjustment for proper work week planning
-                let earliestTaskDate = null;
-
-                activeTickets.forEach(task => {
-                    let taskStartDate = new Date(task.startDate);
-
-                    // Apply weekend adjustment - move weekend starts to next Monday
-                    const dayOfWeek = taskStartDate.getDay();
-                    if (dayOfWeek === 0) { // Sunday
-                        taskStartDate.setDate(taskStartDate.getDate() + 1);
-                    } else if (dayOfWeek === 6) { // Saturday
-                        taskStartDate.setDate(taskStartDate.getDate() + 2);
-                    }
-
-                    // Track the earliest adjusted task date
-                    if (!earliestTaskDate || taskStartDate < earliestTaskDate) {
-                        earliestTaskDate = new Date(taskStartDate);
-                    }
-                });
-
-                // Use the earliest adjusted task date if it exists
-                if (earliestTaskDate) {
-                    startDate = earliestTaskDate;
-                }
-            }
-
-            // Ensure we start from a Monday (should already be Monday due to weekend adjustment above)
-            while (startDate.getDay() !== 1) {
-                startDate.setDate(startDate.getDate() - 1);
-            }
+            // Use centralized function to find earliest task and align to Monday
+            const startDate = getHeatMapBaselineDate(activeTickets);
 
             // Store the baseline for header calculations
             heatMapStartDate = new Date(startDate);
@@ -6219,10 +6231,8 @@ ${ticket.explanation}
 
             // Process each week chronologically
             for (let weekIndex = 0; weekIndex < 8; weekIndex++) {
-                const weekStart = new Date(startDate);
-                weekStart.setDate(startDate.getDate() + (weekIndex * 7));
-                const weekEnd = new Date(weekStart);
-                weekEnd.setDate(weekStart.getDate() + 6);
+                // Use centralized function to get week date range
+                const { weekStart, weekEnd } = calculateWeekDateRange(startDate, weekIndex, true);
                 
                 console.log(`\n📆 === WEEK ${weekIndex + 1} (${formatDate(weekStart)} - ${formatDate(weekEnd)}) ===`);
 
@@ -6238,11 +6248,8 @@ ${ticket.explanation}
                         if (!ticket.assigned.includes(person.name)) return false;
                         if (taskRemainingEffort[ticket.id][person.name] <= 0) return false;
 
-                        // Check if task has started by this week
-                        let taskStart = new Date(ticket.startDate);
-                        const taskStartDay = taskStart.getDay();
-                        if (taskStartDay === 0) taskStart.setDate(taskStart.getDate() + 1);
-                        else if (taskStartDay === 6) taskStart.setDate(taskStart.getDate() + 2);
+                        // Check if task has started by this week (use centralized weekend adjustment)
+                        const taskStart = getNextBusinessDay(new Date(ticket.startDate));
 
                         return taskStart <= weekEnd;
                     });
@@ -6443,6 +6450,38 @@ ${ticket.explanation}
             return heatMapData;
         }
 
+        // ============================================================================
+        // CENTRALIZED DATE & TIME CALCULATION UTILITIES
+        // ============================================================================
+        // 
+        // This section contains ALL date/time calculation logic for the application.
+        // These functions are the SINGLE SOURCE OF TRUTH for:
+        //   - Business day calculations (weekends, holidays)
+        //   - Task end date calculations (Fixed-Length vs Flexible)
+        //   - Week boundary calculations (Monday alignment)
+        //   - Heat map baseline calculations
+        //
+        // CRITICAL: When porting to PowerShell or other languages, use ONLY these
+        // functions as the reference implementation. Do NOT duplicate logic elsewhere.
+        //
+        // Function Summary:
+        //   1. calculateBusinessDays() - Count business days between two dates
+        //   2. addBusinessDays() - Add N business days to a date
+        //   3. getNextBusinessDay() - Move weekend dates to next Monday
+        //   4. getPreviousMonday() - Find the Monday of a week
+        //   5. getHeatMapBaselineDate() - Calculate Week 1 start date
+        //   6. calculateWeekDateRange() - Get week start/end dates
+        //   7. calculateTaskEndDate() - Calculate task completion date
+        //
+        // ============================================================================
+
+        /**
+         * Calculate the number of business days between two dates
+         * Business days = Monday through Friday only
+         * @param {Date} startDate - The start date (inclusive)
+         * @param {Date} endDate - The end date (inclusive)
+         * @returns {number} The number of business days
+         */
         function calculateBusinessDays(startDate, endDate) {
             let businessDays = 0;
             const currentDate = new Date(startDate);
@@ -6456,6 +6495,13 @@ ${ticket.explanation}
             return businessDays;
         }
 
+        /**
+         * Add N business days to a date
+         * Skips weekends (Saturday/Sunday) automatically
+         * @param {Date} startDate - The starting date
+         * @param {number} businessDaysToAdd - Number of business days to add
+         * @returns {Date} The resulting date after adding business days
+         */
         function addBusinessDays(startDate, businessDaysToAdd) {
             const result = new Date(startDate);
             let daysAdded = 0;
@@ -6471,6 +6517,12 @@ ${ticket.explanation}
             return result;
         }
 
+        /**
+         * Move a date to the next business day if it falls on a weekend
+         * Saturday → Monday, Sunday → Monday, Weekdays → unchanged
+         * @param {Date} date - The date to check
+         * @returns {Date} The next business day (or same date if already a business day)
+         */
         function getNextBusinessDay(date) {
             const result = new Date(date);
             const dayOfWeek = result.getDay();
@@ -6482,6 +6534,100 @@ ${ticket.explanation}
             }
 
             return result;
+        }
+
+        /**
+         * Get the previous Monday from a given date
+         * Used to align week boundaries for heat map calculations
+         * @param {Date} date - The date to find the previous Monday for
+         * @returns {Date} The previous Monday (or the same date if already Monday)
+         */
+        function getPreviousMonday(date) {
+            const result = new Date(date);
+            while (result.getDay() !== 1) { // 1 = Monday
+                result.setDate(result.getDate() - 1);
+            }
+            return result;
+        }
+
+        /**
+         * Calculate heat map baseline date (start of Week 1)
+         * Finds the earliest task start date (adjusted for weekends), then finds the Monday of that week
+         * @param {Array} tickets - Array of ticket objects with startDate property
+         * @returns {Date} The Monday that starts Week 1 of the heat map
+         */
+        function getHeatMapBaselineDate(tickets) {
+            if (!tickets || tickets.length === 0) {
+                // No tickets, use current date and find its Monday
+                return getPreviousMonday(new Date());
+            }
+
+            // Find earliest task start date with weekend adjustment
+            let earliestTaskDate = null;
+
+            tickets.forEach(task => {
+                // Adjust weekend starts to next Monday
+                const adjustedStart = getNextBusinessDay(new Date(task.startDate));
+                
+                // Track the earliest adjusted date
+                if (!earliestTaskDate || adjustedStart < earliestTaskDate) {
+                    earliestTaskDate = new Date(adjustedStart);
+                }
+            });
+
+            // Find the Monday of the week containing the earliest task
+            return getPreviousMonday(earliestTaskDate || new Date());
+        }
+
+        /**
+         * Calculate week date range for a given week index
+         * @param {Date} baselineDate - The baseline date (usually Monday of Week 1)
+         * @param {number} weekIndex - Zero-based week index (0 = Week 1, 1 = Week 2, etc.)
+         * @param {boolean} includeWeekend - If true, range includes Sat-Sun; if false, ends on Friday
+         * @returns {Object} Object with weekStart and weekEnd Date objects
+         */
+        function calculateWeekDateRange(baselineDate, weekIndex, includeWeekend = true) {
+            const weekStart = new Date(baselineDate);
+            weekStart.setDate(baselineDate.getDate() + (weekIndex * 7));
+            
+            const weekEnd = new Date(weekStart);
+            const daysToAdd = includeWeekend ? 6 : 4; // 6 = Sunday, 4 = Friday
+            weekEnd.setDate(weekStart.getDate() + daysToAdd);
+            
+            return { weekStart, weekEnd };
+        }
+
+        /**
+         * Centralized function to calculate task end date
+         * @param {Date|string} startDate - The task start date
+         * @param {number} taskDurationDays - The task duration in business days
+         * @param {boolean} isFixedLength - Whether the task is fixed-length (true) or flexible (false)
+         * @param {number} assigneeCount - Number of people assigned to the task (used for flexible tasks)
+         * @returns {Date} The calculated end date
+         */
+        function calculateTaskEndDate(startDate, taskDurationDays, isFixedLength = true, assigneeCount = 1) {
+            // Ensure we have a valid Date object
+            let taskStartDate = new Date(startDate);
+            
+            // Move start date to next business day if it falls on a weekend
+            taskStartDate = getNextBusinessDay(taskStartDate);
+            
+            // Calculate business days needed
+            let businessDaysNeeded;
+            if (isFixedLength) {
+                // Fixed-Length: Duration stays constant regardless of assignees
+                businessDaysNeeded = Math.ceil(taskDurationDays);
+            } else {
+                // Flexible: Duration splits among assignees
+                const daysPerPerson = taskDurationDays / Math.max(assigneeCount, 1);
+                businessDaysNeeded = Math.ceil(daysPerPerson);
+            }
+            
+            // Calculate end date
+            // Subtract 1 because the start date counts as day 1 of the task
+            const endDate = addBusinessDays(new Date(taskStartDate), businessDaysNeeded - 1);
+            
+            return endDate;
         }
 
         function renderWorkloadHeatMap() {
@@ -6711,88 +6857,30 @@ ${ticket.explanation}
                 ticket.status !== 'Done' && ticket.status !== 'Paused'
             );
 
-            // Calculate the same start date as the heat map with smart baseline
-            let heatMapStartDate = new Date();
+            // Use centralized function to calculate heat map baseline date
+            const heatMapStartDate = getHeatMapBaselineDate(activeTickets);
 
-            if (activeTickets.length > 0) {
-                // Find earliest task with weekend adjustment (same logic as heat map)
-                let earliestTaskDate = null;
+            // Use centralized function to calculate week date range
+            const { weekStart: weekStartDate, weekEnd: weekEndDate } = calculateWeekDateRange(heatMapStartDate, weekIndex, true);
 
-                activeTickets.forEach(task => {
-                    let taskStartDate = new Date(task.startDate);
-
-                    // Apply weekend adjustment - move weekend starts to next Monday
-                    const dayOfWeek = taskStartDate.getDay();
-                    if (dayOfWeek === 0) { // Sunday
-                        taskStartDate.setDate(taskStartDate.getDate() + 1);
-                    } else if (dayOfWeek === 6) { // Saturday
-                        taskStartDate.setDate(taskStartDate.getDate() + 2);
-                    }
-
-                    // Track the earliest adjusted task date
-                    if (!earliestTaskDate || taskStartDate < earliestTaskDate) {
-                        earliestTaskDate = new Date(taskStartDate);
-                    }
-                });
-
-                // Use the earliest adjusted task date if it exists
-                if (earliestTaskDate) {
-                    heatMapStartDate = earliestTaskDate;
-                }
-            }
-
-            // Ensure we start from a Monday (should already be Monday due to weekend adjustment above)
-            while (heatMapStartDate.getDay() !== 1) {
-                heatMapStartDate.setDate(heatMapStartDate.getDate() - 1);
-            }
-
-            // Calculate the exact week dates used by heat map
-            const weekStartDate = new Date(heatMapStartDate);
-            weekStartDate.setDate(heatMapStartDate.getDate() + (weekIndex * 7));
-
-            const weekEndDate = new Date(weekStartDate);
-            weekEndDate.setDate(weekStartDate.getDate() + 6);
-
-            // Find all tasks for this person in this week using latest tickets data
+            // Find all tasks for this person in this week using PROJECTED tickets data
+            // This ensures we use the same end dates calculated by two-pass processing
             const weekTasks = [];
-            tickets.forEach(ticket => {
-                if (Array.isArray(ticket.assigned) && ticket.assigned.includes(personName)) {
-                    let taskStartDate = new Date(ticket.startDate);
+            projectedTickets.forEach(projectedTicket => {
+                if (Array.isArray(projectedTicket.assigned) && projectedTicket.assigned.includes(personName)) {
+                    // Use the rawEndDate from projected tickets (calculated with two-pass processing)
+                    const taskEndDate = projectedTicket.rawEndDate || new Date(projectedTicket.endDate);
+                    
+                    // Get the adjusted start date (moved to business day if needed)
+                    const taskStartDate = getNextBusinessDay(new Date(projectedTicket.startDate));
 
-                    // Calculate the task end date based on task type (Fixed-Length vs Flexible)
-                    const totalTaskDays = taskSizeDefinitions[ticket.size]?.days || ticketDays[ticket.size] || 1;
-                    let taskEndDate;
-
-                    // Check task type to determine end date calculation
-                    const isFixedLength = ticket.isFixedLength !== false; // Default to true
-
-                    if (isFixedLength) {
-                        // Fixed-Length: Duration stays constant regardless of assignees
-                        const businessDaysNeeded = Math.ceil(totalTaskDays);
-                        taskEndDate = addBusinessDays(new Date(taskStartDate), businessDaysNeeded - 1);
-                    } else {
-                        // Flexible: Duration splits among assignees
-                        const daysPerPerson = totalTaskDays / Math.max(ticket.assigned.length, 1);
-                        const businessDaysNeeded = Math.ceil(daysPerPerson);
-                        taskEndDate = addBusinessDays(new Date(taskStartDate), businessDaysNeeded - 1);
-                    }
-
-                    // Apply weekend adjustment for consistent work week assignment
-                    const taskStartDay = taskStartDate.getDay();
-                    if (taskStartDay === 0) { // Sunday
-                        taskStartDate = new Date(taskStartDate);
-                        taskStartDate.setDate(taskStartDate.getDate() + 1); // Move to Monday
-                    } else if (taskStartDay === 6) { // Saturday
-                        taskStartDate = new Date(taskStartDate);
-                        taskStartDate.setDate(taskStartDate.getDate() + 2); // Move to Monday
-                    }
                     // Task overlaps if it starts before week ends and ends after week starts
                     if (taskStartDate <= weekEndDate && taskEndDate >= weekStartDate) {
                         weekTasks.push({
-                            ...ticket,
+                            ...projectedTicket,
                             taskStartDate: taskStartDate,
                             taskEndDate: taskEndDate,
-                            originalStartDate: new Date(ticket.startDate)
+                            originalStartDate: new Date(projectedTicket.startDate)
                         });
                     }
                 }
@@ -6857,8 +6945,8 @@ ${ticket.explanation}
                 });
                 html += '</div>';
                 // Add calendar visualization
-                const weekStartDate = new Date(getEffectiveStartDate());
-                weekStartDate.setDate(weekStartDate.getDate() + (weekIndex * 7));
+                // Use centralized function to calculate week start date
+                const { weekStart: weekStartDate } = calculateWeekDateRange(heatMapStartDate, weekIndex, true);
                 html += generateTaskCalendar(weekTasks, weekStartDate);
             }
 
@@ -6879,17 +6967,12 @@ ${ticket.explanation}
             // Update task type
             task.isFixedLength = !isFlexible;
 
-            // Save to localStorage
+            // Mark as dirty and save to localStorage
+            markDirty();
             saveToLocalStorage();
 
-            // Recalculate everything
-            const projectedTickets = getProjectedTickets();
-
-            // Refresh the heat map
-            renderWorkloadHeatMap();
-
-            // Refresh the task table with updated end dates
-            renderTickets(projectedTickets);
+            // Trigger full recalculation to update end dates based on new task type
+            calculateProjection();
 
             // Re-render the modal with updated data
             const personName = task.assigned[0]; // Get first assignee to determine which person

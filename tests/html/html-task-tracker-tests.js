@@ -520,15 +520,18 @@ class HTMLTaskTrackerTests {
                 ];
                 this.setTickets(testTickets);
 
-                // Test saving to localStorage
-                if (this.appWindow.saveData) {
+                // Test saving to localStorage - try all possible function names
+                if (this.appWindow.saveToLocalStorage) {
+                    this.appWindow.saveToLocalStorage();
+                } else if (this.appWindow.saveData) {
                     this.appWindow.saveData();
                 } else if (this.appWindow.saveToStorage) {
                     this.appWindow.saveToStorage();
                 }
 
-                // Check that data was saved
+                // Check that data was saved - check all possible storage keys
                 const savedData = localStorage.getItem('projectSchedulerDataV2') || 
+                                 localStorage.getItem('taskSchedulerDataV10') ||
                                  localStorage.getItem('taskScheduler_tasks');
                 
                 this.testFramework.assert(

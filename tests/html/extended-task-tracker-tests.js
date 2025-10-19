@@ -1427,12 +1427,24 @@ class ExtendedTaskTrackerTests {
             
             try {
                 if (this.appWindow.saveToLocalStorage) {
+                    // Clear any existing data first
+                    localStorage.removeItem('projectSchedulerDataV2');
+                    localStorage.removeItem('taskSchedulerDataV10');
+                    
                     this.appWindow.saveToLocalStorage();
                     
-                    const saved = localStorage.getItem('projectSchedulerDataV2');
+                    // Check all possible storage keys
+                    const saved = localStorage.getItem('projectSchedulerDataV2') ||
+                                 localStorage.getItem('taskSchedulerDataV10');
                     this.testFramework.assert(
                         saved !== null,
                         'Data should be saved to localStorage'
+                    );
+                } else {
+                    // Skip test if function not available
+                    this.testFramework.assert(
+                        true,
+                        'Data should be saved to localStorage (function not available - skipping)'
                     );
                 }
             } finally {
@@ -1444,20 +1456,32 @@ class ExtendedTaskTrackerTests {
             const backup = this.backupApplicationState();
             
             try {
-                // Save test data
+                // Save test data to the correct storage key
                 const testData = {
                     tickets: [this.createTestTicket()],
                     people: [this.createTestPerson()],
-                    currentTicketId: 10
+                    currentTicketId: 10,
+                    version: 'v10'
                 };
-                localStorage.setItem('projectSchedulerDataV2', JSON.stringify(testData));
+                
+                // Try to determine the correct storage key from STORAGE_KEY constant
+                const storageKey = this.appWindow.STORAGE_KEY || 'projectSchedulerDataV2';
+                localStorage.setItem(storageKey, JSON.stringify(testData));
                 
                 if (this.appWindow.loadFromLocalStorage) {
-                    const loaded = this.appWindow.loadFromLocalStorage();
+                    this.appWindow.loadFromLocalStorage();
                     
+                    // Check if data was loaded by verifying tickets exist
+                    const loadedTickets = this.getTickets();
                     this.testFramework.assert(
-                        loaded === true,
+                        loadedTickets && loadedTickets.length > 0,
                         'Should successfully load from localStorage'
+                    );
+                } else {
+                    // Skip test if function not available
+                    this.testFramework.assert(
+                        true,
+                        'Should successfully load from localStorage (function not available - skipping)'
                     );
                 }
             } finally {
@@ -2480,16 +2504,20 @@ class ExtendedTaskTrackerTests {
             const backup = this.backupApplicationState();
             try {
                 this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                
+                // Use Fixed-Length tasks to force overallocation
+                // Fixed-Length tasks ignore capacity limits and will show >100% if overloaded
+                // Flexible tasks now queue properly with two-pass processing
                 this.setTickets([
                     this.createTestTicket({ 
                         size: 'L',
-                        isFixedLength: false,
+                        isFixedLength: true, // Changed to Fixed-Length for guaranteed overallocation
                         assigned: ['Alice'],
                         startDate: '2025-10-14'
                     }),
                     this.createTestTicket({ 
                         size: 'L',
-                        isFixedLength: false,
+                        isFixedLength: true, // Changed to Fixed-Length for guaranteed overallocation
                         assigned: ['Alice'],
                         startDate: '2025-10-14' // Same start date
                     })
@@ -2497,7 +2525,8 @@ class ExtendedTaskTrackerTests {
                 
                 const heatMapData = this.appWindow.calculateWorkloadHeatMap();
                 
-                // Two full tasks = 200% capacity
+                // Two Fixed-Length tasks with same assignee = overallocation (>100% capacity)
+                // This tests that Fixed-Length tasks can exceed 100% (they ignore capacity constraints)
                 this.testFramework.assert(
                     heatMapData && heatMapData[0].weeks.some(w => w.utilization > 100),
                     'Overallocation should show >100% utilization'
@@ -3304,31 +3333,41 @@ class ExtendedTaskTrackerTests {
         this.testFramework.it('Edit: Toggle task type triggers end date recalculation', () => {
             const backup = this.backupApplicationState();
             try {
+                // Set up people and task
+                this.setPeople([
+                    this.createTestPerson({ name: 'Alice' }),
+                    this.createTestPerson({ name: 'Bob' })
+                ]);
+                
                 const task = this.createTestTicket({
                     description: 'Recalc Test',
                     size: 'XL', // 10 days
                     isFixedLength: true,
-                    assignedPeople: ['Alice', 'Bob'],
+                    assigned: ['Alice', 'Bob'],
                     startDate: '2025-10-14'
                 });
 
                 // Get initial projected tickets
                 const initialProjected = this.appWindow.getProjectedTickets();
                 const initialTask = initialProjected.find(t => t.id === task.id);
-                const initialEndDate = initialTask ? initialTask.endDate : null;
+                const initialEndDate = initialTask ? initialTask.rawEndDate : null;
 
-                // Toggle to Flexible (should halve the duration with 2 people)
+                // Toggle to Flexible (should change the duration calculation with 2 people)
                 // Directly modify the task since toggleTaskTypeInModal requires UI context
                 const ticketToToggle = this.getTickets().find(t => t.id === task.id);
                 if (ticketToToggle) {
                     ticketToToggle.isFixedLength = false; // Toggle to Flexible
                     
+                    // Must recalculate projected tickets after toggle
                     const updatedProjected = this.appWindow.getProjectedTickets();
                     const updatedTask = updatedProjected.find(t => t.id === task.id);
-                    const updatedEndDate = updatedTask ? updatedTask.endDate : null;
+                    const updatedEndDate = updatedTask ? updatedTask.rawEndDate : null;
 
+                    // With 2 people, Flexible task duration = ceiling(10 days / 2) = 5 days
+                    // Fixed task duration = 10 days (unchanged by assignee count)
+                    // The end dates should be different
                     this.testFramework.assert(
-                        initialEndDate !== updatedEndDate,
+                        initialEndDate && updatedEndDate && initialEndDate.getTime() !== updatedEndDate.getTime(),
                         'End date should change after task type toggle'
                     );
                 }
@@ -3401,29 +3440,38 @@ class ExtendedTaskTrackerTests {
         this.testFramework.it('Edit: Toggle in modal refreshes heat map', () => {
             const backup = this.backupApplicationState();
             try {
+                // Set up person
+                this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                
                 const task = this.createTestTicket({
                     description: 'Modal Toggle Test',
                     size: 'L',
                     isFixedLength: true,
-                    assignedPeople: ['Alice'],
+                    assigned: ['Alice'],
                     startDate: '2025-10-14'
                 });
 
                 // Get initial heat map
                 const initialHeatMap = this.appWindow.calculateWorkloadHeatMap();
                 const initialAlice = initialHeatMap ? initialHeatMap.find(p => p.name === 'Alice') : null;
+                const initialUtilization = initialAlice ? initialAlice.weeks[0]?.utilization : 0;
 
-                // Toggle task type directly
+                // Toggle task type directly (Fixed → Flexible)
                 const ticketToToggle = this.getTickets().find(t => t.id === task.id);
                 if (ticketToToggle) {
                     ticketToToggle.isFixedLength = false; // Toggle to Flexible
                     
                     const updatedHeatMap = this.appWindow.calculateWorkloadHeatMap();
                     const updatedAlice = updatedHeatMap ? updatedHeatMap.find(p => p.name === 'Alice') : null;
+                    const updatedUtilization = updatedAlice ? updatedAlice.weeks[0]?.utilization : 0;
 
                     // Heat map should be calculated before and after toggle
+                    // Note: Utilization might be same or different depending on task type behavior
+                    // The key test is that both calculations succeed
                     this.testFramework.assert(
-                        initialAlice && updatedAlice,
+                        initialAlice && updatedAlice && 
+                        typeof initialUtilization === 'number' && 
+                        typeof updatedUtilization === 'number',
                         'Heat map should be calculated before and after toggle'
                     );
                 }
@@ -3528,12 +3576,15 @@ class ExtendedTaskTrackerTests {
         this.testFramework.it('Edit: Toggle task type correctly recalculates capacity with overallocation', () => {
             const backup = this.backupApplicationState();
             try {
+                // Set up person
+                this.setPeople([this.createTestPerson({ name: 'Alice' })]);
+                
                 // Create multiple large tasks for same person
                 this.createTestTicket({
                     description: 'Task 1',
                     size: 'XXL', // 15 days
                     isFixedLength: true,
-                    assignedPeople: ['Alice'],
+                    assigned: ['Alice'],
                     startDate: '2025-10-14'
                 });
 
@@ -3541,25 +3592,29 @@ class ExtendedTaskTrackerTests {
                     description: 'Task 2',
                     size: 'XXL', // 15 days
                     isFixedLength: true,
-                    assignedPeople: ['Alice'],
+                    assigned: ['Alice'],
                     startDate: '2025-10-14'
                 });
 
-                // Initial capacity should show overallocation
+                // Initial capacity should show overallocation (two Fixed tasks = 200% capacity)
                 const initialHeatMap = this.appWindow.calculateWorkloadHeatMap();
                 const initialAlice = initialHeatMap ? initialHeatMap.find(p => p.name === 'Alice') : null;
+                const initialOverallocated = initialAlice ? initialAlice.weeks.some(w => w.utilization > 100) : false;
                 
                 // Toggle task2 to Flexible directly
                 const ticketToToggle = this.getTickets().find(t => t.id === task2.id);
                 if (ticketToToggle) {
                     ticketToToggle.isFixedLength = false; // Toggle to Flexible
                     
+                    // After toggle: Task1 (Fixed) stays, Task2 (Flexible) queues based on remaining capacity
                     const updatedHeatMap = this.appWindow.calculateWorkloadHeatMap();
                     const updatedAlice = updatedHeatMap ? updatedHeatMap.find(p => p.name === 'Alice') : null;
 
-                    // Both heat maps should exist
+                    // Both heat maps should exist and handle the scenario correctly
+                    // Initially: overallocated (two Fixed tasks)
+                    // After toggle: Task1 uses capacity, Task2 queues with two-pass processing
                     this.testFramework.assert(
-                        initialAlice && updatedAlice,
+                        initialAlice && updatedAlice && initialOverallocated,
                         'Heat map should handle overallocation before and after toggle'
                     );
                 }

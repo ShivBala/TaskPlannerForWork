@@ -1,12 +1,28 @@
-# 📊 HTML Task Tracker V10# 📊 HTML Task Tracker with Excel Export System
+# 📊 HTML Task Tracker V10
 
+A comprehensive task management system combining an interactive HTML console with PowerShell CLI interface. Features include capacity planning, stakeholder management, initiative tracking, smart routing with fuzzy matching, and Excel VBA integration.
 
+## 🆕 Recent Updates (October 2025)
 
-A comprehensive task management system combining an interactive HTML console with PowerShell CLI interface. Features include capacity planning, stakeholder management, initiative tracking, and smart routing with fuzzy matching.A comprehensive PowerShell-based task management system with intelligent priority conflict resolution, ETA tracking, HTML reporting capabilities, and advanced Excel VBA integration.
+### Export Workflow Enhancement
+- **Export Closed Button**: Separate button to export closed items before exporting full configuration
+- **Smart Export Flow**: Mandatory closed items export prevents browser blocking multiple downloads
+- **Dirty State Management**: Clear tracking of unsaved changes
 
+### PowerShell V9 CSV Integration
+- **Multi-Section CSV Format**: Supports METADATA, SETTINGS, TASK_SIZES, PEOPLE, TICKETS sections
+- **Auto-Detection**: Automatically finds latest `project_config_*.csv` in Downloads folder
+- **Full Round-Trip Support**: HTML → PowerShell → HTML with complete data preservation
+- **Backward Compatible**: Existing helper.ps1 commands work seamlessly with V9 format
 
+### Code Quality Improvements
+- **Centralized End Date Calculation**: Single `calculateTaskEndDate()` function eliminates inconsistencies
+- **Bug Fix**: Fixed-Length task end dates now calculate correctly (was adding 1 extra business day)
+- **Consistent Logic**: All end date calculations now use same business day counting algorithm
 
-## 🚀 Quick Start## Features
+## 🚀 Quick Start
+
+## Features
 
 
 
