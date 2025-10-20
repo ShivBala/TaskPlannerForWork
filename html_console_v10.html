@@ -510,6 +510,16 @@
                     <div>
                         <h2 class="card-title">📊 Team Workload Heat Map (Next 8 Weeks)</h2>
                         <p class="text-sm text-gray-600 mt-1">Visual overview of team capacity utilization based on individual availability</p>
+                        <div class="mt-2">
+                            <label class="flex items-center gap-2 text-sm cursor-pointer">
+                                <input type="checkbox" 
+                                       id="show-p1-percentage" 
+                                       checked
+                                       onchange="toggleP1Display(this.checked)"
+                                       class="w-4 h-4 text-red-600 border-gray-300 rounded">
+                                <span class="text-gray-700">Show P1 Priority Percentages</span>
+                            </label>
+                        </div>
                     </div>
                     <div class="flex gap-2">
                         <button onclick="openBulkTaskResolution()" class="btn-enterprise flex items-center gap-2">
@@ -746,18 +756,6 @@
                         </p>
                         <span class="text-xs text-blue-200 group-hover:text-white font-medium">Click to view formula →</span>
                     </button>
-
-                    <button onclick="showInitiativeTimeline()"
-                            class="p-4 bg-gradient-to-br from-blue-600 to-blue-700 border border-blue-800 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex flex-col items-center gap-2 group shadow-md">
-                        <div class="flex items-center gap-2">
-                            <span class="text-2xl">🎯</span>
-                            <span class="text-base font-semibold text-white">Initiative Timeline</span>
-                        </div>
-                        <p class="text-xs text-blue-100 text-center">
-                            View initiatives with date ranges
-                        </p>
-                        <span class="text-xs text-blue-200 group-hover:text-white font-medium">Click to view timeline →</span>
-                    </button>
                 </div>
             </div>
         </div>
@@ -792,34 +790,6 @@
             <div class="p-6 overflow-y-auto max-h-[60vh]">
                 <div id="modal-content">
                     <!-- Task details will be loaded here -->
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Initiative Timeline Modal -->
-    <div id="initiative-timeline-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
-        <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[80vh] overflow-hidden">
-            <div class="bg-gradient-to-r from-purple-600 to-purple-700 text-white px-6 py-4 flex justify-between items-center">
-                <div>
-                    <h3 class="text-xl font-semibold">🎯 Initiative Timeline</h3>
-                    <p class="text-sm text-purple-100 mt-1">Overview of all initiatives with date ranges and status</p>
-                </div>
-                <button onclick="closeInitiativeTimeline()" class="text-white hover:text-purple-200 text-2xl">&times;</button>
-            </div>
-            <div class="p-6 overflow-y-auto max-h-[60vh]">
-                <div class="flex gap-4 mb-6 text-sm">
-                    <div class="flex items-center gap-2">
-                        <div class="w-4 h-4 rounded-full bg-blue-500"></div>
-                        <span class="text-gray-700">Active Now</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <div class="w-4 h-4 rounded-full bg-gray-400"></div>
-                        <span class="text-gray-700">Future</span>
-                    </div>
-                </div>
-                <div id="initiative-timeline-content" class="space-y-4">
-                    <!-- Initiative list will be loaded here -->
                 </div>
             </div>
         </div>
@@ -1281,6 +1251,15 @@
                         XL: { name: 'X-Large', days: 10, removable: false },
                         XXL: { name: 'XX-Large', days: 15, removable: false }
                     };
+                    
+                    // Clean up any empty or invalid keys
+                    Object.keys(taskSizeDefinitions).forEach(key => {
+                        if (!key || key.trim() === '') {
+                            console.warn('🧹 Removing invalid task size key:', key);
+                            delete taskSizeDefinitions[key];
+                        }
+                    });
+                    
                     console.log('📊 Final taskSizeDefinitions after loading:', taskSizeDefinitions);
 
                     // Backup the loaded task size definitions
@@ -2174,17 +2153,8 @@
                 const adjustedStartDate = getNextBusinessDay(new Date(taskStartDate));
                 const endDate = calculateTaskEndDate(taskStartDate, taskDays, true, ticket.assigned.length);
                 
-                // Calculate baseline for week indexing
-                let heatMapBaselineDate = new Date();
-                if (tickets.length > 0) {
-                    const earliestTask = tickets.reduce((earliest, task) =>
-                        new Date(task.startDate) < new Date(earliest.startDate) ? task : earliest
-                    );
-                    heatMapBaselineDate = new Date(earliestTask.startDate);
-                }
-                while (heatMapBaselineDate.getDay() !== 1) {
-                    heatMapBaselineDate.setDate(heatMapBaselineDate.getDate() - 1);
-                }
+                // Calculate baseline for week indexing using centralized function
+                const heatMapBaselineDate = getHeatMapBaselineDate(tickets);
                 
                 // Consume capacity day by day
                 const hoursPerPersonPerDay = totalEffortHours / (taskDays * ticket.assigned.length);
@@ -2308,19 +2278,8 @@
                 // Ensure task starts on a business day
                 taskStartDate = getNextBusinessDay(taskStartDate);
 
-                // Use the same baseline as heat map for consistency
-                let heatMapBaselineDate = new Date();
-                if (tickets.length > 0) {
-                    const earliestTask = tickets.reduce((earliest, task) =>
-                        new Date(task.startDate) < new Date(earliest.startDate) ? task : earliest
-                    );
-                    heatMapBaselineDate = new Date(earliestTask.startDate);
-                }
-
-                // Ensure baseline starts from a Monday (same logic as heat map)
-                while (heatMapBaselineDate.getDay() !== 1) {
-                    heatMapBaselineDate.setDate(heatMapBaselineDate.getDate() - 1);
-                }
+                // Use the same baseline as heat map for consistency using centralized function
+                const heatMapBaselineDate = getHeatMapBaselineDate(tickets);
 
                 // Use UTC date construction to avoid timezone issues completely
                 const normalizedTaskStart = new Date(Date.UTC(taskStartDate.getFullYear(), taskStartDate.getMonth(), taskStartDate.getDate()));
@@ -2668,34 +2627,36 @@
             const container = document.getElementById('task-size-cards');
             if (!container) return;
 
-            container.innerHTML = Object.keys(taskSizeDefinitions).map(key => {
-                const size = taskSizeDefinitions[key];
-                const totalHours = size.days * estimationBaseHours;
+            container.innerHTML = Object.keys(taskSizeDefinitions)
+                .filter(key => key && key.trim() !== '') // Filter out empty or whitespace-only keys
+                .map(key => {
+                    const size = taskSizeDefinitions[key];
+                    const totalHours = size.days * estimationBaseHours;
 
-                return `
-                    <div class="task-size-card">
-                        <div class="size-controls">
-                            <div class="flex justify-between items-center w-full gap-1" style="min-height: 18px;">
-                                <div class="size-label-enhanced">${key}</div>
-                                ${size.removable ? `<button onclick="removeTaskSize('${key}')" class="text-red-300 hover:text-red-100" style="font-size:10px;line-height:1;">✕</button>` : '<span style="width:10px;"></span>'}
-                            </div>
-                            <input
-                                type="number"
-                                value="${size.days}"
-                                min="0.1"
-                                max="50"
-                                step="0.5"
-                                onchange="updateTaskSizeDaysEnhanced('${key}', this.value)"
-                                class="size-input-enhanced"
-                                title="${size.name}"
-                            >
-                            <div class="size-metrics">
-                                <div style="font-size:9px;">${totalHours}h</div>
+                    return `
+                        <div class="task-size-card">
+                            <div class="size-controls">
+                                <div class="flex justify-between items-center w-full gap-1" style="min-height: 18px;">
+                                    <div class="size-label-enhanced">${key}</div>
+                                    ${size.removable ? `<button onclick="removeTaskSize('${key}')" class="text-red-300 hover:text-red-100" style="font-size:10px;line-height:1;">✕</button>` : '<span style="width:10px;"></span>'}
+                                </div>
+                                <input
+                                    type="number"
+                                    value="${size.days}"
+                                    min="0.1"
+                                    max="50"
+                                    step="0.5"
+                                    onchange="updateTaskSizeDaysEnhanced('${key}', this.value)"
+                                    class="size-input-enhanced"
+                                    title="${size.name}"
+                                >
+                                <div class="size-metrics">
+                                    <div style="font-size:9px;">${totalHours}h</div>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
-            }).join('');
+                    `;
+                }).join('');
 
             // Update ticket size dropdown options
             updateTicketSizeDropdown();
@@ -2759,10 +2720,12 @@
             const dropdown = document.getElementById('new-ticket-size');
             if (!dropdown) return;
 
-            dropdown.innerHTML = Object.keys(taskSizeDefinitions).map(key => {
-                const size = taskSizeDefinitions[key];
-                return `<option value="${key}">${size.name} (${key})</option>`;
-            }).join('');
+            dropdown.innerHTML = Object.keys(taskSizeDefinitions)
+                .filter(key => key && key.trim() !== '') // Filter out empty or whitespace-only keys
+                .map(key => {
+                    const size = taskSizeDefinitions[key];
+                    return `<option value="${key}">${size.name} (${key})</option>`;
+                }).join('');
         }
 
         function updateAvailabilityHeader() {
@@ -3081,19 +3044,6 @@
                             >
                             <span class="text-blue-700 font-medium" title="When checked, this person contributes to project delivery timelines. When unchecked, their capacity is tracked but doesn't affect completion dates.">
                                 🎯 Project Ready Resource
-                            </span>
-                        </label>
-                    </div>
-                    <div class="flex items-center gap-2 mb-3 px-1">
-                        <label class="flex items-center gap-1 text-sm cursor-pointer">
-                            <input
-                                type="checkbox"
-                                ${person.noOvertime !== false ? 'checked' : ''}
-                                onchange="updatePersonNoOvertime('${person.name}', this.checked)"
-                                class="w-3 h-3 text-orange-600 border-gray-300 rounded focus:ring-orange-500 focus:ring-1"
-                            >
-                            <span class="text-orange-700 font-medium" title="When checked, this person cannot exceed 100% capacity in any week. Tasks will extend to subsequent weeks automatically to respect this constraint.">
-                                🚫 No Overtime Allowed
                             </span>
                         </label>
                     </div>
@@ -3516,15 +3466,14 @@
 
             // People section
             csvContent += "SECTION,PEOPLE\n";
-            csvContent += "Name,Week1,Week2,Week3,Week4,Week5,Week6,Week7,Week8,Project Ready,No OT\n";
+            csvContent += "Name,Week1,Week2,Week3,Week4,Week5,Week6,Week7,Week8,Project Ready\n";
             configData.people.forEach(person => {
                 const availability = [...person.availability];
                 while (availability.length < 8) {
                     availability.push(25);
                 }
                 const isProjectReady = person.isProjectReady !== undefined ? person.isProjectReady : true;
-                const noOvertime = person.noOvertime !== undefined ? person.noOvertime : true; // Default: true
-                csvContent += `"${person.name}",${availability.slice(0, 8).join(',')},${isProjectReady ? 'Yes' : 'No'},${noOvertime ? 'Yes' : 'No'}\n`;
+                csvContent += `"${person.name}",${availability.slice(0, 8).join(',')},${isProjectReady ? 'Yes' : 'No'}\n`;
             });
             csvContent += "\n";
 
@@ -3649,7 +3598,7 @@
 
             // People section
             csvContent += "SECTION,PEOPLE\n";
-            csvContent += "Name,Week1,Week2,Week3,Week4,Week5,Week6,Week7,Week8,Project Ready,No OT\n";
+            csvContent += "Name,Week1,Week2,Week3,Week4,Week5,Week6,Week7,Week8,Project Ready\n";
             configData.people.forEach(person => {
                 // Ensure person has 8-week availability
                 const availability = [...person.availability];
@@ -3657,8 +3606,7 @@
                     availability.push(25);
                 }
                 const isProjectReady = person.isProjectReady !== undefined ? person.isProjectReady : true;
-                const noOvertime = person.noOvertime !== undefined ? person.noOvertime : true; // Default: true
-                csvContent += `"${person.name}",${availability.slice(0, 8).join(',')},${isProjectReady ? 'Yes' : 'No'},${noOvertime ? 'Yes' : 'No'}\n`;
+                csvContent += `"${person.name}",${availability.slice(0, 8).join(',')},${isProjectReady ? 'Yes' : 'No'}\n`;
             });
             csvContent += "\n";
 
@@ -3879,8 +3827,9 @@
                 if (line.startsWith('SECTION,')) {
                     currentSection = line.split(',')[1];
                     // Only skip header for sections that have column headers
-                    // METADATA, SETTINGS, and TASK_SIZES go straight to data
-                    skipHeader = !['METADATA', 'SETTINGS', 'TASK_SIZES'].includes(currentSection);
+                    // METADATA and SETTINGS have Key,Value format (skip header)
+                    // TASK_SIZES, PEOPLE, STAKEHOLDERS, INITIATIVES have headers that need skipping
+                    skipHeader = !['METADATA', 'SETTINGS'].includes(currentSection);
                     continue;
                 }
 
@@ -3907,6 +3856,13 @@
                     else if (currentSection === 'TASK_SIZES') {
                         const [sizeKey, name, days, removable] = parseCSVLine(line);
                         console.log(`📦 IMPORT TASK_SIZE: key="${sizeKey}", name="${name}", days="${days}" (parsed: ${parseFloat(days)}), removable="${removable}"`);
+                        
+                        // Validate the task size data
+                        if (!sizeKey || sizeKey.trim() === '' || isNaN(parseFloat(days))) {
+                            console.warn(`⚠️ Skipping invalid task size: key="${sizeKey}", days="${days}"`);
+                            continue;
+                        }
+                        
                         importedData.taskSizeDefinitions[sizeKey] = {
                             name: name,
                             days: parseFloat(days),
@@ -3946,20 +3902,11 @@
                         const parsed = parseCSVLine(line);
                         const name = parsed[0];
 
-                        // Handle both old format and new format with No OT column
-                        // Old: Name,W1-W8,ProjectReady (10 columns)
-                        // New: Name,W1-W8,ProjectReady,NoOT (11 columns)
-                        
-                        const hasNoOTColumn = parsed.length >= 11;
-                        const availabilityEndIndex = hasNoOTColumn ? 9 : -1;
-                        const availabilityValues = parsed.slice(1, availabilityEndIndex).map(val => parseInt(val) || 0);
+                        // CSV Format: Name,W1-W8,ProjectReady (10 columns)
+                        const availabilityValues = parsed.slice(1, 9).map(val => parseInt(val) || 0);
 
-                        // Get project ready flag (second to last column for new format, last for old)
-                        const projectReadyIndex = hasNoOTColumn ? 9 : parsed.length - 1;
-                        const isProjectReady = parsed.length > 9 ? (parsed[projectReadyIndex] === 'true' || parsed[projectReadyIndex] === 'Yes') : true;
-
-                        // Get No OT flag (last column if present, default to true)
-                        const noOvertime = hasNoOTColumn ? (parsed[10] === 'true' || parsed[10] === 'Yes') : true;
+                        // Get project ready flag (last column)
+                        const isProjectReady = parsed.length >= 10 ? (parsed[9] === 'true' || parsed[9] === 'Yes') : true;
 
                         // Ensure we have exactly 8 weeks
                         while (availabilityValues.length < 8) {
@@ -3976,8 +3923,7 @@
                         importedData.people.push({
                             name: name,
                             availability: availabilityValues,
-                            isProjectReady: isProjectReady,
-                            noOvertime: noOvertime  // NEW: No Overtime field
+                            isProjectReady: isProjectReady
                         });
                     }
                     else if (currentSection === 'TICKETS') {
@@ -4500,6 +4446,13 @@
             saveToLocalStorage();
         }
 
+        // Toggle P1 percentage display in heat map
+        window.toggleP1Display = (show) => {
+            showP1Percentages = show;
+            // Re-render heat map to apply the change
+            renderWorkloadHeatMap();
+        }
+
         window.updateAllTaskStartDates = () => {
             if (useCommonStartDate) {
                 // Update header and refresh people display to show updated week dates
@@ -4664,8 +4617,7 @@
             people.push({
                 name: name,
                 availability: [25, 25, 25, 25, 25, 25, 25, 25],
-                isProjectReady: true, // Default to true for new people
-                noOvertime: true // Default to true (No OT enabled by default)
+                isProjectReady: true // Default to true for new people
             });
 
             nameInput.value = '';
@@ -4713,20 +4665,6 @@
                 calculateProjection();
                 saveToLocalStorage();
                 console.log(`✅ Recalculation triggered for project ready change`);
-            }
-        }
-
-        window.updatePersonNoOvertime = (name, noOvertime) => {
-            const person = people.find(p => p.name === name);
-            if (person) {
-                console.log(`🚫 NO OVERTIME UPDATE: ${name} changed from ${person.noOvertime !== false ? 'No OT Enabled' : 'No OT Disabled'} to ${noOvertime ? 'No OT Enabled' : 'No OT Disabled'}`);
-                person.noOvertime = noOvertime;
-                console.log(`📊 Updated ${name} no overtime status:`, person.noOvertime);
-                markDirty(); // Mark as having unsaved changes
-                calculateProjection();
-                renderWorkloadHeatMap(); // Update heat map immediately
-                saveToLocalStorage();
-                console.log(`✅ Recalculation triggered for no overtime change`);
             }
         }
 
@@ -5721,39 +5659,155 @@
             // Determine task type
             const isFixedLength = ticket.isFixedLength !== false;
             const taskTypeIcon = isFixedLength ? '🔒' : '⚡';
-            const taskTypeName = isFixedLength ? 'Fixed-Length Task' : 'Flexible Task';
-            const taskTypeDescription = isFixedLength
-                ? 'Duration is fixed regardless of team size. Each person contributes proportionally over the full duration.'
-                : 'Duration splits among assignees. Each person works at full capacity for a shorter time.';
+            const taskTypeName = isFixedLength ? 'Fixed-Length' : 'Flexible';
+            
+            // Get priority info
+            const priority = ticket.priority || 'P2';
+            const priorityEmoji = priority === 'P1' ? '🔴' : priority === 'P2' ? '🟡' : '🟢';
+            const priorityExplanation = priority === 'P1' 
+                ? 'Critical priority - blocking other work or on critical path'
+                : priority === 'P2'
+                ? 'Important but has some scheduling flexibility'
+                : 'Can be scheduled around higher priorities';
 
-            // Create enhanced content with better formatting
+            // Get task duration info
+            const taskSize = taskSizeDefinitions[ticket.size];
+            const taskDays = taskSize ? taskSize.days : 0;
+            const taskDaysExplanation = isFixedLength
+                ? `Everyone works together for the full ${taskDays} days`
+                : `Team splits the work - each person works for ${Math.ceil(taskDays / ticket.assigned.length)} days`;
+
+            // Get task start date to determine which week to show
+            const taskStartDate = new Date(ticket.startDate);
+            
+            // Calculate which week this task starts in
+            const heatMapData = calculateWorkloadHeatMap();
+            const baselineDate = getHeatMapBaselineDate(tickets);
+            const daysDiff = Math.floor((taskStartDate - baselineDate) / (1000 * 60 * 60 * 24));
+            const taskStartWeek = Math.max(0, Math.min(7, Math.floor(daysDiff / 7))); // Clamp to 0-7
+
+            // Build workload summary for each assigned person
+            let workloadSummary = '';
+            ticket.assigned.forEach(personName => {
+                // Find all tasks for this person that are active
+                const personTasks = tickets.filter(t => 
+                    t.assigned.includes(personName) && 
+                    (t.status === 'To Do' || t.status === 'In Progress')
+                );
+
+                // Get utilization for the week when this task is active
+                const personData = heatMapData.find(p => p.name === personName);
+                const taskWeekUtilization = personData && personData.weeks[taskStartWeek] 
+                    ? personData.weeks[taskStartWeek].utilization 
+                    : 0;
+
+                workloadSummary += `\n${personName}'s Workload (Week ${taskStartWeek + 1} - when this task is active):\n`;
+                workloadSummary += `• This task: ${ticket.description} (Priority: ${priority})\n`;
+                
+                const otherTasks = personTasks.filter(t => t.id !== ticket.id);
+                if (otherTasks.length > 0) {
+                    workloadSummary += `• Also working on:\n`;
+                    otherTasks.forEach(t => {
+                        workloadSummary += `  - ${t.description} (Priority: ${t.priority || 'P2'})\n`;
+                    });
+                } else {
+                    workloadSummary += `• No other active tasks\n`;
+                }
+                workloadSummary += `• Total workload: ${taskWeekUtilization}% capacity utilization\n`;
+            });
+
+            // Build quick summary for copying
+            const assigneeNames = ticket.assigned.join(', ');
+            const avgUtilization = ticket.assigned.map(name => {
+                const personData = heatMapData.find(p => p.name === name);
+                return personData && personData.weeks[taskStartWeek] 
+                    ? personData.weeks[taskStartWeek].utilization 
+                    : 0;
+            }).reduce((a, b) => a + b, 0) / ticket.assigned.length;
+
+            // Build initiative and stakeholder info for quick summary
+            let initiativeInfo = '';
+            if (ticket.initiative && ticket.initiative !== 'None' && ticket.initiative !== 'General') {
+                if (ticket.stakeholder && ticket.stakeholder !== 'None' && ticket.stakeholder !== 'General') {
+                    initiativeInfo = ` This task is under the ${ticket.initiative} initiative for ${ticket.stakeholder}.`;
+                } else {
+                    initiativeInfo = ` This task is under the ${ticket.initiative} initiative.`;
+                }
+            } else if (ticket.stakeholder && ticket.stakeholder !== 'None' && ticket.stakeholder !== 'General') {
+                initiativeInfo = ` This task is for ${ticket.stakeholder}.`;
+            }
+
+            const quickSummary = ticket.assigned.length === 1
+                ? `${assigneeNames} is working on "${ticket.description}" (Priority ${priority}, ${taskDays} days). They're at ${Math.round(avgUtilization)}% capacity in Week ${taskStartWeek + 1}. Expected completion: ${ticket.endDate}.${initiativeInfo}`
+                : `${assigneeNames} are working on "${ticket.description}" (Priority ${priority}, ${taskDays} days). Team is at ${Math.round(avgUtilization)}% average capacity in Week ${taskStartWeek + 1}. Expected completion: ${ticket.endDate}.${initiativeInfo}`;
+
+            // Create conversational content
             const enhancedContent = `
-🎯 TICKET: ${ticket.description} (ID: ${ticket.id})
-${taskTypeIcon} TASK TYPE: ${taskTypeName}
-   ${taskTypeDescription}
-📊 SIZE: ${ticket.size}
-📅 START DATE: ${formatDate(ticket.startDate)}
-👥 ASSIGNED TO: ${ticket.assigned.join(', ')}
-🎌 PROJECTED END: ${ticket.endDate}
+🎯 Task Overview: ${ticket.description}
+
+Hi! Let me explain this task to you in plain terms.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-${ticket.explanation}
+📌 WHAT IS THIS TASK?
+${ticket.description}
+
+Priority: ${priorityEmoji} ${priority}
+${priorityExplanation}
+
+Size: ${ticket.size} (${taskDays} business days)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-💡 HOW TO READ this calculation:
-• Week numbers correspond to the planning horizon (8 weeks total)
-• ${isFixedLength ? 'Fixed-Length: Duration stays constant, capacity per person scales with team size' : 'Flexible: Duration splits among team members, each works at full capacity'}
-• Pooled Capacity = combined hours available from all assigned team members
-• Hours are distributed proportionally based on each person's availability
-• Task completes when all required hours are allocated
-• Any capacity constraints or delays are noted in the weekly breakdown
+� WHO'S WORKING ON IT?
+Assigned to: ${assigneeNames}
+${workloadSummary}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⏱️ WHY DOES IT TAKE ${taskDays} DAYS?
+• Task size: ${ticket.size} = ${taskDays} business days of work
+• Team size: ${ticket.assigned.length} ${ticket.assigned.length === 1 ? 'person' : 'people'} working on this
+• Task type: ${taskTypeIcon} ${taskTypeName}
+  → ${taskDaysExplanation}
+
+Expected completion: ${ticket.endDate}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 PRIORITY & IMPACT
+${priorityExplanation}
+
+This ${priority} task ${priority === 'P1' ? 'needs immediate attention and may block other work' : priority === 'P2' ? 'is important for the project timeline' : 'can be flexibly scheduled'}.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📋 QUICK SUMMARY (copy-paste ready)
+${quickSummary}
             `.trim();
 
             // Update modal content
-            document.getElementById('modal-title').textContent = `📊 Calculation Details - Ticket #${ticket.id}`;
-            document.getElementById('calculation-content').textContent = enhancedContent;
+            document.getElementById('modal-title').textContent = `📊 Task Details - ${ticket.description}`;
+            
+            const modalContent = document.getElementById('calculation-content');
+            modalContent.textContent = enhancedContent;
+            
+            // Add copy button if it doesn't exist
+            let copyButton = document.getElementById('copy-details-btn');
+            if (!copyButton) {
+                copyButton = document.createElement('button');
+                copyButton.id = 'copy-details-btn';
+                copyButton.className = 'btn-enterprise mt-4';
+                copyButton.innerHTML = '📋 Copy Quick Summary';
+                copyButton.onclick = () => {
+                    navigator.clipboard.writeText(quickSummary).then(() => {
+                        copyButton.innerHTML = '✅ Copied!';
+                        setTimeout(() => {
+                            copyButton.innerHTML = '📋 Copy Quick Summary';
+                        }, 2000);
+                    });
+                };
+                modalContent.parentElement.appendChild(copyButton);
+            }
 
             // Show modal
             const modal = document.getElementById('calculation-modal');
@@ -6031,6 +6085,20 @@ ${ticket.explanation}
                 initializeDefaultData();
             }
 
+            // Clean up any empty task size keys (in case they persisted in localStorage)
+            const beforeClean = Object.keys(taskSizeDefinitions).length;
+            Object.keys(taskSizeDefinitions).forEach(key => {
+                if (!key || key.trim() === '') {
+                    console.warn('🧹 Removing invalid task size key from taskSizeDefinitions:', `"${key}"`);
+                    delete taskSizeDefinitions[key];
+                }
+            });
+            const afterClean = Object.keys(taskSizeDefinitions).length;
+            if (beforeClean !== afterClean) {
+                console.log(`✅ Cleaned ${beforeClean - afterClean} empty keys from taskSizeDefinitions`);
+                saveToLocalStorage(); // Save the cleaned data
+            }
+
             // Migration: Add priority to existing tasks that don't have it
             let migrationNeeded = false;
             tickets.forEach(ticket => {
@@ -6083,6 +6151,10 @@ ${ticket.explanation}
 
         // Global variable to store heat map baseline
         let heatMapStartDate = null;
+        
+        // Global variable to control P1 percentage display
+        let showP1Percentages = true;
+        
         /**
          * HEAT_MAP_CALCULATION_FORMULA:
          *
@@ -6163,13 +6235,13 @@ ${ticket.explanation}
             // Store the baseline for header calculations
             heatMapStartDate = new Date(startDate);
             
-            console.log('🔄 ===== CAPACITY ALLOCATION WITH P1 PRIORITY & NO OT =====');
+            console.log('🔄 ===== CAPACITY ALLOCATION WITH P1 PRIORITY =====');
             console.log('� CODE VERSION: 2025-10-19-v2 (with null safety checks)');
             console.log('�📅 Heat Map Start Date:', startDate.toISOString().split('T')[0]);
             console.log('🎫 Active Tickets:', activeTickets.length);
             console.log('👥 People:', people.length);
 
-            // NEW: Track capacity with priority weighting and No OT constraints
+            // NEW: Track capacity with priority weighting
             const capacityTracker = {}; // { personName: { weekIndex: { used, allocations: {taskId: hours}, p1Hours, otherHours } } }
             const taskRemainingEffort = {}; // { taskId: { personName: hoursRemaining } }
 
@@ -6239,9 +6311,8 @@ ${ticket.explanation}
                 // Process each person for this week
                 people.forEach(person => {
                     const weekCapacity = person.availability[weekIndex] || (projectHoursPerDay * 5);
-                    const noOvertimeEnabled = person.noOvertime !== false; // Default: true
                     
-                    console.log(`\n👤 ${person.name}: ${weekCapacity}h capacity, No OT: ${noOvertimeEnabled ? 'ON' : 'OFF'}`);
+                    console.log(`\n👤 ${person.name}: ${weekCapacity}h capacity`);
 
                     // Find all tasks active this week for this person with remaining effort
                     const activeTasksThisWeek = sortedTickets.filter(ticket => {
@@ -6260,8 +6331,8 @@ ${ticket.explanation}
                     }
 
                     // STEP 1: Separate Fixed-Length tasks from Flexible tasks
-                    // Fixed-Length tasks IGNORE No OT constraint (will show >100% if overloaded)
-                    // Flexible tasks RESPECT No OT constraint
+                    // Fixed-Length tasks show true capacity needs (can exceed 100% if overloaded)
+                    // Flexible tasks adapt to available capacity
                     const fixedTasks = activeTasksThisWeek.filter(t => taskMetadata[t.id].isFixedLength);
                     const flexibleTasks = activeTasksThisWeek.filter(t => !taskMetadata[t.id].isFixedLength);
                     
@@ -6353,39 +6424,7 @@ ${ticket.explanation}
                         });
                     }
 
-                    // STEP 5: Apply No OT constraint ONLY to Flexible tasks (if enabled and over capacity)
-                    if (noOvertimeEnabled && flexibleTasks.length > 0 && capacityTracker[person.name][weekIndex].used > weekCapacity) {
-                        const totalUsed = capacityTracker[person.name][weekIndex].used;
-                        const flexibleUsed = totalUsed - capacityUsedByFixed;
-                        
-                        console.log(`  🚫 NO OT CONSTRAINT: Total ${totalUsed.toFixed(1)}h (Fixed: ${capacityUsedByFixed.toFixed(1)}h, Flexible: ${flexibleUsed.toFixed(1)}h)`);
-                        console.log(`  🚫 Scaling down Flexible tasks only...`);
-                        
-                        // Calculate how much to scale down flexible allocations
-                        const flexibleCapacityLimit = Math.max(0, weekCapacity - capacityUsedByFixed);
-                        const scaleFactor = flexibleUsed > 0 ? flexibleCapacityLimit / flexibleUsed : 0;
-
-                        // Scale down ONLY flexible task allocations
-                        flexibleTasks.forEach(task => {
-                            const allocated = capacityTracker[person.name][weekIndex].allocations[task.id] || 0;
-                            const reduced = allocated * scaleFactor;
-                            const returned = allocated - reduced;
-
-                            capacityTracker[person.name][weekIndex].allocations[task.id] = reduced;
-                            capacityTracker[person.name][weekIndex].used -= returned;
-                            taskRemainingEffort[task.id][person.name] = (taskRemainingEffort[task.id][person.name] || 0) + returned; // Return unused effort
-                            
-                            // Update P1/other tracking
-                            if (task.priority === 'P1') {
-                                capacityTracker[person.name][weekIndex].p1Hours -= returned;
-                            } else {
-                                capacityTracker[person.name][weekIndex].otherHours -= returned;
-                            }
-                            
-                            console.log(`      📉 Flexible Task ${task.id}: Scaled from ${allocated.toFixed(1)}h to ${reduced.toFixed(1)}h, Returned: ${returned.toFixed(1)}h`);
-                        });
-                    }
-                    
+                    // Calculate final utilization
                     const totalUsed = capacityTracker[person.name][weekIndex].used;
                     const percentUsed = Math.round((totalUsed / weekCapacity) * 100);
                     const overCapacity = totalUsed > weekCapacity;
@@ -6674,9 +6713,9 @@ ${ticket.explanation}
                     // Format display value
                     const displayValue = week.utilization === 999 ? 'OVR' : `${week.utilization}%`;
                     
-                    // NEW: Add P1 indicator if P1 tasks present
+                    // NEW: Add P1 indicator if P1 tasks present (controlled by toggle)
                     let p1Badge = '';
-                    if (week.p1Hours > 0) {
+                    if (showP1Percentages && week.p1Hours > 0) {
                         const p1Percent = week.assignedHours > 0 ? Math.round((week.p1Hours / week.assignedHours) * 100) : 0;
                         p1Badge = `<div class="text-xs mt-1 text-red-600 font-bold">P1: ${p1Percent}%</div>`;
                     }
@@ -6984,148 +7023,6 @@ ${ticket.explanation}
                     showWeekTaskDetails(personName, weekIndex, week.weekStart, week.weekEnd);
                 }
             }
-        }
-
-        // ============================================
-        // INITIATIVE TIMELINE FUNCTIONS
-        // ============================================
-
-        function showInitiativeTimeline() {
-            const modal = document.getElementById('initiative-timeline-modal');
-            const content = document.getElementById('initiative-timeline-content');
-            
-            if (initiatives.length === 0) {
-                content.innerHTML = `
-                    <div class="text-center py-8 text-gray-500">
-                        <div class="text-4xl mb-3">📋</div>
-                        <p class="text-lg">No initiatives created yet</p>
-                        <p class="text-sm mt-2">Add initiatives from the management section below</p>
-                    </div>
-                `;
-                modal.classList.remove('hidden');
-                return;
-            }
-            
-            // Get all initiatives with their date ranges
-            const initiativeData = getInitiativeTimelineData();
-            
-            if (initiativeData.length === 0) {
-                content.innerHTML = `
-                    <div class="text-center py-8 text-gray-500">
-                        <div class="text-4xl mb-3">📋</div>
-                        <p class="text-lg">No initiatives with tasks yet</p>
-                        <p class="text-sm mt-2">Assign tasks to initiatives to see the timeline</p>
-                    </div>
-                `;
-                modal.classList.remove('hidden');
-                return;
-            }
-            
-            // Render the initiative list
-            let html = '';
-            
-            initiativeData.forEach(initiative => {
-                const isActive = initiative.status === 'active';
-                const bgColor = isActive ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-gray-300';
-                const textColor = isActive ? 'text-blue-900' : 'text-gray-700';
-                const dotColor = isActive ? 'bg-blue-500' : 'bg-gray-400';
-                const statusText = isActive ? 'Active Now' : 'Future';
-                const statusColor = isActive ? 'text-blue-600' : 'text-gray-500';
-                
-                html += `
-                    <div class="border-2 ${bgColor} rounded-lg p-4 transition-all hover:shadow-md">
-                        <div class="flex items-start gap-3">
-                            <div class="w-6 h-6 rounded-full ${dotColor} flex-shrink-0 mt-1"></div>
-                            <div class="flex-1">
-                                <div class="flex items-start justify-between gap-4">
-                                    <h4 class="text-lg font-semibold ${textColor}">${initiative.name}</h4>
-                                    <span class="text-xs font-medium ${statusColor} px-2 py-1 rounded-full ${isActive ? 'bg-blue-100' : 'bg-gray-200'}">${statusText}</span>
-                                </div>
-                                <div class="mt-2 text-sm ${textColor}">
-                                    <div class="flex items-center gap-2">
-                                        <span class="font-medium">📅 Start:</span>
-                                        <span>${initiative.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                                    </div>
-                                    <div class="flex items-center gap-2 mt-1">
-                                        <span class="font-medium">🏁 End:</span>
-                                        <span>${initiative.endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                                    </div>
-                                </div>
-                                <div class="mt-2 text-xs ${isActive ? 'text-blue-600' : 'text-gray-600'}">
-                                    ${initiative.taskCount} task${initiative.taskCount !== 1 ? 's' : ''}
-                                    ${initiative.stakeholder ? ` • Stakeholder: ${initiative.stakeholder}` : ''}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            content.innerHTML = html;
-            modal.classList.remove('hidden');
-        }
-
-        function closeInitiativeTimeline() {
-            const modal = document.getElementById('initiative-timeline-modal');
-            modal.classList.add('hidden');
-        }
-
-        function getInitiativeTimelineData() {
-            const timelineData = [];
-            const today = new Date();
-            today.setHours(0, 0, 0, 0); // Normalize to start of day
-            
-            initiatives.forEach(initiative => {
-                // Get all non-closed tasks for this initiative
-                const initiativeTasks = tickets.filter(t => 
-                    t.initiative === initiative.name && 
-                    t.status !== 'Closed'
-                );
-                
-                if (initiativeTasks.length === 0) {
-                    return; // Skip initiatives with no active tasks
-                }
-                
-                // Find earliest start date and latest end date
-                const startDates = initiativeTasks.map(t => new Date(t.startDate));
-                const endDates = initiativeTasks.map(t => {
-                    if (t.endDate && t.endDate !== 'N/A') {
-                        // Try to parse the end date (could be in various formats)
-                        const endDateStr = t.endDate;
-                        // If it's just "Nov 30" format, add current year
-                        if (!endDateStr.includes(',') && !endDateStr.match(/\d{4}/)) {
-                            return new Date(endDateStr + ', ' + new Date().getFullYear());
-                        }
-                        return new Date(endDateStr);
-                    }
-                    return new Date(t.startDate); // Fallback to start date
-                });
-                
-                const startDate = new Date(Math.min(...startDates));
-                const endDate = new Date(Math.max(...endDates));
-                
-                // Determine if initiative is active
-                let status = 'future';
-                if (today >= startDate && today <= endDate) {
-                    status = 'active';
-                } else if (today > endDate) {
-                    status = 'completed';
-                }
-                
-                timelineData.push({
-                    name: initiative.name,
-                    startDate: startDate,
-                    endDate: endDate,
-                    status: status,
-                    taskCount: initiativeTasks.length,
-                    stakeholder: initiative.stakeholder || ''
-                });
-            });
-            
-            // Sort by start date (earliest first)
-            timelineData.sort((a, b) => a.startDate - b.startDate);
-            
-            return timelineData;
         }
 
         // Close modal when clicking outside

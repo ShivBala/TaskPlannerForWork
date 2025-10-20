@@ -29,9 +29,205 @@ $script:DownloadsFolderPath = "$HOME/Downloads"
 # Import V9 adapter
 . "$PSScriptRoot/v9_csv_adapter.ps1"
 
+# Import Person Summary module
+. "$PSScriptRoot/person_summary.ps1"
+
 # Global state
 $global:V9Config = $null
 $global:V9ConfigPath = $null
+
+#region Helper Functions
+
+function Get-FileSHA1Hash {
+    <#
+    .SYNOPSIS
+        Calculates SHA1 hash of a file
+    #>
+    param([string]$FilePath)
+    
+    if (-not (Test-Path $FilePath)) {
+        return $null
+    }
+    
+    try {
+        $sha1 = [System.Security.Cryptography.SHA1]::Create()
+        $fileStream = [System.IO.File]::OpenRead($FilePath)
+        $hashBytes = $sha1.ComputeHash($fileStream)
+        $fileStream.Close()
+        
+        $hashString = [System.BitConverter]::ToString($hashBytes) -replace '-', ''
+        return $hashString
+    } catch {
+        Write-Host "❌ Error calculating hash for $FilePath : $($_.Exception.Message)" -ForegroundColor Red
+        return $null
+    }
+}
+
+function Rename-ConfigFileAfterEdit {
+    <#
+    .SYNOPSIS
+        Renames config file to add 'psedited' marker after PowerShell edits
+    #>
+    param([string]$FilePath)
+    
+    if (-not (Test-Path $FilePath)) {
+        Write-Host "⚠️  File not found for rename: $FilePath" -ForegroundColor Yellow
+        return $FilePath
+    }
+    
+    # Skip if already has psedited marker
+    if ($FilePath -match '\.psedited\.csv$') {
+        return $FilePath
+    }
+    
+    # Insert .psedited before .csv extension
+    $newPath = $FilePath -replace '\.csv$', '.psedited.csv'
+    
+    try {
+        Rename-Item -Path $FilePath -NewName (Split-Path $newPath -Leaf) -Force
+        Write-Host "📝 File renamed to indicate PS edit: $(Split-Path $newPath -Leaf)" -ForegroundColor Cyan
+        
+        # Update global config path
+        $global:V9ConfigPath = $newPath
+        
+        return $newPath
+    } catch {
+        Write-Host "⚠️  Could not rename file: $($_.Exception.Message)" -ForegroundColor Yellow
+        return $FilePath
+    }
+}
+
+function Sync-ConfigFiles {
+    <#
+    .SYNOPSIS
+        Enhanced sync logic with SHA1 validation to detect PS edits
+    
+    .DESCRIPTION
+        Compares Downloads vs Output folders:
+        - If Output is newer: Checks if it was edited by PS (compares SHA1 of Downloads vs History backup)
+        - If Downloads is newer: Copies to Output
+        - Warns user if Output has PS edits not yet imported to HTML
+    #>
+    param(
+        [switch]$Silent
+    )
+    
+    $downloadsPath = $script:DownloadsFolderPath
+    $outputPath = $script:OutputFolderPath
+    $historyPath = Join-Path (Split-Path $outputPath -Parent) "history"
+    
+    if (-not $Silent) {
+        Write-Host "`n🔄 Syncing config files..." -ForegroundColor Cyan
+    }
+    
+    # Ensure folders exist
+    if (-not (Test-Path $outputPath)) {
+        New-Item -Path $outputPath -ItemType Directory -Force | Out-Null
+    }
+    if (-not (Test-Path $historyPath)) {
+        New-Item -Path $historyPath -ItemType Directory -Force | Out-Null
+    }
+    
+    # Get latest files from both folders (including .psedited.csv files)
+    $downloadsFiles = Get-ChildItem -Path $downloadsPath -Filter "project_config_*.csv" -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -notmatch '_closed_' } |
+        Sort-Object LastWriteTime -Descending
+    
+    $outputFiles = Get-ChildItem -Path $outputPath -Filter "project_config_*.csv" -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -notmatch '_closed_' } |
+        Sort-Object LastWriteTime -Descending
+    
+    # If no files in either location
+    if ($downloadsFiles.Count -eq 0 -and $outputFiles.Count -eq 0) {
+        if (-not $Silent) {
+            Write-Host "⚠️  No project_config files found in Downloads or Output" -ForegroundColor Yellow
+            Write-Host "   Please export from html_console_v10.html first" -ForegroundColor Yellow
+        }
+        return $false
+    }
+    
+    # If no files in Output, copy from Downloads
+    if ($outputFiles.Count -eq 0 -and $downloadsFiles.Count -gt 0) {
+        $latestDownload = $downloadsFiles[0]
+        $destPath = Join-Path $outputPath $latestDownload.Name
+        Copy-Item -Path $latestDownload.FullName -Destination $destPath -Force
+        if (-not $Silent) {
+            Write-Host "✅ Copied from Downloads: $($latestDownload.Name)" -ForegroundColor Green
+        }
+        return $true
+    }
+    
+    # Compare timestamps
+    $latestOutput = $outputFiles[0]
+    $latestDownload = if ($downloadsFiles.Count -gt 0) { $downloadsFiles[0] } else { $null }
+    
+    # If Output is newer than Downloads (or no Downloads file)
+    if ($null -eq $latestDownload -or $latestOutput.LastWriteTime -gt $latestDownload.LastWriteTime) {
+        if (-not $Silent) {
+            Write-Host "📊 Output file is newer than Downloads" -ForegroundColor Cyan
+        }
+        
+        # Check if Output was edited by PowerShell
+        # Logic: If Downloads hash == most recent History backup hash, then Output has PS edits
+        if ($null -ne $latestDownload) {
+            $downloadsHash = Get-FileSHA1Hash -FilePath $latestDownload.FullName
+            
+            # Get most recent backup file
+            $backupFiles = Get-ChildItem -Path $historyPath -Filter "*.backup_*" -ErrorAction SilentlyContinue |
+                Sort-Object LastWriteTime -Descending
+            
+            if ($backupFiles.Count -gt 0) {
+                $latestBackup = $backupFiles[0]
+                $backupHash = Get-FileSHA1Hash -FilePath $latestBackup.FullName
+                
+                if ($downloadsHash -eq $backupHash) {
+                    # Output has PS edits not yet imported to HTML
+                    Write-Host "" -ForegroundColor Yellow
+                    Write-Host "⚠️  WARNING: Output file has PowerShell edits!" -ForegroundColor Yellow
+                    Write-Host "   The current Output file was last edited by this PowerShell script." -ForegroundColor Yellow
+                    Write-Host "   You should import it to HTML console and test before making more edits." -ForegroundColor Yellow
+                    Write-Host "" -ForegroundColor Yellow
+                    Write-Host "   Output file: $($latestOutput.Name) (modified: $($latestOutput.LastWriteTime))" -ForegroundColor Gray
+                    Write-Host "   Downloads file: $($latestDownload.Name) (modified: $($latestDownload.LastWriteTime))" -ForegroundColor Gray
+                    Write-Host "" -ForegroundColor Yellow
+                    
+                    Write-Host "Continue anyway? (y/n): " -NoNewline -ForegroundColor Yellow
+                    $response = Read-Host
+                    
+                    if ($response -ne 'y' -and $response -ne 'Y') {
+                        Write-Host "❌ Sync cancelled. Please import Output file to HTML first." -ForegroundColor Red
+                        return $false
+                    }
+                    
+                    Write-Host "✅ Continuing with current Output file" -ForegroundColor Green
+                }
+            }
+        }
+        
+        if (-not $Silent) {
+            Write-Host "✅ Using Output file: $($latestOutput.Name)" -ForegroundColor Green
+        }
+        return $true
+    }
+    
+    # Downloads is newer - copy to Output
+    if (-not $Silent) {
+        Write-Host "📥 Downloads file is newer, copying to Output..." -ForegroundColor Cyan
+    }
+    
+    $destPath = Join-Path $outputPath $latestDownload.Name
+    Copy-Item -Path $latestDownload.FullName -Destination $destPath -Force
+    
+    if (-not $Silent) {
+        Write-Host "✅ Copied: $($latestDownload.Name)" -ForegroundColor Green
+        Write-Host "   From: Downloads (modified: $($latestDownload.LastWriteTime))" -ForegroundColor Gray
+        Write-Host "   To: Output" -ForegroundColor Gray
+    }
+    
+    return $true
+}
+
+#endregion
 
 #region Core Functions
 
@@ -43,7 +239,13 @@ function Initialize-V9Config {
     
     Write-Host "`n🔍 Looking for V10/V9 config..." -ForegroundColor Cyan
     
-    # This will automatically sync from Downloads to Output if needed
+    # Run enhanced sync logic first
+    $syncSuccess = Sync-ConfigFiles -Silent
+    if (-not $syncSuccess) {
+        return $false
+    }
+    
+    # Get latest config file from Output folder
     $configFile = Get-LatestV9ConfigFile
     if ($null -eq $configFile) {
         Write-Host "❌ No V10/V9 config found" -ForegroundColor Red
@@ -155,15 +357,26 @@ function Add-BusinessDays {
         [int]$Days
     )
     
+    if ($Days -eq 7) {
+        Add-Content -Path "debug_filter.txt" -Value "  >>> helper2 Add-BusinessDays: Start=$($StartDate.ToString('yyyy-MM-dd')), Days=$Days"
+    }
+    
     $currentDate = $StartDate
     $daysAdded = 0
     
     while ($daysAdded -lt $Days) {
         $currentDate = $currentDate.AddDays(1)
         $dayOfWeek = [int]$currentDate.DayOfWeek
+        if ($Days -eq 7) {
+            Add-Content -Path "debug_filter.txt" -Value "  >>> Loop: currentDate=$($currentDate.ToString('yyyy-MM-dd')), dayOfWeek=$dayOfWeek, daysAdded=$daysAdded"
+        }
         if ($dayOfWeek -ge 1 -and $dayOfWeek -le 5) { # Monday to Friday
             $daysAdded++
         }
+    }
+    
+    if ($Days -eq 7) {
+        Add-Content -Path "debug_filter.txt" -Value "  >>> helper2 Result: $($currentDate.ToString('yyyy-MM-dd'))"
     }
     
     return $currentDate
@@ -214,6 +427,10 @@ function Save-V9Config {
     
     if ($success) {
         Write-Host "✅ Changes saved!" -ForegroundColor Green
+        
+        # Rename file to add psedited marker
+        $global:V9ConfigPath = Rename-ConfigFileAfterEdit -FilePath $global:V9ConfigPath
+        
         return $true
     } else {
         Write-Host "❌ Save failed" -ForegroundColor Red
@@ -2206,6 +2423,20 @@ function Invoke-Command {
         return
     }
     
+    # Person summary (HTML report)
+    # Matches: "summary sarah" or "summarysarah" (with or without space)
+    if ($inputText -match "^summary\s*(.+)$") {
+        $personName = (Get-Culture).TextInfo.ToTitleCase($matches[1].Trim())
+        Show-PersonSummary -PersonName $personName
+        return
+    }
+    
+    if ($inputText -match "^summary$") {
+        Write-Host "Usage: summary <person name> (or summary<name> without space)" -ForegroundColor Yellow
+        Write-Host "Examples: summary sarah, summarysarah" -ForegroundColor Gray
+        return
+    }
+    
     # Availability query
     if ($inputText -match "^availability$") {
         Show-MostAvailable
@@ -2245,6 +2476,12 @@ function Invoke-Command {
     # Reload config
     if ($inputText -match "^reload$") {
         Initialize-V9Config
+        return
+    }
+    
+    # Sync config files
+    if ($inputText -match "^sync$") {
+        Sync-ConfigFiles
         return
     }
     
@@ -2483,12 +2720,17 @@ function Show-Help {
     Write-Host "  capacity <name>" -ForegroundColor White
     Write-Host "    → Show weekly capacity for a person" -ForegroundColor Gray
     Write-Host "    Example: capacity vipul" -ForegroundColor DarkGray
+    Write-Host "  summary <name>" -ForegroundColor White
+    Write-Host "    → Generate HTML report with person's weekly work summary" -ForegroundColor Gray
+    Write-Host "    Example: summary sarah" -ForegroundColor DarkGray
     Write-Host "  availability" -ForegroundColor White
     Write-Host "    → Show who is most available today" -ForegroundColor Gray
     Write-Host ""
     Write-Host "System:" -ForegroundColor Yellow
     Write-Host "  html | console | open" -ForegroundColor White
     Write-Host "    → Open html_console_v10.html in browser" -ForegroundColor Gray
+    Write-Host "  sync" -ForegroundColor White
+    Write-Host "    → Sync config files between Downloads and Output (with SHA1 validation)" -ForegroundColor Gray
     Write-Host "  reload" -ForegroundColor White
     Write-Host "    → Reload config from Downloads" -ForegroundColor Gray
     Write-Host "  help" -ForegroundColor White

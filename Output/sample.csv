@@ -1,0 +1,38 @@
+SECTION,METADATA
+Key,Value
+Export Date,2025-10-20T13:14:05.750Z
+Version,2.0
+Description,Enterprise Project Tracking Console Configuration Export
+
+SECTION,SETTINGS
+Key,Value
+Estimation Base Hours,5
+Project Hours Per Day,8
+Use Common Start Date,false
+Common Start Date,2025-10-21
+Current Ticket ID,2
+
+SECTION,TASK_SIZES
+Size Key,Name,Days,Removable
+S,"S",1,true
+M,"M",3,true
+
+SECTION,PEOPLE
+Name,Week1,Week2,Week3,Week4,Week5,Week6,Week7,Week8,Project Ready
+"Vipul",25,25,25,25,25,25,25,25,Yes
+"Sameet",25,25,25,25,25,25,25,25,Yes
+"Peter",25,25,25,25,25,25,25,25,Yes
+"Sharanya",25,25,25,25,25,25,25,25,Yes
+"Divya",25,25,25,25,25,25,25,25,Yes
+
+SECTION,STAKEHOLDERS
+Name
+"General"
+
+SECTION,INITIATIVES
+Name,Creation Date,Start Date
+"General",2025-10-21,
+
+SECTION,TICKETS
+UUID,ID,Description,Start Date,Size,Priority,Stakeholder,Initiative,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Details: Description,Details: Positives,Details: Negatives
+bb496816-550c-4925-94cf-4243f8f7b0aa,1,"Sample Task - Delete Me",2025-10-27,M,P3,"General","General","Vipul","To Do","Fixed","","2025-10-27(Initial planning@2025-10-20T13:13:57.635Z)","","M:3d(Initial sizing@2025-10-20T13:13:57.635Z)","","","",""

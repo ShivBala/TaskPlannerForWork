@@ -1,0 +1,54 @@
+SECTION,METADATA
+Key,Value
+Export Date,2025-10-16T11:23:29.977Z
+Version,2.0
+Description,Enterprise Project Tracking Console Configuration Export
+
+SECTION,SETTINGS
+Key,Value
+Estimation Base Hours,5
+Project Hours Per Day,8
+Use Common Start Date,false
+Common Start Date,2025-10-17
+Current Ticket ID,9
+
+SECTION,TASK_SIZES
+Size Key,Name,Days,Removable
+S,"Small",1,false
+M,"Medium",2,false
+L,"Large",5,false
+XL,"X-Large",10,false
+XXL,"XX-Large",15,false
+
+SECTION,PEOPLE
+Name,Week1,Week2,Week3,Week4,Week5,Week6,Week7,Week8,Project Ready
+"Vipul",25,25,25,25,25,25,25,25,Yes
+"Sameet",25,25,25,25,25,25,25,25,Yes
+"Peter",25,25,25,25,25,25,25,25,Yes
+"Sharanya",25,25,25,25,25,25,25,25,Yes
+"Divya",25,25,25,25,25,25,25,25,Yes
+
+SECTION,STAKEHOLDERS
+Name
+"General"
+"S & S"
+"Ravengers"
+"Noel"
+
+SECTION,INITIATIVES
+Name,Creation Date,Start Date
+"General",2025-10-16,
+"Fix priyanka's Scripts",2025-10-16,2025-10-16
+"BaNCS November Release",2025-10-16,2025-10-11
+"Release 10 Scripts NICE",2025-10-16,2025-10-08
+
+SECTION,TICKETS
+UUID,ID,Description,Start Date,Size,Priority,Stakeholder,Initiative,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Details: Description,Details: Positives,Details: Negatives
+e2987c3d-0045-469c-b132-ee018983b56f,1,"Design System Migration",2025-10-16,XL,P1,"S & S","Fix priyanka's Scripts","Vipul;Peter","To Do","Fixed","","2025-10-20(Initial planning@2025-10-16T08:42:47.009Z) | 2025-10-17(Manual update via UI@2025-10-16T11:14:27.639Z) | 2025-10-16(Manual update via UI@2025-10-16T11:23:26.153Z)","","XL:10d(Initial sizing@2025-10-16T08:42:47.010Z)","","","",""
+5cdcef85-e78e-43fd-89a3-17869b50530a,2,"Fix payment gateway bug",2025-10-20,S,P2,"S & S","Fix priyanka's Scripts","Sameet","To Do","Fixed","","2025-10-20(Initial planning@2025-10-16T08:42:47.010Z)","","S:1d(Initial sizing@2025-10-16T08:42:47.010Z)","","","",""
+f19129d3-5f77-4e3e-9485-fceda3140982,3,"Build new reporting dashboard",2025-10-27,XXL,P3,"S & S","Fix priyanka's Scripts","Sharanya;Divya","To Do","Fixed","","2025-10-27(Initial planning@2025-10-16T08:42:47.010Z)","","XXL:15d(Initial sizing@2025-10-16T08:42:47.010Z)","","","",""
+7f9590b8-001f-48c9-b3af-5dcb551620c0,4,"Update documentation",2025-10-13,M,P2,"Ravengers","BaNCS November Release","Vipul","To Do","Fixed","","2025-10-13(Initial planning@2025-10-16T08:42:47.010Z)","","M:2d(Initial sizing@2025-10-16T08:42:47.010Z)","","","",""
+463bc779-fef3-450a-86ea-42b78a3a32b8,5,"Code review backlog",2025-10-14,S,P3,"Ravengers","BaNCS November Release","Peter","To Do","Fixed","","2025-10-14(Initial planning@2025-10-16T08:42:47.010Z)","","S:1d(Initial sizing@2025-10-16T08:42:47.010Z)","","","",""
+192131f6-c53a-4290-8a2f-48795b563883,6,"API Security Audit",2025-10-11,M,P1,"Noel","BaNCS November Release","Sameet","In Progress","Fixed","","2025-10-11(Initial planning@2025-10-16T08:42:47.010Z)","","M:2d(Initial sizing@2025-10-16T08:42:47.010Z)","","","",""
+9ae89051-ca83-4f81-a233-3d241816931f,7,"Performance Optimization",2025-10-13,S,P2,"Noel","BaNCS November Release","Vipul","In Progress","Fixed","","2025-10-13(Initial planning@2025-10-16T08:42:47.010Z)","","S:1d(Initial sizing@2025-10-16T08:42:47.010Z)","","","",""
+47ec6709-40b5-43ac-b330-c6a0e9bb9288,8,"Database Migration Script",2025-10-08,L,P1,"Noel","Release 10 Scripts NICE","Peter;Sharanya","In Progress","Fixed","","2025-10-08(Initial planning@2025-10-16T08:42:47.010Z)","","L:5d(Initial sizing@2025-10-16T08:42:47.010Z)","","","",""

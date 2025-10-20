@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Work Summary - Sarah</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #2d3748;
+            background: #f7fafc;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3a5f 0%, #2c5282 100%);
+            color: white;
+            padding: 30px;
+            border-bottom: 3px solid #1a365d;
+        }
+        .header h1 {
+            font-size: 1.8em;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .header h2 {
+            font-size: 1.3em;
+            font-weight: 400;
+            opacity: 0.95;
+        }
+        .header .date {
+            font-size: 0.9em;
+            opacity: 0.85;
+            margin-top: 10px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #1e3a5f;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        .summary-text {
+            line-height: 1.8;
+            color: #4a5568;
+            font-size: 0.95em;
+            text-align: justify;
+        }
+        .capacity-section {
+            background: #f8fafc;
+            padding: 20px;
+            border-radius: 4px;
+            border: 1px solid #e2e8f0;
+        }
+        .capacity-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+        }
+        .capacity-label {
+            font-weight: 600;
+            color: #2d3748;
+        }
+        .capacity-value {
+            color: #4a5568;
+        }
+        .meter {
+            margin-top: 15px;
+        }
+        .meter-label {
+            font-size: 0.85em;
+            color: #718096;
+            margin-bottom: 5px;
+        }
+        .meter-bar {
+            height: 30px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        .meter-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #48bb78 0%, #38a169 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9em;
+            transition: width 0.3s ease;
+        }
+        .meter-fill.medium {
+            background: linear-gradient(90deg, #ed8936 0%, #dd6b20 100%);
+        }
+        .meter-fill.high {
+            background: linear-gradient(90deg, #f56565 0%, #e53e3e 100%);
+        }
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .task-card {
+            border: 1px solid #e2e8f0;
+            border-radius: 4px;
+            padding: 15px;
+            background: #ffffff;
+            transition: all 0.2s ease;
+        }
+        .task-card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 12px;
+        }
+        .task-title {
+            font-weight: 600;
+            color: #2d3748;
+            flex: 1;
+            margin-right: 15px;
+            font-size: 1em;
+        }
+        .task-badges {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .badge {
+            padding: 3px 10px;
+            border-radius: 3px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        .badge-p1 { background: #feb2b2; color: #742a2a; }
+        .badge-p2 { background: #fbd38d; color: #744210; }
+        .badge-p3 { background: #9ae6b4; color: #22543d; }
+        .badge-size { background: #cbd5e0; color: #2d3748; }
+        .badge-status-todo { background: #bee3f8; color: #2c5282; }
+        .badge-status-inprogress { background: #fbd38d; color: #744210; }
+        .badge-status-done { background: #9ae6b4; color: #22543d; }
+        .task-details {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            font-size: 0.9em;
+            color: #4a5568;
+        }
+        .detail-row {
+            display: flex;
+            align-items: start;
+        }
+        .detail-label {
+            font-weight: 600;
+            margin-right: 8px;
+            min-width: 100px;
+            color: #2d3748;
+        }
+        .detail-value {
+            color: #4a5568;
+        }
+        .effort-breakdown {
+            margin-top: 10px;
+            padding: 10px;
+            background: white;
+            border-radius: 3px;
+            border-left: 3px solid #4299e1;
+            font-size: 0.85em;
+        }
+        .no-tasks {
+            text-align: center;
+            padding: 60px 20px;
+            color: #718096;
+            background: #f8fafc;
+            border-radius: 4px;
+            border: 1px dashed #cbd5e0;
+        }
+        .no-tasks p:first-child {
+            font-size: 1.2em;
+            margin-bottom: 10px;
+            color: #4a5568;
+        }
+        .copy-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 4px;
+            text-align: center;
+        }
+        .copy-button {
+            background: #2c5282;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 4px;
+            font-size: 0.95em;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .copy-button:hover {
+            background: #1e3a5f;
+        }
+        .copy-button:active {
+            transform: scale(0.98);
+        }
+        .copy-feedback {
+            margin-top: 10px;
+            color: #38a169;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        .copy-feedback.show {
+            opacity: 1;
+        }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #718096;
+            font-size: 0.85em;
+            border-top: 1px solid #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Weekly Work Summary</h1>
+            <h2>Sarah</h2>
+            <div class="date">Week of Oct 20 - Oct 24, 2025</div>
+        </div>
+        
+        <div class="content">
+            <div class="section">
+                <div class="section-title">Quick Summary</div>
+                <div class="summary-text">
+                    Sarah has 2 task(s) (2 high priority) for week of Oct 20, 2025
+Workload: 36/25 hours (144% capacity)
+Initiatives: API Modernization, Security Hardening
+Stakeholders: Engineering Leadership, Security Team
+
+Tasks:
+  • P1 - Implement API versioning strategy (24h)
+  • P1 - Implement penetration testing framework (12h)
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Weekly Capacity</div>
+                <div class="capacity-section">
+                    <div class="capacity-row">
+                        <span class="capacity-label">Available Hours:</span>
+                        <span class="capacity-value">25 hours/week</span>
+                    </div>
+                    <div class="capacity-row">
+                        <span class="capacity-label">Allocated Hours:</span>
+                        <span class="capacity-value">36 hours</span>
+                    </div>
+                    <div class="capacity-row">
+                        <span class="capacity-label">Utilization:</span>
+                        <span class="capacity-value">144%</span>
+                    </div>
+                    <div class="meter">
+                        <div class="meter-label">Capacity Utilization</div>
+                        <div class="meter-bar">
+                            <div class="meter-fill high" style="width: 100%">
+                                144% (36 / 25 hours)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-title">Task Assignments (2)</div>                <div class="task-list">                    <div class="task-card">
+                        <div class="task-header">
+                            <div class="task-title">Implement API versioning strategy</div>
+                            <div class="task-badges">
+                                <span class="badge badge-p1">P1</span>
+                                <span class="badge badge-size">M</span>
+                                <span class="badge badge-status-todo">To Do</span>
+                            </div>
+                        </div>
+                        <div class="task-details">
+                            <div class="detail-row">
+                                <span class="detail-label">Start Date:</span>
+                                <span class="detail-value">2025-10-19</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">End Date:</span>
+                                <span class="detail-value"></span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Initiative:</span>
+                                <span class="detail-value">API Modernization</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Stakeholder:</span>
+                                <span class="detail-value">Engineering Leadership</span>
+                            </div>
+                        </div>
+                        <div class="effort-breakdown">
+                            <strong>Effort Breakdown:</strong> Task size: M (3 days) = 24 hours total effort. 
+                            <strong>This person's allocation: 24 hours</strong>
+                        </div>
+                    </div>                    <div class="task-card">
+                        <div class="task-header">
+                            <div class="task-title">Implement penetration testing framework</div>
+                            <div class="task-badges">
+                                <span class="badge badge-p1">P1</span>
+                                <span class="badge badge-size">XL</span>
+                                <span class="badge badge-status-todo">To Do</span>
+                            </div>
+                        </div>
+                        <div class="task-details">
+                            <div class="detail-row">
+                                <span class="detail-label">Start Date:</span>
+                                <span class="detail-value">2025-10-15</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">End Date:</span>
+                                <span class="detail-value"></span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Initiative:</span>
+                                <span class="detail-value">Security Hardening</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Stakeholder:</span>
+                                <span class="detail-value">Security Team</span>
+                            </div>
+                        </div>
+                        <div class="effort-breakdown">
+                            <strong>Effort Breakdown:</strong> Task size: XL (8 days) = 64 hours total effort (shared with 1 other team member(s)). 
+                            <strong>This person's allocation: 12 hours</strong>
+                        </div>
+                    </div>                </div>            </div>
+            
+            <div class="copy-section">
+                <button class="copy-button" onclick="copyToClipboard()">Copy Quick Summary to Clipboard</button>
+                <div id="copy-feedback" class="copy-feedback">Summary copied to clipboard</div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            Generated by PowerShell Helper | html_console_v10.html
+        </div>
+    </div>
+    
+    <script>
+        function copyToClipboard() {
+            const summary = 'Sarah has 2 task(s) (2 high priority) for week of Oct 20, 2025\nWorkload: 36/25 hours (144% capacity)\nInitiatives: API Modernization, Security Hardening\nStakeholders: Engineering Leadership, Security Team\n\nTasks:\n  • P1 - Implement API versioning strategy (24h)\n  • P1 - Implement penetration testing framework (12h)';
+            navigator.clipboard.writeText(summary).then(() => {
+                const feedback = document.getElementById('copy-feedback');
+                feedback.classList.add('show');
+                setTimeout(() => {
+                    feedback.classList.remove('show');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+                alert('Failed to copy to clipboard. Please copy manually.');
+            });
+        }
+    </script>
+</body>
+</html>
