@@ -286,3 +286,1406 @@
   >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
   >>> helper2 Result: 2025-10-24
   >> Add-BusinessDays returned: 2025-10-24
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >> Calculate-TaskEndDate called: Start=2025-10-19, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-20, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-22
+  >> Calculate-TaskEndDate called: Start=2025-10-06, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-06, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-08
+  >> Calculate-TaskEndDate called: Start=2025-10-28, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-28, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-11-03
+  >> Calculate-TaskEndDate called: Start=2025-10-26, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-27, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-29
+  >> Calculate-TaskEndDate called: Start=2025-10-19, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-20, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-22
+  >> Calculate-TaskEndDate called: Start=2025-10-19, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-20, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-22
+  >> Calculate-TaskEndDate called: Start=2025-10-19, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-20, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-22
+  hasValidEndDate: False
+  Taking Calculate branch
+  >> Calculate-TaskEndDate called: Start=2025-10-15, Duration=8
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-15, daysToAdd=7
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >> Add-BusinessDays returned: 2025-10-24
+🔍 FILTER Task 21:
+  EndDate field: [] Type:  Empty: True Whitespace: True
+  Size: XL
+  DurationDays: 8
+  Assignees: 2
+  BusinessDaysNeeded: 8
+  Start: 2025-10-15
+  TaskStartDate (after weekend check): 2025-10-15
+  Add-BusinessDays: 
+  End: 2025-10-24
+  Week: 2025-10-20 to 2025-10-24
+  Overlaps: True
+  >> Calculate-TaskEndDate called: Start=2025-10-19, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-20, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-22
+  >> Calculate-TaskEndDate called: Start=2025-10-15, Duration=8
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-15, daysToAdd=7
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >> Add-BusinessDays returned: 2025-10-24
+  >> Calculate-TaskEndDate called: Start=2025-10-19, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-20, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-22
+  hasValidEndDate: False
+  Taking Calculate branch
+  >> Calculate-TaskEndDate called: Start=2025-10-15, Duration=8
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-15, daysToAdd=7
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >> Add-BusinessDays returned: 2025-10-24
+🔍 FILTER Task 21:
+  EndDate field: [] Type: null Empty: True Whitespace: True
+  Size: XL
+  DurationDays: 8
+  Assignees: 2
+  BusinessDaysNeeded: 8
+  Start: 2025-10-15
+  TaskStartDate (after weekend check): 2025-10-15
+  Add-BusinessDays: 
+  End: 2025-10-24
+  Week: 2025-10-20 to 2025-10-24
+  Overlaps: True
+  >> Calculate-TaskEndDate called: Start=2025-10-19, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-20, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-22
+  >> Calculate-TaskEndDate called: Start=2025-10-15, Duration=8
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-15, daysToAdd=7
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >> Add-BusinessDays returned: 2025-10-24
+  >> Calculate-TaskEndDate called: Start=2025-10-19, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-20, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-22
+  hasValidEndDate: False
+  Taking Calculate branch
+  >> Calculate-TaskEndDate called: Start=2025-10-15, Duration=8
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-15, daysToAdd=7
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >> Add-BusinessDays returned: 2025-10-24
+🔍 FILTER Task 21:
+  EndDate field: [] Type: null Empty: True Whitespace: True
+  Size: XL
+  DurationDays: 8
+  Assignees: 2
+  BusinessDaysNeeded: 8
+  Start: 2025-10-15
+  TaskStartDate (after weekend check): 2025-10-15
+  Add-BusinessDays: 
+  End: 2025-10-24
+  Week: 2025-10-20 to 2025-10-24
+  Overlaps: True
+  >> Calculate-TaskEndDate called: Start=2025-10-19, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-20, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-22
+  >> Calculate-TaskEndDate called: Start=2025-10-15, Duration=8
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-15, daysToAdd=7
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >> Add-BusinessDays returned: 2025-10-24
+  >> Calculate-TaskEndDate called: Start=2025-10-06, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-06, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-08
+  >> Calculate-TaskEndDate called: Start=2025-10-28, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-28, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-11-03
+  >> Calculate-TaskEndDate called: Start=2025-10-26, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-27, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-29
+  hasValidEndDate: False
+  Taking Calculate branch
+  >> Calculate-TaskEndDate called: Start=2025-10-15, Duration=8
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-15, daysToAdd=7
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >> Add-BusinessDays returned: 2025-10-24
+🔍 FILTER Task 21:
+  EndDate field: [] Type: null Empty: True Whitespace: True
+  Size: XL
+  DurationDays: 8
+  Assignees: 2
+  BusinessDaysNeeded: 8
+  Start: 2025-10-15
+  TaskStartDate (after weekend check): 2025-10-15
+  Add-BusinessDays: 
+  End: 2025-10-24
+  Week: 2025-10-20 to 2025-10-24
+  Overlaps: True
+  >> Calculate-TaskEndDate called: Start=2025-10-24, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-24, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-28
+  >> Calculate-TaskEndDate called: Start=2025-11-05, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-05, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-11-11
+  >> Calculate-TaskEndDate called: Start=2025-11-12, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-12, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-11-14
+  >> Calculate-TaskEndDate called: Start=2025-10-21, Duration=0.5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-21, daysToAdd=0
+  >> Add-BusinessDays returned: 2025-10-21
+  >> Calculate-TaskEndDate called: Start=2025-11-02, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-03, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-11-07
+  >> Calculate-TaskEndDate called: Start=2025-11-18, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-18, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-11-20
+  >> Calculate-TaskEndDate called: Start=2025-11-29, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-12-01, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-12-03
+  >> Calculate-TaskEndDate called: Start=2025-12-15, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-12-15, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-12-17
+  >> Calculate-TaskEndDate called: Start=2025-10-15, Duration=8
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-15, daysToAdd=7
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >> Add-BusinessDays returned: 2025-10-24
+  >> Calculate-TaskEndDate called: Start=2025-10-24, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-24, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-28
+  >> Calculate-TaskEndDate called: Start=2025-10-21, Duration=0.5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-21, daysToAdd=0
+  >> Add-BusinessDays returned: 2025-10-21
+  >> Calculate-TaskEndDate called: Start=2025-10-15, Duration=1
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-15, daysToAdd=0
+  >> Add-BusinessDays returned: 2025-10-15
+  >> Calculate-TaskEndDate called: Start=2025-10-10, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-10, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-10-16
+  >> Calculate-TaskEndDate called: Start=2025-11-06, Duration=8
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-06, daysToAdd=7
+  >>> helper2 Add-BusinessDays: Start=2025-11-06, Days=7
+  >>> Loop: currentDate=2025-11-07, dayOfWeek=5, daysAdded=0
+  >>> Loop: currentDate=2025-11-08, dayOfWeek=6, daysAdded=1
+  >>> Loop: currentDate=2025-11-09, dayOfWeek=0, daysAdded=1
+  >>> Loop: currentDate=2025-11-10, dayOfWeek=1, daysAdded=1
+  >>> Loop: currentDate=2025-11-11, dayOfWeek=2, daysAdded=2
+  >>> Loop: currentDate=2025-11-12, dayOfWeek=3, daysAdded=3
+  >>> Loop: currentDate=2025-11-13, dayOfWeek=4, daysAdded=4
+  >>> Loop: currentDate=2025-11-14, dayOfWeek=5, daysAdded=5
+  >>> Loop: currentDate=2025-11-15, dayOfWeek=6, daysAdded=6
+  >>> Loop: currentDate=2025-11-16, dayOfWeek=0, daysAdded=6
+  >>> Loop: currentDate=2025-11-17, dayOfWeek=1, daysAdded=6
+  >>> helper2 Result: 2025-11-17
+  >> Add-BusinessDays returned: 2025-11-17
+  >> Calculate-TaskEndDate called: Start=2025-10-25, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-27, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-10-31
+  >> Calculate-TaskEndDate called: Start=2025-10-27, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-27, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-29
+  >> Calculate-TaskEndDate called: Start=2025-11-16, Duration=1
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-17, daysToAdd=0
+  >> Add-BusinessDays returned: 2025-11-17
+  >> Calculate-TaskEndDate called: Start=2025-11-13, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-13, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-11-19
+  >> Calculate-TaskEndDate called: Start=2025-10-28, Duration=8
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-28, daysToAdd=7
+  >>> helper2 Add-BusinessDays: Start=2025-10-28, Days=7
+  >>> Loop: currentDate=2025-10-29, dayOfWeek=3, daysAdded=0
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=1
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=2
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=3
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=3
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=3
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=4
+  >>> Loop: currentDate=2025-11-05, dayOfWeek=3, daysAdded=5
+  >>> Loop: currentDate=2025-11-06, dayOfWeek=4, daysAdded=6
+  >>> helper2 Result: 2025-11-06
+  >> Add-BusinessDays returned: 2025-11-06
+  >> Calculate-TaskEndDate called: Start=2025-11-08, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-10, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-11-12
+  >> Calculate-TaskEndDate called: Start=2025-11-21, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-21, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-11-25
+  >> Calculate-TaskEndDate called: Start=2025-12-05, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-12-05, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-12-09
+  >> Calculate-TaskEndDate called: Start=2025-12-20, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-12-22, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-12-24
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >>> helper2 Add-BusinessDays: Start=2025-10-06, Days=7
+  >>> Loop: currentDate=2025-10-07, dayOfWeek=2, daysAdded=0
+  >>> Loop: currentDate=2025-10-08, dayOfWeek=3, daysAdded=1
+  >>> Loop: currentDate=2025-10-09, dayOfWeek=4, daysAdded=2
+  >>> Loop: currentDate=2025-10-10, dayOfWeek=5, daysAdded=3
+  >>> Loop: currentDate=2025-10-11, dayOfWeek=6, daysAdded=4
+  >>> Loop: currentDate=2025-10-12, dayOfWeek=0, daysAdded=4
+  >>> Loop: currentDate=2025-10-13, dayOfWeek=1, daysAdded=4
+  >>> Loop: currentDate=2025-10-14, dayOfWeek=2, daysAdded=5
+  >>> Loop: currentDate=2025-10-15, dayOfWeek=3, daysAdded=6
+  >>> helper2 Result: 2025-10-15
+  >>> helper2 Add-BusinessDays: Start=2025-11-06, Days=7
+  >>> Loop: currentDate=2025-11-07, dayOfWeek=5, daysAdded=0
+  >>> Loop: currentDate=2025-11-08, dayOfWeek=6, daysAdded=1
+  >>> Loop: currentDate=2025-11-09, dayOfWeek=0, daysAdded=1
+  >>> Loop: currentDate=2025-11-10, dayOfWeek=1, daysAdded=1
+  >>> Loop: currentDate=2025-11-11, dayOfWeek=2, daysAdded=2
+  >>> Loop: currentDate=2025-11-12, dayOfWeek=3, daysAdded=3
+  >>> Loop: currentDate=2025-11-13, dayOfWeek=4, daysAdded=4
+  >>> Loop: currentDate=2025-11-14, dayOfWeek=5, daysAdded=5
+  >>> Loop: currentDate=2025-11-15, dayOfWeek=6, daysAdded=6
+  >>> Loop: currentDate=2025-11-16, dayOfWeek=0, daysAdded=6
+  >>> Loop: currentDate=2025-11-17, dayOfWeek=1, daysAdded=6
+  >>> helper2 Result: 2025-11-17
+  >>> helper2 Add-BusinessDays: Start=2025-10-25, Days=7
+  >>> Loop: currentDate=2025-10-26, dayOfWeek=0, daysAdded=0
+  >>> Loop: currentDate=2025-10-27, dayOfWeek=1, daysAdded=0
+  >>> Loop: currentDate=2025-10-28, dayOfWeek=2, daysAdded=1
+  >>> Loop: currentDate=2025-10-29, dayOfWeek=3, daysAdded=2
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=3
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=4
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=5
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=5
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=5
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=6
+  >>> helper2 Result: 2025-11-04
+  >>> helper2 Add-BusinessDays: Start=2025-10-28, Days=7
+  >>> Loop: currentDate=2025-10-29, dayOfWeek=3, daysAdded=0
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=1
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=2
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=3
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=3
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=3
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=4
+  >>> Loop: currentDate=2025-11-05, dayOfWeek=3, daysAdded=5
+  >>> Loop: currentDate=2025-11-06, dayOfWeek=4, daysAdded=6
+  >>> helper2 Result: 2025-11-06
+  >>> helper2 Add-BusinessDays: Start=2025-11-06, Days=7
+  >>> Loop: currentDate=2025-11-07, dayOfWeek=5, daysAdded=0
+  >>> Loop: currentDate=2025-11-08, dayOfWeek=6, daysAdded=1
+  >>> Loop: currentDate=2025-11-09, dayOfWeek=0, daysAdded=1
+  >>> Loop: currentDate=2025-11-10, dayOfWeek=1, daysAdded=1
+  >>> Loop: currentDate=2025-11-11, dayOfWeek=2, daysAdded=2
+  >>> Loop: currentDate=2025-11-12, dayOfWeek=3, daysAdded=3
+  >>> Loop: currentDate=2025-11-13, dayOfWeek=4, daysAdded=4
+  >>> Loop: currentDate=2025-11-14, dayOfWeek=5, daysAdded=5
+  >>> Loop: currentDate=2025-11-15, dayOfWeek=6, daysAdded=6
+  >>> Loop: currentDate=2025-11-16, dayOfWeek=0, daysAdded=6
+  >>> Loop: currentDate=2025-11-17, dayOfWeek=1, daysAdded=6
+  >>> helper2 Result: 2025-11-17
+  >>> helper2 Add-BusinessDays: Start=2025-10-28, Days=7
+  >>> Loop: currentDate=2025-10-29, dayOfWeek=3, daysAdded=0
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=1
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=2
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=3
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=3
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=3
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=4
+  >>> Loop: currentDate=2025-11-05, dayOfWeek=3, daysAdded=5
+  >>> Loop: currentDate=2025-11-06, dayOfWeek=4, daysAdded=6
+  >>> helper2 Result: 2025-11-06
+  >>> helper2 Add-BusinessDays: Start=2025-10-25, Days=7
+  >>> Loop: currentDate=2025-10-26, dayOfWeek=0, daysAdded=0
+  >>> Loop: currentDate=2025-10-27, dayOfWeek=1, daysAdded=0
+  >>> Loop: currentDate=2025-10-28, dayOfWeek=2, daysAdded=1
+  >>> Loop: currentDate=2025-10-29, dayOfWeek=3, daysAdded=2
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=3
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=4
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=5
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=5
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=5
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=6
+  >>> helper2 Result: 2025-11-04
+  >>> helper2 Add-BusinessDays: Start=2025-10-29, Days=7
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-11-05, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-11-06, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-11-07, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-11-07
+  >>> helper2 Add-BusinessDays: Start=2025-10-29, Days=7
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-11-05, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-11-06, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-11-07, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-11-07
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >>> helper2 Add-BusinessDays: Start=2025-10-06, Days=7
+  >>> Loop: currentDate=2025-10-07, dayOfWeek=2, daysAdded=0
+  >>> Loop: currentDate=2025-10-08, dayOfWeek=3, daysAdded=1
+  >>> Loop: currentDate=2025-10-09, dayOfWeek=4, daysAdded=2
+  >>> Loop: currentDate=2025-10-10, dayOfWeek=5, daysAdded=3
+  >>> Loop: currentDate=2025-10-11, dayOfWeek=6, daysAdded=4
+  >>> Loop: currentDate=2025-10-12, dayOfWeek=0, daysAdded=4
+  >>> Loop: currentDate=2025-10-13, dayOfWeek=1, daysAdded=4
+  >>> Loop: currentDate=2025-10-14, dayOfWeek=2, daysAdded=5
+  >>> Loop: currentDate=2025-10-15, dayOfWeek=3, daysAdded=6
+  >>> helper2 Result: 2025-10-15
+  >>> helper2 Add-BusinessDays: Start=2025-11-06, Days=7
+  >>> Loop: currentDate=2025-11-07, dayOfWeek=5, daysAdded=0
+  >>> Loop: currentDate=2025-11-08, dayOfWeek=6, daysAdded=1
+  >>> Loop: currentDate=2025-11-09, dayOfWeek=0, daysAdded=1
+  >>> Loop: currentDate=2025-11-10, dayOfWeek=1, daysAdded=1
+  >>> Loop: currentDate=2025-11-11, dayOfWeek=2, daysAdded=2
+  >>> Loop: currentDate=2025-11-12, dayOfWeek=3, daysAdded=3
+  >>> Loop: currentDate=2025-11-13, dayOfWeek=4, daysAdded=4
+  >>> Loop: currentDate=2025-11-14, dayOfWeek=5, daysAdded=5
+  >>> Loop: currentDate=2025-11-15, dayOfWeek=6, daysAdded=6
+  >>> Loop: currentDate=2025-11-16, dayOfWeek=0, daysAdded=6
+  >>> Loop: currentDate=2025-11-17, dayOfWeek=1, daysAdded=6
+  >>> helper2 Result: 2025-11-17
+  >>> helper2 Add-BusinessDays: Start=2025-10-25, Days=7
+  >>> Loop: currentDate=2025-10-26, dayOfWeek=0, daysAdded=0
+  >>> Loop: currentDate=2025-10-27, dayOfWeek=1, daysAdded=0
+  >>> Loop: currentDate=2025-10-28, dayOfWeek=2, daysAdded=1
+  >>> Loop: currentDate=2025-10-29, dayOfWeek=3, daysAdded=2
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=3
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=4
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=5
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=5
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=5
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=6
+  >>> helper2 Result: 2025-11-04
+  >>> helper2 Add-BusinessDays: Start=2025-10-28, Days=7
+  >>> Loop: currentDate=2025-10-29, dayOfWeek=3, daysAdded=0
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=1
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=2
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=3
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=3
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=3
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=4
+  >>> Loop: currentDate=2025-11-05, dayOfWeek=3, daysAdded=5
+  >>> Loop: currentDate=2025-11-06, dayOfWeek=4, daysAdded=6
+  >>> helper2 Result: 2025-11-06
+  >>> helper2 Add-BusinessDays: Start=2025-11-06, Days=7
+  >>> Loop: currentDate=2025-11-07, dayOfWeek=5, daysAdded=0
+  >>> Loop: currentDate=2025-11-08, dayOfWeek=6, daysAdded=1
+  >>> Loop: currentDate=2025-11-09, dayOfWeek=0, daysAdded=1
+  >>> Loop: currentDate=2025-11-10, dayOfWeek=1, daysAdded=1
+  >>> Loop: currentDate=2025-11-11, dayOfWeek=2, daysAdded=2
+  >>> Loop: currentDate=2025-11-12, dayOfWeek=3, daysAdded=3
+  >>> Loop: currentDate=2025-11-13, dayOfWeek=4, daysAdded=4
+  >>> Loop: currentDate=2025-11-14, dayOfWeek=5, daysAdded=5
+  >>> Loop: currentDate=2025-11-15, dayOfWeek=6, daysAdded=6
+  >>> Loop: currentDate=2025-11-16, dayOfWeek=0, daysAdded=6
+  >>> Loop: currentDate=2025-11-17, dayOfWeek=1, daysAdded=6
+  >>> helper2 Result: 2025-11-17
+  >>> helper2 Add-BusinessDays: Start=2025-10-28, Days=7
+  >>> Loop: currentDate=2025-10-29, dayOfWeek=3, daysAdded=0
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=1
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=2
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=3
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=3
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=3
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=4
+  >>> Loop: currentDate=2025-11-05, dayOfWeek=3, daysAdded=5
+  >>> Loop: currentDate=2025-11-06, dayOfWeek=4, daysAdded=6
+  >>> helper2 Result: 2025-11-06
+  >>> helper2 Add-BusinessDays: Start=2025-10-25, Days=7
+  >>> Loop: currentDate=2025-10-26, dayOfWeek=0, daysAdded=0
+  >>> Loop: currentDate=2025-10-27, dayOfWeek=1, daysAdded=0
+  >>> Loop: currentDate=2025-10-28, dayOfWeek=2, daysAdded=1
+  >>> Loop: currentDate=2025-10-29, dayOfWeek=3, daysAdded=2
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=3
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=4
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=5
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=5
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=5
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=6
+  >>> helper2 Result: 2025-11-04
+  >>> helper2 Add-BusinessDays: Start=2025-10-29, Days=7
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-11-05, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-11-06, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-11-07, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-11-07
+  >>> helper2 Add-BusinessDays: Start=2025-10-29, Days=7
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-11-05, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-11-06, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-11-07, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-11-07
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >>> helper2 Add-BusinessDays: Start=2025-10-06, Days=7
+  >>> Loop: currentDate=2025-10-07, dayOfWeek=2, daysAdded=0
+  >>> Loop: currentDate=2025-10-08, dayOfWeek=3, daysAdded=1
+  >>> Loop: currentDate=2025-10-09, dayOfWeek=4, daysAdded=2
+  >>> Loop: currentDate=2025-10-10, dayOfWeek=5, daysAdded=3
+  >>> Loop: currentDate=2025-10-11, dayOfWeek=6, daysAdded=4
+  >>> Loop: currentDate=2025-10-12, dayOfWeek=0, daysAdded=4
+  >>> Loop: currentDate=2025-10-13, dayOfWeek=1, daysAdded=4
+  >>> Loop: currentDate=2025-10-14, dayOfWeek=2, daysAdded=5
+  >>> Loop: currentDate=2025-10-15, dayOfWeek=3, daysAdded=6
+  >>> helper2 Result: 2025-10-15
+  >>> helper2 Add-BusinessDays: Start=2025-11-06, Days=7
+  >>> Loop: currentDate=2025-11-07, dayOfWeek=5, daysAdded=0
+  >>> Loop: currentDate=2025-11-08, dayOfWeek=6, daysAdded=1
+  >>> Loop: currentDate=2025-11-09, dayOfWeek=0, daysAdded=1
+  >>> Loop: currentDate=2025-11-10, dayOfWeek=1, daysAdded=1
+  >>> Loop: currentDate=2025-11-11, dayOfWeek=2, daysAdded=2
+  >>> Loop: currentDate=2025-11-12, dayOfWeek=3, daysAdded=3
+  >>> Loop: currentDate=2025-11-13, dayOfWeek=4, daysAdded=4
+  >>> Loop: currentDate=2025-11-14, dayOfWeek=5, daysAdded=5
+  >>> Loop: currentDate=2025-11-15, dayOfWeek=6, daysAdded=6
+  >>> Loop: currentDate=2025-11-16, dayOfWeek=0, daysAdded=6
+  >>> Loop: currentDate=2025-11-17, dayOfWeek=1, daysAdded=6
+  >>> helper2 Result: 2025-11-17
+  >>> helper2 Add-BusinessDays: Start=2025-10-25, Days=7
+  >>> Loop: currentDate=2025-10-26, dayOfWeek=0, daysAdded=0
+  >>> Loop: currentDate=2025-10-27, dayOfWeek=1, daysAdded=0
+  >>> Loop: currentDate=2025-10-28, dayOfWeek=2, daysAdded=1
+  >>> Loop: currentDate=2025-10-29, dayOfWeek=3, daysAdded=2
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=3
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=4
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=5
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=5
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=5
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=6
+  >>> helper2 Result: 2025-11-04
+  >>> helper2 Add-BusinessDays: Start=2025-10-28, Days=7
+  >>> Loop: currentDate=2025-10-29, dayOfWeek=3, daysAdded=0
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=1
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=2
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=3
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=3
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=3
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=4
+  >>> Loop: currentDate=2025-11-05, dayOfWeek=3, daysAdded=5
+  >>> Loop: currentDate=2025-11-06, dayOfWeek=4, daysAdded=6
+  >>> helper2 Result: 2025-11-06
+  >>> helper2 Add-BusinessDays: Start=2025-11-06, Days=7
+  >>> Loop: currentDate=2025-11-07, dayOfWeek=5, daysAdded=0
+  >>> Loop: currentDate=2025-11-08, dayOfWeek=6, daysAdded=1
+  >>> Loop: currentDate=2025-11-09, dayOfWeek=0, daysAdded=1
+  >>> Loop: currentDate=2025-11-10, dayOfWeek=1, daysAdded=1
+  >>> Loop: currentDate=2025-11-11, dayOfWeek=2, daysAdded=2
+  >>> Loop: currentDate=2025-11-12, dayOfWeek=3, daysAdded=3
+  >>> Loop: currentDate=2025-11-13, dayOfWeek=4, daysAdded=4
+  >>> Loop: currentDate=2025-11-14, dayOfWeek=5, daysAdded=5
+  >>> Loop: currentDate=2025-11-15, dayOfWeek=6, daysAdded=6
+  >>> Loop: currentDate=2025-11-16, dayOfWeek=0, daysAdded=6
+  >>> Loop: currentDate=2025-11-17, dayOfWeek=1, daysAdded=6
+  >>> helper2 Result: 2025-11-17
+  >>> helper2 Add-BusinessDays: Start=2025-10-28, Days=7
+  >>> Loop: currentDate=2025-10-29, dayOfWeek=3, daysAdded=0
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=1
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=2
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=3
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=3
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=3
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=4
+  >>> Loop: currentDate=2025-11-05, dayOfWeek=3, daysAdded=5
+  >>> Loop: currentDate=2025-11-06, dayOfWeek=4, daysAdded=6
+  >>> helper2 Result: 2025-11-06
+  >>> helper2 Add-BusinessDays: Start=2025-10-25, Days=7
+  >>> Loop: currentDate=2025-10-26, dayOfWeek=0, daysAdded=0
+  >>> Loop: currentDate=2025-10-27, dayOfWeek=1, daysAdded=0
+  >>> Loop: currentDate=2025-10-28, dayOfWeek=2, daysAdded=1
+  >>> Loop: currentDate=2025-10-29, dayOfWeek=3, daysAdded=2
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=3
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=4
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=5
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=5
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=5
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=6
+  >>> helper2 Result: 2025-11-04
+  >>> helper2 Add-BusinessDays: Start=2025-10-29, Days=7
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-11-05, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-11-06, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-11-07, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-11-07
+  >>> helper2 Add-BusinessDays: Start=2025-10-29, Days=7
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-11-05, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-11-06, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-11-07, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-11-07
+  >> Calculate-TaskEndDate called: Start=2025-10-19, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-20, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-22
+  hasValidEndDate: False
+  Taking Calculate branch
+  >> Calculate-TaskEndDate called: Start=2025-10-15, Duration=8
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-15, daysToAdd=7
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >> Add-BusinessDays returned: 2025-10-24
+🔍 FILTER Task 21:
+  EndDate field: [] Type: null Empty: True Whitespace: True
+  Size: XL
+  DurationDays: 8
+  Assignees: 2
+  BusinessDaysNeeded: 8
+  Start: 2025-10-15
+  TaskStartDate (after weekend check): 2025-10-15
+  Add-BusinessDays: 
+  End: 2025-10-24
+  Week: 2025-10-20 to 2025-10-24
+  Overlaps: True
+  >> Calculate-TaskEndDate called: Start=2025-10-19, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-20, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-22
+  >> Calculate-TaskEndDate called: Start=2025-10-15, Duration=8
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-15, daysToAdd=7
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >> Add-BusinessDays returned: 2025-10-24
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >>> helper2 Add-BusinessDays: Start=2025-10-06, Days=7
+  >>> Loop: currentDate=2025-10-07, dayOfWeek=2, daysAdded=0
+  >>> Loop: currentDate=2025-10-08, dayOfWeek=3, daysAdded=1
+  >>> Loop: currentDate=2025-10-09, dayOfWeek=4, daysAdded=2
+  >>> Loop: currentDate=2025-10-10, dayOfWeek=5, daysAdded=3
+  >>> Loop: currentDate=2025-10-11, dayOfWeek=6, daysAdded=4
+  >>> Loop: currentDate=2025-10-12, dayOfWeek=0, daysAdded=4
+  >>> Loop: currentDate=2025-10-13, dayOfWeek=1, daysAdded=4
+  >>> Loop: currentDate=2025-10-14, dayOfWeek=2, daysAdded=5
+  >>> Loop: currentDate=2025-10-15, dayOfWeek=3, daysAdded=6
+  >>> helper2 Result: 2025-10-15
+  >>> helper2 Add-BusinessDays: Start=2025-11-06, Days=7
+  >>> Loop: currentDate=2025-11-07, dayOfWeek=5, daysAdded=0
+  >>> Loop: currentDate=2025-11-08, dayOfWeek=6, daysAdded=1
+  >>> Loop: currentDate=2025-11-09, dayOfWeek=0, daysAdded=1
+  >>> Loop: currentDate=2025-11-10, dayOfWeek=1, daysAdded=1
+  >>> Loop: currentDate=2025-11-11, dayOfWeek=2, daysAdded=2
+  >>> Loop: currentDate=2025-11-12, dayOfWeek=3, daysAdded=3
+  >>> Loop: currentDate=2025-11-13, dayOfWeek=4, daysAdded=4
+  >>> Loop: currentDate=2025-11-14, dayOfWeek=5, daysAdded=5
+  >>> Loop: currentDate=2025-11-15, dayOfWeek=6, daysAdded=6
+  >>> Loop: currentDate=2025-11-16, dayOfWeek=0, daysAdded=6
+  >>> Loop: currentDate=2025-11-17, dayOfWeek=1, daysAdded=6
+  >>> helper2 Result: 2025-11-17
+  >>> helper2 Add-BusinessDays: Start=2025-10-25, Days=7
+  >>> Loop: currentDate=2025-10-26, dayOfWeek=0, daysAdded=0
+  >>> Loop: currentDate=2025-10-27, dayOfWeek=1, daysAdded=0
+  >>> Loop: currentDate=2025-10-28, dayOfWeek=2, daysAdded=1
+  >>> Loop: currentDate=2025-10-29, dayOfWeek=3, daysAdded=2
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=3
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=4
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=5
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=5
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=5
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=6
+  >>> helper2 Result: 2025-11-04
+  >>> helper2 Add-BusinessDays: Start=2025-10-28, Days=7
+  >>> Loop: currentDate=2025-10-29, dayOfWeek=3, daysAdded=0
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=1
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=2
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=3
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=3
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=3
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=4
+  >>> Loop: currentDate=2025-11-05, dayOfWeek=3, daysAdded=5
+  >>> Loop: currentDate=2025-11-06, dayOfWeek=4, daysAdded=6
+  >>> helper2 Result: 2025-11-06
+  >>> helper2 Add-BusinessDays: Start=2025-11-06, Days=7
+  >>> Loop: currentDate=2025-11-07, dayOfWeek=5, daysAdded=0
+  >>> Loop: currentDate=2025-11-08, dayOfWeek=6, daysAdded=1
+  >>> Loop: currentDate=2025-11-09, dayOfWeek=0, daysAdded=1
+  >>> Loop: currentDate=2025-11-10, dayOfWeek=1, daysAdded=1
+  >>> Loop: currentDate=2025-11-11, dayOfWeek=2, daysAdded=2
+  >>> Loop: currentDate=2025-11-12, dayOfWeek=3, daysAdded=3
+  >>> Loop: currentDate=2025-11-13, dayOfWeek=4, daysAdded=4
+  >>> Loop: currentDate=2025-11-14, dayOfWeek=5, daysAdded=5
+  >>> Loop: currentDate=2025-11-15, dayOfWeek=6, daysAdded=6
+  >>> Loop: currentDate=2025-11-16, dayOfWeek=0, daysAdded=6
+  >>> Loop: currentDate=2025-11-17, dayOfWeek=1, daysAdded=6
+  >>> helper2 Result: 2025-11-17
+  >>> helper2 Add-BusinessDays: Start=2025-10-28, Days=7
+  >>> Loop: currentDate=2025-10-29, dayOfWeek=3, daysAdded=0
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=1
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=2
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=3
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=3
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=3
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=4
+  >>> Loop: currentDate=2025-11-05, dayOfWeek=3, daysAdded=5
+  >>> Loop: currentDate=2025-11-06, dayOfWeek=4, daysAdded=6
+  >>> helper2 Result: 2025-11-06
+  >>> helper2 Add-BusinessDays: Start=2025-10-25, Days=7
+  >>> Loop: currentDate=2025-10-26, dayOfWeek=0, daysAdded=0
+  >>> Loop: currentDate=2025-10-27, dayOfWeek=1, daysAdded=0
+  >>> Loop: currentDate=2025-10-28, dayOfWeek=2, daysAdded=1
+  >>> Loop: currentDate=2025-10-29, dayOfWeek=3, daysAdded=2
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=3
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=4
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=5
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=5
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=5
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=6
+  >>> helper2 Result: 2025-11-04
+  >>> helper2 Add-BusinessDays: Start=2025-10-29, Days=7
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-11-05, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-11-06, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-11-07, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-11-07
+  >>> helper2 Add-BusinessDays: Start=2025-10-29, Days=7
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-11-05, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-11-06, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-11-07, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-11-07
+  >> Calculate-TaskEndDate called: Start=2025-10-06, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-06, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-08
+  >> Calculate-TaskEndDate called: Start=2025-10-28, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-28, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-11-03
+  >> Calculate-TaskEndDate called: Start=2025-10-26, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-27, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-29
+  hasValidEndDate: False
+  Taking Calculate branch
+  >> Calculate-TaskEndDate called: Start=2025-10-15, Duration=8
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-15, daysToAdd=7
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >> Add-BusinessDays returned: 2025-10-24
+🔍 FILTER Task 21:
+  EndDate field: [] Type: null Empty: True Whitespace: True
+  Size: XL
+  DurationDays: 8
+  Assignees: 2
+  BusinessDaysNeeded: 8
+  Start: 2025-10-15
+  TaskStartDate (after weekend check): 2025-10-15
+  Add-BusinessDays: 
+  End: 2025-10-24
+  Week: 2025-10-20 to 2025-10-24
+  Overlaps: True
+  >> Calculate-TaskEndDate called: Start=2025-10-24, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-24, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-28
+  >> Calculate-TaskEndDate called: Start=2025-11-05, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-05, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-11-11
+  >> Calculate-TaskEndDate called: Start=2025-11-12, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-12, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-11-14
+  >> Calculate-TaskEndDate called: Start=2025-10-21, Duration=0.5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-21, daysToAdd=0
+  >> Add-BusinessDays returned: 2025-10-21
+  >> Calculate-TaskEndDate called: Start=2025-11-02, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-03, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-11-07
+  >> Calculate-TaskEndDate called: Start=2025-11-18, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-18, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-11-20
+  >> Calculate-TaskEndDate called: Start=2025-11-29, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-12-01, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-12-03
+  >> Calculate-TaskEndDate called: Start=2025-12-15, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-12-15, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-12-17
+  >> Calculate-TaskEndDate called: Start=2025-10-15, Duration=8
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-15, daysToAdd=7
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >> Add-BusinessDays returned: 2025-10-24
+  >> Calculate-TaskEndDate called: Start=2025-10-24, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-24, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-28
+  >> Calculate-TaskEndDate called: Start=2025-10-21, Duration=0.5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-21, daysToAdd=0
+  >> Add-BusinessDays returned: 2025-10-21
+  >> Calculate-TaskEndDate called: Start=2025-10-06, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-06, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-08
+  >> Calculate-TaskEndDate called: Start=2025-10-28, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-28, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-11-03
+  >> Calculate-TaskEndDate called: Start=2025-10-26, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-27, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-29
+  hasValidEndDate: False
+  Taking Calculate branch
+  >> Calculate-TaskEndDate called: Start=2025-10-15, Duration=8
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-15, daysToAdd=7
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >> Add-BusinessDays returned: 2025-10-24
+🔍 FILTER Task 21:
+  EndDate field: [] Type: null Empty: True Whitespace: True
+  Size: XL
+  DurationDays: 8
+  Assignees: 2
+  BusinessDaysNeeded: 8
+  Start: 2025-10-15
+  TaskStartDate (after weekend check): 2025-10-15
+  Add-BusinessDays: 
+  End: 2025-10-24
+  Week: 2025-10-20 to 2025-10-24
+  Overlaps: True
+  >> Calculate-TaskEndDate called: Start=2025-10-24, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-24, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-28
+  >> Calculate-TaskEndDate called: Start=2025-11-05, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-05, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-11-11
+  >> Calculate-TaskEndDate called: Start=2025-11-12, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-12, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-11-14
+  >> Calculate-TaskEndDate called: Start=2025-10-21, Duration=0.5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-21, daysToAdd=0
+  >> Add-BusinessDays returned: 2025-10-21
+  >> Calculate-TaskEndDate called: Start=2025-11-02, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-03, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-11-07
+  >> Calculate-TaskEndDate called: Start=2025-11-18, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-18, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-11-20
+  >> Calculate-TaskEndDate called: Start=2025-11-29, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-12-01, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-12-03
+  >> Calculate-TaskEndDate called: Start=2025-12-15, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-12-15, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-12-17
+  >> Calculate-TaskEndDate called: Start=2025-10-15, Duration=8
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-15, daysToAdd=7
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >> Add-BusinessDays returned: 2025-10-24
+  >> Calculate-TaskEndDate called: Start=2025-10-24, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-24, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-28
+  >> Calculate-TaskEndDate called: Start=2025-10-21, Duration=0.5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-21, daysToAdd=0
+  >> Add-BusinessDays returned: 2025-10-21
+  >> Calculate-TaskEndDate called: Start=2025-10-08, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-08, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-10-14
+  >> Calculate-TaskEndDate called: Start=2025-10-28, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-28, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-11-03
+  >> Calculate-TaskEndDate called: Start=2025-11-01, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-03, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-11-07
+  >> Calculate-TaskEndDate called: Start=2025-10-22, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-22, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-24
+  >> Calculate-TaskEndDate called: Start=2025-10-20, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-20, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-10-24
+  >> Calculate-TaskEndDate called: Start=2025-11-10, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-10, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-11-12
+  >> Calculate-TaskEndDate called: Start=2025-11-10, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-10, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-11-12
+  >> Calculate-TaskEndDate called: Start=2025-10-23, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-23, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-27
+  >> Calculate-TaskEndDate called: Start=2025-11-02, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-03, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-11-07
+  >> Calculate-TaskEndDate called: Start=2025-11-20, Duration=1
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-20, daysToAdd=0
+  >> Add-BusinessDays returned: 2025-11-20
+  >> Calculate-TaskEndDate called: Start=2025-12-02, Duration=0.5
+  >> About to call Add-BusinessDays: taskStartDate=2025-12-02, daysToAdd=0
+  >> Add-BusinessDays returned: 2025-12-02
+  >> Calculate-TaskEndDate called: Start=2025-12-18, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-12-18, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-12-24
+  >> Calculate-TaskEndDate called: Start=2025-10-22, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-22, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-24
+  >> Calculate-TaskEndDate called: Start=2025-10-20, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-20, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-10-24
+  >> Calculate-TaskEndDate called: Start=2025-10-23, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-23, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-27
+  >> Calculate-TaskEndDate called: Start=2025-10-06, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-06, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-08
+  >> Calculate-TaskEndDate called: Start=2025-10-28, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-28, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-11-03
+  >> Calculate-TaskEndDate called: Start=2025-10-26, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-27, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-29
+  hasValidEndDate: False
+  Taking Calculate branch
+  >> Calculate-TaskEndDate called: Start=2025-10-15, Duration=8
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-15, daysToAdd=7
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >> Add-BusinessDays returned: 2025-10-24
+🔍 FILTER Task 21:
+  EndDate field: [] Type: null Empty: True Whitespace: True
+  Size: XL
+  DurationDays: 8
+  Assignees: 2
+  BusinessDaysNeeded: 8
+  Start: 2025-10-15
+  TaskStartDate (after weekend check): 2025-10-15
+  Add-BusinessDays: 
+  End: 2025-10-24
+  Week: 2025-10-20 to 2025-10-24
+  Overlaps: True
+  >> Calculate-TaskEndDate called: Start=2025-10-24, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-24, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-28
+  >> Calculate-TaskEndDate called: Start=2025-11-05, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-05, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-11-11
+  >> Calculate-TaskEndDate called: Start=2025-11-12, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-12, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-11-14
+  >> Calculate-TaskEndDate called: Start=2025-10-21, Duration=0.5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-21, daysToAdd=0
+  >> Add-BusinessDays returned: 2025-10-21
+  >> Calculate-TaskEndDate called: Start=2025-11-02, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-03, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-11-07
+  >> Calculate-TaskEndDate called: Start=2025-11-18, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-11-18, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-11-20
+  >> Calculate-TaskEndDate called: Start=2025-11-29, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-12-01, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-12-03
+  >> Calculate-TaskEndDate called: Start=2025-12-15, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-12-15, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-12-17
+  >> Calculate-TaskEndDate called: Start=2025-10-15, Duration=8
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-15, daysToAdd=7
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >> Add-BusinessDays returned: 2025-10-24
+  >> Calculate-TaskEndDate called: Start=2025-10-24, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-24, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-28
+  >> Calculate-TaskEndDate called: Start=2025-10-21, Duration=0.5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-21, daysToAdd=0
+  >> Add-BusinessDays returned: 2025-10-21
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >>> helper2 Add-BusinessDays: Start=2025-10-06, Days=7
+  >>> Loop: currentDate=2025-10-07, dayOfWeek=2, daysAdded=0
+  >>> Loop: currentDate=2025-10-08, dayOfWeek=3, daysAdded=1
+  >>> Loop: currentDate=2025-10-09, dayOfWeek=4, daysAdded=2
+  >>> Loop: currentDate=2025-10-10, dayOfWeek=5, daysAdded=3
+  >>> Loop: currentDate=2025-10-11, dayOfWeek=6, daysAdded=4
+  >>> Loop: currentDate=2025-10-12, dayOfWeek=0, daysAdded=4
+  >>> Loop: currentDate=2025-10-13, dayOfWeek=1, daysAdded=4
+  >>> Loop: currentDate=2025-10-14, dayOfWeek=2, daysAdded=5
+  >>> Loop: currentDate=2025-10-15, dayOfWeek=3, daysAdded=6
+  >>> helper2 Result: 2025-10-15
+  >>> helper2 Add-BusinessDays: Start=2025-11-06, Days=7
+  >>> Loop: currentDate=2025-11-07, dayOfWeek=5, daysAdded=0
+  >>> Loop: currentDate=2025-11-08, dayOfWeek=6, daysAdded=1
+  >>> Loop: currentDate=2025-11-09, dayOfWeek=0, daysAdded=1
+  >>> Loop: currentDate=2025-11-10, dayOfWeek=1, daysAdded=1
+  >>> Loop: currentDate=2025-11-11, dayOfWeek=2, daysAdded=2
+  >>> Loop: currentDate=2025-11-12, dayOfWeek=3, daysAdded=3
+  >>> Loop: currentDate=2025-11-13, dayOfWeek=4, daysAdded=4
+  >>> Loop: currentDate=2025-11-14, dayOfWeek=5, daysAdded=5
+  >>> Loop: currentDate=2025-11-15, dayOfWeek=6, daysAdded=6
+  >>> Loop: currentDate=2025-11-16, dayOfWeek=0, daysAdded=6
+  >>> Loop: currentDate=2025-11-17, dayOfWeek=1, daysAdded=6
+  >>> helper2 Result: 2025-11-17
+  >>> helper2 Add-BusinessDays: Start=2025-10-25, Days=7
+  >>> Loop: currentDate=2025-10-26, dayOfWeek=0, daysAdded=0
+  >>> Loop: currentDate=2025-10-27, dayOfWeek=1, daysAdded=0
+  >>> Loop: currentDate=2025-10-28, dayOfWeek=2, daysAdded=1
+  >>> Loop: currentDate=2025-10-29, dayOfWeek=3, daysAdded=2
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=3
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=4
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=5
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=5
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=5
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=6
+  >>> helper2 Result: 2025-11-04
+  >>> helper2 Add-BusinessDays: Start=2025-10-28, Days=7
+  >>> Loop: currentDate=2025-10-29, dayOfWeek=3, daysAdded=0
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=1
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=2
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=3
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=3
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=3
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=4
+  >>> Loop: currentDate=2025-11-05, dayOfWeek=3, daysAdded=5
+  >>> Loop: currentDate=2025-11-06, dayOfWeek=4, daysAdded=6
+  >>> helper2 Result: 2025-11-06
+  >>> helper2 Add-BusinessDays: Start=2025-11-06, Days=7
+  >>> Loop: currentDate=2025-11-07, dayOfWeek=5, daysAdded=0
+  >>> Loop: currentDate=2025-11-08, dayOfWeek=6, daysAdded=1
+  >>> Loop: currentDate=2025-11-09, dayOfWeek=0, daysAdded=1
+  >>> Loop: currentDate=2025-11-10, dayOfWeek=1, daysAdded=1
+  >>> Loop: currentDate=2025-11-11, dayOfWeek=2, daysAdded=2
+  >>> Loop: currentDate=2025-11-12, dayOfWeek=3, daysAdded=3
+  >>> Loop: currentDate=2025-11-13, dayOfWeek=4, daysAdded=4
+  >>> Loop: currentDate=2025-11-14, dayOfWeek=5, daysAdded=5
+  >>> Loop: currentDate=2025-11-15, dayOfWeek=6, daysAdded=6
+  >>> Loop: currentDate=2025-11-16, dayOfWeek=0, daysAdded=6
+  >>> Loop: currentDate=2025-11-17, dayOfWeek=1, daysAdded=6
+  >>> helper2 Result: 2025-11-17
+  >>> helper2 Add-BusinessDays: Start=2025-10-28, Days=7
+  >>> Loop: currentDate=2025-10-29, dayOfWeek=3, daysAdded=0
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=1
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=2
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=3
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=3
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=3
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=4
+  >>> Loop: currentDate=2025-11-05, dayOfWeek=3, daysAdded=5
+  >>> Loop: currentDate=2025-11-06, dayOfWeek=4, daysAdded=6
+  >>> helper2 Result: 2025-11-06
+  >>> helper2 Add-BusinessDays: Start=2025-10-25, Days=7
+  >>> Loop: currentDate=2025-10-26, dayOfWeek=0, daysAdded=0
+  >>> Loop: currentDate=2025-10-27, dayOfWeek=1, daysAdded=0
+  >>> Loop: currentDate=2025-10-28, dayOfWeek=2, daysAdded=1
+  >>> Loop: currentDate=2025-10-29, dayOfWeek=3, daysAdded=2
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=3
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=4
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=5
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=5
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=5
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=6
+  >>> helper2 Result: 2025-11-04
+  >>> helper2 Add-BusinessDays: Start=2025-10-29, Days=7
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-11-05, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-11-06, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-11-07, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-11-07
+  >>> helper2 Add-BusinessDays: Start=2025-10-29, Days=7
+  >>> Loop: currentDate=2025-10-30, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-31, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-11-01, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-11-02, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-11-03, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-11-04, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-11-05, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-11-06, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-11-07, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-11-07
+  >> Calculate-TaskEndDate called: Start=2025-10-19, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-20, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-22
+  hasValidEndDate: False
+  Taking Calculate branch
+  >> Calculate-TaskEndDate called: Start=2025-10-15, Duration=8
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-15, daysToAdd=7
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >> Add-BusinessDays returned: 2025-10-24
+🔍 FILTER Task 21:
+  EndDate field: [] Type: null Empty: True Whitespace: True
+  Size: XL
+  DurationDays: 8
+  Assignees: 2
+  BusinessDaysNeeded: 8
+  Start: 2025-10-15
+  TaskStartDate (after weekend check): 2025-10-15
+  Add-BusinessDays: 
+  End: 2025-10-24
+  Week: 2025-10-20 to 2025-10-24
+  Overlaps: True
+  >> Calculate-TaskEndDate called: Start=2025-10-19, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-20, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-22
+  >> Calculate-TaskEndDate called: Start=2025-10-15, Duration=8
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-15, daysToAdd=7
+  >>> helper2 Add-BusinessDays: Start=2025-10-15, Days=7
+  >>> Loop: currentDate=2025-10-16, dayOfWeek=4, daysAdded=0
+  >>> Loop: currentDate=2025-10-17, dayOfWeek=5, daysAdded=1
+  >>> Loop: currentDate=2025-10-18, dayOfWeek=6, daysAdded=2
+  >>> Loop: currentDate=2025-10-19, dayOfWeek=0, daysAdded=2
+  >>> Loop: currentDate=2025-10-20, dayOfWeek=1, daysAdded=2
+  >>> Loop: currentDate=2025-10-21, dayOfWeek=2, daysAdded=3
+  >>> Loop: currentDate=2025-10-22, dayOfWeek=3, daysAdded=4
+  >>> Loop: currentDate=2025-10-23, dayOfWeek=4, daysAdded=5
+  >>> Loop: currentDate=2025-10-24, dayOfWeek=5, daysAdded=6
+  >>> helper2 Result: 2025-10-24
+  >> Add-BusinessDays returned: 2025-10-24
+  >> Calculate-TaskEndDate called: Start=2025-10-24, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-24, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-10-30
+  >> Calculate-TaskEndDate called: Start=2025-10-23, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-23, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-27
+  >> Calculate-TaskEndDate called: Start=2025-10-24, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-24, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-10-30
+  >> Calculate-TaskEndDate called: Start=2025-10-23, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-23, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-27
+  >> Calculate-TaskEndDate called: Start=2025-10-24, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-24, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-10-30
+  >> Calculate-TaskEndDate called: Start=2025-10-23, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-23, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-27
+  >> Calculate-TaskEndDate called: Start=2025-10-24, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-24, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-10-30
+  >> Calculate-TaskEndDate called: Start=2025-10-23, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-23, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-27
+  >> Calculate-TaskEndDate called: Start=2025-10-24, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-24, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-10-30
+  >> Calculate-TaskEndDate called: Start=2025-10-23, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-23, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-27
+  >> Calculate-TaskEndDate called: Start=2025-10-24, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-24, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-10-30
+  >> Calculate-TaskEndDate called: Start=2025-10-23, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-23, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-27
+  >> Calculate-TaskEndDate called: Start=2025-10-24, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-24, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-10-30
+  >> Calculate-TaskEndDate called: Start=2025-10-23, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-23, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-27
+  >> Calculate-TaskEndDate called: Start=2025-10-24, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-24, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-10-30
+  >> Calculate-TaskEndDate called: Start=2025-10-23, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-23, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-27

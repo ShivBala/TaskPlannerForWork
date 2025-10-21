@@ -1,0 +1,147 @@
+SECTION,METADATA
+Key,Value
+Export Date,2025-10-21T12:50:13.760Z
+Version,2.0
+Description,Enterprise Project Tracking Console Configuration Export
+
+SECTION,SETTINGS
+Key,Value
+Estimation Base Hours,5
+Project Hours Per Day,8
+Use Common Start Date,false
+Common Start Date,2025-10-21
+Current Ticket ID,83
+
+SECTION,TASK_SIZES
+Size Key,Name,Days,Removable
+M,"M",3,false
+L,"L",5,false
+XL,"XL",8,false
+
+SECTION,PEOPLE
+Name,Week1,Week2,Week3,Week4,Week5,Week6,Week7,Week8,Project Ready
+"Sarah",25,25,25,25,25,25,25,25,Yes
+"Marcus",40,40,32,40,40,40,40,40,Yes
+"Priya",40,40,40,40,40,40,32,40,Yes
+"David",32,40,40,40,40,40,32,40,Yes
+"Lisa",40,32,40,40,40,40,40,40,Yes
+"Ahmed",40,40,40,32,40,40,40,40,Yes
+"Emma",40,40,40,40,40,32,40,40,Yes
+"James",40,40,40,40,40,40,40,40,Yes
+"Olivia",32,40,40,40,40,40,40,40,Yes
+"Robert",40,40,40,40,32,40,40,40,Yes
+
+SECTION,STAKEHOLDERS
+Name
+"Engineering Leadership"
+"Product Management"
+"Customer Success"
+"Security Team"
+"DevOps Team"
+"QA Team"
+
+SECTION,INITIATIVES
+Name,Creation Date,Start Date
+"API Modernization",2025-09-15,2025-10-06
+"Cloud Migration Phase 1",2025-09-20,2025-10-06
+"Mobile App Development",2025-09-25,2025-11-01
+"Security Hardening",2025-10-01,2025-10-15
+"Performance Optimization",2025-10-05,2025-10-20
+"Testing Framework Upgrade",2025-10-10,2025-11-01
+"Database Scaling",2025-10-12,2025-10-25
+"UI/UX Redesign",2025-10-15,2025-10-23
+
+SECTION,TICKETS
+UUID,ID,Description,Start Date,Size,Priority,Stakeholder,Initiative,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Created Date,Details Description,Details Positives,Details Negatives
+"a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",1,"Design RESTful API endpoints for user management",2025-10-06,M,P1,"Engineering Leadership","API Modernization","Marcus","In Progress","Fixed","","2025-10-06(Initial planning@2025-10-01)","","M:3d(Initial sizing@2025-10-01)","","2025-10-21","Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1Description 1
+Description 1","Positives 1
+Positives 1, Positives 1
+Positives 1, Positives 1
+Positives 1Positives 1Positives 1Positives 1Positives 1Positives 1","Negatives 1
+Negatives 1Negatives 1Negatives 1Negatives 1Negatives 1,
+Negatives 1Negatives 1Negatives 1Negatives 1,
+Negatives 1Negatives 1"
+"b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e",2,"Implement OAuth2 authentication flow",2025-10-08,L,P1,"Security Team","API Modernization","Priya","To Do","Fixed","","2025-10-08(Initial planning@2025-10-01)","","L:5d(Initial sizing@2025-10-01)","","2025-10-21","","",""
+"c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f",3,"Create API documentation with Swagger",2025-10-13,M,P2,"Product Management","API Modernization","Lisa","To Do","Fixed","","2025-10-13(Initial planning@2025-10-01)","","M:3d(Initial sizing@2025-10-01)","","2025-10-21","Description Description Description Description Description Description Description Description Description Description Description Description 
+Description Description Description Description Description Description Description Description Description 
+Description Description Description Description Description Description Description Description 
+Description","Positives","Negatives"
+"d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a",4,"Setup rate limiting middleware",2025-10-15,S,P2,"Engineering Leadership","API Modernization","Ahmed","To Do","Fixed","","2025-10-15(Initial planning@2025-10-01)","","S:1d(Initial sizing@2025-10-01)","","2025-10-21","","",""
+"e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b",5,"Add request/response logging",2025-10-16,S,P3,"DevOps Team","API Modernization","Emma","To Do","Fixed","","2025-10-16(Initial planning@2025-10-01)","","S:1d(Initial sizing@2025-10-01)","","2025-10-21","","",""
+"f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b0c",6,"Implement API versioning strategy",2025-10-19,M,P1,"Engineering Leadership","API Modernization","Sarah","To Do","Fixed","","2025-10-19(Initial planning@2025-10-01)","","M:3d(Initial sizing@2025-10-01)","","2025-10-21","","",""
+"a7b8c9d0-e1f2-4a3b-4c5d-6e7f8a9b0c1d",7,"Create automated API tests",2025-10-20,L,P2,"QA Team","API Modernization","James","To Do","Fixed","","2025-10-20(Initial planning@2025-10-01)","","L:5d(Initial sizing@2025-10-01)","","2025-10-21","","",""
+"b8c9d0e1-f2a3-4b4c-5d6e-7f8a9b0c1d2e",8,"Setup API monitoring and alerts",2025-10-25,M,P2,"DevOps Team","API Modernization","Robert","To Do","Fixed","","2025-10-25(Initial planning@2025-10-01)","","M:3d(Initial sizing@2025-10-01)","","2025-10-21","","",""
+"c9d0e1f2-a3b4-4c5d-6e7f-8a9b0c1d2e3f",9,"Implement caching layer",2025-10-28,L,P2,"Engineering Leadership","API Modernization","Marcus;Priya","To Do","Fixed","","2025-10-28(Initial planning@2025-10-01)","","L:5d(Initial sizing@2025-10-01)","","2025-10-21","","",""
+"d0e1f2a3-b4c5-4d6e-7f8a-9b0c1d2e3f4a",10,"Migrate authentication service to cloud",2025-10-06,XL,P1,"DevOps Team","Cloud Migration Phase 1","David","In Progress","Fixed","","2025-10-06(Initial planning@2025-09-20)","","XL:8d(Initial sizing@2025-09-20)","","2025-10-21","","",""
+"e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a5b",11,"Setup cloud database replication",2025-10-10,L,P1,"DevOps Team","Cloud Migration Phase 1","Ahmed;Emma","To Do","Fixed","","2025-10-10(Initial planning@2025-09-20)","","L:5d(Initial sizing@2025-09-20)","","2025-10-21","","",""
+"f2a3b4c5-d6e7-4f8a-9b0c-1d2e3f4a5b6c",12,"Implement cloud storage integration",2025-10-14,M,P2,"Engineering Leadership","Cloud Migration Phase 1","Lisa","To Do","Fixed","","2025-10-14(Initial planning@2025-09-20)","","M:3d(Initial sizing@2025-09-20)","","2025-10-21","","",""
+"a3b4c5d6-e7f8-4a9b-0c1d-2e3f4a5b6c7d",13,"Configure auto-scaling policies",2025-10-18,M,P2,"DevOps Team","Cloud Migration Phase 1","James","To Do","Fixed","","2025-10-18(Initial planning@2025-09-20)","","M:3d(Initial sizing@2025-09-20)","","2025-10-21","","",""
+"b4c5d6e7-f8a9-4b0c-1d2e-3f4a5b6c7d8e",14,"Implement disaster recovery plan",2025-10-22,L,P1,"DevOps Team","Cloud Migration Phase 1","Robert;David","To Do","Fixed","","2025-10-22(Initial planning@2025-09-20)","","L:5d(Initial sizing@2025-09-20)","","2025-10-21","","",""
+"c5d6e7f8-a9b0-4c1d-2e3f-4a5b6c7d8e9f",15,"Migrate CI/CD pipelines",2025-10-26,M,P2,"DevOps Team","Cloud Migration Phase 1","Marcus","To Do","Fixed","","2025-10-26(Initial planning@2025-09-20)","","M:3d(Initial sizing@2025-09-20)","","2025-10-21","","",""
+"d6e7f8a9-b0c1-4d2e-3f4a-5b6c7d8e9f0a",16,"Design mobile app architecture",2025-11-01,L,P1,"Product Management","Mobile App Development","Priya","To Do","Fixed","","2025-11-01(Initial planning@2025-09-25)","","L:5d(Initial sizing@2025-09-25)","","2025-10-21","","",""
+"e7f8a9b0-c1d2-4e3f-4a5b-6c7d8e9f0a1b",17,"Implement offline data sync",2025-11-06,XL,P1,"Engineering Leadership","Mobile App Development","Ahmed;Lisa","To Do","Fixed","","2025-11-06(Initial planning@2025-09-25)","","XL:8d(Initial sizing@2025-09-25)","","2025-10-21","","",""
+"f8a9b0c1-d2e3-4f4a-5b6c-7d8e9f0a1b2c",18,"Create push notification system",2025-11-12,M,P2,"Engineering Leadership","Mobile App Development","Emma","To Do","Fixed","","2025-11-12(Initial planning@2025-09-25)","","M:3d(Initial sizing@2025-09-25)","","2025-10-21","","",""
+"a9b0c1d2-e3f4-4a5b-6c7d-8e9f0a1b2c3d",19,"Implement biometric authentication",2025-11-15,M,P2,"Security Team","Mobile App Development","James","To Do","Fixed","","2025-11-15(Initial planning@2025-09-25)","","M:3d(Initial sizing@2025-09-25)","","2025-10-21","","",""
+"b0c1d2e3-f4a5-4b6c-7d8e-9f0a1b2c3d4e",20,"Design mobile UI components",2025-11-18,L,P2,"Product Management","Mobile App Development","Olivia","To Do","Fixed","","2025-11-18(Initial planning@2025-09-25)","","L:5d(Initial sizing@2025-09-25)","","2025-10-21","","",""
+"c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e5f",21,"Implement penetration testing framework",2025-10-15,XL,P1,"Security Team","Security Hardening","Sarah;Marcus","To Do","Fixed","","2025-10-15(Initial planning@2025-10-01)","","XL:8d(Initial sizing@2025-10-01)","","2025-10-21","","",""
+"d2e3f4a5-b6c7-4d8e-9f0a-1b2c3d4e5f6a",22,"Setup vulnerability scanning",2025-10-22,M,P1,"Security Team","Security Hardening","Priya","To Do","Fixed","","2025-10-22(Initial planning@2025-10-01)","","M:3d(Initial sizing@2025-10-01)","","2025-10-21","","",""
+"e3f4a5b6-c7d8-4e9f-0a1b-2c3d4e5f6a7b",23,"Implement RBAC system",2025-10-25,L,P1,"Security Team","Security Hardening","David;Ahmed","To Do","Fixed","","2025-10-25(Initial planning@2025-10-01)","","L:5d(Initial sizing@2025-10-01)","","2025-10-21","","",""
+"f4a5b6c7-d8e9-4f0a-1b2c-3d4e5f6a7b8c",24,"Setup encryption at rest",2025-10-29,M,P2,"Security Team","Security Hardening","Lisa","To Do","Fixed","","2025-10-29(Initial planning@2025-10-01)","","M:3d(Initial sizing@2025-10-01)","","2025-10-21","","",""
+"a5b6c7d8-e9f0-4a1b-2c3d-4e5f6a7b8c9d",25,"Implement audit logging",2025-11-01,M,P2,"Security Team","Security Hardening","Emma","To Do","Fixed","","2025-11-01(Initial planning@2025-10-01)","","M:3d(Initial sizing@2025-10-01)","","2025-10-21","","",""
+"b6c7d8e9-f0a1-4b2c-3d4e-5f6a7b8c9d0e",26,"Setup WAF rules",2025-11-05,S,P2,"Security Team","Security Hardening","James","To Do","Fixed","","2025-11-05(Initial planning@2025-10-01)","","S:1d(Initial sizing@2025-10-01)","","2025-10-21","","",""
+"c7d8e9f0-a1b2-4c3d-4e5f-6a7b8c9d0e1f",27,"Optimize database queries",2025-10-20,L,P1,"Engineering Leadership","Performance Optimization","Robert;Priya","To Do","Fixed","","2025-10-20(Initial planning@2025-10-05)","","L:5d(Initial sizing@2025-10-05)","","2025-10-21","","",""
+"d8e9f0a1-b2c3-4d4e-5f6a-7b8c9d0e1f2a",28,"Implement Redis caching strategy",2025-10-24,M,P1,"Engineering Leadership","Performance Optimization","Marcus","To Do","Fixed","","2025-10-24(Initial planning@2025-10-05)","","M:3d(Initial sizing@2025-10-05)","","2025-10-21","","",""
+"e9f0a1b2-c3d4-4e5f-6a7b-8c9d0e1f2a3b",29,"Setup CDN for static assets",2025-10-27,M,P2,"DevOps Team","Performance Optimization","Ahmed","To Do","Fixed","","2025-10-27(Initial planning@2025-10-05)","","M:3d(Initial sizing@2025-10-05)","","2025-10-21","","",""
+"f0a1b2c3-d4e5-4f6a-7b8c-9d0e1f2a3b4c",30,"Optimize frontend bundle size",2025-10-30,M,P2,"Engineering Leadership","Performance Optimization","Lisa","To Do","Fixed","","2025-10-30(Initial planning@2025-10-05)","","M:3d(Initial sizing@2025-10-05)","","2025-10-21","","",""
+"a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c6d",31,"Implement lazy loading",2025-11-03,S,P3,"Engineering Leadership","Performance Optimization","Emma","To Do","Fixed","","2025-11-03(Initial planning@2025-10-05)","","S:1d(Initial sizing@2025-10-05)","","2025-10-21","","",""
+"b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d7e",32,"Setup performance monitoring",2025-11-06,M,P2,"DevOps Team","Performance Optimization","James","To Do","Fixed","","2025-11-06(Initial planning@2025-10-05)","","M:3d(Initial sizing@2025-10-05)","","2025-10-21","","",""
+"c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e8f",33,"Migrate to Jest testing framework",2025-11-01,L,P1,"QA Team","Testing Framework Upgrade","Olivia","To Do","Fixed","","2025-11-01(Initial planning@2025-10-10)","","L:5d(Initial sizing@2025-10-10)","","2025-10-21","","",""
+"d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f9a",34,"Implement E2E tests with Playwright",2025-11-05,L,P2,"QA Team","Testing Framework Upgrade","Robert;Marcus","To Do","Fixed","","2025-11-05(Initial planning@2025-10-10)","","L:5d(Initial sizing@2025-10-10)","","2025-10-21","","",""
+"e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a0b",35,"Setup visual regression testing",2025-11-10,M,P2,"QA Team","Testing Framework Upgrade","Priya","To Do","Fixed","","2025-11-10(Initial planning@2025-10-10)","","M:3d(Initial sizing@2025-10-10)","","2025-10-21","","",""
+"f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b1c",36,"Implement contract testing",2025-11-13,M,P3,"QA Team","Testing Framework Upgrade","David","To Do","Fixed","","2025-11-13(Initial planning@2025-10-10)","","M:3d(Initial sizing@2025-10-10)","","2025-10-21","","",""
+"a7b8c9d0-e1f2-4a3b-4c5d-6e7f8a9b0c2d",37,"Setup test data factories",2025-11-16,S,P3,"QA Team","Testing Framework Upgrade","Ahmed","To Do","Fixed","","2025-11-16(Initial planning@2025-10-10)","","S:1d(Initial sizing@2025-10-10)","","2025-10-21","","",""
+"b8c9d0e1-f2a3-4b4c-5d6e-7f8a9b0c1d3e",38,"Implement database sharding",2025-10-25,XL,P1,"Engineering Leadership","Database Scaling","Lisa;Emma","To Do","Fixed","","2025-10-25(Initial planning@2025-10-12)","","XL:8d(Initial sizing@2025-10-12)","","2025-10-21","","",""
+"c9d0e1f2-a3b4-4c5d-6e7f-8a9b0c1d2e4f",39,"Setup read replicas",2025-11-01,M,P1,"DevOps Team","Database Scaling","James","To Do","Fixed","","2025-11-01(Initial planning@2025-10-12)","","M:3d(Initial sizing@2025-10-12)","","2025-10-21","","",""
+"d0e1f2a3-b4c5-4d6e-7f8a-9b0c1d2e3f5a",40,"Implement connection pooling",2025-11-05,S,P2,"Engineering Leadership","Database Scaling","Olivia","To Do","Fixed","","2025-11-05(Initial planning@2025-10-12)","","S:1d(Initial sizing@2025-10-12)","","2025-10-21","","",""
+"e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a6b",41,"Optimize database indexes",2025-11-08,M,P2,"Engineering Leadership","Database Scaling","Robert","To Do","Fixed","","2025-11-08(Initial planning@2025-10-12)","","M:3d(Initial sizing@2025-10-12)","","2025-10-21","","",""
+"f2a3b4c5-d6e7-4f8a-9b0c-1d2e3f4a5b7c",42,"Implement database monitoring",2025-11-12,M,P2,"DevOps Team","Database Scaling","Marcus","To Do","Fixed","","2025-11-12(Initial planning@2025-10-12)","","M:3d(Initial sizing@2025-10-12)","","2025-10-21","","",""
+"a3b4c5d6-e7f8-4a9b-0c1d-2e3f4a5b6c8d",43,"Redesign navigation menu",2025-11-10,M,P2,"Product Management","UI/UX Redesign","Priya","To Do","Fixed","","2025-11-10(Initial planning@2025-10-15)","","M:3d(Initial sizing@2025-10-15)","","2025-10-21","","",""
+"b4c5d6e7-f8a9-4b0c-1d2e-3f4a5b6c7d9e",44,"Implement dark mode",2025-11-13,L,P3,"Product Management","UI/UX Redesign","David;Ahmed","To Do","Fixed","","2025-11-13(Initial planning@2025-10-15)","","L:5d(Initial sizing@2025-10-15)","","2025-10-21","","",""
+"c5d6e7f8-a9b0-4c1d-2e3f-4a5b6c7d8e0f",45,"Create design system documentation",2025-11-18,M,P3,"Product Management","UI/UX Redesign","Lisa","To Do","Fixed","","2025-11-18(Initial planning@2025-10-15)","","M:3d(Initial sizing@2025-10-15)","","2025-10-21","","",""
+"d6e7f8a9-b0c1-4d2e-3f4a-5b6c7d8e9f1a",46,"Implement responsive layouts",2025-11-21,L,P2,"Engineering Leadership","UI/UX Redesign","Emma;James","To Do","Fixed","","2025-11-21(Initial planning@2025-10-15)","","L:5d(Initial sizing@2025-10-15)","","2025-10-21","","",""
+"e7f8a9b0-c1d2-4e3f-4a5b-6c7d8e9f0a2b",47,"Optimize images and icons",2025-11-25,S,P3,"Engineering Leadership","UI/UX Redesign","Olivia","To Do","Fixed","","2025-11-25(Initial planning@2025-10-15)","","S:1d(Initial sizing@2025-10-15)","","2025-10-21","","",""
+"f8a9b0c1-d2e3-4f4a-5b6c-7d8e9f0a1b3c",48,"Fix critical security vulnerability CVE-2025-1234",2025-10-21,XS,P1,"Security Team","Security Hardening","Marcus","To Do","Fixed","","2025-10-21(Urgent fix@2025-10-21)","","","","2025-10-21","","",""
+"a9b0c1d2-e3f4-4a5b-6c7d-8e9f0a1b2c4d",49,"Update user profile page",2025-10-23,M,P2,"Product Management","UI/UX Redesign","Priya","To Do","Fixed","","2025-10-23(Initial planning@2025-10-15)","","M:3d(Initial sizing@2025-10-15)","","2025-10-21","","",""
+"b0c1d2e3-f4a5-4b6c-7d8e-9f0a1b2c3d5e",50,"Implement webhook system",2025-10-24,L,P2,"Engineering Leadership","API Modernization","David","To Do","Fixed","","2025-10-24(Initial planning@2025-10-01)","","L:5d(Initial sizing@2025-10-01)","","2025-10-21","","",""
+"c1d2e3f4-a5b6-4c7d-8e9f-0a1b2c3d4e6f",51,"Setup GraphQL API",2025-10-28,XL,P2,"Engineering Leadership","API Modernization","Ahmed;Lisa","To Do","Fixed","","2025-10-28(Initial planning@2025-10-01)","","XL:8d(Initial sizing@2025-10-01)","","2025-10-21","","",""
+"d2e3f4a5-b6c7-4d8e-9f0a-1b2c3d4e5f7a",52,"Implement email verification",2025-10-26,S,P2,"Security Team","Security Hardening","Emma","To Do","Fixed","","2025-10-26(Initial planning@2025-10-01)","","S:1d(Initial sizing@2025-10-01)","","2025-10-21","","",""
+"e3f4a5b6-c7d8-4e9f-0a1b-2c3d4e5f6a8b",53,"Add multi-factor authentication",2025-10-27,M,P1,"Security Team","Security Hardening","James","To Do","Fixed","","2025-10-27(Initial planning@2025-10-01)","","M:3d(Initial sizing@2025-10-01)","","2025-10-21","","",""
+"f4a5b6c7-d8e9-4f0a-1b2c-3d4e5f6a7b9c",54,"Create admin dashboard",2025-10-29,XL,P2,"Product Management","UI/UX Redesign","Olivia;Robert","To Do","Fixed","","2025-10-29(Initial planning@2025-10-15)","","XL:8d(Initial sizing@2025-10-15)","","2025-10-21","","",""
+"a5b6c7d8-e9f0-4a1b-2c3d-4e5f6a7b8c0d",55,"Implement search functionality",2025-11-02,L,P2,"Engineering Leadership","Performance Optimization","Marcus;Priya","To Do","Fixed","","2025-11-02(Initial planning@2025-10-05)","","L:5d(Initial sizing@2025-10-05)","","2025-10-21","","",""
+"b6c7d8e9-f0a1-4b2c-3d4e-5f6a7b8c9d1e",56,"Setup analytics tracking",2025-11-05,M,P3,"Product Management","Mobile App Development","David","To Do","Fixed","","2025-11-05(Initial planning@2025-09-25)","","M:3d(Initial sizing@2025-09-25)","","2025-10-21","","",""
+"c7d8e9f0-a1b2-4c3d-4e5f-6a7b8c9d0e2f",57,"Implement data export feature",2025-11-08,M,P3,"Product Management","API Modernization","Ahmed","To Do","Fixed","","2025-11-08(Initial planning@2025-10-01)","","M:3d(Initial sizing@2025-10-01)","","2025-10-21","","",""
+"d8e9f0a1-b2c3-4d4e-5f6a-7b8c9d0e1f3a",58,"Add file upload validation",2025-11-10,S,P2,"Security Team","Security Hardening","Lisa","To Do","Fixed","","2025-11-10(Initial planning@2025-10-01)","","S:1d(Initial sizing@2025-10-01)","","2025-10-21","","",""
+"e9f0a1b2-c3d4-4e5f-6a7b-8c9d0e1f2a4b",59,"Implement notification preferences",2025-11-12,M,P3,"Product Management","Mobile App Development","Emma","To Do","Fixed","","2025-11-12(Initial planning@2025-09-25)","","M:3d(Initial sizing@2025-09-25)","","2025-10-21","","",""
+"f0a1b2c3-d4e5-4f6a-7b8c-9d0e1f2a3b5c",60,"Setup backup automation",2025-11-14,M,P1,"DevOps Team","Cloud Migration Phase 1","James","To Do","Fixed","","2025-11-14(Initial planning@2025-09-20)","","M:3d(Initial sizing@2025-09-20)","","2025-10-21","","",""
+"a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c7d",61,"Implement rate limiting per user",2025-11-15,S,P2,"Engineering Leadership","API Modernization","Olivia","To Do","Fixed","","2025-11-15(Initial planning@2025-10-01)","","S:1d(Initial sizing@2025-10-01)","","2025-10-21","","",""
+"b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d8e",62,"Add pagination to listings",2025-11-17,S,P2,"Engineering Leadership","Performance Optimization","Robert","To Do","Fixed","","2025-11-17(Initial planning@2025-10-05)","","S:1d(Initial sizing@2025-10-05)","","2025-10-21","","",""
+"c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e9f",63,"Implement session management",2025-11-18,M,P2,"Security Team","Security Hardening","Marcus","To Do","Fixed","","2025-11-18(Initial planning@2025-10-01)","","M:3d(Initial sizing@2025-10-01)","","2025-10-21","","",""
+"d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f0a",64,"Add error boundary components",2025-11-20,S,P3,"Engineering Leadership","UI/UX Redesign","Priya","To Do","Fixed","","2025-11-20(Initial planning@2025-10-15)","","S:1d(Initial sizing@2025-10-15)","","2025-10-21","","",""
+"e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a1b",65,"Implement feature flags",2025-11-21,M,P2,"DevOps Team","Cloud Migration Phase 1","David;Ahmed","To Do","Fixed","","2025-11-21(Initial planning@2025-09-20)","","M:3d(Initial sizing@2025-09-20)","","2025-10-21","","",""
+"f6a7b8c9-d0e1-4f2a-3b4c-5d6e7f8a9b2c",66,"Setup error tracking",2025-11-24,M,P2,"DevOps Team","Performance Optimization","Lisa","To Do","Fixed","","2025-11-24(Initial planning@2025-10-05)","","M:3d(Initial sizing@2025-10-05)","","2025-10-21","","",""
+"a7b8c9d0-e1f2-4a3b-4c5d-6e7f8a9b0c3d",67,"Implement CORS policies",2025-11-25,XS,P2,"Security Team","API Modernization","Emma","To Do","Fixed","","2025-11-25(Initial planning@2025-10-01)","","","","2025-10-21","","",""
+"b8c9d0e1-f2a3-4b4c-5d6e-7f8a9b0c1d4e",68,"Add request validation",2025-11-26,S,P2,"Engineering Leadership","API Modernization","James","To Do","Fixed","","2025-11-26(Initial planning@2025-10-01)","","S:1d(Initial sizing@2025-10-01)","","2025-10-21","","",""
+"c9d0e1f2-a3b4-4c5d-6e7f-8a9b0c1d2e5f",69,"Implement health check endpoint",2025-11-27,XS,P2,"DevOps Team","API Modernization","Olivia","To Do","Fixed","","2025-11-27(Initial planning@2025-10-01)","","","","2025-10-21","","",""
+"d0e1f2a3-b4c5-4d6e-7f8a-9b0c1d2e3f6a",70,"Setup SSL certificates",2025-11-28,S,P1,"DevOps Team","Security Hardening","Robert","To Do","Fixed","","2025-11-28(Initial planning@2025-10-01)","","S:1d(Initial sizing@2025-10-01)","","2025-10-21","","",""
+"e1f2a3b4-c5d6-4e7f-8a9b-0c1d2e3f4a7b",71,"Implement request tracing",2025-11-29,M,P3,"DevOps Team","Performance Optimization","Marcus","To Do","Fixed","","2025-11-29(Initial planning@2025-10-05)","","M:3d(Initial sizing@2025-10-05)","","2025-10-21","","",""
+"f2a3b4c5-d6e7-4f8a-9b0c-1d2e3f4a5b8c",72,"Add compression middleware",2025-12-02,XS,P3,"Engineering Leadership","Performance Optimization","Priya","To Do","Fixed","","2025-12-02(Initial planning@2025-10-05)","","","","2025-10-21","","",""
+"a3b4c5d6-e7f8-4a9b-0c1d-2e3f4a5b6c9d",73,"Implement API key management",2025-12-03,M,P2,"Security Team","API Modernization","David","To Do","Fixed","","2025-12-03(Initial planning@2025-10-01)","","M:3d(Initial sizing@2025-10-01)","","2025-10-21","","",""
+"b4c5d6e7-f8a9-4b0c-1d2e-3f4a5b6c7d0e",74,"Setup load balancing",2025-12-05,M,P1,"DevOps Team","Cloud Migration Phase 1","Ahmed;Lisa","To Do","Fixed","","2025-12-05(Initial planning@2025-09-20)","","M:3d(Initial sizing@2025-09-20)","","2025-10-21","","",""
+"c5d6e7f8-a9b0-4c1d-2e3f-4a5b6c7d8e1f",75,"Implement graceful shutdown",2025-12-08,S,P2,"DevOps Team","Cloud Migration Phase 1","Emma","To Do","Fixed","","2025-12-08(Initial planning@2025-09-20)","","S:1d(Initial sizing@2025-09-20)","","2025-10-21","","",""
+"d6e7f8a9-b0c1-4d2e-3f4a-5b6c7d8e9f2a",76,"Add database migration scripts",2025-12-10,M,P2,"Engineering Leadership","Database Scaling","James","To Do","Fixed","","2025-12-10(Initial planning@2025-10-12)","","M:3d(Initial sizing@2025-10-12)","","2025-10-21","","",""
+"e7f8a9b0-c1d2-4e3f-4a5b-6c7d8e9f0a3b",77,"Implement background jobs",2025-12-12,L,P2,"Engineering Leadership","Performance Optimization","Olivia;Robert","To Do","Fixed","","2025-12-12(Initial planning@2025-10-05)","","L:5d(Initial sizing@2025-10-05)","","2025-10-21","","",""
+"f8a9b0c1-d2e3-4f4a-5b6c-7d8e9f0a1b4c",78,"Setup staging environment",2025-12-15,M,P1,"DevOps Team","Cloud Migration Phase 1","Marcus","To Do","Fixed","","2025-12-15(Initial planning@2025-09-20)","","M:3d(Initial sizing@2025-09-20)","","2025-10-21","","",""
+"a9b0c1d2-e3f4-4a5b-6c7d-8e9f0a1b2c5d",79,"Implement blue-green deployment",2025-12-18,L,P2,"DevOps Team","Cloud Migration Phase 1","Priya;David","To Do","Fixed","","2025-12-18(Initial planning@2025-09-20)","","L:5d(Initial sizing@2025-09-20)","","2025-10-21","","",""
+"b0c1d2e3-f4a5-4b6c-7d8e-9f0a1b2c3d6e",80,"Add comprehensive logging",2025-12-20,M,P3,"DevOps Team","Performance Optimization","Ahmed","To Do","Fixed","","2025-12-20(Initial planning@2025-10-05)","","M:3d(Initial sizing@2025-10-05)","","2025-10-21","","",""
+"e5aa3314-b4f8-4097-81ae-020afd474150",81,"Test task for Today initiative",2025-10-22,M,P2,"Engineering Leadership","Today","","To Do","Fixed","","","","","","2025-10-21","","",""
+"e22b5ea9-75fe-4788-9e40-b7fd1638a86c",82,"New task check",2025-10-22,M,P2,"QA Team","Today","","To Do","Fixed","","","","","","2025-10-21","","",""

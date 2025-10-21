@@ -338,17 +338,29 @@ function Show-PersonSummary {
             $currentDay = $currentDay.AddDays(1)
         }
         
-        # HTML's heat map formula for FIXED-LENGTH tasks:
-        # Capacity per Person = (Task Size × Base Hours) ÷ Number of Assignees ÷ Task Duration
-        # This gives us the daily rate for this person
-        $dailyRate = if ($taskDurationDays -gt 0 -and $teamSize -gt 0) {
-            ($sizeDays * $hoursPerDay) / $teamSize / $taskDurationDays
-        } else {
-            0
-        }
+        # Check if task is Flexible or Fixed-Length
+        $isFlexible = ($task.TaskType -eq 'Flexible')
         
-        # Total effort for this person on this task
-        $personTotalEffort = ($sizeDays * $hoursPerDay) / $teamSize
+        # HTML's heat map formula differs for FIXED-LENGTH vs FLEXIBLE tasks:
+        # FIXED: Capacity per Person = (Task Size × Base Hours) ÷ Number of Assignees ÷ Task Duration
+        # FLEXIBLE: Uses remaining capacity after Fixed tasks (no-overtime)
+        # For simplicity in PowerShell, we'll show Flexible tasks separately with 0 capacity impact
+        
+        if ($isFlexible) {
+            # Flexible tasks don't add to capacity utilization (they use remaining time)
+            $dailyRate = 0
+            $personTotalEffort = 0
+        } else {
+            # Fixed-length task calculation
+            $dailyRate = if ($taskDurationDays -gt 0 -and $teamSize -gt 0) {
+                ($sizeDays * $hoursPerDay) / $teamSize / $taskDurationDays
+            } else {
+                0
+            }
+            
+            # Total effort for this person on this task
+            $personTotalEffort = ($sizeDays * $hoursPerDay) / $teamSize
+        }
         
         # Track effort remaining across weeks (like HTML does)
         # Calculate how much effort was already allocated to previous weeks
@@ -390,11 +402,24 @@ function Show-PersonSummary {
             $checkWeekStart = $checkWeekStart.AddDays(7)
         }
         
-        # HTML's weekly allocation logic: Always use 5 business days (full work week)
-        # regardless of when the task starts or ends within the week
-        # Weekly effort = Min(effortRemaining, daily rate × 5)
-        # This matches HTML's logic: hoursThisWeek = Math.min(effortRemaining, dailyHours × 5)
-        $calculatedEffort = $dailyRate * 5  # Always 5 business days per week
+        # Calculate actual business days that the task overlaps with this week
+        # (not always 5 - need to count actual overlap)
+        $weekOverlapStart = if ($taskStartAdjusted -gt $startOfWeek) { $taskStartAdjusted } else { $startOfWeek }
+        $weekOverlapEnd = if ($taskEnd -lt $endOfWeek) { $taskEnd } else { $endOfWeek }
+        
+        # Count business days in the overlap period
+        $businessDaysThisWeek = 0
+        $currentDay = $weekOverlapStart
+        while ($currentDay -le $weekOverlapEnd) {
+            if ($currentDay.DayOfWeek -ne [System.DayOfWeek]::Saturday -and 
+                $currentDay.DayOfWeek -ne [System.DayOfWeek]::Sunday) {
+                $businessDaysThisWeek++
+            }
+            $currentDay = $currentDay.AddDays(1)
+        }
+        
+        # Weekly effort = Min(effortRemaining, daily rate × actual business days this week)
+        $calculatedEffort = $dailyRate * $businessDaysThisWeek
         $personEffort = [math]::Round([math]::Min($effortRemaining, $calculatedEffort), 1)
         
         # DEBUG

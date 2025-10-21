@@ -26,8 +26,8 @@
 $script:OutputFolderPath = Join-Path $PSScriptRoot "Output"
 $script:DownloadsFolderPath = "$HOME/Downloads"
 
-# Import V9 adapter
-. "$PSScriptRoot/v9_csv_adapter.ps1"
+# Import V9 adapter (V2 - supports multi-line CSV fields)
+. "$PSScriptRoot/v9_csv_adapter_v2.ps1"
 
 # Import Person Summary module
 . "$PSScriptRoot/person_summary.ps1"

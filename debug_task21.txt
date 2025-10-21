@@ -32,3 +32,124 @@
   Week 2025-10-13: Allocated 20, Remaining: 12
   This week effort: 12
 
+🔍 DEBUG Task 6: Implement API versioning strategy
+  Total effort: 24, Daily rate: 8
+  Task (raw): 2025-10-19 to 2025-10-22
+  Task (adjusted): 2025-10-20 to 2025-10-22
+  Current week: 2025-10-20 to 2025-10-24
+  Baseline: 2025-10-06
+  This week effort: 24
+
+🔍 DEBUG Task 21: Implement penetration testing framework
+  Total effort: 32, Daily rate: 4
+  Task (raw): 2025-10-15 to 2025-10-24
+  Task (adjusted): 2025-10-15 to 2025-10-24
+  Current week: 2025-10-20 to 2025-10-24
+  Baseline: 2025-10-06
+  Week 2025-10-13: Allocated 20, Remaining: 12
+  This week effort: 12
+
+🔍 DEBUG Task 6: Implement API versioning strategy
+  Total effort: 24, Daily rate: 8
+  Task (raw): 2025-10-19 to 2025-10-22
+  Task (adjusted): 2025-10-20 to 2025-10-22
+  Current week: 2025-10-20 to 2025-10-24
+  Baseline: 2025-10-06
+  This week effort: 24
+
+🔍 DEBUG Task 21: Implement penetration testing framework
+  Total effort: 32, Daily rate: 4
+  Task (raw): 2025-10-15 to 2025-10-24
+  Task (adjusted): 2025-10-15 to 2025-10-24
+  Current week: 2025-10-20 to 2025-10-24
+  Baseline: 2025-10-06
+  Week 2025-10-13: Allocated 20, Remaining: 12
+  This week effort: 12
+
+🔍 DEBUG Task 6: Implement API versioning strategy
+  Total effort: 24, Daily rate: 8
+  Task (raw): 2025-10-19 to 2025-10-22
+  Task (adjusted): 2025-10-20 to 2025-10-22
+  Current week: 2025-10-20 to 2025-10-24
+  Baseline: 2025-10-06
+  This week effort: 24
+
+🔍 DEBUG Task 21: Implement penetration testing framework
+  Total effort: 32, Daily rate: 4
+  Task (raw): 2025-10-15 to 2025-10-24
+  Task (adjusted): 2025-10-15 to 2025-10-24
+  Current week: 2025-10-20 to 2025-10-24
+  Baseline: 2025-10-06
+  Week 2025-10-13: Allocated 20, Remaining: 12
+  This week effort: 12
+
+🔍 DEBUG Task 21: Implement penetration testing framework
+  Total effort: 32, Daily rate: 4
+  Task (raw): 2025-10-15 to 2025-10-24
+  Task (adjusted): 2025-10-15 to 2025-10-24
+  Current week: 2025-10-20 to 2025-10-24
+  Baseline: 2025-10-06
+  Week 2025-10-13: Allocated 20, Remaining: 12
+  This week effort: 12
+
+🔍 DEBUG Task 6: Implement API versioning strategy
+  Total effort: 24, Daily rate: 8
+  Task (raw): 2025-10-19 to 2025-10-22
+  Task (adjusted): 2025-10-20 to 2025-10-22
+  Current week: 2025-10-20 to 2025-10-24
+  Baseline: 2025-10-06
+  This week effort: 24
+
+🔍 DEBUG Task 21: Implement penetration testing framework
+  Total effort: 32, Daily rate: 4
+  Task (raw): 2025-10-15 to 2025-10-24
+  Task (adjusted): 2025-10-15 to 2025-10-24
+  Current week: 2025-10-20 to 2025-10-24
+  Baseline: 2025-10-06
+  Week 2025-10-13: Allocated 20, Remaining: 12
+  This week effort: 12
+
+🔍 DEBUG Task 21: Implement penetration testing framework
+  Total effort: 32, Daily rate: 4
+  Task (raw): 2025-10-15 to 2025-10-24
+  Task (adjusted): 2025-10-15 to 2025-10-24
+  Current week: 2025-10-20 to 2025-10-24
+  Baseline: 2025-10-06
+  Week 2025-10-13: Allocated 20, Remaining: 12
+  This week effort: 12
+
+🔍 DEBUG Task 21: Implement penetration testing framework
+  Total effort: 32, Daily rate: 4
+  Task (raw): 2025-10-15 to 2025-10-24
+  Task (adjusted): 2025-10-15 to 2025-10-24
+  Current week: 2025-10-20 to 2025-10-24
+  Baseline: 2025-10-06
+  Week 2025-10-13: Allocated 20, Remaining: 12
+  This week effort: 12
+
+🔍 DEBUG Task 21: Implement penetration testing framework
+  Total effort: 32, Daily rate: 4
+  Task (raw): 2025-10-15 to 2025-10-24
+  Task (adjusted): 2025-10-15 to 2025-10-24
+  Current week: 2025-10-20 to 2025-10-24
+  Baseline: 2025-10-06
+  Week 2025-10-13: Allocated 20, Remaining: 12
+  This week effort: 12
+
+🔍 DEBUG Task 6: Implement API versioning strategy
+  Total effort: 24, Daily rate: 8
+  Task (raw): 2025-10-19 to 2025-10-22
+  Task (adjusted): 2025-10-20 to 2025-10-22
+  Current week: 2025-10-20 to 2025-10-24
+  Baseline: 2025-10-06
+  This week effort: 24
+
+🔍 DEBUG Task 21: Implement penetration testing framework
+  Total effort: 32, Daily rate: 4
+  Task (raw): 2025-10-15 to 2025-10-24
+  Task (adjusted): 2025-10-15 to 2025-10-24
+  Current week: 2025-10-20 to 2025-10-24
+  Baseline: 2025-10-06
+  Week 2025-10-13: Allocated 20, Remaining: 12
+  This week effort: 12
+

@@ -205,6 +205,12 @@
                     <div class="flex items-center gap-2">
                         <h3 class="text-lg font-bold text-primary-dark">📋 Task Schedule</h3>
                         <div class="flex-1 border-t border-gray-300"></div>
+                        <button onclick="exportFilteredTasksToCSV()" class="btn-enterprise flex items-center text-sm px-3 py-1.5">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            Export to CSV
+                        </button>
                     </div>
 
                     <!-- Compact Task Filtering Controls -->
@@ -3334,6 +3340,16 @@
                 return;
             }
 
+            // Helper function to format date without commas for CSV
+            const formatDateForCSV = (dateString) => {
+                if (!dateString) return 'Not set';
+                const date = new Date(dateString);
+                const month = date.toLocaleDateString('en-US', { month: 'short' });
+                const day = date.getDate();
+                const year = date.getFullYear();
+                return `${month} ${day} ${year}`; // No comma
+            };
+
             // 1. Generate the CSV content
             let csvContent = "Ticket ID,Description,Start Date,Size,Priority,Status,Task Type,Pause Comments,Person Days,Total Hours,Assigned Team,Projected End Date,Detailed Explanation,Details: Description,Details: Positives,Details: Negatives\n";
 
@@ -3362,7 +3378,7 @@
                 const row = [
                     ticket.id,
                     escapeCSV(ticket.description),
-                    formatDate(ticket.startDate),
+                    formatDateForCSV(ticket.startDate),
                     ticket.size,
                     ticket.priority || 'P3',
                     escapeCSV(ticket.status || 'To Do'),
@@ -3390,6 +3406,97 @@
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+        }
+
+        window.exportFilteredTasksToCSV = () => {
+            // Get all visible rows from the task table (respecting current filters)
+            const taskTableBody = document.getElementById('ticket-table-body');
+            if (!taskTableBody) {
+                alert("Task table not found.");
+                return;
+            }
+
+            const rows = taskTableBody.getElementsByTagName('tr');
+            const visibleTickets = [];
+
+            // Iterate through all rows
+            for (let i = 0; i < rows.length; i++) {
+                const row = rows[i];
+                // Check if row is visible (not hidden by filters)
+                if (row.style.display !== 'none') {
+                    const ticketId = parseInt(row.cells[0].textContent);
+                    const ticket = tickets.find(t => t.id === ticketId);
+                    if (ticket) {
+                        visibleTickets.push(ticket);
+                    }
+                }
+            }
+
+            if (visibleTickets.length === 0) {
+                alert("No visible tasks to export.");
+                return;
+            }
+
+            // Helper function to format date without commas for CSV
+            const formatDateForCSV = (dateString) => {
+                if (!dateString) return 'Not set';
+                const date = new Date(dateString);
+                const month = date.toLocaleDateString('en-US', { month: 'short' });
+                const day = date.getDate();
+                const year = date.getFullYear();
+                return `${month} ${day} ${year}`; // No comma
+            };
+
+            // Generate CSV content with filtered tasks
+            let csvContent = "Ticket ID,Description,Start Date,Size,Priority,Status,Task Type,Assigned Team,Stakeholder,Initiative,Projected End Date,Details: Description,Details: Positives,Details: Negatives\n";
+
+            visibleTickets.forEach(ticket => {
+                // Get projected end date
+                const projectedTicket = getProjectedTickets().find(pt => pt.id === ticket.id);
+                const projectedEndDate = projectedTicket ? projectedTicket.endDate.replace(/,/g, '') : 'N/A';
+
+                const escapeCSV = (value) => `"${String(value).replace(/"/g, '""')}"`;
+
+                // Get task details
+                const taskDetails = ticket.taskDetails || {};
+                const detailsDescription = escapeCSV(taskDetails.description || '');
+                const detailsPositives = escapeCSV(taskDetails.positives || '');
+                const detailsNegatives = escapeCSV(taskDetails.negatives || '');
+
+                const isFixedLength = ticket.isFixedLength !== false;
+                const taskType = isFixedLength ? 'Fixed' : 'Flexible';
+
+                const row = [
+                    ticket.id,
+                    escapeCSV(ticket.description),
+                    formatDateForCSV(ticket.startDate),
+                    ticket.size,
+                    ticket.priority || 'P3',
+                    escapeCSV(ticket.status || 'To Do'),
+                    taskType,
+                    escapeCSV(ticket.assigned.join('; ')),
+                    escapeCSV(ticket.stakeholder || ''),
+                    escapeCSV(ticket.initiative || ''),
+                    projectedEndDate,
+                    detailsDescription,
+                    detailsPositives,
+                    detailsNegatives
+                ].join(',');
+                csvContent += row + "\n";
+            });
+
+            // Trigger download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `filtered_tasks_${new Date().toISOString().slice(0, 10)}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            console.log(`✅ Exported ${visibleTickets.length} filtered tasks to CSV`);
         }
 
         function updateExportButtonsState() {
@@ -3479,7 +3586,7 @@
 
             // Tickets section (closed only)
             csvContent += "SECTION,TICKETS\n";
-            csvContent += "ID,Description,Start Date,Size,Priority,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Details: Description,Details: Positives,Details: Negatives\n";
+            csvContent += "ID,Description,Start Date,Size,Priority,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Created Date,Details Description,Details Positives,Details Negatives\n";
             configData.tickets.forEach(ticket => {
                 const assignedTeam = ticket.assigned.join(';');
                 const priority = ticket.priority || 'P3';
@@ -3505,11 +3612,15 @@
                     ).join(' | ')
                     : '';
                 const customEndDate = ticket.customEndDate || '';
+                // Default Created Date to today's date in yyyy-MM-dd format if not present
+                const createdDate = ticket.createdDate || new Date().toISOString().split('T')[0];
+                // Get task details (if any) and properly escape for CSV
+                // CSV rules: Replace double quotes with two double quotes, keep newlines as-is (field will be quoted)
                 const taskDetails = ticket.taskDetails || {};
-                const detailsDescription = (taskDetails.description || '').replace(/"/g, '""');
-                const detailsPositives = (taskDetails.positives || '').replace(/"/g, '""');
-                const detailsNegatives = (taskDetails.negatives || '').replace(/"/g, '""');
-                csvContent += `${ticket.id},"${ticket.description.replace(/"/g, '""')}",${ticket.startDate},${ticket.size},${priority},"${assignedTeam}","${status}","${taskType}","${pauseCommentsText}","${startDateHistoryText}","${endDateHistoryText}","${sizeHistoryText}","${customEndDate}","${detailsDescription}","${detailsPositives}","${detailsNegatives}"\n`;
+                const detailsDescription = (taskDetails.description || '').replace(/"/g, '""').replace(/\r\n/g, '\n');
+                const detailsPositives = (taskDetails.positives || '').replace(/"/g, '""').replace(/\r\n/g, '\n');
+                const detailsNegatives = (taskDetails.negatives || '').replace(/"/g, '""').replace(/\r\n/g, '\n');
+                csvContent += `${ticket.id},"${ticket.description.replace(/"/g, '""')}",${ticket.startDate},${ticket.size},${priority},"${assignedTeam}","${status}","${taskType}","${pauseCommentsText}","${startDateHistoryText}","${endDateHistoryText}","${sizeHistoryText}","${customEndDate}","${createdDate}","${detailsDescription}","${detailsPositives}","${detailsNegatives}"\n`;
             });
             
             // Download the closed tasks file
@@ -3628,7 +3739,7 @@
             
             // Tickets section (non-closed) - V10 with UUID, Stakeholder, Initiative
             csvContent += "SECTION,TICKETS\n";
-            csvContent += "UUID,ID,Description,Start Date,Size,Priority,Stakeholder,Initiative,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Details: Description,Details: Positives,Details: Negatives\n";
+            csvContent += "UUID,ID,Description,Start Date,Size,Priority,Stakeholder,Initiative,Assigned Team,Status,Task Type,Pause Comments,Start Date History,End Date History,Size History,Custom End Date,Created Date,Details Description,Details Positives,Details Negatives\n";
             configData.tickets.filter(ticket => (ticket.status || 'To Do') !== 'Closed').forEach(ticket => {
                 const uuid = ticket.uuid || generateUUID(); // Generate if missing
                 const stakeholder = (ticket.stakeholder || 'General').replace(/"/g, '""');
@@ -3657,12 +3768,15 @@
                     ).join(' | ')
                     : '';
                 const customEndDate = ticket.customEndDate || '';
-                // Get task details (if any)
+                // Default Created Date to today's date in yyyy-MM-dd format if not present
+                const createdDate = ticket.createdDate || new Date().toISOString().split('T')[0];
+                // Get task details (if any) and properly escape for CSV
+                // CSV rules: Replace double quotes with two double quotes, keep newlines as-is (field will be quoted)
                 const taskDetails = ticket.taskDetails || {};
-                const detailsDescription = (taskDetails.description || '').replace(/"/g, '""');
-                const detailsPositives = (taskDetails.positives || '').replace(/"/g, '""');
-                const detailsNegatives = (taskDetails.negatives || '').replace(/"/g, '""');
-                csvContent += `${uuid},${ticket.id},"${ticket.description.replace(/"/g, '""')}",${ticket.startDate},${ticket.size},${priority},"${stakeholder}","${initiative}","${assignedTeam}","${status}","${taskType}","${pauseCommentsText}","${startDateHistoryText}","${endDateHistoryText}","${sizeHistoryText}","${customEndDate}","${detailsDescription}","${detailsPositives}","${detailsNegatives}"\n`;
+                const detailsDescription = (taskDetails.description || '').replace(/"/g, '""').replace(/\r\n/g, '\n');
+                const detailsPositives = (taskDetails.positives || '').replace(/"/g, '""').replace(/\r\n/g, '\n');
+                const detailsNegatives = (taskDetails.negatives || '').replace(/"/g, '""').replace(/\r\n/g, '\n');
+                csvContent += `"${uuid}",${ticket.id},"${ticket.description.replace(/"/g, '""')}",${ticket.startDate},${ticket.size},${priority},"${stakeholder}","${initiative}","${assignedTeam}","${status}","${taskType}","${pauseCommentsText}","${startDateHistoryText}","${endDateHistoryText}","${sizeHistoryText}","${customEndDate}","${createdDate}","${detailsDescription}","${detailsPositives}","${detailsNegatives}"\n`;
             });
             // Download the configuration file (non-closed)
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -3806,7 +3920,8 @@
         }
 
         function importConfiguration(csvContent) {
-            const lines = csvContent.split('\n').map(line => line.trim()).filter(line => line);
+            // Use the new CSV parser that handles multi-line fields
+            const lines = parseCSVContent(csvContent);
 
             let currentSection = '';
             let importedData = {
@@ -4192,24 +4307,88 @@
             const result = [];
             let current = '';
             let inQuotes = false;
+            let i = 0;
 
-            for (let i = 0; i < line.length; i++) {
+            while (i < line.length) {
                 const char = line[i];
+                const nextChar = i < line.length - 1 ? line[i + 1] : null;
 
-                if (char === '"' && (i === 0 || line[i-1] === ',')) {
-                    inQuotes = true;
-                } else if (char === '"' && inQuotes && (i === line.length - 1 || line[i+1] === ',')) {
-                    inQuotes = false;
+                if (char === '"') {
+                    if (!inQuotes) {
+                        // Start of quoted field
+                        inQuotes = true;
+                    } else if (nextChar === '"') {
+                        // Escaped quote - add one quote and skip next
+                        current += '"';
+                        i++; // Skip the next quote
+                    } else {
+                        // End of quoted field
+                        inQuotes = false;
+                    }
                 } else if (char === ',' && !inQuotes) {
-                    result.push(current.trim());
+                    // Field delimiter - push current field and reset
+                    result.push(current);
                     current = '';
                 } else {
+                    // Regular character (including newlines inside quotes)
                     current += char;
                 }
+                i++;
             }
-            result.push(current.trim());
+            
+            // Push the last field
+            result.push(current);
 
             return result;
+        }
+
+        // NEW: Parse CSV content that may contain multi-line fields
+        function parseCSVContent(csvContent) {
+            const rows = [];
+            let currentRow = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < csvContent.length; i++) {
+                const char = csvContent[i];
+                const nextChar = i < csvContent.length - 1 ? csvContent[i + 1] : null;
+                
+                if (char === '"') {
+                    currentRow += char;
+                    if (inQuotes && nextChar === '"') {
+                        // Escaped quote - add both quotes
+                        currentRow += '"';
+                        i++; // Skip next quote
+                    } else {
+                        // Toggle quote state
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === '\n' && !inQuotes) {
+                    // End of row (only if not inside quotes)
+                    if (currentRow.trim()) {
+                        rows.push(currentRow.trim());
+                    }
+                    currentRow = '';
+                } else if (char === '\r') {
+                    // Skip carriage returns (handle both \r\n and \r)
+                    if (nextChar !== '\n' && !inQuotes) {
+                        // Treat standalone \r as line break
+                        if (currentRow.trim()) {
+                            rows.push(currentRow.trim());
+                        }
+                        currentRow = '';
+                    }
+                    // If \r\n, the \n will be handled in next iteration
+                } else {
+                    currentRow += char;
+                }
+            }
+            
+            // Don't forget the last row
+            if (currentRow.trim()) {
+                rows.push(currentRow.trim());
+            }
+            
+            return rows;
         }
 
         function validateImportedData(data) {
@@ -6343,8 +6522,31 @@ ${quickSummary}
                         const effortRemaining = taskRemainingEffort[task.id][person.name] || 0;
                         const dailyHours = taskMetadata[task.id]?.dailyHoursPerPerson || 0;
                         
-                        // For Fixed-Length, allocate the daily required hours (ignore capacity limits)
-                        const hoursThisWeek = Math.min(effortRemaining, dailyHours * 5); // 5 working days
+                        // Calculate actual business days this task overlaps with this week
+                        // Get task's adjusted start date (accounting for weekends)
+                        const taskStartAdjusted = getNextBusinessDay(new Date(task.startDate));
+                        
+                        // Calculate task end date based on total days
+                        const taskTotalDays = taskMetadata[task.id].totalDays;
+                        const taskEndDate = calculateTaskEndDate(taskStartAdjusted, taskTotalDays, true, task.assigned.length);
+                        
+                        // Find overlap between task and this week
+                        const overlapStart = taskStartAdjusted > weekStart ? taskStartAdjusted : weekStart;
+                        const overlapEnd = taskEndDate < weekEnd ? taskEndDate : weekEnd;
+                        
+                        // Count business days in the overlap
+                        let businessDaysInWeek = 0;
+                        const checkDate = new Date(overlapStart);
+                        while (checkDate <= overlapEnd) {
+                            const dayOfWeek = checkDate.getDay();
+                            if (dayOfWeek !== 0 && dayOfWeek !== 6) { // Not Sunday (0) or Saturday (6)
+                                businessDaysInWeek++;
+                            }
+                            checkDate.setDate(checkDate.getDate() + 1);
+                        }
+                        
+                        // Allocate hours based on actual business days (not always 5)
+                        const hoursThisWeek = Math.min(effortRemaining, dailyHours * businessDaysInWeek);
 
                         capacityTracker[person.name][weekIndex].allocations[task.id] = hoursThisWeek;
                         capacityTracker[person.name][weekIndex].used += hoursThisWeek;
@@ -6358,7 +6560,7 @@ ${quickSummary}
                         
                         taskRemainingEffort[task.id][person.name] -= hoursThisWeek;
                         
-                        console.log(`    📌 FIXED ${task.priority} Task ${task.id}: Allocated ${hoursThisWeek.toFixed(1)}h (${dailyHours.toFixed(1)}h/day required), Remaining: ${taskRemainingEffort[task.id][person.name].toFixed(1)}h`);
+                        console.log(`    📌 FIXED ${task.priority} Task ${task.id}: Allocated ${hoursThisWeek.toFixed(1)}h (${dailyHours.toFixed(1)}h/day × ${businessDaysInWeek} business days), Remaining: ${taskRemainingEffort[task.id][person.name].toFixed(1)}h`);
                     });
 
                     // STEP 3: Calculate remaining capacity for Flexible tasks

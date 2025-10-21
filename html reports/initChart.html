@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Initiative Timeline - Strategic Overview</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Arial', sans-serif;
+            background: #f0f2f5;
+            padding: 15px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #003d82 0%, #0056b3 100%);
+            color: white;
+            padding: 10px 20px;
+            border-bottom: 3px solid #002855;
+        }
+        .header h1 {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 2px;
+            letter-spacing: -0.3px;
+        }
+        .header p {
+            font-size: 0.75em;
+            opacity: 0.95;
+            font-weight: 300;
+        }
+        .content {
+            padding: 12px 20px;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .stat-card {
+            background: #f8f9fa;
+            border-left: 3px solid #0056b3;
+            padding: 8px 12px;
+            border-radius: 2px;
+        }
+        .stat-value {
+            font-size: 1.4em;
+            font-weight: 700;
+            color: #003d82;
+            margin-bottom: 2px;
+            line-height: 1;
+        }
+        .stat-label {
+            font-size: 0.65em;
+            color: #666;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+            margin-bottom: 8px;
+            padding: 6px;
+            background: #f8f9fa;
+            border-radius: 2px;
+            border: 1px solid #e0e0e0;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 500;
+            font-size: 0.7em;
+            color: #333;
+        }
+        .legend-color {
+            width: 22px;
+            height: 12px;
+            border-radius: 2px;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+        .chart {
+            margin-top: 12px;
+        }
+        .initiative {
+            display: grid;
+            grid-template-columns: 260px 1fr 320px;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 4px;
+            padding: 6px 0;
+            border-bottom: 1px solid #e8e8e8;
+        }
+        .initiative:last-child {
+            border-bottom: none;
+        }
+        .initiative-name {
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #1a1a1a;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .initiative-meta {
+            font-size: 0.7em;
+            color: #666;
+            text-align: right;
+            white-space: nowrap;
+            overflow: visible;
+        }
+        .bar-container {
+            position: relative;
+            background: #f0f0f0;
+            border-radius: 2px;
+            height: 20px;
+            border: 1px solid #d0d0d0;
+        }
+        .bar {
+            height: 100%;
+            border-radius: 2px;
+            display: flex;
+            align-items: center;
+            padding: 0 8px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.65em;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 -1px 2px rgba(0,0,0,0.1);
+            text-shadow: 0 1px 1px rgba(0,0,0,0.2);
+        }
+        .bar:hover {
+            opacity: 0.85;
+        }
+        .bar-label {
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        .footer {
+            margin-top: 10px;
+            padding: 8px 20px;
+            background: #f8f9fa;
+            text-align: center;
+            color: #666;
+            font-size: 0.65em;
+            border-top: 1px solid #e0e0e0;
+        }
+        .footer p {
+            margin: 2px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Initiative Timeline Dashboard</h1>
+            <p>Strategic Overview - Generated October 22, 2025</p>
+        </div>
+        
+        <div class="content">
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Active Now</div>
+                </div>
+            <div class="stat-card">
+                <div class="stat-value">2</div>
+                <div class="stat-label">Future Initiatives</div>
+            </div>
+                <div class="stat-card">
+                    <div class="stat-value">2</div>
+                    <div class="stat-label">Upcoming</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">0</div>
+                    <div class="stat-label">Paused</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">3</div>
+                    <div class="stat-label">Total Tasks</div>
+                </div>
+            </div>
+            
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #6B8E23;"></div>
+                    <span>Active Now</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #87CEEB;"></div>
+                    <span>Future</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #FFB6C1;"></div>
+                    <span>Paused (>50%)</span>
+                </div>
+            </div>
+            
+            <div class="chart">            <div class="initiative">
+                <div class="initiative-name">Init1</div>
+                <div class="bar-container">
+                    <div class="bar" style="background: #87CEEB; width: 100%;">
+                        <span class="bar-label">29d</span>
+                    </div>
+                </div>
+                <div class="initiative-meta">▶ Oct 23 - ■ Nov 21 | 29d | 2 tasks | Future</div>
+            </div>            <div class="initiative">
+                <div class="initiative-name">Init 2</div>
+                <div class="bar-container">
+                    <div class="bar" style="background: #87CEEB; width: 97%;">
+                        <span class="bar-label">28d</span>
+                    </div>
+                </div>
+                <div class="initiative-meta">▶ Oct 24 - ■ Nov 21 | 28d | 1 tasks | Future</div>
+            </div>            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Initiative Timeline Dashboard</strong> | Generated from V10 Configuration</p>
+            <p>Displaying 2 current and future initiatives | Past initiatives hidden</p>
+            <p style="margin-top: 8px; font-size: 0.8em; color: #999;">Bar length represents initiative duration</p>
+        </div>
+    </div>
+</body>
+</html>
