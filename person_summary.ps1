@@ -132,6 +132,13 @@ function Show-PersonSummary {
     
     Write-Host "`n📊 Generating summary for $($person.Name)..." -ForegroundColor Cyan
     
+    # Check if we have tickets data
+    if ($null -eq $global:V9Config.Tickets -or $global:V9Config.Tickets.Count -eq 0) {
+        Write-Host "⚠️  No tasks found in configuration" -ForegroundColor Yellow
+        Write-Host "   Please ensure you have loaded a project configuration file with tasks." -ForegroundColor Gray
+        return
+    }
+    
     # Calculate heat map baseline date (Monday of earliest task) - matches HTML logic
     $earliestTaskDate = $null
     foreach ($task in $global:V9Config.Tickets) {
@@ -193,7 +200,8 @@ function Show-PersonSummary {
         
         # Calculate end date using HTML's logic (business days)
         if ($_.ID -eq 21) {
-            $global:DebugTask21EndDate = "EndDate field: [$($_.EndDate)] Type: $($_.EndDate.GetType().Name) Empty: $([string]::IsNullOrEmpty($_.EndDate)) Whitespace: $([string]::IsNullOrWhiteSpace($_.EndDate))"
+            $endDateType = if ($_.EndDate) { $_.EndDate.GetType().Name } else { "null" }
+            $global:DebugTask21EndDate = "EndDate field: [$($_.EndDate)] Type: $endDateType Empty: $([string]::IsNullOrEmpty($_.EndDate)) Whitespace: $([string]::IsNullOrWhiteSpace($_.EndDate))"
         }
         
         $hasValidEndDate = $false
@@ -271,8 +279,14 @@ function Show-PersonSummary {
     # Calculate effort and capacity
     $hoursPerDay = if ($global:ProjectHoursPerDay) { $global:ProjectHoursPerDay } else { 8 }
     $availability = if ($person.Availability) { 
-        # Handle if Availability is an array (take first element) or scalar
-        $avail = if ($person.Availability -is [array]) { $person.Availability[0] } else { $person.Availability }
+        # Handle if Availability is an array (use current week index) or scalar
+        $avail = if ($person.Availability -is [array]) { 
+            # Use the week index calculated earlier to get the correct week's availability
+            $weekIdx = [Math]::Max(0, [Math]::Min($currentWeekIndex, $person.Availability.Count - 1))
+            $person.Availability[$weekIdx] 
+        } else { 
+            $person.Availability 
+        }
         [double]$avail
     } else { 
         40.0 
@@ -840,17 +854,14 @@ function Show-PersonSummary {
         $html | Out-File -FilePath $htmlPath -Encoding UTF8 -Force
         Write-Host "✅ Summary generated: $htmlPath" -ForegroundColor Green
         
-        # Open in browser
-        if ($IsMacOS) {
-            # Use -ArgumentList with array to properly handle paths with spaces
-            Start-Process "open" -ArgumentList @($htmlPath)
-        } elseif ($IsWindows) {
-            Start-Process $htmlPath
-        } else {
-            Start-Process "xdg-open" -ArgumentList @($htmlPath)
+        # Open in browser - use Invoke-Item which handles spaces properly
+        try {
+            Invoke-Item $htmlPath
+            Write-Host "🌐 Opening in browser..." -ForegroundColor Cyan
+        } catch {
+            Write-Host "⚠️  Could not auto-open browser. Please open manually:" -ForegroundColor Yellow
+            Write-Host "   $htmlPath" -ForegroundColor Gray
         }
-        
-        Write-Host "🌐 Opening in browser..." -ForegroundColor Cyan
     } catch {
         Write-Host "❌ Failed to generate summary: $($_.Exception.Message)" -ForegroundColor Red
     }
