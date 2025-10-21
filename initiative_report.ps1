@@ -36,14 +36,25 @@ function Show-InitiativeTaskReport {
     Write-Host "`n📋 Available Initiatives:" -ForegroundColor Cyan
     Write-Host ("=" * 60) -ForegroundColor Gray
     
-    $initiatives = @($global:V9Config.Initiatives)
+    # Build initiatives list with Today and General first
+    $initiatives = @()
+    
+    # Always add Today first
+    $todayCount = @($global:V9Config.Tickets | Where-Object { $_.Initiative -eq 'Today' }).Count
+    $initiatives += [PSCustomObject]@{ Name = 'Today'; StartDate = $null; EndDate = $null }
+    
+    # Always add General second
+    $generalCount = @($global:V9Config.Tickets | Where-Object { $_.Initiative -eq 'General' }).Count
+    $initiatives += [PSCustomObject]@{ Name = 'General'; StartDate = $null; EndDate = $null }
+    
+    # Then add all defined initiatives from config
+    $initiatives += @($global:V9Config.Initiatives)
+    
     for ($i = 0; $i -lt $initiatives.Count; $i++) {
         $initiative = $initiatives[$i]
         $taskCount = @($global:V9Config.Tickets | Where-Object { $_.Initiative -eq $initiative.Name }).Count
         Write-Host ("{0,3}. {1} ({2} tasks)" -f ($i + 1), $initiative.Name, $taskCount) -ForegroundColor White
-    }
-    
-    Write-Host ("=" * 60) -ForegroundColor Gray
+    }    Write-Host ("=" * 60) -ForegroundColor Gray
     Write-Host "`nEnter initiative numbers (comma or space separated, e.g., '1,3,5' or '1 3 5'):" -ForegroundColor Yellow
     Write-Host "Or enter 'all' to include all initiatives, or 'cancel' to abort:" -ForegroundColor Gray
     
@@ -92,9 +103,15 @@ function Show-InitiativeTaskReport {
     
     Write-Host "`n📊 Found $($filteredTasks.Count) task(s). Generating report..." -ForegroundColor Cyan
     
+    # Create "html reports" directory if it doesn't exist
+    $reportsDir = Join-Path $PSScriptRoot "html reports"
+    if (-not (Test-Path $reportsDir)) {
+        New-Item -ItemType Directory -Path $reportsDir -Force | Out-Null
+    }
+    
     # Generate HTML report
     $timestamp = Get-Date -Format "yyyy-MM-dd_HH-mm-ss"
-    $htmlPath = Join-Path $PSScriptRoot "initiative_report_$timestamp.html"
+    $htmlPath = Join-Path $reportsDir "initiative_report_$timestamp.html"
     
     # Build HTML table rows directly (avoiding JSON embedding issues)
     $tableRowsHtml = ""

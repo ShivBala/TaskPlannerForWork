@@ -32,6 +32,9 @@ $script:DownloadsFolderPath = "$HOME/Downloads"
 # Import Person Summary module
 . "$PSScriptRoot/person_summary.ps1"
 
+# Import Initiative Report module
+. "$PSScriptRoot/initiative_report.ps1"
+
 # Global state
 $global:V9Config = $null
 $global:V9ConfigPath = $null
@@ -781,7 +784,7 @@ function Add-QuickTask {
     .DESCRIPTION
         Quick task creation with smart defaults:
         - Assigned Person: Unassigned (empty array)
-        - Initiative: General
+        - Initiative: Today
         - Status: To Do
         - Start Date: Tomorrow
         - Size: M (Medium)
@@ -821,7 +824,7 @@ function Add-QuickTask {
     $startDate = Parse-DateAlias -DateInput "tomorrow"
     $size = "M"
     $priority = "P2"
-    $initiative = "General"
+    $initiative = "Today"
     $assignedTeam = @()  # Unassigned - empty array for filtering in HTML
     
     # Generate new ID
@@ -873,7 +876,7 @@ function Add-QuickTask {
         Write-Host "`n✅ Quick task #$newId added!" -ForegroundColor Green
         Write-Host "   $description" -ForegroundColor Cyan
         Write-Host "   Status: $status | Size: $size ($sizeDays days) | Priority: $priority | Start: $startDate" -ForegroundColor Gray
-        Write-Host "   Stakeholder: $stakeholder | Initiative: $initiative | Assigned: Unassigned" -ForegroundColor Gray
+        Write-Host "   Stakeholder: $stakeholder | Initiative: Today | Assigned: Unassigned" -ForegroundColor Gray
         Write-Host "   UUID: $uuid" -ForegroundColor DarkGray
     }
 }
@@ -1176,6 +1179,11 @@ function Show-MostAvailable {
             $sizeInfo = $global:V9Config.TaskSizes | Where-Object { $_.Key -eq $ticket.Size }
             $totalTaskDays = if ($sizeInfo) { [int]$sizeInfo.Days } else { 1 }
             $totalTaskEffort = Get-TaskEffortHours -Size $ticket.Size
+            
+            # Guard against zero days
+            if ($totalTaskDays -le 0) {
+                $totalTaskDays = 1
+            }
             
             $taskEnd = $null
             $dailyHoursForPerson = 0
@@ -1631,8 +1639,14 @@ function Show-InitiativeChart {
     $maxDuration = ($initiativeData | Measure-Object -Property DurationDays -Maximum).Maximum
     if ($maxDuration -eq 0) { $maxDuration = 1 }
     
+    # Create "html reports" directory if it doesn't exist
+    $reportsDir = Join-Path $PSScriptRoot "html reports"
+    if (-not (Test-Path $reportsDir)) {
+        New-Item -ItemType Directory -Path $reportsDir -Force | Out-Null
+    }
+    
     # Generate HTML
-    $htmlPath = Join-Path $PSScriptRoot "initChart.html"
+    $htmlPath = Join-Path $reportsDir "initChart.html"
     
     $html = @"
 <!DOCTYPE html>
@@ -2437,6 +2451,13 @@ function Invoke-Command {
         return
     }
     
+    # Initiative tasks report
+    # Matches: taskinit, tasksinit, taskforinit, taskofinit, taskforinitiative, etc.
+    if ($inputText -match "^tas(k(s)?)?(of|for)init(i(a(t(i(v(e(s)?)?)?)?)?)?)?$") {
+        Show-InitiativeTaskReport
+        return
+    }
+    
     # Availability query
     if ($inputText -match "^availability$") {
         Show-MostAvailable
@@ -2725,6 +2746,12 @@ function Show-Help {
     Write-Host "    Example: summary sarah" -ForegroundColor DarkGray
     Write-Host "  availability" -ForegroundColor White
     Write-Host "    → Show who is most available today" -ForegroundColor Gray
+    Write-Host ""
+    Write-Host "Reports:" -ForegroundColor Yellow
+    Write-Host "  taskinit | tasksinit | taskforinit | taskofinit" -ForegroundColor White
+    Write-Host "    → Generate interactive HTML report for tasks by initiative(s)" -ForegroundColor Gray
+    Write-Host "    → Select initiatives from numbered list (supports multiple)" -ForegroundColor Gray
+    Write-Host "    → Includes filtering, CSV export, and clipboard copy features" -ForegroundColor Gray
     Write-Host ""
     Write-Host "System:" -ForegroundColor Yellow
     Write-Host "  html | console | open" -ForegroundColor White

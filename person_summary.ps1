@@ -462,8 +462,14 @@ function Show-PersonSummary {
     # Pre-process clipboard text for JavaScript (avoid backtick-dollar syntax issues)
     $clipboardText = $quickSummary.Replace("`n", "\n").Replace("`r", "").Replace('"', '\"').Replace("'", "\'")
     
+    # Create "html reports" directory if it doesn't exist
+    $reportsDir = Join-Path $PSScriptRoot "html reports"
+    if (-not (Test-Path $reportsDir)) {
+        New-Item -ItemType Directory -Path $reportsDir -Force | Out-Null
+    }
+    
     # Generate HTML
-    $htmlPath = Join-Path $PSScriptRoot "person_summary_$($person.Name -replace '\s+', '_').html"
+    $htmlPath = Join-Path $reportsDir "person_summary_$($person.Name -replace '\s+', '_').html"
     
     $html = @"
 <!DOCTYPE html>
