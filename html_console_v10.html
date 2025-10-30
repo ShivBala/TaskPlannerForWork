@@ -266,6 +266,21 @@
                                 <!-- Options populated by JavaScript -->
                             </select>
                         </div>
+
+                        <!-- V10: Description Filter (Text Search) -->
+                        <div class="flex items-center gap-3 mt-2">
+                            <span class="text-sm font-semibold text-gray-700 whitespace-nowrap">🔍 Filter by description:</span>
+                            <div class="flex-1 flex items-center gap-2">
+                                <input type="text" id="description-filter-input" placeholder="Type to search tasks..."
+                                       oninput="filterByDescription(this.value)"
+                                       class="flex-1 px-3 py-1.5 bg-white border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <button onclick="clearDescriptionFilter()" 
+                                        class="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-sm font-medium transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-gray-400">
+                                    Clear
+                                </button>
+                            </div>
+                        </div>
+
                         <div id="filter-status" class="text-xs text-gray-600 mt-2" style="display: none;">
                             <!-- Filter status will be shown here -->
                         </div>
@@ -1088,6 +1103,7 @@
         let selectedDateFilters = []; // Array to track which date ranges are selected for filtering
         let selectedStakeholderFilter = ''; // V10: Track selected stakeholder filter
         let selectedInitiativeFilter = ''; // V10: Track selected initiative filter
+        let selectedDescriptionFilter = ''; // V10: Track description search filter
         let isDirty = false; // Track if there are unsaved changes
 
         function setDirtyState(dirty = true) {
@@ -1495,7 +1511,7 @@
                 // Update filter status message
                 const hasAnyFilter = selectedPersonFilters.length > 0 || isUnassignedFilterActive || 
                                     selectedStatusFilters.length > 0 || selectedDateFilters.length > 0 ||
-                                    selectedStakeholderFilter || selectedInitiativeFilter;
+                                    selectedStakeholderFilter || selectedInitiativeFilter || selectedDescriptionFilter;
                 
                 if (!hasAnyFilter) {
                     filterStatus.style.display = 'none';
@@ -1535,6 +1551,12 @@
                     if (selectedInitiativeFilter) {
                         if (hasCondition) statusMessage += ' and';
                         statusMessage += ` in initiative: <strong>${selectedInitiativeFilter}</strong>`;
+                        hasCondition = true;
+                    }
+
+                    if (selectedDescriptionFilter) {
+                        if (hasCondition) statusMessage += ' and';
+                        statusMessage += ` matching: <strong>"${selectedDescriptionFilter}"</strong>`;
                         hasCondition = true;
                     }
 
@@ -1720,6 +1742,29 @@
             });
         }
 
+        // V10: Description Filter Functions
+        let descriptionFilterTimeout = null;
+
+        function filterByDescription(searchText) {
+            // Debounce the filter for smooth, responsive search
+            clearTimeout(descriptionFilterTimeout);
+            descriptionFilterTimeout = setTimeout(() => {
+                selectedDescriptionFilter = searchText.trim().toLowerCase();
+                updateFilterUI();
+                updateTable();
+            }, 300); // 300ms delay for smooth typing experience
+        }
+
+        function clearDescriptionFilter() {
+            selectedDescriptionFilter = '';
+            const input = document.getElementById('description-filter-input');
+            if (input) {
+                input.value = '';
+            }
+            updateFilterUI();
+            updateTable();
+        }
+
         function isTaskActiveInDateRange(ticket, dateRange) {
             const today = new Date();
             today.setHours(0, 0, 0, 0);
@@ -1804,9 +1849,13 @@
             const initiativeFilterPassed = !selectedInitiativeFilter ||
                 ticket.initiative === selectedInitiativeFilter;
 
+            // V10: Check description filter (case-insensitive search)
+            const descriptionFilterPassed = !selectedDescriptionFilter ||
+                (ticket.description && ticket.description.toLowerCase().includes(selectedDescriptionFilter));
+
             // All filters must pass
             return personFilterPassed && statusFilterPassed && dateFilterPassed && 
-                   stakeholderFilterPassed && initiativeFilterPassed;
+                   stakeholderFilterPassed && initiativeFilterPassed && descriptionFilterPassed;
         }
 
         function getFilteredTickets() {

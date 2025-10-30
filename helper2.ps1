@@ -35,6 +35,9 @@ $script:DownloadsFolderPath = "$HOME/Downloads"
 # Import Initiative Report module
 . "$PSScriptRoot/initiative_report.ps1"
 
+# Import Initiative Progress module
+. "$PSScriptRoot/initiativesprogress.ps1"
+
 # Global state
 $global:V9Config = $null
 $global:V9ConfigPath = $null
@@ -2458,6 +2461,13 @@ function Invoke-Command {
         return
     }
     
+    # Task progress report (HTML with pie charts)
+    # Matches: taskprogress
+    if ($inputText -match "^taskprogress$") {
+        Show-InitiativeProgress
+        return
+    }
+    
     # Availability query
     if ($inputText -match "^availability$") {
         Show-MostAvailable
@@ -2752,6 +2762,10 @@ function Show-Help {
     Write-Host "    → Generate interactive HTML report for tasks by initiative(s)" -ForegroundColor Gray
     Write-Host "    → Select initiatives from numbered list (supports multiple)" -ForegroundColor Gray
     Write-Host "    → Includes filtering, CSV export, and clipboard copy features" -ForegroundColor Gray
+    Write-Host "  taskprogress" -ForegroundColor White
+    Write-Host "    → Generate task progress report with pie charts by initiative" -ForegroundColor Gray
+    Write-Host "    → Shows overall status distribution + per-person breakdown" -ForegroundColor Gray
+    Write-Host "    → Interactive charts using Chart.js" -ForegroundColor Gray
     Write-Host ""
     Write-Host "System:" -ForegroundColor Yellow
     Write-Host "  html | console | open" -ForegroundColor White
