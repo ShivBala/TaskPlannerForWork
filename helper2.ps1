@@ -38,6 +38,9 @@ $script:DownloadsFolderPath = "$HOME/Downloads"
 # Import Initiative Progress module
 . "$PSScriptRoot/initiativesprogress.ps1"
 
+# Import Initiative Progress (No External Libraries) module
+. "$PSScriptRoot/initprogressnolibs.ps1"
+
 # Global state
 $global:V9Config = $null
 $global:V9ConfigPath = $null
@@ -2468,6 +2471,13 @@ function Invoke-Command {
         return
     }
     
+    # Task progress report (No external libraries - pure HTML/CSS)
+    # Matches: taskprogressnolibs
+    if ($inputText -match "^taskprogressnolibs$") {
+        Show-InitiativeProgressNoLibs
+        return
+    }
+    
     # Availability query
     if ($inputText -match "^availability$") {
         Show-MostAvailable
@@ -2766,6 +2776,10 @@ function Show-Help {
     Write-Host "    → Generate task progress report with pie charts by initiative" -ForegroundColor Gray
     Write-Host "    → Shows overall status distribution + per-person breakdown" -ForegroundColor Gray
     Write-Host "    → Interactive charts using Chart.js" -ForegroundColor Gray
+    Write-Host "  taskprogressnolibs" -ForegroundColor White
+    Write-Host "    → Generate task progress report (NO external libraries)" -ForegroundColor Green
+    Write-Host "    → Pure HTML/CSS bar charts - workplace safe" -ForegroundColor Gray
+    Write-Host "    → Same functionality as taskprogress without Chart.js" -ForegroundColor Gray
     Write-Host ""
     Write-Host "System:" -ForegroundColor Yellow
     Write-Host "  html | console | open" -ForegroundColor White
