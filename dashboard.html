@@ -1,0 +1,1392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Dashboard - Initiative Progress Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Arial', sans-serif;
+            background: #E8ECEF;
+            color: #2C3E50;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #2C5F7C 0%, #34495E 100%);
+            color: white;
+            padding: 20px 32px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .header h1 {
+            font-size: 1.8em;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 0.9em;
+        }
+
+        /* Import Section */
+        .import-section {
+            background: white;
+            margin: 20px;
+            padding: 24px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .import-area {
+            border: 2px dashed #5A7A8F;
+            border-radius: 8px;
+            padding: 32px;
+            text-align: center;
+            background: #F8FAFB;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .import-area:hover {
+            border-color: #2C5F7C;
+            background: #EDF3F6;
+        }
+
+        .import-area.dragover {
+            border-color: #2C5F7C;
+            background: #E3EDF2;
+            transform: scale(1.02);
+        }
+
+        .import-icon {
+            font-size: 3em;
+            margin-bottom: 16px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95em;
+        }
+
+        .btn-primary {
+            background: #2C5F7C;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1C4A5F;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(44, 95, 124, 0.3);
+        }
+
+        .btn-secondary {
+            background: #5A7A8F;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4A6A7F;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 0.85em;
+        }
+
+        /* Initiative Selection */
+        .selection-section {
+            background: white;
+            margin: 20px;
+            padding: 24px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: none;
+        }
+
+        .selection-section.active {
+            display: block;
+        }
+
+        .selection-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #D5DBE0;
+        }
+
+        .selection-header h2 {
+            color: #2C5F7C;
+            font-size: 1.4em;
+        }
+
+        .selection-controls {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .search-box {
+            flex: 1;
+            padding: 10px 16px;
+            border: 1px solid #D5DBE0;
+            border-radius: 4px;
+            font-size: 0.95em;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #2C5F7C;
+            box-shadow: 0 0 0 3px rgba(44, 95, 124, 0.1);
+        }
+
+        .initiative-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 12px;
+            background: #F8FAFB;
+            border-radius: 6px;
+        }
+
+        .initiative-checkbox {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            background: white;
+            border: 1px solid #D5DBE0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .initiative-checkbox:hover {
+            border-color: #5A7A8F;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
+        }
+
+        .initiative-checkbox input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin-right: 12px;
+            cursor: pointer;
+        }
+
+        .initiative-info {
+            flex: 1;
+        }
+
+        .initiative-name {
+            font-weight: 600;
+            color: #2C3E50;
+            margin-bottom: 4px;
+        }
+
+        .initiative-meta {
+            font-size: 0.85em;
+            color: #5A6C7D;
+        }
+
+        .initiative-checkbox input[type="checkbox"]:checked + .initiative-info .initiative-name {
+            color: #2C5F7C;
+        }
+
+        /* Dashboard Section */
+        .dashboard-section {
+            display: none;
+            margin: 20px;
+            gap: 20px;
+        }
+
+        .dashboard-section.active {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+        }
+
+        /* Initiative Panel (Left) */
+        .initiative-panel {
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 20px;
+            max-height: calc(100vh - 180px);
+            overflow-y: auto;
+        }
+
+        .initiative-panel h3 {
+            color: #2C5F7C;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #D5DBE0;
+        }
+
+        .initiative-card {
+            padding: 16px;
+            margin-bottom: 12px;
+            background: #F8FAFB;
+            border: 2px solid #D5DBE0;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .initiative-card:hover {
+            border-color: #5A7A8F;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            transform: translateX(4px);
+        }
+
+        .initiative-card.selected {
+            border-color: #2C5F7C;
+            background: linear-gradient(135deg, #EDF5F9 0%, #F8FAFB 100%);
+            box-shadow: 0 4px 12px rgba(44, 95, 124, 0.2);
+        }
+
+        .initiative-card-title {
+            font-weight: 600;
+            color: #2C3E50;
+            margin-bottom: 8px;
+            font-size: 1.05em;
+        }
+
+        .initiative-card-stats {
+            display: flex;
+            gap: 12px;
+            font-size: 0.85em;
+            color: #5A6C7D;
+        }
+
+        .stat-badge {
+            background: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        /* Progress Panel (Right) */
+        .progress-panel {
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 24px;
+            max-height: calc(100vh - 180px);
+            overflow-y: auto;
+        }
+
+        .progress-empty {
+            text-align: center;
+            padding: 80px 20px;
+            color: #5A6C7D;
+        }
+
+        .progress-empty-icon {
+            font-size: 4em;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        .progress-content {
+            display: none;
+        }
+
+        .progress-content.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .progress-header {
+            margin-bottom: 24px;
+        }
+
+        .progress-title {
+            font-size: 1.6em;
+            color: #2C5F7C;
+            margin-bottom: 8px;
+        }
+
+        .progress-subtitle {
+            color: #5A6C7D;
+            font-size: 0.95em;
+        }
+
+        /* Chart Section */
+        .chart-section {
+            margin-bottom: 32px;
+            padding: 24px;
+            background: #F8FAFB;
+            border-radius: 6px;
+            border: 1px solid #D5DBE0;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #2C3E50;
+        }
+
+        .chart-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .chart-container {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+            justify-content: center;
+        }
+
+        .pie-chart {
+            position: relative;
+        }
+
+        .pie-svg {
+            filter: drop-shadow(0 4px 12px rgba(0,0,0,0.1));
+        }
+
+        .chart-legend {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 280px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #E5E9EC;
+            transition: all 0.2s ease;
+        }
+
+        .legend-item:hover {
+            border-color: #5A7A8F;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transform: translateX(4px);
+        }
+
+        .legend-color {
+            width: 24px;
+            height: 24px;
+            border-radius: 4px;
+            flex-shrink: 0;
+        }
+
+        .legend-label {
+            flex: 1;
+            font-weight: 500;
+            color: #2C3E50;
+            font-size: 0.95em;
+        }
+
+        .legend-value {
+            font-weight: 700;
+            color: #2C5F7C;
+            font-size: 1.1em;
+            margin-right: 8px;
+        }
+
+        .legend-percent {
+            font-size: 0.9em;
+            color: #5A6C7D;
+            background: #F0F2F5;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        /* Person Grid */
+        .person-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 24px;
+        }
+
+        .person-card {
+            background: white;
+            padding: 20px;
+            border-radius: 6px;
+            border: 1px solid #D5DBE0;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+        }
+
+        .person-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #E8ECEF;
+        }
+
+        .person-name {
+            font-weight: 600;
+            color: #2C3E50;
+        }
+
+        .person-task-count {
+            font-size: 0.85em;
+            color: #5A6C7D;
+            background: #F0F2F5;
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+
+        .person-chart {
+            text-align: center;
+        }
+
+        /* Status Colors (Banking Theme) */
+        .status-todo { background-color: #7BA3C7; }
+        .status-inprogress { background-color: #D4AF37; }
+        .status-done { background-color: #5F9E6E; }
+        .status-completed { background-color: #5F9E6E; }
+        .status-blocked { background-color: #C85A54; }
+        .status-paused { background-color: #9B7EBD; }
+        .status-closed { background-color: #8B9BA3; }
+        .status-unknown { background-color: #B8B8B8; }
+
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            display: none;
+            align-items: center;
+            gap: 12px;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        .notification.show {
+            display: flex;
+        }
+
+        .notification.success {
+            border-left: 4px solid #5F9E6E;
+        }
+
+        .notification.error {
+            border-left: 4px solid #C85A54;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .dashboard-section.active {
+                grid-template-columns: 1fr;
+            }
+
+            .initiative-panel {
+                max-height: 300px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .chart-container {
+                flex-direction: column;
+            }
+
+            .person-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>📊 Project Dashboard - Initiative Progress Tracker</h1>
+        <p>Interactive dashboard with exportable charts (PNG format)</p>
+    </div>
+
+    <!-- Import Section -->
+    <div class="import-section" id="importSection">
+        <div class="import-area" id="importArea">
+            <div class="import-icon">📁</div>
+            <h3>Import Project Configuration CSV</h3>
+            <p style="margin: 12px 0; color: #5A6C7D;">
+                Drag & drop your project_config_*.csv file here, or click to browse
+            </p>
+            <button class="btn btn-primary" onclick="document.getElementById('fileInput').click()">
+                Select CSV File
+            </button>
+            <input type="file" id="fileInput" accept=".csv" />
+        </div>
+    </div>
+
+    <!-- Initiative Selection -->
+    <div class="selection-section" id="selectionSection">
+        <div class="selection-header">
+            <h2>Select Initiatives for Dashboard</h2>
+            <button class="btn btn-primary" onclick="generateDashboard()">
+                Generate Dashboard
+            </button>
+        </div>
+
+        <div class="selection-controls">
+            <input type="text" class="search-box" id="searchBox" placeholder="🔍 Search initiatives..." />
+            <button class="btn btn-secondary" onclick="selectAll()">Select All</button>
+            <button class="btn btn-secondary" onclick="selectNone()">Clear All</button>
+        </div>
+
+        <div class="initiative-grid" id="initiativeGrid">
+            <!-- Initiative checkboxes will be populated here -->
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div class="dashboard-section" id="dashboardSection">
+        <!-- Left Panel: Initiative Cards -->
+        <div class="initiative-panel">
+            <h3>Selected Initiatives</h3>
+            <div id="initiativeCards">
+                <!-- Initiative cards will be populated here -->
+            </div>
+        </div>
+
+        <!-- Right Panel: Progress Details -->
+        <div class="progress-panel">
+            <div class="progress-empty" id="progressEmpty">
+                <div class="progress-empty-icon">👈</div>
+                <h3>Select an Initiative</h3>
+                <p>Click on an initiative card to view its progress details</p>
+            </div>
+            <div class="progress-content" id="progressContent">
+                <!-- Progress details will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div class="notification" id="notification">
+        <span id="notificationIcon">✓</span>
+        <span id="notificationText">Success!</span>
+    </div>
+
+    <script>
+        // Global data storage
+        let csvData = null;
+        let selectedInitiatives = [];
+        let currentInitiative = null;
+
+        // Status color mapping
+        const statusColors = {
+            'to do': '#7BA3C7',
+            'in progress': '#D4AF37',
+            'done': '#5F9E6E',
+            'completed': '#5F9E6E',
+            'blocked': '#C85A54',
+            'paused': '#9B7EBD',
+            'closed': '#8B9BA3',
+            'unknown': '#B8B8B8'
+        };
+
+        // Initialize file input and drag-drop
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('fileInput');
+            const importArea = document.getElementById('importArea');
+
+            fileInput.addEventListener('change', handleFileSelect);
+
+            // Drag and drop handlers
+            importArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                importArea.classList.add('dragover');
+            });
+
+            importArea.addEventListener('dragleave', () => {
+                importArea.classList.remove('dragover');
+            });
+
+            importArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                importArea.classList.remove('dragover');
+                if (e.dataTransfer.files.length) {
+                    handleFileSelect({ target: { files: e.dataTransfer.files } });
+                }
+            });
+
+            // Search box handler
+            document.getElementById('searchBox').addEventListener('input', filterInitiatives);
+        });
+
+        // Handle CSV file selection
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    parseCSV(e.target.result);
+                    showNotification('CSV file loaded successfully!', 'success');
+                } catch (error) {
+                    showNotification('Error parsing CSV: ' + error.message, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // Parse CSV content
+        function parseCSV(content) {
+            const lines = content.split('\n').map(line => line.trim()).filter(line => line);
+            
+            let section = '';
+            const initiatives = [];
+            const tickets = [];
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i];
+                
+                // Check for section headers
+                if (line.startsWith('SECTION,INITIATIVES')) {
+                    section = 'INITIATIVES';
+                    i++; // Skip header line
+                    continue;
+                } else if (line.startsWith('SECTION,TICKETS')) {
+                    section = 'TICKETS';
+                    i++; // Skip header line
+                    continue;
+                }
+
+                if (section === 'INITIATIVES' && line) {
+                    const init = parseCSVLine(line);
+                    if (init.length >= 2 && init[0] !== 'Name') {
+                        initiatives.push({
+                            name: init[0],
+                            creationDate: init[1] || '',
+                            startDate: init[2] || '',
+                            priority: init[3] || '',
+                            description: init[4] || ''
+                        });
+                    }
+                } else if (section === 'TICKETS' && line) {
+                    const ticket = parseCSVLine(line);
+                    if (ticket.length >= 10 && ticket[0] !== 'UUID') {
+                        tickets.push({
+                            uuid: ticket[0],
+                            id: ticket[1],
+                            description: ticket[2],
+                            startDate: ticket[3],
+                            size: ticket[4],
+                            priority: ticket[5],
+                            stakeholder: ticket[6],
+                            initiative: ticket[7],
+                            assignedTeam: ticket[8] ? ticket[8].split(';').map(t => t.trim()) : [],
+                            status: ticket[9] || 'Unknown'
+                        });
+                    }
+                }
+            }
+
+            csvData = { initiatives, tickets };
+            populateInitiativeSelection();
+        }
+
+        // Parse CSV line handling quoted fields
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current.trim());
+            return result;
+        }
+
+        // Populate initiative selection checkboxes
+        function populateInitiativeSelection() {
+            const grid = document.getElementById('initiativeGrid');
+            grid.innerHTML = '';
+
+            csvData.initiatives.forEach((init, index) => {
+                const taskCount = csvData.tickets.filter(t => t.initiative === init.name).length;
+                
+                const checkbox = document.createElement('label');
+                checkbox.className = 'initiative-checkbox';
+                checkbox.innerHTML = `
+                    <input type="checkbox" id="init-${index}" value="${init.name}" />
+                    <div class="initiative-info">
+                        <div class="initiative-name">${init.name}</div>
+                        <div class="initiative-meta">
+                            ${taskCount} tasks • Start: ${init.startDate || 'Not set'}
+                        </div>
+                    </div>
+                `;
+                grid.appendChild(checkbox);
+            });
+
+            // Show selection section
+            document.getElementById('importSection').style.display = 'none';
+            document.getElementById('selectionSection').classList.add('active');
+        }
+
+        // Filter initiatives based on search
+        function filterInitiatives() {
+            const search = document.getElementById('searchBox').value.toLowerCase();
+            const checkboxes = document.querySelectorAll('.initiative-checkbox');
+            
+            checkboxes.forEach(checkbox => {
+                const name = checkbox.querySelector('.initiative-name').textContent.toLowerCase();
+                checkbox.style.display = name.includes(search) ? 'flex' : 'none';
+            });
+        }
+
+        // Select all initiatives
+        function selectAll() {
+            document.querySelectorAll('.initiative-checkbox input[type="checkbox"]').forEach(cb => {
+                if (cb.parentElement.style.display !== 'none') {
+                    cb.checked = true;
+                }
+            });
+        }
+
+        // Clear all selections
+        function selectNone() {
+            document.querySelectorAll('.initiative-checkbox input[type="checkbox"]').forEach(cb => {
+                cb.checked = false;
+            });
+        }
+
+        // Generate dashboard with selected initiatives
+        function generateDashboard() {
+            const checkboxes = document.querySelectorAll('.initiative-checkbox input[type="checkbox"]:checked');
+            
+            if (checkboxes.length === 0) {
+                showNotification('Please select at least one initiative', 'error');
+                return;
+            }
+
+            selectedInitiatives = Array.from(checkboxes).map(cb => cb.value);
+            
+            // Populate initiative cards
+            const cardsContainer = document.getElementById('initiativeCards');
+            cardsContainer.innerHTML = '';
+
+            selectedInitiatives.forEach(initName => {
+                const init = csvData.initiatives.find(i => i.name === initName);
+                const tasks = csvData.tickets.filter(t => t.initiative === initName);
+                
+                const card = document.createElement('div');
+                card.className = 'initiative-card';
+                card.onclick = () => showInitiativeProgress(initName);
+                card.innerHTML = `
+                    <div class="initiative-card-title">${initName}</div>
+                    <div class="initiative-card-stats">
+                        <span class="stat-badge">${tasks.length} tasks</span>
+                        <span class="stat-badge">${init.startDate}</span>
+                    </div>
+                `;
+                cardsContainer.appendChild(card);
+            });
+
+            // Show dashboard section
+            document.getElementById('selectionSection').classList.remove('active');
+            document.getElementById('dashboardSection').classList.add('active');
+            
+            // Select first initiative by default
+            if (selectedInitiatives.length > 0) {
+                showInitiativeProgress(selectedInitiatives[0]);
+            }
+
+            showNotification(`Dashboard generated with ${selectedInitiatives.length} initiative(s)`, 'success');
+        }
+
+        // Show progress for selected initiative
+        function showInitiativeProgress(initName) {
+            currentInitiative = initName;
+            
+            // Update card selection
+            document.querySelectorAll('.initiative-card').forEach(card => {
+                card.classList.remove('selected');
+                if (card.querySelector('.initiative-card-title').textContent === initName) {
+                    card.classList.add('selected');
+                }
+            });
+
+            // Get tasks for this initiative
+            const tasks = csvData.tickets.filter(t => t.initiative === initName);
+            
+            // Calculate overall status distribution
+            const statusCounts = {};
+            tasks.forEach(task => {
+                const status = (task.status || 'Unknown').trim();
+                statusCounts[status] = (statusCounts[status] || 0) + 1;
+            });
+
+            // Calculate per-person distribution
+            const personData = {};
+            tasks.forEach(task => {
+                const assignees = task.assignedTeam.length > 0 ? task.assignedTeam : ['Unassigned'];
+                assignees.forEach(person => {
+                    if (!personData[person]) {
+                        personData[person] = {};
+                    }
+                    const status = (task.status || 'Unknown').trim();
+                    personData[person][status] = (personData[person][status] || 0) + 1;
+                });
+            });
+
+            // Calculate completion metrics
+            const completedCount = (statusCounts['Done'] || 0) + (statusCounts['Completed'] || 0) + (statusCounts['Closed'] || 0);
+            const completionRate = ((completedCount / tasks.length) * 100).toFixed(1);
+            const inProgressCount = statusCounts['In Progress'] || 0;
+            const blockedCount = statusCounts['Blocked'] || 0;
+
+            // Render progress content
+            const progressContent = document.getElementById('progressContent');
+            progressContent.innerHTML = `
+                <div class="progress-header">
+                    <h2 class="progress-title">${initName}</h2>
+                    <p class="progress-subtitle">${tasks.length} total tasks • ${Object.keys(personData).length} team members</p>
+                    
+                    <!-- Quick Stats -->
+                    <div style="display: flex; gap: 16px; margin-top: 16px; flex-wrap: wrap;">
+                        <div style="background: linear-gradient(135deg, #5F9E6E 0%, #4A8A5A 100%); color: white; padding: 12px 20px; border-radius: 6px; flex: 1; min-width: 150px;">
+                            <div style="font-size: 0.85em; opacity: 0.9;">Completion Rate</div>
+                            <div style="font-size: 1.8em; font-weight: bold;">${completionRate}%</div>
+                            <div style="font-size: 0.85em; opacity: 0.9;">${completedCount} completed</div>
+                        </div>
+                        <div style="background: linear-gradient(135deg, #D4AF37 0%, #C4A030 100%); color: white; padding: 12px 20px; border-radius: 6px; flex: 1; min-width: 150px;">
+                            <div style="font-size: 0.85em; opacity: 0.9;">In Progress</div>
+                            <div style="font-size: 1.8em; font-weight: bold;">${inProgressCount}</div>
+                            <div style="font-size: 0.85em; opacity: 0.9;">tasks active</div>
+                        </div>
+                        ${blockedCount > 0 ? `
+                        <div style="background: linear-gradient(135deg, #C85A54 0%, #B84A44 100%); color: white; padding: 12px 20px; border-radius: 6px; flex: 1; min-width: 150px;">
+                            <div style="font-size: 0.85em; opacity: 0.9;">⚠️ Blocked</div>
+                            <div style="font-size: 1.8em; font-weight: bold;">${blockedCount}</div>
+                            <div style="font-size: 0.85em; opacity: 0.9;">needs attention</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <!-- Overall Status Chart -->
+                <div class="chart-section">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Overall Task Status Distribution</h3>
+                        <div class="chart-actions">
+                            <button class="btn btn-secondary btn-small" onclick="copyChartToClipboard('overallChart')">
+                                📋 Copy
+                            </button>
+                            <button class="btn btn-secondary btn-small" onclick="downloadChart('overallChart', '${initName}_overall')">
+                                💾 PNG
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chart-container" id="overallChart-container">
+                        ${generatePieChart('overallChart', statusCounts, 240)}
+                        ${generateLegend(statusCounts, tasks.length, 'overallChart')}
+                    </div>
+                </div>
+
+                <!-- Per-Person Charts -->
+                <div class="chart-section">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Individual Team Member Breakdown</h3>
+                    </div>
+                    <div class="person-grid">
+                        ${generatePersonCards(personData)}
+                    </div>
+                </div>
+            `;
+
+            // Show progress panel
+            document.getElementById('progressEmpty').style.display = 'none';
+            progressContent.classList.add('active');
+        }
+
+        // Generate SVG pie chart
+        function generatePieChart(id, data, size) {
+            const total = Object.values(data).reduce((sum, val) => sum + val, 0);
+            if (total === 0) return '<p>No data</p>';
+
+            const cx = size / 2;
+            const cy = size / 2;
+            const radius = size / 2 - 10;
+            const labelRadius = radius * 0.65; // Position for percentage labels
+
+            let currentAngle = -90;
+            let paths = '';
+            let labels = '';
+
+            Object.entries(data).forEach(([status, count]) => {
+                const percentage = count / total;
+                const angle = percentage * 360;
+                const endAngle = currentAngle + angle;
+
+                const x1 = cx + radius * Math.cos((currentAngle * Math.PI) / 180);
+                const y1 = cy + radius * Math.sin((currentAngle * Math.PI) / 180);
+                const x2 = cx + radius * Math.cos((endAngle * Math.PI) / 180);
+                const y2 = cy + radius * Math.sin((endAngle * Math.PI) / 180);
+
+                const largeArc = angle > 180 ? 1 : 0;
+
+                const color = getStatusColor(status);
+                paths += `<path d="M ${cx} ${cy} L ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2} Z" fill="${color}" stroke="white" stroke-width="2" />`;
+
+                // Add percentage label if slice is large enough (> 5%)
+                if (percentage > 0.05) {
+                    const midAngle = currentAngle + angle / 2;
+                    const labelX = cx + labelRadius * Math.cos((midAngle * Math.PI) / 180);
+                    const labelY = cy + labelRadius * Math.sin((midAngle * Math.PI) / 180);
+                    const percentText = (percentage * 100).toFixed(1) + '%';
+                    
+                    // Calculate proper text dimensions (approximate: 8px per character for 14px bold font)
+                    const textWidth = percentText.length * 8.5;
+                    const textHeight = 20;
+                    const padding = 6;
+                    
+                    // Add white background for better readability
+                    labels += `
+                        <rect x="${labelX - (textWidth + padding)/2}" y="${labelY - textHeight/2}" 
+                              width="${textWidth + padding}" height="${textHeight}" 
+                              fill="white" opacity="0.95" rx="4" 
+                              stroke="#E8ECEF" stroke-width="1" />
+                        <text x="${labelX}" y="${labelY + 1}" 
+                              text-anchor="middle" dominant-baseline="middle" 
+                              font-size="14" font-weight="bold" fill="#2C3E50"
+                              font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Arial, sans-serif">
+                            ${percentText}
+                        </text>
+                    `;
+                }
+
+                currentAngle = endAngle;
+            });
+
+            // Add center label with total count
+            const centerLabel = `
+                <circle cx="${cx}" cy="${cy}" r="${radius * 0.35}" fill="white" opacity="0.95" />
+                <text x="${cx}" y="${cy - 8}" text-anchor="middle" font-size="18" font-weight="bold" fill="#2C5F7C">
+                    ${total}
+                </text>
+                <text x="${cx}" y="${cy + 8}" text-anchor="middle" font-size="12" fill="#5A6C7D">
+                    Tasks
+                </text>
+            `;
+
+            return `
+                <div class="pie-chart">
+                    <svg id="${id}" class="pie-svg" width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
+                        ${paths}
+                        ${labels}
+                        ${centerLabel}
+                    </svg>
+                </div>
+            `;
+        }
+
+        // Generate legend for pie chart
+        function generateLegend(data, total, chartId) {
+            // Sort by count descending
+            const sortedData = Object.entries(data).sort((a, b) => b[1] - a[1]);
+            
+            let html = `<div class="chart-legend" id="${chartId}-legend">`;
+            
+            sortedData.forEach(([status, count]) => {
+                const percentage = ((count / total) * 100).toFixed(1);
+                const color = getStatusColor(status);
+                
+                html += `
+                    <div class="legend-item">
+                        <div class="legend-color" style="background-color: ${color}; box-shadow: 0 2px 4px rgba(0,0,0,0.15);"></div>
+                        <span class="legend-label">${status}</span>
+                        <div style="flex: 1; text-align: right;">
+                            <span class="legend-value">${count}</span>
+                            <span class="legend-percent">${percentage}%</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            // Add total row
+            html += `
+                <div class="legend-item" style="border-top: 2px solid #D5DBE0; margin-top: 8px; padding-top: 12px; font-weight: 700; background: linear-gradient(135deg, #F8FAFB 0%, #EDF3F6 100%);">
+                    <div class="legend-color" style="background: linear-gradient(135deg, #2C5F7C 0%, #34495E 100%);"></div>
+                    <span class="legend-label">Total</span>
+                    <div style="flex: 1; text-align: right;">
+                        <span class="legend-value">${total}</span>
+                        <span class="legend-percent">100%</span>
+                    </div>
+                </div>
+            `;
+            
+            html += '</div>';
+            return html;
+        }
+
+        // Get status icon
+        function getStatusIcon(status) {
+            const normalized = status.toLowerCase().trim();
+            const icons = {
+                'to do': '📋',
+                'in progress': '⚙️',
+                'done': '✅',
+                'completed': '✅',
+                'blocked': '🚫',
+                'paused': '⏸️',
+                'closed': '🔒',
+                'unknown': '❓'
+            };
+            return icons[normalized] || '📌';
+        }
+
+        // Generate person cards with small pie charts
+        function generatePersonCards(personData) {
+            let html = '';
+            
+            // Sort by total tasks descending
+            const sortedPeople = Object.entries(personData).sort((a, b) => {
+                const totalA = Object.values(a[1]).reduce((sum, val) => sum + val, 0);
+                const totalB = Object.values(b[1]).reduce((sum, val) => sum + val, 0);
+                return totalB - totalA;
+            });
+            
+            sortedPeople.forEach(([person, statuses]) => {
+                const totalTasks = Object.values(statuses).reduce((sum, val) => sum + val, 0);
+                const chartId = `chart-${person.replace(/\s/g, '-')}`;
+                
+                // Calculate completed percentage
+                const completed = (statuses['Done'] || 0) + (statuses['Completed'] || 0) + (statuses['Closed'] || 0);
+                const completionRate = ((completed / totalTasks) * 100).toFixed(0);
+                
+                // Generate mini legend
+                const topStatuses = Object.entries(statuses)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 3);
+                
+                let miniLegend = '<div style="margin-top: 12px; font-size: 0.85em; text-align: left;">';
+                topStatuses.forEach(([status, count]) => {
+                    const color = getStatusColor(status);
+                    const pct = ((count / totalTasks) * 100).toFixed(0);
+                    miniLegend += `
+                        <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 4px;">
+                            <div style="width: 12px; height: 12px; background: ${color}; border-radius: 2px;"></div>
+                            <span style="color: #5A6C7D;">${status}:</span>
+                            <span style="font-weight: 600; color: #2C3E50;">${count} (${pct}%)</span>
+                        </div>
+                    `;
+                });
+                miniLegend += '</div>';
+                
+                html += `
+                    <div class="person-card">
+                        <div class="person-card-header">
+                            <div>
+                                <div class="person-name">👤 ${person}</div>
+                                <div style="font-size: 0.8em; color: #5A6C7D; margin-top: 2px;">
+                                    ${completionRate}% complete
+                                </div>
+                            </div>
+                            <span class="person-task-count">${totalTasks} tasks</span>
+                        </div>
+                        <div class="person-chart">
+                            ${generatePieChart(chartId, statuses, 160)}
+                            ${miniLegend}
+                            <div style="margin-top: 12px; display: flex; gap: 8px; justify-content: center; padding-top: 12px; border-top: 1px solid #E8ECEF;">
+                                <button class="btn btn-secondary btn-small" onclick="copyChartToClipboard('${chartId}')" title="Copy to clipboard">
+                                    📋 Copy
+                                </button>
+                                <button class="btn btn-secondary btn-small" onclick="downloadChart('${chartId}', '${currentInitiative}_${person}')" title="Download as PNG">
+                                    💾 Save
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            return html;
+        }
+
+        // Get status color
+        function getStatusColor(status) {
+            const normalized = status.toLowerCase().trim();
+            return statusColors[normalized] || statusColors['unknown'];
+        }
+
+        // Download chart as PNG
+        async function downloadChart(chartId, filename) {
+            try {
+                const canvas = await createChartCanvas(chartId);
+                canvas.toBlob(function(blob) {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${filename.replace(/\s/g, '_')}.png`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                    showNotification('Chart downloaded as PNG', 'success');
+                });
+            } catch (err) {
+                showNotification('Failed to download chart: ' + err.message, 'error');
+            }
+        }
+
+        // Copy chart to clipboard
+        async function copyChartToClipboard(chartId) {
+            try {
+                const canvas = await createChartCanvas(chartId);
+                canvas.toBlob(async function(blob) {
+                    try {
+                        await navigator.clipboard.write([
+                            new ClipboardItem({ 'image/png': blob })
+                        ]);
+                        showNotification('Chart copied to clipboard!', 'success');
+                    } catch (err) {
+                        showNotification('Failed to copy chart. Please try download instead.', 'error');
+                    }
+                });
+            } catch (err) {
+                showNotification('Failed to copy chart: ' + err.message, 'error');
+            }
+        }
+
+        // Create canvas with chart and legend
+        async function createChartCanvas(chartId) {
+            return new Promise((resolve, reject) => {
+                const svg = document.getElementById(chartId);
+                if (!svg) {
+                    reject(new Error('Chart not found'));
+                    return;
+                }
+
+                // Check if this is the overall chart (which has a legend)
+                const legendElement = document.getElementById(chartId + '-legend');
+                
+                if (legendElement) {
+                    // Export chart with legend using html2canvas-like approach
+                    const container = document.getElementById(chartId + '-container');
+                    if (!container) {
+                        reject(new Error('Container not found'));
+                        return;
+                    }
+                    
+                    // Use html2canvas library or manual canvas rendering
+                    captureContainerAsCanvas(container).then(resolve).catch(reject);
+                } else {
+                    // Export just the SVG chart (for person cards)
+                    const svgData = new XMLSerializer().serializeToString(svg);
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const img = new Image();
+
+                    canvas.width = svg.width.baseVal.value * 2;
+                    canvas.height = svg.height.baseVal.value * 2;
+
+                    img.onload = function() {
+                        ctx.fillStyle = 'white';
+                        ctx.fillRect(0, 0, canvas.width, canvas.height);
+                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                        resolve(canvas);
+                    };
+
+                    img.onerror = function() {
+                        reject(new Error('Failed to load SVG'));
+                    };
+
+                    img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+                }
+            });
+        }
+
+        // Capture HTML container as canvas (including legend)
+        async function captureContainerAsCanvas(container) {
+            return new Promise((resolve, reject) => {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                // Set canvas size based on container
+                const rect = container.getBoundingClientRect();
+                canvas.width = rect.width * 2; // 2x for better quality
+                canvas.height = rect.height * 2;
+                
+                ctx.scale(2, 2);
+                ctx.fillStyle = 'white';
+                ctx.fillRect(0, 0, rect.width, rect.height);
+                
+                // Get the SVG
+                const svg = container.querySelector('svg');
+                if (!svg) {
+                    reject(new Error('SVG not found'));
+                    return;
+                }
+                
+                const svgData = new XMLSerializer().serializeToString(svg);
+                const img = new Image();
+                
+                img.onload = function() {
+                    // Draw SVG on the left
+                    const svgWidth = svg.width.baseVal.value;
+                    const svgHeight = svg.height.baseVal.value;
+                    ctx.drawImage(img, 20, (rect.height - svgHeight) / 2, svgWidth, svgHeight);
+                    
+                    // Draw legend on the right
+                    const legend = container.querySelector('.chart-legend');
+                    if (legend) {
+                        drawLegendToCanvas(ctx, legend, svgWidth + 50, 20);
+                    }
+                    
+                    resolve(canvas);
+                };
+                
+                img.onerror = function() {
+                    reject(new Error('Failed to load SVG'));
+                };
+                
+                img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+            });
+        }
+
+        // Draw legend to canvas
+        function drawLegendToCanvas(ctx, legend, x, y) {
+            const legendItems = legend.querySelectorAll('.legend-item');
+            let offsetY = y;
+            
+            ctx.font = '14px "Segoe UI", -apple-system, BlinkMacSystemFont, Arial, sans-serif';
+            
+            legendItems.forEach((item, index) => {
+                const colorBox = item.querySelector('.legend-color');
+                const label = item.querySelector('.legend-label');
+                const value = item.querySelector('.legend-value');
+                const percent = item.querySelector('.legend-percent');
+                
+                if (!colorBox || !label) return;
+                
+                const bgColor = window.getComputedStyle(colorBox).backgroundColor;
+                const isTotal = item.style.borderTop && item.style.borderTop.includes('2px');
+                
+                // Draw background
+                ctx.fillStyle = isTotal ? '#F8FAFB' : 'white';
+                ctx.fillRect(x, offsetY, 280, 40);
+                
+                // Draw border
+                ctx.strokeStyle = '#E5E9EC';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x, offsetY, 280, 40);
+                
+                // Draw color box
+                ctx.fillStyle = bgColor;
+                ctx.fillRect(x + 10, offsetY + 10, 24, 24);
+                ctx.strokeStyle = '#E5E9EC';
+                ctx.strokeRect(x + 10, offsetY + 10, 24, 24);
+                
+                // Draw label
+                ctx.fillStyle = '#2C3E50';
+                ctx.font = isTotal ? 'bold 14px "Segoe UI"' : '14px "Segoe UI"';
+                ctx.fillText(label.textContent.trim(), x + 45, offsetY + 24);
+                
+                // Draw value and percentage
+                if (value) {
+                    ctx.fillStyle = '#2C5F7C';
+                    ctx.font = 'bold 16px "Segoe UI"';
+                    ctx.textAlign = 'right';
+                    ctx.fillText(value.textContent.trim(), x + 210, offsetY + 24);
+                }
+                
+                if (percent) {
+                    ctx.fillStyle = '#5A6C7D';
+                    ctx.font = '13px "Segoe UI"';
+                    ctx.fillText(percent.textContent.trim(), x + 265, offsetY + 24);
+                }
+                
+                ctx.textAlign = 'left';
+                offsetY += 44;
+                
+                // Add spacing before total
+                if (index === legendItems.length - 2) {
+                    offsetY += 8;
+                }
+            });
+        }
+
+        // Show notification
+        function showNotification(message, type) {
+            const notification = document.getElementById('notification');
+            const icon = document.getElementById('notificationIcon');
+            const text = document.getElementById('notificationText');
+
+            icon.textContent = type === 'success' ? '✓' : '⚠';
+            text.textContent = message;
+            notification.className = `notification ${type} show`;
+
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
