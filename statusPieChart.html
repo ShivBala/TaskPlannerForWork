@@ -1,0 +1,1646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chart Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #003d5c 0%, #001f3f 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #003d5c 0%, #001f3f 100%);
+            color: white;
+            padding: 25px 30px;
+            text-align: center;
+            border-bottom: 3px solid #d4af37;
+        }
+
+        .header h1 {
+            font-size: 1.8em;
+            margin: 0;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 30px;
+            padding: 30px;
+        }
+
+        .controls-panel {
+            background: #f8f9fa;
+            border-radius: 4px;
+            padding: 25px;
+            border: 1px solid #e9ecef;
+        }
+
+        .control-section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .control-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .control-section h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-section h3::before {
+            content: '▸';
+            color: #003d5c;
+            font-weight: bold;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.95em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #003d5c;
+            color: white;
+            box-shadow: 0 2px 4px rgba(0, 61, 92, 0.2);
+        }
+
+        .btn-primary:hover {
+            background: #002a42;
+            box-shadow: 0 3px 6px rgba(0, 61, 92, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+        }
+
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #138496;
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            border-radius: 6px;
+            transition: background 0.2s ease;
+        }
+
+        .checkbox-item:hover {
+            background: rgba(0, 61, 92, 0.05);
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: #003d5c;
+        }
+
+        .checkbox-item label {
+            cursor: pointer;
+            font-size: 1em;
+            color: #495057;
+            user-select: none;
+        }
+
+        .color-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .color-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #dee2e6;
+        }
+
+        .color-item label {
+            flex: 1;
+            font-size: 0.95em;
+            color: #495057;
+        }
+
+        .color-item input[type="color"] {
+            width: 50px;
+            height: 35px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .chart-area {
+            background: white;
+            border-radius: 4px;
+            padding: 30px;
+            border: 1px solid #e9ecef;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 700px;
+        }
+
+        .chart-title {
+            font-size: 2em;
+            font-weight: bold;
+            color: #003d5c;
+            margin-bottom: 30px;
+            text-align: center;
+            display: none;
+        }
+
+        #chartCanvas {
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 4px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .modal-header h2 {
+            color: #333;
+            font-size: 1.5em;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #6c757d;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: #f8f9fa;
+            color: #333;
+        }
+
+        .tally-status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+        }
+
+        .tally-status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+
+        .tally-status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+
+        .tally-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .tally-table th,
+        .tally-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .tally-table th {
+            background: #f8f9fa;
+            color: #495057;
+            font-weight: 600;
+        }
+
+        .tally-table input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+
+        .tally-table input[type="number"]:focus {
+            outline: none;
+            border-color: #003d5c;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding-top: 20px;
+            border-top: 2px solid #dee2e6;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .no-data {
+            color: #6c757d;
+            font-size: 1.2em;
+            text-align: center;
+            padding: 50px;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .controls-panel {
+                order: 2;
+            }
+
+            .chart-area {
+                order: 1;
+            }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #003d5c;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Chart Generator</h1>
+        </div>
+
+        <div class="main-content">
+            <!-- Controls Panel -->
+            <div class="controls-panel">
+                <!-- Action Buttons -->
+                <div class="control-section">
+                    <h3>Actions</h3>
+                    <div class="action-buttons">
+                        <input type="file" id="csvInput" accept=".csv" />
+                        <button class="btn btn-primary" onclick="importCSV()">
+                            📂 Import CSV
+                        </button>
+                        <button class="btn btn-success" onclick="showCreateChartModal()">
+                            ✨ Create Chart
+                        </button>
+                        <button class="btn btn-info" onclick="exportToCSV()" id="exportCsvBtn" style="display: none;">
+                            📊 Export to CSV
+                        </button>
+                        <button class="btn btn-info" onclick="copyAsPNG()">
+                            🖼️ Copy as PNG
+                        </button>
+                        <button class="btn btn-info" onclick="copyAsSVG()">
+                            📄 Copy SVG Code
+                        </button>
+                        <button class="btn btn-secondary" onclick="downloadAsSVG()">
+                            💾 Download SVG
+                        </button>
+                        <button class="btn btn-secondary" onclick="downloadAsPNG()">
+                            💾 Download PNG
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Display Options -->
+                <div class="control-section">
+                    <h3>Display Options</h3>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="showCount" checked onchange="generateChart()">
+                            <label for="showCount">Show Count</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="showPercentage" checked onchange="generateChart()">
+                            <label for="showPercentage">Show Percentage</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="showLegend" checked onchange="generateChart()">
+                            <label for="showLegend">Show Legend</label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Color Controls -->
+                <div class="control-section" id="colorControlsSection" style="display: none;">
+                    <h3>Colors</h3>
+                    <div class="color-controls" id="colorControls"></div>
+                    <button class="btn btn-warning" onclick="resetColors()" style="margin-top: 15px;">
+                        🔄 Reset Colors
+                    </button>
+                </div>
+
+                <!-- Shadow Color -->
+                <div class="control-section">
+                    <h3>Label Shadow</h3>
+                    <div class="color-item">
+                        <label>Shadow Color</label>
+                        <input type="color" id="shadowColor" value="#000000" onchange="generateChart()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Area -->
+            <div class="chart-area">
+                <div class="chart-title" id="chartTitle">Status</div>
+                <canvas id="chartCanvas" width="900" height="700"></canvas>
+                <div class="no-data" id="noData">
+                    Import a CSV file to get started
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tally Modal -->
+    <div class="modal-overlay" id="tallyModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>⚠️ Data Validation</h2>
+                <button class="modal-close" onclick="closeTallyModal()">×</button>
+            </div>
+
+            <div class="tally-status" id="tallyStatus">
+                Outstanding: <span id="tallyDifference">0</span>
+            </div>
+
+            <table class="tally-table">
+                <thead>
+                    <tr>
+                        <th>Column</th>
+                        <th>Value</th>
+                    </tr>
+                </thead>
+                <tbody id="tallyTableBody"></tbody>
+            </table>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeTallyModal()">Cancel</button>
+                <button class="btn btn-success" id="applyTallyBtn" onclick="applyTallyChanges()" disabled>
+                    Apply Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Chart Modal -->
+    <div class="modal-overlay" id="createChartModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>✨ Create New Chart</h2>
+                <button class="modal-close" onclick="closeCreateChartModal()">×</button>
+            </div>
+
+            <div style="padding: 20px;">
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #495057;">Chart Title</label>
+                    <input type="text" id="newChartTitle" placeholder="Enter chart title" 
+                           style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px; font-size: 14px;">
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #495057;">Number of Categories</label>
+                    <input type="number" id="numCategories" min="1" max="20" value="5" 
+                           onchange="generateCategoryInputs()"
+                           style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px; font-size: 14px;">
+                </div>
+
+                <div id="categoryInputsContainer" style="max-height: 400px; overflow-y: auto;"></div>
+
+                <div class="tally-status" id="createChartTallyStatus" style="display: none; margin-top: 15px;">
+                    Outstanding: <span id="createChartTallyDifference">0</span>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeCreateChartModal()">Cancel</button>
+                <button class="btn btn-success" id="createChartBtn" onclick="createChartFromInputs()">
+                    Create Chart
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global state
+        let chartData = null;
+        let defaultColors = [
+            '#28a745', '#dc3545', '#ffc107', '#6c757d', '#fd7e14',
+            '#20c997', '#17a2b8', '#6f42c1', '#e83e8c', '#007bff'
+        ];
+        let currentColors = [...defaultColors];
+
+        // Import CSV
+        function importCSV() {
+            document.getElementById('csvInput').click();
+        }
+
+        document.getElementById('csvInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                parseCSV(event.target.result);
+            };
+            reader.readAsText(file);
+        });
+
+        // Parse CSV
+        function parseCSV(csvText) {
+            // Handle different line endings (Windows \r\n, Unix \n, Mac \r)
+            const lines = csvText.trim().split(/\r?\n/).filter(line => line.trim().length > 0);
+            
+            console.log('Lines found:', lines.length);
+            console.log('Lines:', lines);
+            
+            if (lines.length < 2) {
+                alert('CSV file must have at least 2 rows (header and data)');
+                return;
+            }
+
+            const headers = lines[0].split(',').map(h => h.trim());
+            const values = lines[1].split(',').map(v => v.trim());
+
+            if (headers.length < 3 || values.length < 3) {
+                alert('CSV must have at least 3 columns (Initiative Name, Total, and at least one data column)');
+                return;
+            }
+
+            // Check for colors row (optional third row)
+            let colors = null;
+            if (lines.length >= 3) {
+                const colorRow = lines[2].split(',').map(c => c.trim());
+                if (colorRow[0].toLowerCase() === 'colors') {
+                    colors = colorRow.slice(2); // Skip "Colors" and Total column
+                    console.log('Colors found:', colors);
+                }
+            }
+
+            // Parse data
+            const title = values[0] || 'Status';
+            const total = parseFloat(values[1]) || 0;
+            const dataColumns = [];
+
+            for (let i = 2; i < headers.length; i++) {
+                const value = parseFloat(values[i]) || 0;
+                dataColumns.push({
+                    name: headers[i],
+                    value: value,
+                    originalValue: value
+                });
+            }
+
+            // Calculate sum
+            const sum = dataColumns.reduce((acc, col) => acc + col.value, 0);
+
+            // Store data
+            chartData = {
+                title: title,
+                total: total,
+                columns: dataColumns,
+                sum: sum
+            };
+
+            // Apply colors if present
+            if (colors && colors.length > 0) {
+                currentColors = [...defaultColors]; // Start with defaults
+                colors.forEach((color, index) => {
+                    if (color && color.startsWith('#')) {
+                        currentColors[index] = color;
+                    }
+                });
+                console.log('Applied colors:', currentColors);
+            } else {
+                // Reset to default colors
+                currentColors = [...defaultColors];
+            }
+
+            // Check if tally matches
+            if (Math.abs(sum - total) > 0.01) {
+                showTallyModal();
+            } else {
+                setupColorControls();
+                generateChart();
+                // Show export button
+                document.getElementById('exportCsvBtn').style.display = 'block';
+            }
+        }
+
+        // Show Tally Modal
+        function showTallyModal() {
+            const modal = document.getElementById('tallyModal');
+            const tbody = document.getElementById('tallyTableBody');
+            const statusDiv = document.getElementById('tallyStatus');
+            const differenceSpan = document.getElementById('tallyDifference');
+
+            tbody.innerHTML = '';
+
+            // Add Total row
+            const totalRow = document.createElement('tr');
+            totalRow.innerHTML = `
+                <td><strong>Total (Expected)</strong></td>
+                <td><input type="number" value="${chartData.total}" id="totalInput" onchange="updateTally()" /></td>
+            `;
+            tbody.appendChild(totalRow);
+
+            // Add data column rows
+            chartData.columns.forEach((col, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${col.name}</td>
+                    <td><input type="number" value="${col.value}" id="col_${index}" onchange="updateTally()" /></td>
+                `;
+                tbody.appendChild(row);
+            });
+
+            updateTally();
+            modal.classList.add('active');
+        }
+
+        // Update Tally
+        function updateTally() {
+            const total = parseFloat(document.getElementById('totalInput').value) || 0;
+            let sum = 0;
+
+            chartData.columns.forEach((col, index) => {
+                const value = parseFloat(document.getElementById(`col_${index}`).value) || 0;
+                sum += value;
+            });
+
+            const difference = total - sum;
+            const statusDiv = document.getElementById('tallyStatus');
+            const differenceSpan = document.getElementById('tallyDifference');
+            const applyBtn = document.getElementById('applyTallyBtn');
+
+            differenceSpan.textContent = difference.toFixed(2);
+
+            if (Math.abs(difference) < 0.01) {
+                statusDiv.className = 'tally-status success';
+                statusDiv.innerHTML = '✅ All values tally correctly!';
+                applyBtn.disabled = false;
+            } else {
+                statusDiv.className = 'tally-status error';
+                statusDiv.innerHTML = `⚠️ Outstanding: <span id="tallyDifference">${difference.toFixed(2)}</span>`;
+                applyBtn.disabled = true;
+            }
+        }
+
+        // Apply Tally Changes
+        function applyTallyChanges() {
+            chartData.total = parseFloat(document.getElementById('totalInput').value) || 0;
+            
+            chartData.columns.forEach((col, index) => {
+                col.value = parseFloat(document.getElementById(`col_${index}`).value) || 0;
+            });
+
+            chartData.sum = chartData.columns.reduce((acc, col) => acc + col.value, 0);
+
+            closeTallyModal();
+            setupColorControls();
+            generateChart();
+            
+            // Show export button
+            document.getElementById('exportCsvBtn').style.display = 'block';
+        }
+
+        // Close Tally Modal
+        function closeTallyModal() {
+            document.getElementById('tallyModal').classList.remove('active');
+        }
+
+        // Show Create Chart Modal
+        function showCreateChartModal() {
+            document.getElementById('createChartModal').classList.add('active');
+            generateCategoryInputs();
+        }
+
+        // Close Create Chart Modal
+        function closeCreateChartModal() {
+            document.getElementById('createChartModal').classList.remove('active');
+        }
+
+        // Generate Category Inputs
+        function generateCategoryInputs() {
+            const numCategories = parseInt(document.getElementById('numCategories').value) || 5;
+            const container = document.getElementById('categoryInputsContainer');
+            container.innerHTML = '';
+
+            const table = document.createElement('table');
+            table.className = 'tally-table';
+            table.style.marginTop = '15px';
+
+            const thead = document.createElement('thead');
+            thead.innerHTML = `
+                <tr>
+                    <th>Category Name</th>
+                    <th>Value</th>
+                </tr>
+            `;
+            table.appendChild(thead);
+
+            const tbody = document.createElement('tbody');
+            
+            for (let i = 0; i < numCategories; i++) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>
+                        <input type="text" 
+                               id="catName_${i}" 
+                               placeholder="Category ${i + 1}"
+                               style="width: 100%; padding: 8px; border: 1px solid #dee2e6; border-radius: 4px;">
+                    </td>
+                    <td>
+                        <input type="number" 
+                               id="catValue_${i}" 
+                               min="0" 
+                               step="0.01"
+                               placeholder="0"
+                               style="width: 100%; padding: 8px; border: 1px solid #dee2e6; border-radius: 4px;">
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            }
+
+            table.appendChild(tbody);
+            container.appendChild(table);
+
+            // Add event listeners after elements are created
+            setTimeout(() => {
+                for (let i = 0; i < numCategories; i++) {
+                    const nameInput = document.getElementById(`catName_${i}`);
+                    const valueInput = document.getElementById(`catValue_${i}`);
+                    if (nameInput) nameInput.addEventListener('input', validateCreateChartTally);
+                    if (valueInput) valueInput.addEventListener('input', validateCreateChartTally);
+                }
+                validateCreateChartTally();
+            }, 0);
+        }
+
+        // Validate Create Chart Tally
+        function validateCreateChartTally() {
+            const numCategoriesInput = document.getElementById('numCategories');
+            if (!numCategoriesInput) return;
+            
+            const numCategories = parseInt(numCategoriesInput.value) || 5;
+            let sum = 0;
+
+            for (let i = 0; i < numCategories; i++) {
+                const valueInput = document.getElementById(`catValue_${i}`);
+                if (valueInput) {
+                    const value = parseFloat(valueInput.value) || 0;
+                    sum += value;
+                }
+            }
+
+            const statusDiv = document.getElementById('createChartTallyStatus');
+            const createBtn = document.getElementById('createChartBtn');
+
+            if (!statusDiv || !createBtn) return;
+
+            if (sum > 0) {
+                statusDiv.style.display = 'block';
+                statusDiv.className = 'tally-status success';
+                statusDiv.innerHTML = `✅ Total: <span id="createChartTallyDifference">${sum.toFixed(2)}</span>`;
+                createBtn.disabled = false;
+            } else {
+                statusDiv.style.display = 'none';
+                createBtn.disabled = true;
+            }
+        }
+
+        // Create Chart from Inputs
+        function createChartFromInputs() {
+            const title = document.getElementById('newChartTitle').value.trim() || 'Chart';
+            const numCategories = parseInt(document.getElementById('numCategories').value) || 5;
+            
+            const dataColumns = [];
+            let total = 0;
+
+            for (let i = 0; i < numCategories; i++) {
+                const name = document.getElementById(`catName_${i}`).value.trim() || `Category ${i + 1}`;
+                const value = parseFloat(document.getElementById(`catValue_${i}`).value) || 0;
+                
+                if (value > 0) {
+                    dataColumns.push({
+                        name: name,
+                        value: value,
+                        originalValue: value
+                    });
+                    total += value;
+                }
+            }
+
+            if (dataColumns.length === 0) {
+                alert('Please enter at least one category with a value greater than 0');
+                return;
+            }
+
+            // Store data
+            chartData = {
+                title: title,
+                total: total,
+                columns: dataColumns,
+                sum: total
+            };
+
+            // Reset colors for new chart
+            currentColors = [...defaultColors];
+
+            closeCreateChartModal();
+            setupColorControls();
+            generateChart();
+
+            // Show export button
+            document.getElementById('exportCsvBtn').style.display = 'block';
+        }
+
+        // Export to CSV
+        function exportToCSV() {
+            if (!chartData) {
+                alert('Please create a chart first');
+                return;
+            }
+
+            // Build CSV content with 3 rows: headers, values, colors
+            let csvContent = 'Initiative Name,Total';
+            chartData.columns.forEach(col => {
+                csvContent += ',' + col.name;
+            });
+            csvContent += '\n';
+
+            // Values row
+            csvContent += chartData.title + ',' + chartData.total;
+            chartData.columns.forEach(col => {
+                csvContent += ',' + col.value;
+            });
+            csvContent += '\n';
+
+            // Colors row
+            csvContent += 'Colors,';
+            chartData.columns.forEach((col, index) => {
+                csvContent += ',' + (currentColors[index] || defaultColors[index % defaultColors.length]);
+            });
+            csvContent += '\n';
+
+            // Create download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${chartData.title.replace(/[^a-z0-9]/gi, '_')}_data.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            alert('✅ CSV file exported successfully with colors!');
+        }
+
+        // Setup Color Controls
+        function setupColorControls() {
+            const container = document.getElementById('colorControls');
+            const section = document.getElementById('colorControlsSection');
+            container.innerHTML = '';
+
+            if (!chartData) return;
+
+            chartData.columns.forEach((col, index) => {
+                const colorItem = document.createElement('div');
+                colorItem.className = 'color-item';
+                
+                // Ensure we have a color for this column
+                if (!currentColors[index]) {
+                    currentColors[index] = defaultColors[index % defaultColors.length];
+                }
+
+                colorItem.innerHTML = `
+                    <label>${col.name}</label>
+                    <input type="color" value="${currentColors[index]}" onchange="updateColor(${index}, this.value)" />
+                `;
+                container.appendChild(colorItem);
+            });
+
+            section.style.display = 'block';
+        }
+
+        // Update Color
+        function updateColor(index, color) {
+            currentColors[index] = color;
+            generateChart();
+        }
+
+        // Reset Colors
+        function resetColors() {
+            currentColors = [...defaultColors];
+            setupColorControls();
+            generateChart();
+        }
+
+        // Generate Chart
+        function generateChart() {
+            if (!chartData) {
+                document.getElementById('noData').style.display = 'block';
+                document.getElementById('chartCanvas').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('noData').style.display = 'none';
+            document.getElementById('chartCanvas').style.display = 'block';
+
+            const canvas = document.getElementById('chartCanvas');
+            const ctx = canvas.getContext('2d');
+            const showCount = document.getElementById('showCount').checked;
+            const showPercentage = document.getElementById('showPercentage').checked;
+            const showLegend = document.getElementById('showLegend').checked;
+            const shadowColor = document.getElementById('shadowColor').value;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Set white background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Calculate dimensions with proper spacing
+            const topMargin = 80;
+            const bottomMargin = 100;
+            const legendWidth = showLegend ? 250 : 0;
+            const availableHeight = canvas.height - topMargin - bottomMargin;
+            const availableWidth = canvas.width - legendWidth - 100;
+            
+            const pieRadius = Math.min(availableWidth, availableHeight) / 2.5;
+            const pieX = (canvas.width - legendWidth) / 2;
+            const pieY = topMargin + (availableHeight / 2);
+
+            // Draw Title
+            ctx.font = 'bold 32px "Segoe UI"';
+            ctx.fillStyle = '#003d5c';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText(chartData.title, canvas.width / 2, 30);
+
+            // Draw pie chart
+            let startAngle = -Math.PI / 2;
+            const total = chartData.columns.reduce((acc, col) => acc + col.value, 0);
+            const SMALL_SLICE_THRESHOLD = 10; // Percentage threshold for external labels
+
+            // First pass: draw slices
+            let currentAngle = -Math.PI / 2;
+            chartData.columns.forEach((col, index) => {
+                const sliceAngle = (col.value / total) * 2 * Math.PI;
+                const endAngle = currentAngle + sliceAngle;
+
+                // Draw slice
+                ctx.fillStyle = currentColors[index];
+                ctx.beginPath();
+                ctx.moveTo(pieX, pieY);
+                ctx.arc(pieX, pieY, pieRadius, currentAngle, endAngle);
+                ctx.closePath();
+                ctx.fill();
+
+                // Draw border
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                currentAngle = endAngle;
+            });
+
+            // Second pass: collect label information
+            startAngle = -Math.PI / 2;
+            const externalLabels = { left: [], right: [] };
+            const internalLabels = [];
+            
+            chartData.columns.forEach((col, index) => {
+                const sliceAngle = (col.value / total) * 2 * Math.PI;
+                const endAngle = startAngle + sliceAngle;
+                const midAngle = startAngle + sliceAngle / 2;
+                const percentage = ((col.value / total) * 100);
+
+                let label = '';
+                if (showPercentage) {
+                    label += `${percentage.toFixed(1)}%`;
+                }
+                if (showCount) {
+                    if (label) label += '\n';
+                    label += col.value;
+                }
+
+                const isSmallSlice = percentage < SMALL_SLICE_THRESHOLD;
+
+                if (isSmallSlice) {
+                    const innerX = pieX + Math.cos(midAngle) * (pieRadius * 0.9);
+                    const innerY = pieY + Math.sin(midAngle) * (pieRadius * 0.9);
+                    const outerX = pieX + Math.cos(midAngle) * (pieRadius * 1.15);
+                    const outerY = pieY + Math.sin(midAngle) * (pieRadius * 1.15);
+                    const isRightSide = Math.cos(midAngle) > 0;
+                    
+                    const labelInfo = {
+                        label,
+                        color: currentColors[index],
+                        innerX,
+                        innerY,
+                        outerX,
+                        outerY,
+                        naturalY: outerY,
+                        midAngle
+                    };
+                    
+                    if (isRightSide) {
+                        externalLabels.right.push(labelInfo);
+                    } else {
+                        externalLabels.left.push(labelInfo);
+                    }
+                } else {
+                    internalLabels.push({
+                        label,
+                        midAngle,
+                        color: currentColors[index]
+                    });
+                }
+
+                startAngle = endAngle;
+            });
+
+            // Define safe zones
+            const labelMinY = topMargin + 60; // Below title
+            const labelMaxY = canvas.height - bottomMargin - 20; // Above summary
+            const labelSpacing = 35;
+
+            // Function to redistribute labels vertically with collision detection
+            function redistributeLabels(labels, side) {
+                if (labels.length === 0) return labels;
+
+                // Sort by natural Y position
+                labels.sort((a, b) => a.naturalY - b.naturalY);
+
+                // Calculate label heights
+                ctx.font = 'bold 12px "Segoe UI"';
+                labels.forEach(l => {
+                    const lines = l.label.split('\n');
+                    l.height = lines.length * 16 + 8; // 8px padding
+                });
+
+                // Calculate total height needed
+                const totalHeight = labels.reduce((sum, l) => sum + l.height + labelSpacing, -labelSpacing);
+                const availableHeight = labelMaxY - labelMinY;
+
+                let positions = [];
+                
+                if (totalHeight <= availableHeight) {
+                    // Distribute based on natural positions with collision avoidance
+                    let currentY = labelMinY;
+                    
+                    labels.forEach((l, i) => {
+                        // Try to use natural position
+                        let targetY = Math.max(labelMinY, Math.min(labelMaxY - l.height, l.naturalY - l.height / 2));
+                        
+                        // Avoid collision with previous label
+                        if (i > 0) {
+                            const prevBottom = positions[i - 1].y + positions[i - 1].height;
+                            targetY = Math.max(targetY, prevBottom + labelSpacing);
+                        }
+                        
+                        // Ensure within bounds
+                        targetY = Math.min(targetY, labelMaxY - l.height);
+                        
+                        positions.push({ ...l, y: targetY });
+                    });
+                } else {
+                    // Evenly distribute in available space
+                    const spacing = (availableHeight - labels.reduce((sum, l) => sum + l.height, 0)) / (labels.length + 1);
+                    let currentY = labelMinY + spacing;
+                    
+                    labels.forEach(l => {
+                        positions.push({ ...l, y: currentY });
+                        currentY += l.height + spacing;
+                    });
+                }
+
+                return positions;
+            }
+
+            // Redistribute labels on each side
+            const leftLabels = redistributeLabels(externalLabels.left, 'left');
+            const rightLabels = redistributeLabels(externalLabels.right, 'right');
+
+            // Draw external labels with elbow leader lines
+            function drawExternalLabel(labelInfo, isRightSide) {
+                const { label, color, innerX, innerY, outerX, outerY, y, height } = labelInfo;
+                
+                const elbowX = isRightSide ? pieX + pieRadius + 40 : pieX - pieRadius - 40;
+                const labelY = y + height / 2;
+                const labelX = isRightSide ? elbowX + 10 : elbowX - 10;
+
+                ctx.save();
+
+                // Draw leader line with elbow
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(innerX, innerY);
+                ctx.lineTo(outerX, outerY);
+                ctx.lineTo(elbowX, labelY);
+                ctx.stroke();
+
+                // Draw label background
+                ctx.font = 'bold 12px "Segoe UI"';
+                const lines = label.split('\n');
+                const maxWidth = Math.max(...lines.map(line => ctx.measureText(line).width));
+                const paddingX = 8;
+                const paddingY = 4;
+
+                // Background with color tint
+                const rectWidth = maxWidth + paddingX * 2;
+                const rectX = isRightSide ? labelX : labelX - rectWidth;
+                const rectY = y;
+                
+                // Fill with color (lighter version)
+                ctx.fillStyle = color;
+                ctx.globalAlpha = 0.15;
+                ctx.fillRect(rectX, rectY, rectWidth, height);
+                ctx.globalAlpha = 1.0;
+                
+                // Border
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.strokeRect(rectX, rectY, rectWidth, height);
+
+                // Draw label text (center-aligned within box)
+                ctx.fillStyle = '#333';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                
+                const textCenterX = rectX + rectWidth / 2;
+                lines.forEach((line, i) => {
+                    const textY = labelY + (i - lines.length / 2 + 0.5) * 16;
+                    ctx.fillText(line, textCenterX, textY);
+                });
+
+                ctx.restore();
+            }
+
+            // Draw all external labels
+            leftLabels.forEach(l => drawExternalLabel(l, false));
+            rightLabels.forEach(l => drawExternalLabel(l, true));
+
+            // Draw internal labels
+            startAngle = -Math.PI / 2;
+            internalLabels.forEach((labelInfo) => {
+                const labelX = pieX + Math.cos(labelInfo.midAngle) * (pieRadius * 0.7);
+                const labelY = pieY + Math.sin(labelInfo.midAngle) * (pieRadius * 0.7);
+
+                ctx.save();
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.font = 'bold 14px "Segoe UI"';
+
+                // Draw shadow
+                ctx.shadowColor = shadowColor;
+                ctx.shadowBlur = 4;
+                ctx.shadowOffsetX = 2;
+                ctx.shadowOffsetY = 2;
+
+                ctx.fillStyle = '#fff';
+
+                const lines = labelInfo.label.split('\n');
+                lines.forEach((line, i) => {
+                    ctx.fillText(line, labelX, labelY + (i - lines.length / 2 + 0.5) * 18);
+                });
+
+                ctx.restore();
+            });
+
+            // Draw legend
+            if (showLegend) {
+                const legendX = canvas.width - legendWidth + 20;
+                let legendY = topMargin + 20;
+
+                ctx.font = 'bold 18px "Segoe UI"';
+                ctx.fillStyle = '#003d5c';
+                ctx.textAlign = 'left';
+                ctx.fillText('Legend', legendX, legendY);
+
+                legendY += 35;
+
+                chartData.columns.forEach((col, index) => {
+                    // Color box
+                    ctx.fillStyle = currentColors[index];
+                    ctx.fillRect(legendX, legendY - 12, 20, 20);
+                    ctx.strokeStyle = '#333';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(legendX, legendY - 12, 20, 20);
+
+                    // Text
+                    ctx.fillStyle = '#333';
+                    ctx.font = '14px "Segoe UI"';
+                    ctx.fillText(col.name, legendX + 30, legendY);
+
+                    const percentage = ((col.value / total) * 100).toFixed(1);
+                    ctx.font = '12px "Segoe UI"';
+                    ctx.fillStyle = '#666';
+                    ctx.fillText(`${percentage}% (${col.value})`, legendX + 30, legendY + 15);
+
+                    legendY += 40;
+                });
+            }
+
+            // Draw Summary at bottom (pipe separated)
+            const summaryY = canvas.height - 50;
+            ctx.font = '14px "Segoe UI"';
+            ctx.fillStyle = '#003d5c';
+            ctx.textAlign = 'center';
+            
+            // Build summary string
+            let summaryParts = [`Total: ${total}`];
+            chartData.columns.forEach((col, index) => {
+                const percentage = ((col.value / total) * 100).toFixed(1);
+                summaryParts.push(`${col.name}: ${col.value} (${percentage}%)`);
+            });
+            const summaryText = summaryParts.join(' | ');
+            
+            ctx.fillText(summaryText, canvas.width / 2, summaryY);
+        }
+
+        // Copy as PNG
+        async function copyAsPNG() {
+            if (!chartData) {
+                alert('Please generate a chart first');
+                return;
+            }
+
+            const canvas = document.getElementById('chartCanvas');
+            
+            try {
+                canvas.toBlob(async (blob) => {
+                    try {
+                        await navigator.clipboard.write([
+                            new ClipboardItem({
+                                'image/png': blob
+                            })
+                        ]);
+                        alert('✅ Chart copied to clipboard as PNG!');
+                    } catch (err) {
+                        console.error('Failed to copy:', err);
+                        alert('❌ Failed to copy to clipboard. Your browser may not support this feature.');
+                    }
+                });
+            } catch (err) {
+                console.error('Failed to create blob:', err);
+                alert('❌ Failed to generate PNG');
+            }
+        }
+
+        // Copy as SVG
+        async function copyAsSVG() {
+            if (!chartData) {
+                alert('Please generate a chart first');
+                return;
+            }
+
+            const svg = generateSVG();
+
+            try {
+                await navigator.clipboard.writeText(svg);
+                alert('✅ SVG code copied to clipboard!\n\nYou can paste this into:\n• Code editors (VS Code, etc.)\n• Text files\n• Design tools that accept SVG code\n\nFor direct image paste, use "Download SVG" or "Copy as PNG" instead.');
+            } catch (err) {
+                console.error('Failed to copy SVG:', err);
+                alert('❌ Failed to copy to clipboard');
+            }
+        }
+
+        // Generate SVG code
+        function generateSVG() {
+            const showCount = document.getElementById('showCount').checked;
+            const showPercentage = document.getElementById('showPercentage').checked;
+            const showLegend = document.getElementById('showLegend').checked;
+            const shadowColor = document.getElementById('shadowColor').value;
+
+            const width = 900;
+            const height = 700;
+            const topMargin = 80;
+            const bottomMargin = 100;
+            const legendWidth = showLegend ? 250 : 0;
+            const availableHeight = height - topMargin - bottomMargin;
+            const availableWidth = width - legendWidth - 100;
+            
+            const pieRadius = Math.min(availableWidth, availableHeight) / 2.5;
+            const pieX = (width - legendWidth) / 2;
+            const pieY = topMargin + (availableHeight / 2);
+
+            let svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">`;
+            
+            // White background
+            svg += `<rect width="${width}" height="${height}" fill="white"/>`;
+
+            // Title
+            svg += `<text x="${width / 2}" y="30" text-anchor="middle" dominant-baseline="hanging" font-family="Segoe UI" font-size="32" font-weight="bold" fill="#003d5c">${chartData.title}</text>`;
+
+            // Draw pie slices
+            let startAngle = -Math.PI / 2;
+            const total = chartData.columns.reduce((acc, col) => acc + col.value, 0);
+            const SMALL_SLICE_THRESHOLD = 10; // Percentage threshold for external labels
+
+            // First pass: draw slices
+            chartData.columns.forEach((col, index) => {
+                const sliceAngle = (col.value / total) * 2 * Math.PI;
+                const endAngle = startAngle + sliceAngle;
+
+                // Calculate path
+                const x1 = pieX + Math.cos(startAngle) * pieRadius;
+                const y1 = pieY + Math.sin(startAngle) * pieRadius;
+                const x2 = pieX + Math.cos(endAngle) * pieRadius;
+                const y2 = pieY + Math.sin(endAngle) * pieRadius;
+                const largeArc = sliceAngle > Math.PI ? 1 : 0;
+
+                svg += `<path d="M ${pieX} ${pieY} L ${x1} ${y1} A ${pieRadius} ${pieRadius} 0 ${largeArc} 1 ${x2} ${y2} Z" fill="${currentColors[index]}" stroke="#fff" stroke-width="1.5"/>`;
+
+                startAngle = endAngle;
+            });
+
+            // Second pass: collect and redistribute labels
+            startAngle = -Math.PI / 2;
+            const externalLabels = { left: [], right: [] };
+            const internalLabels = [];
+            
+            chartData.columns.forEach((col, index) => {
+                const sliceAngle = (col.value / total) * 2 * Math.PI;
+                const endAngle = startAngle + sliceAngle;
+                const midAngle = startAngle + sliceAngle / 2;
+                const percentage = ((col.value / total) * 100);
+
+                let label = '';
+                if (showPercentage) {
+                    label += `${percentage.toFixed(1)}%`;
+                }
+                if (showCount) {
+                    if (label) label += ' ';
+                    label += `(${col.value})`;
+                }
+
+                const isSmallSlice = percentage < SMALL_SLICE_THRESHOLD;
+
+                if (isSmallSlice && label) {
+                    const innerX = pieX + Math.cos(midAngle) * (pieRadius * 0.9);
+                    const innerY = pieY + Math.sin(midAngle) * (pieRadius * 0.9);
+                    const outerX = pieX + Math.cos(midAngle) * (pieRadius * 1.15);
+                    const outerY = pieY + Math.sin(midAngle) * (pieRadius * 1.15);
+                    const isRightSide = Math.cos(midAngle) > 0;
+                    
+                    const labelInfo = {
+                        label,
+                        color: currentColors[index],
+                        innerX,
+                        innerY,
+                        outerX,
+                        outerY,
+                        naturalY: outerY,
+                        midAngle,
+                        height: 28 // Approximate height for SVG
+                    };
+                    
+                    if (isRightSide) {
+                        externalLabels.right.push(labelInfo);
+                    } else {
+                        externalLabels.left.push(labelInfo);
+                    }
+                } else if (label) {
+                    internalLabels.push({
+                        label,
+                        midAngle,
+                        color: currentColors[index]
+                    });
+                }
+
+                startAngle = endAngle;
+            });
+
+            // Define safe zones for SVG
+            const labelMinY = topMargin + 60;
+            const labelMaxY = height - bottomMargin - 20;
+            const labelSpacing = 35;
+
+            // Function to redistribute labels
+            function redistributeLabels(labels) {
+                if (labels.length === 0) return labels;
+
+                labels.sort((a, b) => a.naturalY - b.naturalY);
+
+                const totalHeight = labels.reduce((sum, l) => sum + l.height + labelSpacing, -labelSpacing);
+                const availableHeight = labelMaxY - labelMinY;
+
+                let positions = [];
+                
+                if (totalHeight <= availableHeight) {
+                    let currentY = labelMinY;
+                    
+                    labels.forEach((l, i) => {
+                        let targetY = Math.max(labelMinY, Math.min(labelMaxY - l.height, l.naturalY - l.height / 2));
+                        
+                        if (i > 0) {
+                            const prevBottom = positions[i - 1].y + positions[i - 1].height;
+                            targetY = Math.max(targetY, prevBottom + labelSpacing);
+                        }
+                        
+                        targetY = Math.min(targetY, labelMaxY - l.height);
+                        positions.push({ ...l, y: targetY });
+                    });
+                } else {
+                    const spacing = (availableHeight - labels.reduce((sum, l) => sum + l.height, 0)) / (labels.length + 1);
+                    let currentY = labelMinY + spacing;
+                    
+                    labels.forEach(l => {
+                        positions.push({ ...l, y: currentY });
+                        currentY += l.height + spacing;
+                    });
+                }
+
+                return positions;
+            }
+
+            // Redistribute labels
+            const leftLabels = redistributeLabels(externalLabels.left);
+            const rightLabels = redistributeLabels(externalLabels.right);
+
+            // Draw external labels with elbow leader lines
+            function drawExternalLabelSVG(labelInfo, isRightSide) {
+                const { label, color, innerX, innerY, outerX, outerY, y, height } = labelInfo;
+                
+                const elbowX = isRightSide ? pieX + pieRadius + 40 : pieX - pieRadius - 40;
+                const labelY = y + height / 2;
+                const labelX = isRightSide ? elbowX + 10 : elbowX - 10;
+
+                // Estimate text width (rough approximation for SVG)
+                const textWidth = label.length * 7; // Approximate width
+                const paddingX = 8;
+                const rectWidth = textWidth + paddingX * 2;
+                const rectX = isRightSide ? labelX : labelX - rectWidth;
+
+                // Leader line with elbow
+                svg += `<polyline points="${innerX},${innerY} ${outerX},${outerY} ${elbowX},${labelY}" fill="none" stroke="${color}" stroke-width="2"/>`;
+
+                // Background rectangle with color tint
+                svg += `<rect x="${rectX}" y="${y}" width="${rectWidth}" height="${height}" fill="${color}" fill-opacity="0.15" stroke="${color}" stroke-width="2"/>`;
+
+                // Label text (center-aligned within box)
+                const textCenterX = rectX + rectWidth / 2;
+                svg += `<text x="${textCenterX}" y="${labelY}" text-anchor="middle" dominant-baseline="middle" font-family="Segoe UI" font-size="12" font-weight="bold" fill="#333">${label}</text>`;
+            }
+
+            // Draw all external labels
+            leftLabels.forEach(l => drawExternalLabelSVG(l, false));
+            rightLabels.forEach(l => drawExternalLabelSVG(l, true));
+
+            // Draw internal labels
+            internalLabels.forEach((labelInfo) => {
+                const labelX = pieX + Math.cos(labelInfo.midAngle) * (pieRadius * 0.7);
+                const labelY = pieY + Math.sin(labelInfo.midAngle) * (pieRadius * 0.7);
+
+                svg += `<text x="${labelX}" y="${labelY}" text-anchor="middle" dominant-baseline="middle" font-family="Segoe UI" font-size="14" font-weight="bold" fill="#fff" style="text-shadow: 2px 2px 4px ${shadowColor};">${labelInfo.label}</text>`;
+            });
+
+            // Draw legend
+            if (showLegend) {
+                const legendX = width - legendWidth + 20;
+                let legendY = topMargin + 20;
+
+                svg += `<text x="${legendX}" y="${legendY}" font-family="Segoe UI" font-size="18" font-weight="bold" fill="#003d5c">Legend</text>`;
+                legendY += 35;
+
+                chartData.columns.forEach((col, index) => {
+                    svg += `<rect x="${legendX}" y="${legendY - 12}" width="20" height="20" fill="${currentColors[index]}" stroke="#333"/>`;
+                    
+                    const percentage = ((col.value / total) * 100).toFixed(1);
+                    svg += `<text x="${legendX + 30}" y="${legendY}" font-family="Segoe UI" font-size="14" fill="#333">${col.name}</text>`;
+                    svg += `<text x="${legendX + 30}" y="${legendY + 15}" font-family="Segoe UI" font-size="12" fill="#666">${percentage}% (${col.value})</text>`;
+
+                    legendY += 40;
+                });
+            }
+
+            // Summary at bottom
+            const summaryY = height - 50;
+            let summaryParts = [`Total: ${total}`];
+            chartData.columns.forEach((col, index) => {
+                const percentage = ((col.value / total) * 100).toFixed(1);
+                summaryParts.push(`${col.name}: ${col.value} (${percentage}%)`);
+            });
+            const summaryText = summaryParts.join(' | ');
+            svg += `<text x="${width / 2}" y="${summaryY}" text-anchor="middle" font-family="Segoe UI" font-size="14" fill="#003d5c">${summaryText}</text>`;
+
+            svg += '</svg>';
+            
+            return svg;
+        }
+
+        // Download as SVG
+        function downloadAsSVG() {
+            if (!chartData) {
+                alert('Please generate a chart first');
+                return;
+            }
+
+            const svg = generateSVG();
+
+            // Create download
+            const blob = new Blob([svg], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${chartData.title.replace(/[^a-z0-9]/gi, '_')}_chart.svg`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            alert('✅ SVG file downloaded!');
+        }
+
+        // Download as PNG
+        function downloadAsPNG() {
+            if (!chartData) {
+                alert('Please generate a chart first');
+                return;
+            }
+
+            const canvas = document.getElementById('chartCanvas');
+            
+            try {
+                canvas.toBlob((blob) => {
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${chartData.title.replace(/[^a-z0-9]/gi, '_')}_chart.png`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    alert('✅ PNG file downloaded!');
+                });
+            } catch (err) {
+                console.error('Failed to download PNG:', err);
+                alert('❌ Failed to generate PNG');
+            }
+        }
+
+        // Initial state
+        document.getElementById('chartCanvas').style.display = 'none';
+    </script>
+</body>
+</html>
