@@ -441,6 +441,9 @@
                         <button class="btn btn-info" onclick="exportToCSV()" id="exportCsvBtn" style="display: none;">
                             📊 Export to CSV
                         </button>
+                        <button class="btn btn-warning" onclick="showModifyChartModal()" id="modifyChartBtn" style="display: none;">
+                            ✏️ Modify Chart Numbers
+                        </button>
                         <button class="btn btn-info" onclick="copyAsPNG()">
                             🖼️ Copy as PNG
                         </button>
@@ -490,6 +493,46 @@
                     <div class="color-item">
                         <label>Shadow Color</label>
                         <input type="color" id="shadowColor" value="#000000" onchange="generateChart()">
+                    </div>
+                </div>
+
+                <!-- Font Style -->
+                <div class="control-section">
+                    <h3>Font Style</h3>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #495057;">Font Family</label>
+                        <select id="fontFamily" onchange="generateChart()" style="width: 100%; padding: 8px; border: 1px solid #dee2e6; border-radius: 4px; font-size: 0.95em;">
+                            <option value="Segoe UI">Segoe UI</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Helvetica">Helvetica</option>
+                            <option value="Times New Roman">Times New Roman</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Courier New">Courier New</option>
+                            <option value="Verdana">Verdana</option>
+                            <option value="Tahoma">Tahoma</option>
+                            <option value="Trebuchet MS">Trebuchet MS</option>
+                            <option value="Comic Sans MS">Comic Sans MS</option>
+                            <option value="Impact">Impact</option>
+                            <option value="Palatino">Palatino</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Label Threshold -->
+                <div class="control-section">
+                    <h3>Label Placement</h3>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #495057;">
+                            Callout Threshold: <span id="thresholdValue">10</span>%
+                        </label>
+                        <input type="range" id="labelThreshold" min="0" max="25" value="10" step="1" 
+                               oninput="updateThresholdLabel(); generateChart();"
+                               style="width: 100%; cursor: pointer;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8em; color: #6c757d; margin-top: 5px;">
+                            <span>0%</span>
+                            <span style="font-size: 0.75em;">Slices below threshold get callout labels</span>
+                            <span>25%</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -574,6 +617,45 @@
         </div>
     </div>
 
+    <!-- Modify Chart Modal -->
+    <div class="modal-overlay" id="modifyChartModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>✏️ Modify Chart Numbers</h2>
+                <button class="modal-close" onclick="closeModifyChartModal()">×</button>
+            </div>
+
+            <div style="padding: 20px;">
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #495057;">Chart Title</label>
+                    <input type="text" id="modifyChartTitle" placeholder="Enter chart title" 
+                           style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px; font-size: 14px;">
+                </div>
+
+                <table class="tally-table">
+                    <thead>
+                        <tr>
+                            <th>Category Name</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modifyTableBody"></tbody>
+                </table>
+
+                <div class="tally-status" id="modifyChartTallyStatus" style="display: none; margin-top: 15px;">
+                    Total: <span id="modifyChartTallyDifference">0</span>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModifyChartModal()">Cancel</button>
+                <button class="btn btn-success" id="applyModifyBtn" onclick="applyModifyChanges()">
+                    Apply Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Global state
         let chartData = null;
@@ -582,6 +664,12 @@
             '#20c997', '#17a2b8', '#6f42c1', '#e83e8c', '#007bff'
         ];
         let currentColors = [...defaultColors];
+
+        // Update threshold label
+        function updateThresholdLabel() {
+            const threshold = document.getElementById('labelThreshold').value;
+            document.getElementById('thresholdValue').textContent = threshold;
+        }
 
         // Import CSV
         function importCSV() {
@@ -622,11 +710,22 @@
 
             // Check for colors row (optional third row)
             let colors = null;
+            let fontFamily = null;
+            
             if (lines.length >= 3) {
                 const colorRow = lines[2].split(',').map(c => c.trim());
                 if (colorRow[0].toLowerCase() === 'colors') {
                     colors = colorRow.slice(2); // Skip "Colors" and Total column
                     console.log('Colors found:', colors);
+                }
+            }
+
+            // Check for font row (optional fourth row)
+            if (lines.length >= 4) {
+                const fontRow = lines[3].split(',').map(f => f.trim());
+                if (fontRow[0].toLowerCase() === 'font') {
+                    fontFamily = fontRow[1]; // Font name is in second column
+                    console.log('Font found:', fontFamily);
                 }
             }
 
@@ -669,14 +768,28 @@
                 currentColors = [...defaultColors];
             }
 
+            // Apply font if present
+            if (fontFamily) {
+                const fontSelect = document.getElementById('fontFamily');
+                // Check if the font exists in the dropdown
+                const option = Array.from(fontSelect.options).find(opt => opt.value === fontFamily);
+                if (option) {
+                    fontSelect.value = fontFamily;
+                    console.log('Applied font:', fontFamily);
+                } else {
+                    console.log('Font not found in dropdown, using default');
+                }
+            }
+
             // Check if tally matches
             if (Math.abs(sum - total) > 0.01) {
                 showTallyModal();
             } else {
                 setupColorControls();
                 generateChart();
-                // Show export button
+                // Show export and modify buttons
                 document.getElementById('exportCsvBtn').style.display = 'block';
+                document.getElementById('modifyChartBtn').style.display = 'block';
             }
         }
 
@@ -753,8 +866,9 @@
             setupColorControls();
             generateChart();
             
-            // Show export button
+            // Show export and modify buttons
             document.getElementById('exportCsvBtn').style.display = 'block';
+            document.getElementById('modifyChartBtn').style.display = 'block';
         }
 
         // Close Tally Modal
@@ -904,8 +1018,133 @@
             setupColorControls();
             generateChart();
 
-            // Show export button
+            // Show export and modify buttons
             document.getElementById('exportCsvBtn').style.display = 'block';
+            document.getElementById('modifyChartBtn').style.display = 'block';
+        }
+
+        // Show Modify Chart Modal
+        function showModifyChartModal() {
+            if (!chartData) {
+                alert('Please create or import a chart first');
+                return;
+            }
+
+            const modal = document.getElementById('modifyChartModal');
+            const titleInput = document.getElementById('modifyChartTitle');
+            const tbody = document.getElementById('modifyTableBody');
+
+            // Set current title
+            titleInput.value = chartData.title;
+
+            // Clear table
+            tbody.innerHTML = '';
+
+            // Add rows for each category
+            chartData.columns.forEach((col, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>
+                        <input type="text" 
+                               id="modifyCatName_${index}" 
+                               value="${col.name}"
+                               style="width: 100%; padding: 8px; border: 1px solid #dee2e6; border-radius: 4px;"
+                               onchange="validateModifyChart()">
+                    </td>
+                    <td>
+                        <input type="number" 
+                               id="modifyCatValue_${index}" 
+                               min="0" 
+                               step="0.01"
+                               value="${col.value}"
+                               style="width: 100%; padding: 8px; border: 1px solid #dee2e6; border-radius: 4px;"
+                               onchange="validateModifyChart()">
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Add event listeners
+            setTimeout(() => {
+                chartData.columns.forEach((col, index) => {
+                    const nameInput = document.getElementById(`modifyCatName_${index}`);
+                    const valueInput = document.getElementById(`modifyCatValue_${index}`);
+                    if (nameInput) nameInput.addEventListener('input', validateModifyChart);
+                    if (valueInput) valueInput.addEventListener('input', validateModifyChart);
+                });
+                validateModifyChart();
+            }, 0);
+
+            modal.classList.add('active');
+        }
+
+        // Close Modify Chart Modal
+        function closeModifyChartModal() {
+            document.getElementById('modifyChartModal').classList.remove('active');
+        }
+
+        // Validate Modify Chart
+        function validateModifyChart() {
+            if (!chartData) return;
+
+            let sum = 0;
+            chartData.columns.forEach((col, index) => {
+                const valueInput = document.getElementById(`modifyCatValue_${index}`);
+                if (valueInput) {
+                    const value = parseFloat(valueInput.value) || 0;
+                    sum += value;
+                }
+            });
+
+            const statusDiv = document.getElementById('modifyChartTallyStatus');
+            const applyBtn = document.getElementById('applyModifyBtn');
+
+            if (!statusDiv || !applyBtn) return;
+
+            if (sum > 0) {
+                statusDiv.style.display = 'block';
+                statusDiv.className = 'tally-status success';
+                statusDiv.innerHTML = `✅ Total: <span id="modifyChartTallyDifference">${sum.toFixed(2)}</span>`;
+                applyBtn.disabled = false;
+            } else {
+                statusDiv.style.display = 'none';
+                applyBtn.disabled = true;
+            }
+        }
+
+        // Apply Modify Changes
+        function applyModifyChanges() {
+            if (!chartData) return;
+
+            // Update title
+            const newTitle = document.getElementById('modifyChartTitle').value.trim();
+            if (newTitle) {
+                chartData.title = newTitle;
+            }
+
+            // Update category names and values
+            let total = 0;
+            chartData.columns.forEach((col, index) => {
+                const nameInput = document.getElementById(`modifyCatName_${index}`);
+                const valueInput = document.getElementById(`modifyCatValue_${index}`);
+                
+                if (nameInput && valueInput) {
+                    col.name = nameInput.value.trim() || col.name;
+                    col.value = parseFloat(valueInput.value) || 0;
+                    col.originalValue = col.value;
+                    total += col.value;
+                }
+            });
+
+            // Update totals
+            chartData.total = total;
+            chartData.sum = total;
+
+            closeModifyChartModal();
+            setupColorControls();
+            generateChart();
+
+            alert('✅ Chart updated successfully!');
         }
 
         // Export to CSV
@@ -936,6 +1175,11 @@
             });
             csvContent += '\n';
 
+            // Font row
+            const fontFamily = document.getElementById('fontFamily').value;
+            csvContent += 'Font,' + fontFamily;
+            csvContent += '\n';
+
             // Create download
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
@@ -947,7 +1191,7 @@
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
 
-            alert('✅ CSV file exported successfully with colors!');
+            alert('✅ CSV file exported successfully with colors and font!');
         }
 
         // Setup Color Controls
@@ -1007,6 +1251,7 @@
             const showPercentage = document.getElementById('showPercentage').checked;
             const showLegend = document.getElementById('showLegend').checked;
             const shadowColor = document.getElementById('shadowColor').value;
+            const fontFamily = document.getElementById('fontFamily').value;
 
             // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1027,7 +1272,7 @@
             const pieY = topMargin + (availableHeight / 2);
 
             // Draw Title
-            ctx.font = 'bold 32px "Segoe UI"';
+            ctx.font = `bold 32px "${fontFamily}"`;
             ctx.fillStyle = '#003d5c';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
@@ -1036,7 +1281,7 @@
             // Draw pie chart
             let startAngle = -Math.PI / 2;
             const total = chartData.columns.reduce((acc, col) => acc + col.value, 0);
-            const SMALL_SLICE_THRESHOLD = 10; // Percentage threshold for external labels
+            const SMALL_SLICE_THRESHOLD = parseFloat(document.getElementById('labelThreshold').value) || 10; // Percentage threshold for external labels
 
             // First pass: draw slices
             let currentAngle = -Math.PI / 2;
@@ -1129,7 +1374,7 @@
                 labels.sort((a, b) => a.naturalY - b.naturalY);
 
                 // Calculate label heights
-                ctx.font = 'bold 12px "Segoe UI"';
+                ctx.font = `bold 12px "${fontFamily}"`;
                 labels.forEach(l => {
                     const lines = l.label.split('\n');
                     l.height = lines.length * 16 + 8; // 8px padding
@@ -1198,7 +1443,7 @@
                 ctx.stroke();
 
                 // Draw label background
-                ctx.font = 'bold 12px "Segoe UI"';
+                ctx.font = `bold 12px "${fontFamily}"`;
                 const lines = label.split('\n');
                 const maxWidth = Math.max(...lines.map(line => ctx.measureText(line).width));
                 const paddingX = 8;
@@ -1247,7 +1492,7 @@
                 ctx.save();
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.font = 'bold 14px "Segoe UI"';
+                ctx.font = `bold 14px "${fontFamily}"`;
 
                 // Draw shadow
                 ctx.shadowColor = shadowColor;
@@ -1270,7 +1515,7 @@
                 const legendX = canvas.width - legendWidth + 20;
                 let legendY = topMargin + 20;
 
-                ctx.font = 'bold 18px "Segoe UI"';
+                ctx.font = `bold 18px "${fontFamily}"`;
                 ctx.fillStyle = '#003d5c';
                 ctx.textAlign = 'left';
                 ctx.fillText('Legend', legendX, legendY);
@@ -1287,11 +1532,11 @@
 
                     // Text
                     ctx.fillStyle = '#333';
-                    ctx.font = '14px "Segoe UI"';
+                    ctx.font = `14px "${fontFamily}"`;
                     ctx.fillText(col.name, legendX + 30, legendY);
 
                     const percentage = ((col.value / total) * 100).toFixed(1);
-                    ctx.font = '12px "Segoe UI"';
+                    ctx.font = `12px "${fontFamily}"`;
                     ctx.fillStyle = '#666';
                     ctx.fillText(`${percentage}% (${col.value})`, legendX + 30, legendY + 15);
 
@@ -1301,7 +1546,7 @@
 
             // Draw Summary at bottom (pipe separated)
             const summaryY = canvas.height - 50;
-            ctx.font = '14px "Segoe UI"';
+            ctx.font = `14px "${fontFamily}"`;
             ctx.fillStyle = '#003d5c';
             ctx.textAlign = 'center';
             
@@ -1369,6 +1614,7 @@
             const showPercentage = document.getElementById('showPercentage').checked;
             const showLegend = document.getElementById('showLegend').checked;
             const shadowColor = document.getElementById('shadowColor').value;
+            const fontFamily = document.getElementById('fontFamily').value;
 
             const width = 900;
             const height = 700;
@@ -1389,12 +1635,12 @@
             svg += `<rect width="${width}" height="${height}" fill="white"/>`;
 
             // Title
-            svg += `<text x="${width / 2}" y="30" text-anchor="middle" dominant-baseline="hanging" font-family="Segoe UI" font-size="32" font-weight="bold" fill="#003d5c">${chartData.title}</text>`;
+            svg += `<text x="${width / 2}" y="30" text-anchor="middle" dominant-baseline="hanging" font-family="${fontFamily}" font-size="32" font-weight="bold" fill="#003d5c">${chartData.title}</text>`;
 
             // Draw pie slices
             let startAngle = -Math.PI / 2;
             const total = chartData.columns.reduce((acc, col) => acc + col.value, 0);
-            const SMALL_SLICE_THRESHOLD = 10; // Percentage threshold for external labels
+            const SMALL_SLICE_THRESHOLD = parseFloat(document.getElementById('labelThreshold').value) || 10; // Percentage threshold for external labels
 
             // First pass: draw slices
             chartData.columns.forEach((col, index) => {
@@ -1539,7 +1785,7 @@
 
                 // Label text (center-aligned within box)
                 const textCenterX = rectX + rectWidth / 2;
-                svg += `<text x="${textCenterX}" y="${labelY}" text-anchor="middle" dominant-baseline="middle" font-family="Segoe UI" font-size="12" font-weight="bold" fill="#333">${label}</text>`;
+                svg += `<text x="${textCenterX}" y="${labelY}" text-anchor="middle" dominant-baseline="middle" font-family="${fontFamily}" font-size="12" font-weight="bold" fill="#333">${label}</text>`;
             }
 
             // Draw all external labels
@@ -1551,7 +1797,7 @@
                 const labelX = pieX + Math.cos(labelInfo.midAngle) * (pieRadius * 0.7);
                 const labelY = pieY + Math.sin(labelInfo.midAngle) * (pieRadius * 0.7);
 
-                svg += `<text x="${labelX}" y="${labelY}" text-anchor="middle" dominant-baseline="middle" font-family="Segoe UI" font-size="14" font-weight="bold" fill="#fff" style="text-shadow: 2px 2px 4px ${shadowColor};">${labelInfo.label}</text>`;
+                svg += `<text x="${labelX}" y="${labelY}" text-anchor="middle" dominant-baseline="middle" font-family="${fontFamily}" font-size="14" font-weight="bold" fill="#fff" style="text-shadow: 2px 2px 4px ${shadowColor};">${labelInfo.label}</text>`;
             });
 
             // Draw legend
@@ -1559,15 +1805,15 @@
                 const legendX = width - legendWidth + 20;
                 let legendY = topMargin + 20;
 
-                svg += `<text x="${legendX}" y="${legendY}" font-family="Segoe UI" font-size="18" font-weight="bold" fill="#003d5c">Legend</text>`;
+                svg += `<text x="${legendX}" y="${legendY}" font-family="${fontFamily}" font-size="18" font-weight="bold" fill="#003d5c">Legend</text>`;
                 legendY += 35;
 
                 chartData.columns.forEach((col, index) => {
                     svg += `<rect x="${legendX}" y="${legendY - 12}" width="20" height="20" fill="${currentColors[index]}" stroke="#333"/>`;
                     
                     const percentage = ((col.value / total) * 100).toFixed(1);
-                    svg += `<text x="${legendX + 30}" y="${legendY}" font-family="Segoe UI" font-size="14" fill="#333">${col.name}</text>`;
-                    svg += `<text x="${legendX + 30}" y="${legendY + 15}" font-family="Segoe UI" font-size="12" fill="#666">${percentage}% (${col.value})</text>`;
+                    svg += `<text x="${legendX + 30}" y="${legendY}" font-family="${fontFamily}" font-size="14" fill="#333">${col.name}</text>`;
+                    svg += `<text x="${legendX + 30}" y="${legendY + 15}" font-family="${fontFamily}" font-size="12" fill="#666">${percentage}% (${col.value})</text>`;
 
                     legendY += 40;
                 });
@@ -1581,7 +1827,7 @@
                 summaryParts.push(`${col.name}: ${col.value} (${percentage}%)`);
             });
             const summaryText = summaryParts.join(' | ');
-            svg += `<text x="${width / 2}" y="${summaryY}" text-anchor="middle" font-family="Segoe UI" font-size="14" fill="#003d5c">${summaryText}</text>`;
+            svg += `<text x="${width / 2}" y="${summaryY}" text-anchor="middle" font-family="${fontFamily}" font-size="14" fill="#003d5c">${summaryText}</text>`;
 
             svg += '</svg>';
             
