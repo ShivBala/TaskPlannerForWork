@@ -1616,16 +1616,19 @@
             const shadowColor = document.getElementById('shadowColor').value;
             const fontFamily = document.getElementById('fontFamily').value;
 
-            const width = 900;
+            // Add extra padding for external labels
+            const leftPadding = 120;
+            const rightPadding = 120;
+            const width = 900 + leftPadding + rightPadding;
             const height = 700;
             const topMargin = 80;
             const bottomMargin = 100;
             const legendWidth = showLegend ? 250 : 0;
             const availableHeight = height - topMargin - bottomMargin;
-            const availableWidth = width - legendWidth - 100;
+            const availableWidth = (900 - legendWidth - 100);
             
             const pieRadius = Math.min(availableWidth, availableHeight) / 2.5;
-            const pieX = (width - legendWidth) / 2;
+            const pieX = leftPadding + (900 - legendWidth) / 2;
             const pieY = topMargin + (availableHeight / 2);
 
             let svg = `<?xml version="1.0" encoding="UTF-8"?>
@@ -1802,7 +1805,7 @@
 
             // Draw legend
             if (showLegend) {
-                const legendX = width - legendWidth + 20;
+                const legendX = width - rightPadding - legendWidth + 20;
                 let legendY = topMargin + 20;
 
                 svg += `<text x="${legendX}" y="${legendY}" font-family="${fontFamily}" font-size="18" font-weight="bold" fill="#003d5c">Legend</text>`;
