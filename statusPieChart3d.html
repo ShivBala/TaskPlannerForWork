@@ -1,0 +1,1860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Chart Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #003d5c 0%, #001f3f 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #003d5c 0%, #001f3f 100%);
+            color: white;
+            padding: 25px 30px;
+            text-align: center;
+            border-bottom: 3px solid #d4af37;
+        }
+
+        .header h1 {
+            font-size: 1.8em;
+            margin: 0;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 30px;
+            padding: 30px;
+            align-items: start;
+        }
+
+        .controls-panel {
+            background: #f8f9fa;
+            border-radius: 4px;
+            padding: 25px;
+            border: 1px solid #e9ecef;
+            max-height: calc(100vh - 160px);
+            overflow-y: auto;
+        }
+
+        .control-section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .control-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .control-section h3 {
+            color: #495057;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .control-section h3::before {
+            content: '▸';
+            color: #003d5c;
+            font-weight: bold;
+        }
+
+        .action-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 4px;
+            font-size: 0.95em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: #003d5c;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #005580;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+        }
+
+        .btn-warning:hover {
+            background: #e0a800;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .checkbox-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.95em;
+            color: #495057;
+            cursor: pointer;
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
+
+        .color-control {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+        }
+
+        .color-control label {
+            font-size: 0.9em;
+            color: #495057;
+            flex: 1;
+        }
+
+        .color-control input[type="color"] {
+            width: 50px;
+            height: 30px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .chart-area {
+            background: white;
+            border-radius: 4px;
+            padding: 30px;
+            border: 1px solid #e9ecef;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 700px;
+            position: sticky;
+            top: 20px;
+            align-self: flex-start;
+        }
+
+        .chart-title {
+            font-size: 2em;
+            font-weight: bold;
+            color: #003d5c;
+            margin-bottom: 30px;
+            text-align: center;
+            display: none;
+        }
+
+        #chartCanvas {
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+        }
+
+        .no-data {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 400px;
+            color: #6c757d;
+            font-size: 1.2em;
+        }
+
+        .no-data::before {
+            content: '📊';
+            font-size: 4em;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .slice-explode-control {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px;
+            margin: 4px 0;
+            background: white;
+            border-radius: 4px;
+            border: 1px solid #dee2e6;
+        }
+
+        .slice-explode-control label {
+            font-size: 0.9em;
+            color: #495057;
+            flex: 1;
+            cursor: pointer;
+        }
+
+        .slice-explode-control input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .rotation-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .rotation-control {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .rotation-control label {
+            font-size: 0.9em;
+            color: #495057;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .rotation-control input[type="range"] {
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 4px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .modal-header h2 {
+            color: #333;
+            font-size: 1.5em;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #6c757d;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .modal-close:hover {
+            background: #f8f9fa;
+            color: #333;
+        }
+
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .tally-status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1em;
+            transition: all 0.3s ease;
+        }
+
+        .tally-status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 2px solid #f5c6cb;
+        }
+
+        .tally-status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 2px solid #c3e6cb;
+        }
+
+        .tally-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .tally-table th,
+        .tally-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .tally-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .tally-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .tally-table input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+        }
+
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .chart-area {
+                position: static;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>3D Pie Chart Generator</h1>
+        </div>
+
+        <div class="main-content">
+            <!-- Controls Panel -->
+            <div class="controls-panel">
+                <!-- File Actions -->
+                <div class="control-section">
+                    <h3>File Actions</h3>
+                    <div class="action-buttons">
+                        <button class="btn btn-primary" onclick="importCSV()">📁 Import CSV</button>
+                        <button class="btn btn-primary" onclick="showCreateChartModal()">➕ Generate Chart</button>
+                        <button class="btn btn-secondary" onclick="showModifyChartModal()">✏️ Modify Chart Numbers</button>
+                        <button class="btn btn-secondary" onclick="exportToCSV()">💾 Export to CSV</button>
+                    </div>
+                    <input type="file" id="csvInput" accept=".csv">
+                </div>
+
+                <!-- Display Options -->
+                <div class="control-section">
+                    <h3>Display Options</h3>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="showPercentage" checked onchange="generateChart()">
+                            Percentage
+                        </label>
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="showCount" checked onchange="generateChart()">
+                            Count
+                        </label>
+                    </div>
+                    <div class="checkbox-group" style="margin-top: 10px;">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="showLegend" checked onchange="generateChart()">
+                            Show Legend
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 3D Rotation -->
+                <div class="control-section">
+                    <h3>3D Rotation</h3>
+                    <div class="rotation-grid">
+                        <div class="rotation-control">
+                            <label>
+                                <span>X-Axis:</span>
+                                <span id="rotationXValue">20</span>°
+                            </label>
+                            <input type="range" id="rotationX" min="-90" max="90" value="20" 
+                                   oninput="updateRotationLabel('X'); debouncedGenerateChart();">
+                        </div>
+                        <div class="rotation-control">
+                            <label>
+                                <span>Y-Axis:</span>
+                                <span id="rotationYValue">30</span>°
+                            </label>
+                            <input type="range" id="rotationY" min="0" max="360" value="30" 
+                                   oninput="updateRotationLabel('Y'); debouncedGenerateChart();">
+                        </div>
+                    </div>
+                    <div class="rotation-control" style="margin-top: 10px;">
+                        <label>
+                            <span>Depth:</span>
+                            <span id="depthValue">30</span>px
+                        </label>
+                        <input type="range" id="pieDepth" min="10" max="80" value="30" 
+                               oninput="updateDepthLabel(); debouncedGenerateChart();">
+                    </div>
+                </div>
+
+                <!-- Slice Explosion -->
+                <div class="control-section">
+                    <h3>Explode Slices</h3>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #495057;">
+                            Explosion Distance: <span id="explosionDistanceValue">40</span>px
+                        </label>
+                        <input type="range" id="explosionDistance" min="0" max="100" value="40" step="5"
+                               oninput="updateExplosionDistanceLabel(); debouncedGenerateChart();"
+                               style="width: 100%; cursor: pointer;">
+                    </div>
+                    <div id="sliceExplodeControls" style="max-height: 200px; overflow-y: auto;">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+
+                <!-- Export Actions -->
+                <div class="control-section">
+                    <h3>Export</h3>
+                    <div class="action-buttons">
+                        <button class="btn btn-success" onclick="copyAsPNG()">📋 Copy PNG</button>
+                        <button class="btn btn-success" onclick="downloadAsPNG()">⬇️ Download PNG</button>
+                    </div>
+                </div>
+
+                <!-- Customize Colors -->
+                <div class="control-section">
+                    <h3>Customize Colors</h3>
+                    <div id="colorControls">
+                        <!-- Dynamically populated -->
+                    </div>
+                    <button class="btn btn-warning" onclick="resetColors()" style="margin-top: 15px;">
+                        🔄 Reset Colors
+                    </button>
+                </div>
+
+                <!-- Label Shadow -->
+                <div class="control-section">
+                    <h3>Label Shadow</h3>
+                    <div class="color-control">
+                        <label for="shadowColor">Shadow Color</label>
+                        <input type="color" id="shadowColor" value="#000000" onchange="generateChart()">
+                    </div>
+                </div>
+
+                <!-- Font Style -->
+                <div class="control-section">
+                    <h3>Font Style</h3>
+                    <div>
+                        <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #495057;">Font Family</label>
+                        <select id="fontFamily" onchange="generateChart()" style="width: 100%; padding: 8px; border: 1px solid #dee2e6; border-radius: 4px; font-size: 0.95em;">
+                            <option value="Segoe UI">Segoe UI</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Helvetica">Helvetica</option>
+                            <option value="Comic Sans MS">Comic Sans MS</option>
+                            <option value="Times New Roman">Times New Roman</option>
+                            <option value="Courier New">Courier New</option>
+                            <option value="Verdana">Verdana</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Palatino">Palatino</option>
+                            <option value="Garamond">Garamond</option>
+                            <option value="Trebuchet MS">Trebuchet MS</option>
+                            <option value="Impact">Impact</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Label Placement -->
+                <div class="control-section">
+                    <h3>Label Placement</h3>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #495057;">
+                            Callout Threshold: <span id="thresholdValue">10</span>%
+                        </label>
+                        <input type="range" id="labelThreshold" min="0" max="25" value="10" step="1" 
+                               oninput="updateThresholdLabel(); debouncedGenerateChart();"
+                               style="width: 100%; cursor: pointer;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8em; color: #6c757d; margin-top: 5px;">
+                            <span>0%</span>
+                            <span style="font-size: 0.75em;">Slices below threshold get callout labels</span>
+                            <span>25%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Font Sizes -->
+                <div class="control-section">
+                    <h3>Font Sizes</h3>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #495057;">
+                            Title Size: <span id="titleSizeValue">100</span>%
+                        </label>
+                        <input type="range" id="titleSize" min="50" max="200" value="100" step="10" 
+                               oninput="updateTitleSizeLabel(); debouncedGenerateChart();"
+                               style="width: 100%; cursor: pointer;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8em; color: #6c757d; margin-top: 5px;">
+                            <span>50%</span>
+                            <span>100%</span>
+                            <span>200%</span>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #495057;">
+                            Content Size: <span id="contentSizeValue">100</span>%
+                        </label>
+                        <input type="range" id="contentSize" min="50" max="200" value="100" step="10" 
+                               oninput="updateContentSizeLabel(); debouncedGenerateChart();"
+                               style="width: 100%; cursor: pointer;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8em; color: #6c757d; margin-top: 5px;">
+                            <span>50%</span>
+                            <span>100%</span>
+                            <span>200%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shadow & Polish Effects -->
+                <div class="control-section">
+                    <h3>Shadow & Polish Effects</h3>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #495057;">
+                            3D Shadow: <span id="shadowIntensityValue">100</span>%
+                        </label>
+                        <input type="range" id="shadowIntensity" min="0" max="300" value="100" step="25" 
+                               oninput="updateShadowIntensityLabel(); debouncedGenerateChart();"
+                               style="width: 100%; cursor: pointer;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8em; color: #6c757d; margin-top: 5px;">
+                            <span>0%</span>
+                            <span style="font-size: 0.75em;">Adjust 3D depth shadow</span>
+                            <span>300%</span>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #495057;">
+                            Glass Polish: <span id="glassPolishValue">100</span>%
+                        </label>
+                        <input type="range" id="glassPolish" min="0" max="300" value="100" step="25" 
+                               oninput="updateGlassPolishLabel(); debouncedGenerateChart();"
+                               style="width: 100%; cursor: pointer;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8em; color: #6c757d; margin-top: 5px;">
+                            <span>0%</span>
+                            <span style="font-size: 0.75em;">Glass & shine effect</span>
+                            <span>300%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart Area -->
+            <div class="chart-area">
+                <div class="chart-title" id="chartTitle">Status</div>
+                <canvas id="chartCanvas" width="900" height="700"></canvas>
+                <div class="no-data" id="noData">
+                    Import a CSV file or generate a chart to get started
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chartData = null;
+        const defaultColors = [
+            '#2ecc71', '#e74c3c', '#f39c12', '#6c757d', 
+            '#ff6b6b', '#1abc9c', '#9b59b6', '#3498db',
+            '#e67e22', '#34495e', '#16a085', '#c0392b'
+        ];
+        let currentColors = [...defaultColors];
+        let explodedSlices = new Set();
+
+        // Update rotation labels
+        function updateRotationLabel(axis) {
+            const value = document.getElementById(`rotation${axis}`).value;
+            document.getElementById(`rotation${axis}Value`).textContent = value;
+        }
+
+        // Update depth label
+        function updateDepthLabel() {
+            const value = document.getElementById('pieDepth').value;
+            document.getElementById('depthValue').textContent = value;
+        }
+
+        // Update explosion distance label
+        function updateExplosionDistanceLabel() {
+            const value = document.getElementById('explosionDistance').value;
+            document.getElementById('explosionDistanceValue').textContent = value;
+        }
+
+        // Update title size label
+        function updateTitleSizeLabel() {
+            const size = document.getElementById('titleSize').value;
+            document.getElementById('titleSizeValue').textContent = size;
+        }
+
+        // Update content size label
+        function updateContentSizeLabel() {
+            const size = document.getElementById('contentSize').value;
+            document.getElementById('contentSizeValue').textContent = size;
+        }
+
+        // Debouncing for smooth slider performance
+        let debounceTimer;
+        function debouncedGenerateChart() {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                requestAnimationFrame(generateChart);
+            }, 50);
+        }
+
+        // Update shadow intensity label
+        function updateShadowIntensityLabel() {
+            const intensity = document.getElementById('shadowIntensity').value;
+            document.getElementById('shadowIntensityValue').textContent = intensity;
+        }
+
+        // Update glass polish label
+        function updateGlassPolishLabel() {
+            const polish = document.getElementById('glassPolish').value;
+            document.getElementById('glassPolishValue').textContent = polish;
+        }
+
+        // Toggle slice explosion
+        function toggleSliceExplosion(index) {
+            if (explodedSlices.has(index)) {
+                explodedSlices.delete(index);
+            } else {
+                explodedSlices.add(index);
+            }
+            generateChart();
+        }
+
+        // Setup slice explosion controls
+        function setupSliceExplodeControls() {
+            const container = document.getElementById('sliceExplodeControls');
+            container.innerHTML = '';
+            
+            if (!chartData) return;
+
+            chartData.columns.forEach((col, index) => {
+                const div = document.createElement('div');
+                div.className = 'slice-explode-control';
+                const color = currentColors[index] || defaultColors[index % defaultColors.length];
+                div.innerHTML = `
+                    <span style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; background-color: ${color}; margin-right: 8px; vertical-align: middle; border: 1px solid rgba(0,0,0,0.1);"></span>
+                    <label for="explode-${index}" style="vertical-align: middle;">${col.name}</label>
+                    <input type="checkbox" id="explode-${index}" 
+                           ${explodedSlices.has(index) ? 'checked' : ''}
+                           onchange="toggleSliceExplosion(${index})">
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Import CSV
+        function importCSV() {
+            document.getElementById('csvInput').click();
+        }
+
+        document.getElementById('csvInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                try {
+                    parseCSV(event.target.result);
+                    generateChart();
+                    setupColorControls();
+                    setupSliceExplodeControls();
+                } catch (error) {
+                    alert('Error parsing CSV: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        // Parse CSV
+        function parseCSV(csvContent) {
+            const lines = csvContent.trim().split('\n');
+            if (lines.length < 2) {
+                throw new Error('CSV must have at least 2 rows (header + data)');
+            }
+
+            const headers = lines[0].split(',').map(h => h.trim());
+            // Parse row 2: first cell is title (string), rest are numeric values
+            const row2 = lines[1].split(',').map(v => v.trim());
+            const title = row2[0] || headers[0] || 'Chart';
+            const values = [title, ...row2.slice(1).map(v => parseInt(v))];
+
+            // Check for colors row (row 3)
+            let colors = null;
+            if (lines.length >= 3) {
+                const colorRow = lines[2].split(',').map(c => c.trim());
+                // Skip first cell (which contains "Colors" label) and filter out empty values
+                const colorValues = colorRow.slice(1).filter(c => c && c !== '' && c !== 'Colors');
+                if (colorValues.length > 0) {
+                    colors = colorValues;
+                }
+            }
+
+            // Check for font row (row 4)
+            let font = 'Segoe UI';
+            if (lines.length >= 4) {
+                const fontRow = lines[3].split(',').map(f => f.trim());
+                const fontValue = fontRow[0];
+                // Only set font if it's not empty and not "Colors" or similar labels
+                if (fontValue && fontValue !== '' && fontValue !== 'Colors' && fontValue !== 'Font') {
+                    font = fontValue;
+                    document.getElementById('fontFamily').value = font;
+                }
+            }
+
+            // The actual title is in row 2, column 1 (values[0]) - parsed above
+            // Row 1, column 1 contains "Initiative Name" which is just a label
+            const columns = headers.slice(1).map((name, index) => ({
+                name: name,
+                value: values[index + 1] || 0
+            })).filter(col => col.value > 0);
+
+            chartData = { title, columns };
+
+            // Apply colors if provided
+            if (colors && colors.length > 0) {
+                currentColors = [...colors];
+                while (currentColors.length < columns.length) {
+                    currentColors.push(defaultColors[currentColors.length % defaultColors.length]);
+                }
+            } else {
+                currentColors = [...defaultColors];
+            }
+        }
+
+        // Export CSV
+        function exportToCSV() {
+            if (!chartData) {
+                alert('No chart data to export');
+                return;
+            }
+
+            const headers = [chartData.title, ...chartData.columns.map(c => c.name)].join(',');
+            const values = ['', ...chartData.columns.map(c => c.value)].join(',');
+            const colors = ['', ...currentColors.slice(0, chartData.columns.length)].join(',');
+            const font = document.getElementById('fontFamily').value;
+
+            const csv = `${headers}\n${values}\n${colors}\n${font}`;
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${chartData.title.replace(/\s+/g, '_')}_chart.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Setup color controls
+        function setupColorControls() {
+            const container = document.getElementById('colorControls');
+            container.innerHTML = '';
+            
+            if (!chartData) return;
+
+            chartData.columns.forEach((col, index) => {
+                const div = document.createElement('div');
+                div.className = 'color-control';
+                div.innerHTML = `
+                    <label>${col.name}</label>
+                    <input type="color" value="${currentColors[index]}" onchange="updateColor(${index}, this.value)">
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        // Update color
+        function updateColor(index, color) {
+            currentColors[index] = color;
+            generateChart();
+        }
+
+        // Reset colors
+        function resetColors() {
+            currentColors = [...defaultColors];
+            setupColorControls();
+            generateChart();
+        }
+
+        // 3D transformation helper functions
+        function rotateX(point, angle) {
+            const rad = angle * Math.PI / 180;
+            const cos = Math.cos(rad);
+            const sin = Math.sin(rad);
+            return {
+                x: point.x,
+                y: point.y * cos - point.z * sin,
+                z: point.y * sin + point.z * cos
+            };
+        }
+
+        function rotateY(point, angle) {
+            const rad = angle * Math.PI / 180;
+            const cos = Math.cos(rad);
+            const sin = Math.sin(rad);
+            return {
+                x: point.x * cos - point.z * sin,
+                y: point.y,
+                z: point.x * sin + point.z * cos
+            };
+        }
+
+        function rotateX(point, angle) {
+            const rad = angle * Math.PI / 180;
+            const cos = Math.cos(rad);
+            const sin = Math.sin(rad);
+            return {
+                x: point.x,
+                y: point.y * cos - point.z * sin,
+                z: point.y * sin + point.z * cos
+            };
+        }
+
+        function updateThresholdLabel() {
+            const threshold = document.getElementById('labelThreshold').value;
+            document.getElementById('thresholdValue').textContent = threshold;
+        }
+
+        function project(point, distance = 500) {
+            const factor = distance / (distance + point.z);
+            return {
+                x: point.x * factor,
+                y: point.y * factor,
+                z: point.z
+            };
+        }
+
+        // Generate 3D Chart
+        function generateChart() {
+            if (!chartData) {
+                document.getElementById('noData').style.display = 'flex';
+                document.getElementById('chartCanvas').style.display = 'none';
+                return;
+            }
+
+            document.getElementById('noData').style.display = 'none';
+            document.getElementById('chartCanvas').style.display = 'block';
+
+            const canvas = document.getElementById('chartCanvas');
+            const ctx = canvas.getContext('2d');
+            const showCount = document.getElementById('showCount').checked;
+            const showPercentage = document.getElementById('showPercentage').checked;
+            const showLegend = document.getElementById('showLegend').checked;
+            const shadowColor = document.getElementById('shadowColor').value;
+            const fontFamily = document.getElementById('fontFamily').value;
+            
+            // Get parameters
+            const titleSizeMultiplier = (parseFloat(document.getElementById('titleSize').value) || 100) / 100;
+            const contentSizeMultiplier = (parseFloat(document.getElementById('contentSize').value) || 100) / 100;
+            const shadowIntensity = (parseFloat(document.getElementById('shadowIntensity').value) || 100) / 100;
+            const rotationX = parseFloat(document.getElementById('rotationX').value) || 20;
+            const rotationY = parseFloat(document.getElementById('rotationY').value) || 30;
+            const pieDepth = parseFloat(document.getElementById('pieDepth').value) || 30;
+            const explosionDistance = parseFloat(document.getElementById('explosionDistance').value) || 40;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Calculate dimensions
+            const topMargin = 80;
+            const bottomMargin = 100;
+            const legendWidth = showLegend ? 250 : 0;
+            const availableHeight = canvas.height - topMargin - bottomMargin;
+            const availableWidth = canvas.width - legendWidth - 100;
+            
+            const pieRadius = Math.min(availableWidth, availableHeight) / 3;
+            const pieX = (canvas.width - legendWidth) / 2;
+            const pieY = topMargin + (availableHeight / 2);
+
+            // Draw Title
+            const titleFontSize = Math.round(32 * titleSizeMultiplier);
+            ctx.font = `bold ${titleFontSize}px "${fontFamily}"`;
+            ctx.fillStyle = '#003d5c';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'top';
+            ctx.fillText(chartData.title, canvas.width / 2, 30);
+
+            // Calculate total
+            const total = chartData.columns.reduce((acc, col) => acc + col.value, 0);
+
+            // Prepare slices with 3D information
+            const slices = [];
+            let startAngle = -Math.PI / 2;
+
+            chartData.columns.forEach((col, index) => {
+                const sliceAngle = (col.value / total) * 2 * Math.PI;
+                const endAngle = startAngle + sliceAngle;
+                const midAngle = startAngle + sliceAngle / 2;
+                const percentage = ((col.value / total) * 100);
+
+                // Calculate explosion offset
+                let explodeOffsetX = 0;
+                let explodeOffsetY = 0;
+                if (explodedSlices.has(index)) {
+                    explodeOffsetX = Math.cos(midAngle) * explosionDistance;
+                    explodeOffsetY = Math.sin(midAngle) * explosionDistance;
+                }
+
+                slices.push({
+                    index,
+                    startAngle,
+                    endAngle,
+                    midAngle,
+                    color: currentColors[index],
+                    percentage,
+                    value: col.value,
+                    name: col.name,
+                    explodeOffsetX,
+                    explodeOffsetY,
+                    // Calculate z-depth for sorting
+                    zDepth: Math.sin(midAngle) * pieRadius
+                });
+
+                startAngle = endAngle;
+            });
+
+            // Sort slices by z-depth (back to front)
+            slices.sort((a, b) => a.zDepth - b.zDepth);
+
+            // Draw 3D pie slices
+            slices.forEach(slice => {
+                draw3DPieSlice(ctx, pieX, pieY, pieRadius, pieDepth, slice, rotationX, rotationY, shadowIntensity);
+            });
+
+            // Prepare labels (internal vs external based on threshold)
+            const SMALL_SLICE_THRESHOLD = parseFloat(document.getElementById('labelThreshold').value);
+            const externalLabels = { left: [], right: [] };
+            const internalLabels = [];
+
+            slices.forEach(slice => {
+                let label = '';
+                if (showPercentage) {
+                    label += `${slice.percentage.toFixed(1)}%`;
+                }
+                if (showCount) {
+                    if (label) label += '\n';
+                    label += slice.value;
+                }
+
+                if (!label) return;
+
+                const isSmallSlice = slice.percentage < SMALL_SLICE_THRESHOLD;
+
+                if (isSmallSlice) {
+                    // Apply Y-axis rotation to label connection points to match rotated slice
+                    const cosY = Math.cos(rotationY * Math.PI / 180);
+                    const sinY = Math.sin(rotationY * Math.PI / 180);
+                    
+                    // Calculate inner point (0.9 radius)
+                    let innerX3D = Math.cos(slice.midAngle) * (pieRadius * 0.9);
+                    let innerZ3D = Math.sin(slice.midAngle) * (pieRadius * 0.9);
+                    const innerXRot = innerX3D * cosY - innerZ3D * sinY;
+                    const innerZRot = innerX3D * sinY + innerZ3D * cosY;
+                    
+                    // Calculate outer point (1.15 radius)
+                    let outerX3D = Math.cos(slice.midAngle) * (pieRadius * 1.15);
+                    let outerZ3D = Math.sin(slice.midAngle) * (pieRadius * 1.15);
+                    const outerXRot = outerX3D * cosY - outerZ3D * sinY;
+                    const outerZRot = outerX3D * sinY + outerZ3D * cosY;
+                    
+                    const innerX = pieX + slice.explodeOffsetX + innerXRot;
+                    const innerY = pieY + slice.explodeOffsetY + innerZRot;
+                    const outerX = pieX + slice.explodeOffsetX + outerXRot;
+                    const outerY = pieY + slice.explodeOffsetY + outerZRot;
+                    
+                    // Determine side based on rotated position
+                    const isRightSide = outerXRot > 0;
+
+                    const labelInfo = {
+                        label,
+                        color: slice.color,
+                        innerX,
+                        innerY,
+                        outerX,
+                        outerY,
+                        naturalY: outerY,
+                        midAngle: slice.midAngle
+                    };
+
+                    if (isRightSide) {
+                        externalLabels.right.push(labelInfo);
+                    } else {
+                        externalLabels.left.push(labelInfo);
+                    }
+                } else {
+                    internalLabels.push({
+                        label,
+                        midAngle: slice.midAngle,
+                        color: slice.color,
+                        explodeOffsetX: slice.explodeOffsetX,
+                        explodeOffsetY: slice.explodeOffsetY
+                    });
+                }
+            });
+
+            // Define safe zones
+            const labelMinY = topMargin + 60; // Below title
+            const labelMaxY = canvas.height - bottomMargin - 20; // Above summary
+            const labelSpacing = Math.round(35 * contentSizeMultiplier); // Scale spacing with content size
+
+            // Function to redistribute labels vertically with collision detection
+            function redistributeLabels(labels, side) {
+                if (labels.length === 0) return labels;
+
+                // Sort by natural Y position
+                labels.sort((a, b) => a.naturalY - b.naturalY);
+
+                // Calculate label heights
+                const contentFontSize = Math.round(12 * contentSizeMultiplier);
+                ctx.font = `bold ${contentFontSize}px "${fontFamily}"`;
+                labels.forEach(l => {
+                    const lines = l.label.split('\n');
+                    l.height = lines.length * (contentFontSize + 4) + 8; // 4px line spacing, 8px padding
+                });
+
+                // Calculate total height needed
+                const totalHeight = labels.reduce((sum, l) => sum + l.height + labelSpacing, -labelSpacing);
+                const availableHeight = labelMaxY - labelMinY;
+
+                let positions = [];
+
+                if (totalHeight <= availableHeight) {
+                    // Distribute based on natural positions with collision avoidance
+                    let currentY = labelMinY;
+
+                    labels.forEach((l, i) => {
+                        // Try to use natural position
+                        let targetY = Math.max(labelMinY, Math.min(labelMaxY - l.height, l.naturalY - l.height / 2));
+
+                        // Avoid collision with previous label
+                        if (i > 0) {
+                            const prevBottom = positions[i - 1].y + positions[i - 1].height;
+                            targetY = Math.max(targetY, prevBottom + labelSpacing);
+                        }
+
+                        // Ensure within bounds
+                        targetY = Math.min(targetY, labelMaxY - l.height);
+
+                        positions.push({ ...l, y: targetY });
+                    });
+                } else {
+                    // Evenly distribute in available space
+                    const spacing = (availableHeight - labels.reduce((sum, l) => sum + l.height, 0)) / (labels.length + 1);
+                    let currentY = labelMinY + spacing;
+
+                    labels.forEach(l => {
+                        positions.push({ ...l, y: currentY });
+                        currentY += l.height + spacing;
+                    });
+                }
+
+                return positions;
+            }
+
+            // Redistribute labels on each side
+            const leftLabels = redistributeLabels(externalLabels.left, 'left');
+            const rightLabels = redistributeLabels(externalLabels.right, 'right');
+
+            // Draw external labels with elbow leader lines
+            function drawExternalLabel(labelInfo, isRightSide) {
+                const { label, color, innerX, innerY, outerX, outerY, y, height } = labelInfo;
+
+                const elbowX = isRightSide ? pieX + pieRadius + 40 : pieX - pieRadius - 40;
+                const labelY = y + height / 2;
+                const labelX = isRightSide ? elbowX + 10 : elbowX - 10;
+
+                ctx.save();
+
+                // Draw leader line with elbow
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(innerX, innerY);
+                ctx.lineTo(outerX, outerY);
+                ctx.lineTo(elbowX, labelY);
+                ctx.stroke();
+
+                // Draw label background
+                const contentFontSize = Math.round(12 * contentSizeMultiplier);
+                const lineHeight = contentFontSize + 4;
+                ctx.font = `bold ${contentFontSize}px "${fontFamily}"`;
+                const lines = label.split('\n');
+                const maxWidth = Math.max(...lines.map(line => ctx.measureText(line).width));
+                const paddingX = 8;
+                const paddingY = 4;
+
+                // Background with color tint and modern styling
+                const rectWidth = maxWidth + paddingX * 2;
+                const rectX = isRightSide ? labelX : labelX - rectWidth;
+                const rectY = y;
+                const cornerRadius = 6;
+
+                // Draw shadow first (modern soft shadow with adjustable intensity)
+                const shadowOpacity = 0.12 * shadowIntensity;
+                const shadowBlurAmount = 6 * shadowIntensity;
+                const shadowOffsetAmount = 2 * shadowIntensity;
+                ctx.shadowColor = `rgba(0, 0, 0, ${Math.min(shadowOpacity, 0.5)})`;
+                ctx.shadowBlur = shadowBlurAmount;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = shadowOffsetAmount;
+
+                // Fill with color (lighter version) - rounded rectangle
+                ctx.fillStyle = color;
+                ctx.globalAlpha = 0.15;
+                ctx.beginPath();
+                ctx.roundRect(rectX, rectY, rectWidth, height, cornerRadius);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+
+                // Reset shadow for text
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
+
+                // Draw label text (center-aligned within box)
+                ctx.fillStyle = '#333';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+
+                const textCenterX = rectX + rectWidth / 2;
+                lines.forEach((line, i) => {
+                    const textY = labelY + (i - lines.length / 2 + 0.5) * lineHeight;
+                    ctx.fillText(line, textCenterX, textY);
+                });
+
+                ctx.restore();
+            }
+
+            // Draw all external labels
+            leftLabels.forEach(l => drawExternalLabel(l, false));
+            rightLabels.forEach(l => drawExternalLabel(l, true));
+
+            // Draw internal labels
+            internalLabels.forEach((labelInfo) => {
+                // Apply Y-axis rotation to internal label position to match rotated slice
+                const cosY = Math.cos(rotationY * Math.PI / 180);
+                const sinY = Math.sin(rotationY * Math.PI / 180);
+                
+                let labelX3D = Math.cos(labelInfo.midAngle) * (pieRadius * 0.7);
+                let labelZ3D = Math.sin(labelInfo.midAngle) * (pieRadius * 0.7);
+                const labelXRot = labelX3D * cosY - labelZ3D * sinY;
+                const labelZRot = labelX3D * sinY + labelZ3D * cosY;
+                
+                const labelX = pieX + labelInfo.explodeOffsetX + labelXRot;
+                const labelY = pieY + labelInfo.explodeOffsetY + labelZRot;
+
+                ctx.save();
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const labelSize = Math.round(14 * contentSizeMultiplier);
+                ctx.font = `bold ${labelSize}px "${fontFamily}"`;
+
+                // Draw shadow
+                ctx.shadowColor = shadowColor;
+                ctx.shadowBlur = 4;
+                ctx.shadowOffsetX = 2;
+                ctx.shadowOffsetY = 2;
+
+                ctx.fillStyle = '#fff';
+                const lines = labelInfo.label.split('\n');
+                const lineHeight = labelSize + 4;
+                lines.forEach((line, i) => {
+                    ctx.fillText(line, labelX, labelY + (i - lines.length / 2 + 0.5) * lineHeight);
+                });
+
+                ctx.restore();
+            });
+
+            // Draw legend
+            if (showLegend) {
+                drawLegend(ctx, canvas, chartData, total, topMargin, legendWidth, currentColors, fontFamily, contentSizeMultiplier, shadowIntensity);
+            }
+
+            // Draw summary
+            drawSummary(ctx, canvas, chartData, total, fontFamily, contentSizeMultiplier);
+        }
+
+        // Draw 3D pie slice with glass polish effect and Y-axis rotation
+        function draw3DPieSlice(ctx, centerX, centerY, radius, depth, slice, rotationXAngle, rotationYAngle, shadowIntensity) {
+            ctx.save();
+
+            const steps = 30; // Reduced from 50 for better performance
+            const { startAngle, endAngle, color, explodeOffsetX, explodeOffsetY } = slice;
+            
+            // Get glass polish intensity
+            const glassPolish = parseFloat(document.getElementById('glassPolish')?.value || 100) / 100;
+
+            // Apply Y-axis rotation to create true 3D effect
+            const cosY = Math.cos(rotationYAngle * Math.PI / 180);
+            const sinY = Math.sin(rotationYAngle * Math.PI / 180);
+            
+            // The explodeOffsetX and explodeOffsetY are already calculated correctly as 2D screen coordinates
+            // We just need to use them directly without additional transformation
+            // They represent the final position offset after all rotations are considered
+            
+            // Batch shadow setup (optimization - set once for all side faces)
+            const sideColor = shadeColor(color, -40);
+            
+            // Draw side faces with improved 3D shading
+            for (let i = 0; i <= steps; i++) {
+                const angle = startAngle + (endAngle - startAngle) * (i / steps);
+                const nextAngle = startAngle + (endAngle - startAngle) * ((i + 1) / steps);
+
+                // Bottom face points with Y-axis rotation
+                let x1 = Math.cos(angle) * radius;
+                let z1 = Math.sin(angle) * radius;
+                let x2 = Math.cos(nextAngle) * radius;
+                let z2 = Math.sin(nextAngle) * radius;
+                
+                // Apply Y-axis rotation
+                const x1Rot = x1 * cosY - z1 * sinY;
+                const z1Rot = x1 * sinY + z1 * cosY;
+                const x2Rot = x2 * cosY - z2 * sinY;
+                const z2Rot = x2 * sinY + z2 * cosY;
+                
+                const x1Final = centerX + explodeOffsetX + x1Rot;
+                const y1Final = centerY + explodeOffsetY + z1Rot;
+                const x2Final = centerX + explodeOffsetX + x2Rot;
+                const y2Final = centerY + explodeOffsetY + z2Rot;
+
+                // Apply 3D depth (X-axis rotation effect)
+                const depthOffset = depth * Math.sin(rotationXAngle * Math.PI / 180);
+
+                // Calculate gradient based on segment position for better 3D effect
+                const segmentRatio = i / steps;
+                const brightnessVariation = Math.sin(segmentRatio * Math.PI) * 0.15; // Subtle variation across the arc
+                const adjustedSideColor = shadeColor(color, -40 + (brightnessVariation * 20));
+
+                // Draw side quad
+                ctx.beginPath();
+                ctx.moveTo(x1Final, y1Final);
+                ctx.lineTo(x1Final, y1Final + depthOffset);
+                ctx.lineTo(x2Final, y2Final + depthOffset);
+                ctx.lineTo(x2Final, y2Final);
+                ctx.closePath();
+
+                ctx.fillStyle = adjustedSideColor;
+                ctx.globalAlpha = 0.85; // Glass effect - slight transparency
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+                
+                // Glass frosted edge with subtle depth
+                if (glassPolish > 0) {
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${0.15 * glassPolish})`;
+                    ctx.lineWidth = 0.5;
+                    ctx.stroke();
+                }
+            }
+            
+            // Draw radial edges (corner strips) with proper 3D shading
+            // Start radial edge
+            ctx.beginPath();
+            let xStart = Math.cos(startAngle) * radius;
+            let zStart = Math.sin(startAngle) * radius;
+            const xStartRot = xStart * cosY - zStart * sinY;
+            const zStartRot = xStart * sinY + zStart * cosY;
+            const xStartFinal = centerX + explodeOffsetX + xStartRot;
+            const yStartFinal = centerY + explodeOffsetY + zStartRot;
+            const depthOffset = depth * Math.sin(rotationXAngle * Math.PI / 180);
+            
+            ctx.moveTo(centerX + explodeOffsetX, centerY + explodeOffsetY);
+            ctx.lineTo(xStartFinal, yStartFinal);
+            ctx.lineTo(xStartFinal, yStartFinal + depthOffset);
+            ctx.lineTo(centerX + explodeOffsetX, centerY + explodeOffsetY + depthOffset);
+            ctx.closePath();
+            
+            const edgeColor = shadeColor(color, -50); // Darker for edges
+            ctx.fillStyle = edgeColor;
+            ctx.globalAlpha = 0.80;
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+            
+            // End radial edge
+            ctx.beginPath();
+            let xEnd = Math.cos(endAngle) * radius;
+            let zEnd = Math.sin(endAngle) * radius;
+            const xEndRot = xEnd * cosY - zEnd * sinY;
+            const zEndRot = xEnd * sinY + zEnd * cosY;
+            const xEndFinal = centerX + explodeOffsetX + xEndRot;
+            const yEndFinal = centerY + explodeOffsetY + zEndRot;
+            
+            ctx.moveTo(centerX + explodeOffsetX, centerY + explodeOffsetY);
+            ctx.lineTo(xEndFinal, yEndFinal);
+            ctx.lineTo(xEndFinal, yEndFinal + depthOffset);
+            ctx.lineTo(centerX + explodeOffsetX, centerY + explodeOffsetY + depthOffset);
+            ctx.closePath();
+            
+            ctx.fillStyle = edgeColor;
+            ctx.globalAlpha = 0.80;
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+
+            // Draw bottom face
+            ctx.beginPath();
+            const centerDepthOffset = depth * Math.sin(rotationXAngle * Math.PI / 180);
+            ctx.moveTo(centerX + explodeOffsetX, centerY + explodeOffsetY + centerDepthOffset);
+            
+            for (let i = 0; i <= steps; i++) {
+                const angle = startAngle + (endAngle - startAngle) * (i / steps);
+                let x = Math.cos(angle) * radius;
+                let z = Math.sin(angle) * radius;
+                
+                // Apply Y-axis rotation
+                const xRot = x * cosY - z * sinY;
+                const zRot = x * sinY + z * cosY;
+                
+                const xFinal = centerX + explodeOffsetX + xRot;
+                const yFinal = centerY + explodeOffsetY + zRot + centerDepthOffset;
+                ctx.lineTo(xFinal, yFinal);
+            }
+            ctx.closePath();
+            
+            const bottomColor = shadeColor(color, -30);
+            ctx.fillStyle = bottomColor;
+            ctx.globalAlpha = 0.75; // Glass effect - more transparency on bottom
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+            
+            if (glassPolish > 0) {
+                ctx.strokeStyle = `rgba(255, 255, 255, ${0.1 * glassPolish})`;
+                ctx.lineWidth = 0.5;
+                ctx.stroke();
+            }
+
+            // Draw top face with GLASS EFFECT
+            ctx.beginPath();
+            ctx.moveTo(centerX + explodeOffsetX, centerY + explodeOffsetY);
+            
+            for (let i = 0; i <= steps; i++) {
+                const angle = startAngle + (endAngle - startAngle) * (i / steps);
+                let x = Math.cos(angle) * radius;
+                let z = Math.sin(angle) * radius;
+                
+                // Apply Y-axis rotation
+                const xRot = x * cosY - z * sinY;
+                const zRot = x * sinY + z * cosY;
+                
+                const xFinal = centerX + explodeOffsetX + xRot;
+                const yFinal = centerY + explodeOffsetY + zRot;
+                ctx.lineTo(xFinal, yFinal);
+            }
+            ctx.closePath();
+            
+            // GLASS EFFECT: Radial gradient for depth and shine
+            const sliceMidAngle = (startAngle + endAngle) / 2;
+            let midX = Math.cos(sliceMidAngle) * (radius * 0.4);
+            let midZ = Math.sin(sliceMidAngle) * (radius * 0.4);
+            const midXRot = midX * cosY - midZ * sinY;
+            const midZRot = midX * sinY + midZ * cosY;
+            
+            const gradientCenterX = centerX + explodeOffsetX + midXRot;
+            const gradientCenterY = centerY + explodeOffsetY + midZRot;
+            const gradient = ctx.createRadialGradient(gradientCenterX, gradientCenterY, 0, gradientCenterX, gradientCenterY, radius * 1.2);
+            
+            // Glass polish intensity affects gradient brightness
+            const lightness = 10 + (glassPolish * 0.05 * 100); // 10-15% lighter at center
+            gradient.addColorStop(0, shadeColor(color, lightness));
+            gradient.addColorStop(0.7, color);
+            gradient.addColorStop(1, shadeColor(color, -5)); // Slightly darker at edges
+            
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            // GLASS EFFECT: Specular highlight (simulates light reflection)
+            if (glassPolish > 0.1) {
+                const highlightX = centerX + explodeOffsetX + midXRot * 0.6;
+                const highlightY = centerY + explodeOffsetY + midZRot * 0.6;
+                const highlightGradient = ctx.createRadialGradient(
+                    highlightX, highlightY, 0,
+                    highlightX, highlightY, radius * 0.5
+                );
+                highlightGradient.addColorStop(0, `rgba(255, 255, 255, ${0.4 * glassPolish})`);
+                highlightGradient.addColorStop(0.5, `rgba(255, 255, 255, ${0.1 * glassPolish})`);
+                highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+                
+                ctx.fillStyle = highlightGradient;
+                ctx.fill();
+            }
+            
+            // GLASS EFFECT: Frosted edge stroke
+            if (glassPolish > 0) {
+                ctx.strokeStyle = `rgba(255, 255, 255, ${0.25 * glassPolish})`;
+                ctx.lineWidth = 1 + (glassPolish * 0.5);
+                ctx.stroke();
+            }
+
+            ctx.restore();
+        }
+
+        // Helper function to shade color
+        function shadeColor(color, percent) {
+            const num = parseInt(color.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = (num >> 16) + amt;
+            const G = (num >> 8 & 0x00FF) + amt;
+            const B = (num & 0x0000FF) + amt;
+            return '#' + (0x1000000 + (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+                (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+                (B < 255 ? B < 1 ? 0 : B : 255))
+                .toString(16).slice(1);
+        }
+
+        // Draw legend
+        function drawLegend(ctx, canvas, chartData, total, topMargin, legendWidth, colors, fontFamily, contentSizeMultiplier, shadowIntensity) {
+            const legendX = canvas.width - legendWidth + 20;
+            let legendY = topMargin + 20;
+
+            const legendTitleSize = Math.round(18 * contentSizeMultiplier);
+            const legendNameSize = Math.round(14 * contentSizeMultiplier);
+            const legendDetailSize = Math.round(12 * contentSizeMultiplier);
+
+            ctx.font = `bold ${legendTitleSize}px "${fontFamily}"`;
+            ctx.fillStyle = '#003d5c';
+            ctx.textAlign = 'left';
+            ctx.fillText('Legend', legendX, legendY);
+
+            legendY += 35;
+
+            chartData.columns.forEach((col, index) => {
+                const boxSize = 20;
+                const boxX = legendX;
+                const boxY = legendY - 12;
+                const boxRadius = 4;
+                
+                // Draw shadow
+                const legendShadowOpacity = 0.1 * shadowIntensity;
+                const legendShadowBlur = 3 * shadowIntensity;
+                const legendShadowOffset = 1 * shadowIntensity;
+                ctx.shadowColor = `rgba(0, 0, 0, ${Math.min(legendShadowOpacity, 0.4)})`;
+                ctx.shadowBlur = legendShadowBlur;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = legendShadowOffset;
+                
+                // Fill rounded rectangle
+                ctx.fillStyle = colors[index];
+                ctx.beginPath();
+                ctx.roundRect(boxX, boxY, boxSize, boxSize, boxRadius);
+                ctx.fill();
+                
+                // Reset shadow
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
+
+                // Text
+                ctx.fillStyle = '#333';
+                ctx.font = `${legendNameSize}px "${fontFamily}"`;
+                ctx.fillText(col.name, legendX + 30, legendY);
+
+                const percentage = ((col.value / total) * 100).toFixed(1);
+                ctx.font = `${legendDetailSize}px "${fontFamily}"`;
+                ctx.fillStyle = '#666';
+                ctx.fillText(`${percentage}% (${col.value})`, legendX + 30, legendY + 15);
+
+                legendY += 40;
+            });
+        }
+
+        // Draw summary
+        function drawSummary(ctx, canvas, chartData, total, fontFamily, contentSizeMultiplier) {
+            const summaryY = canvas.height - 50;
+            const summarySize = Math.round(14 * contentSizeMultiplier);
+            ctx.font = `${summarySize}px "${fontFamily}"`;
+            ctx.fillStyle = '#003d5c';
+            ctx.textAlign = 'center';
+            
+            let summaryParts = [`Total: ${total}`];
+            chartData.columns.forEach((col, index) => {
+                const percentage = ((col.value / total) * 100).toFixed(1);
+                summaryParts.push(`${col.name}: ${col.value} (${percentage}%)`);
+            });
+            const summaryText = summaryParts.join(' | ');
+            
+            // Wrap text if needed
+            const maxWidth = canvas.width - 40;
+            const words = summaryText.split(' ');
+            let lines = [];
+            let currentLine = '';
+            
+            words.forEach(word => {
+                const testLine = currentLine ? currentLine + ' ' + word : word;
+                const metrics = ctx.measureText(testLine);
+                
+                if (metrics.width > maxWidth && currentLine) {
+                    lines.push(currentLine);
+                    currentLine = word;
+                } else {
+                    currentLine = testLine;
+                }
+            });
+            if (currentLine) {
+                lines.push(currentLine);
+            }
+            
+            const lineHeight = summarySize + 4;
+            const startY = summaryY - ((lines.length - 1) * lineHeight) / 2;
+            lines.forEach((line, i) => {
+                ctx.fillText(line, canvas.width / 2, startY + (i * lineHeight));
+            });
+        }
+
+        // Copy as PNG
+        async function copyAsPNG() {
+            if (!chartData) {
+                alert('Please generate a chart first');
+                return;
+            }
+
+            const canvas = document.getElementById('chartCanvas');
+            
+            try {
+                canvas.toBlob(async (blob) => {
+                    try {
+                        await navigator.clipboard.write([
+                            new ClipboardItem({
+                                'image/png': blob
+                            })
+                        ]);
+                        alert('✅ Chart copied to clipboard as PNG!');
+                    } catch (err) {
+                        console.error('Failed to copy:', err);
+                        alert('❌ Failed to copy to clipboard. Your browser may not support this feature.');
+                    }
+                });
+            } catch (err) {
+                console.error('Failed to create blob:', err);
+                alert('❌ Failed to generate PNG');
+            }
+        }
+
+        // Download as PNG
+        function downloadAsPNG() {
+            if (!chartData) {
+                alert('Please generate a chart first');
+                return;
+            }
+
+            const canvas = document.getElementById('chartCanvas');
+            const link = document.createElement('a');
+            link.download = `${chartData.title.replace(/\s+/g, '_')}_3d_chart.png`;
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        // Show create chart modal
+        function showCreateChartModal() {
+            const title = prompt('Enter chart title:', 'Status Chart');
+            if (!title) return;
+
+            const numCategories = parseInt(prompt('How many categories?', '4'));
+            if (!numCategories || numCategories < 1) return;
+
+            const columns = [];
+            let totalValue = 0;
+
+            for (let i = 0; i < numCategories; i++) {
+                const name = prompt(`Category ${i + 1} name:`, `Category ${i + 1}`);
+                if (!name) return;
+
+                const value = parseInt(prompt(`${name} value:`, '10'));
+                if (isNaN(value) || value < 0) return;
+
+                columns.push({ name, value });
+                totalValue += value;
+            }
+
+            if (totalValue === 0) {
+                alert('Total value cannot be zero');
+                return;
+            }
+
+            chartData = { title, columns };
+            currentColors = [...defaultColors];
+            explodedSlices.clear();
+            
+            generateChart();
+            setupColorControls();
+            setupSliceExplodeControls();
+        }
+
+        // Show modify chart modal
+        function showModifyChartModal() {
+            if (!chartData) {
+                alert('Please create or import a chart first');
+                return;
+            }
+
+            const modal = document.getElementById('modifyChartModal');
+            const titleInput = document.getElementById('modifyChartTitle');
+            const tbody = document.getElementById('modifyTableBody');
+
+            // Set current title
+            titleInput.value = chartData.title;
+
+            // Clear table
+            tbody.innerHTML = '';
+
+            // Add rows for each category
+            chartData.columns.forEach((col, index) => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>
+                        <input type="text" 
+                               id="modifyCatName_${index}" 
+                               value="${col.name}"
+                               style="width: 100%; padding: 8px; border: 1px solid #dee2e6; border-radius: 4px;"
+                               onchange="validateModifyChart()">
+                    </td>
+                    <td>
+                        <input type="number" 
+                               id="modifyCatValue_${index}" 
+                               min="0" 
+                               step="1"
+                               value="${col.value}"
+                               style="width: 100%; padding: 8px; border: 1px solid #dee2e6; border-radius: 4px;"
+                               onchange="validateModifyChart()">
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            // Add event listeners
+            setTimeout(() => {
+                chartData.columns.forEach((col, index) => {
+                    const nameInput = document.getElementById(`modifyCatName_${index}`);
+                    const valueInput = document.getElementById(`modifyCatValue_${index}`);
+                    if (nameInput) nameInput.addEventListener('input', validateModifyChart);
+                    if (valueInput) valueInput.addEventListener('input', validateModifyChart);
+                });
+                validateModifyChart();
+            }, 0);
+
+            modal.classList.add('active');
+        }
+
+        // Close Modify Chart Modal
+        function closeModifyChartModal() {
+            document.getElementById('modifyChartModal').classList.remove('active');
+        }
+
+        // Validate Modify Chart
+        function validateModifyChart() {
+            if (!chartData) return;
+
+            let sum = 0;
+            chartData.columns.forEach((col, index) => {
+                const valueInput = document.getElementById(`modifyCatValue_${index}`);
+                if (valueInput) {
+                    const value = parseFloat(valueInput.value) || 0;
+                    sum += value;
+                }
+            });
+
+            const statusDiv = document.getElementById('modifyChartTallyStatus');
+            const applyBtn = document.getElementById('applyModifyBtn');
+
+            if (!statusDiv || !applyBtn) return;
+
+            if (sum > 0) {
+                statusDiv.style.display = 'block';
+                statusDiv.className = 'tally-status success';
+                statusDiv.innerHTML = `✅ Total: <span id="modifyChartTallyDifference">${sum.toFixed(2)}</span>`;
+                applyBtn.disabled = false;
+            } else {
+                statusDiv.style.display = 'none';
+                applyBtn.disabled = true;
+            }
+        }
+
+        // Apply Modify Changes
+        function applyModifyChanges() {
+            if (!chartData) return;
+
+            // Update title
+            const newTitle = document.getElementById('modifyChartTitle').value.trim();
+            if (newTitle) {
+                chartData.title = newTitle;
+            }
+
+            // Update category names and values
+            chartData.columns.forEach((col, index) => {
+                const nameInput = document.getElementById(`modifyCatName_${index}`);
+                const valueInput = document.getElementById(`modifyCatValue_${index}`);
+                
+                if (nameInput && valueInput) {
+                    col.name = nameInput.value.trim() || col.name;
+                    col.value = parseFloat(valueInput.value) || 0;
+                }
+            });
+
+            closeModifyChartModal();
+            setupColorControls();
+            setupSliceExplodeControls();
+            generateChart();
+
+            alert('✅ Chart updated successfully!');
+        }
+    </script>
+
+    <!-- Modify Chart Modal -->
+    <div class="modal-overlay" id="modifyChartModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>✏️ Modify Chart Numbers</h2>
+                <button class="modal-close" onclick="closeModifyChartModal()">×</button>
+            </div>
+
+            <div style="padding: 20px;">
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #495057;">Chart Title</label>
+                    <input type="text" id="modifyChartTitle" placeholder="Enter chart title" 
+                           style="width: 100%; padding: 10px; border: 1px solid #dee2e6; border-radius: 4px; font-size: 14px;">
+                </div>
+
+                <table class="tally-table">
+                    <thead>
+                        <tr>
+                            <th>Category Name</th>
+                            <th>Value</th>
+                        </tr>
+                    </thead>
+                    <tbody id="modifyTableBody"></tbody>
+                </table>
+
+                <div class="tally-status" id="modifyChartTallyStatus" style="display: none; margin-top: 15px;">
+                    Total: <span id="modifyChartTallyDifference">0</span>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModifyChartModal()">Cancel</button>
+                <button class="btn btn-success" id="applyModifyBtn" onclick="applyModifyChanges()">
+                    Apply Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
