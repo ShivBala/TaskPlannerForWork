@@ -792,17 +792,18 @@
             }
 
             const headers = lines[0].split(',').map(h => h.trim());
-            // Parse row 2: first cell is title (string), rest are numeric values
+            // Parse row 2: first cell is title (string), second is total, rest are data values
             const row2 = lines[1].split(',').map(v => v.trim());
             const title = row2[0] || headers[0] || 'Chart';
-            const values = [title, ...row2.slice(1).map(v => parseInt(v))];
+            const total = parseFloat(row2[1]) || 0;
+            const values = row2.slice(2).map(v => parseFloat(v) || 0);
 
             // Check for colors row (row 3)
             let colors = null;
             if (lines.length >= 3) {
                 const colorRow = lines[2].split(',').map(c => c.trim());
-                // Skip first cell (which contains "Colors" label) and filter out empty values
-                const colorValues = colorRow.slice(1).filter(c => c && c !== '' && c !== 'Colors');
+                // Skip first two cells (label and Total column), filter empty values
+                const colorValues = colorRow.slice(2).filter(c => c && c !== '' && c !== 'Colors');
                 if (colorValues.length > 0) {
                     colors = colorValues;
                 }
@@ -820,14 +821,19 @@
                 }
             }
 
-            // The actual title is in row 2, column 1 (values[0]) - parsed above
-            // Row 1, column 1 contains "Initiative Name" which is just a label
-            const columns = headers.slice(1).map((name, index) => ({
-                name: name,
-                value: values[index + 1] || 0
-            })).filter(col => col.value > 0);
+            // Build columns from headers[2+] and values (skip "Initiative Name" and "Total" columns)
+            const columns = [];
+            for (let i = 2; i < headers.length; i++) {
+                const value = values[i - 2] || 0;
+                if (value > 0) {
+                    columns.push({
+                        name: headers[i],
+                        value: value
+                    });
+                }
+            }
 
-            chartData = { title, columns };
+            chartData = { title, total, columns };
 
             // Apply colors if provided
             if (colors && colors.length > 0) {
@@ -1007,12 +1013,25 @@
                 const midAngle = startAngle + sliceAngle / 2;
                 const percentage = ((col.value / total) * 100);
 
-                // Calculate explosion offset
+                // Calculate explosion offset with Y-axis rotation considered
                 let explodeOffsetX = 0;
                 let explodeOffsetY = 0;
                 if (explodedSlices.has(index)) {
-                    explodeOffsetX = Math.cos(midAngle) * explosionDistance;
-                    explodeOffsetY = Math.sin(midAngle) * explosionDistance;
+                    // Calculate the 3D position at the slice midpoint
+                    let midX = Math.cos(midAngle);
+                    let midZ = Math.sin(midAngle);
+                    
+                    // Apply Y-axis rotation to determine actual screen position
+                    const rotY = parseFloat(document.getElementById('rotationY').value);
+                    const cosY = Math.cos(rotY * Math.PI / 180);
+                    const sinY = Math.sin(rotY * Math.PI / 180);
+                    
+                    const midXRot = midX * cosY - midZ * sinY;
+                    const midZRot = midX * sinY + midZ * cosY;
+                    
+                    // Explosion offset in 2D screen space based on rotated position
+                    explodeOffsetX = midXRot * explosionDistance;
+                    explodeOffsetY = midZRot * explosionDistance;
                 }
 
                 slices.push({
@@ -1140,8 +1159,6 @@
 
                 if (totalHeight <= availableHeight) {
                     // Distribute based on natural positions with collision avoidance
-                    let currentY = labelMinY;
-
                     labels.forEach((l, i) => {
                         // Try to use natural position
                         let targetY = Math.max(labelMinY, Math.min(labelMaxY - l.height, l.naturalY - l.height / 2));
@@ -1158,14 +1175,31 @@
                         positions.push({ ...l, y: targetY });
                     });
                 } else {
-                    // Evenly distribute in available space
-                    const spacing = (availableHeight - labels.reduce((sum, l) => sum + l.height, 0)) / (labels.length + 1);
-                    let currentY = labelMinY + spacing;
+                    // Too many labels - use minimal spacing to fit all
+                    const minSpacing = 2; // Minimum 2px gap
+                    const totalHeightWithMinSpacing = labels.reduce((sum, l) => sum + l.height, 0) + (labels.length - 1) * minSpacing;
+                    
+                    if (totalHeightWithMinSpacing <= availableHeight) {
+                        // Can fit with minimal spacing
+                        const spacing = (availableHeight - labels.reduce((sum, l) => sum + l.height, 0)) / (labels.length + 1);
+                        let currentY = labelMinY + spacing;
 
-                    labels.forEach(l => {
-                        positions.push({ ...l, y: currentY });
-                        currentY += l.height + spacing;
-                    });
+                        labels.forEach(l => {
+                            positions.push({ ...l, y: Math.min(currentY, labelMaxY - l.height) });
+                            currentY += l.height + spacing;
+                        });
+                    } else {
+                        // Still can't fit - stack tightly from top
+                        let currentY = labelMinY;
+                        labels.forEach((l, i) => {
+                            if (currentY + l.height > labelMaxY) {
+                                // Would overflow - clamp to bottom
+                                currentY = Math.max(labelMinY, labelMaxY - l.height);
+                            }
+                            positions.push({ ...l, y: currentY });
+                            currentY += l.height + minSpacing;
+                        });
+                    }
                 }
 
                 return positions;
@@ -1185,14 +1219,16 @@
 
                 ctx.save();
 
-                // Draw leader line with elbow
+                // Draw leader line with elbow - thin and subtle
                 ctx.strokeStyle = color;
-                ctx.lineWidth = 2;
+                ctx.lineWidth = 1; // Thin line, not thick strip
+                ctx.globalAlpha = 0.6; // Semi-transparent for subtlety
                 ctx.beginPath();
                 ctx.moveTo(innerX, innerY);
                 ctx.lineTo(outerX, outerY);
                 ctx.lineTo(elbowX, labelY);
                 ctx.stroke();
+                ctx.globalAlpha = 1.0; // Reset
 
                 // Draw label background
                 const contentFontSize = Math.round(12 * contentSizeMultiplier);
@@ -1367,31 +1403,31 @@
                 }
             }
             
-            // Draw radial edges (corner strips) with proper 3D shading
+            // Draw radial edges to close the 3D geometry properly
+            const depthOffset = depth * Math.sin(rotationXAngle * Math.PI / 180);
+            
             // Start radial edge
-            ctx.beginPath();
             let xStart = Math.cos(startAngle) * radius;
             let zStart = Math.sin(startAngle) * radius;
             const xStartRot = xStart * cosY - zStart * sinY;
             const zStartRot = xStart * sinY + zStart * cosY;
             const xStartFinal = centerX + explodeOffsetX + xStartRot;
             const yStartFinal = centerY + explodeOffsetY + zStartRot;
-            const depthOffset = depth * Math.sin(rotationXAngle * Math.PI / 180);
             
+            ctx.beginPath();
             ctx.moveTo(centerX + explodeOffsetX, centerY + explodeOffsetY);
             ctx.lineTo(xStartFinal, yStartFinal);
             ctx.lineTo(xStartFinal, yStartFinal + depthOffset);
             ctx.lineTo(centerX + explodeOffsetX, centerY + explodeOffsetY + depthOffset);
             ctx.closePath();
             
-            const edgeColor = shadeColor(color, -50); // Darker for edges
-            ctx.fillStyle = edgeColor;
-            ctx.globalAlpha = 0.80;
+            // Use same shading as the sides for seamless blend
+            ctx.fillStyle = sideColor;
+            ctx.globalAlpha = 0.85;
             ctx.fill();
             ctx.globalAlpha = 1.0;
             
             // End radial edge
-            ctx.beginPath();
             let xEnd = Math.cos(endAngle) * radius;
             let zEnd = Math.sin(endAngle) * radius;
             const xEndRot = xEnd * cosY - zEnd * sinY;
@@ -1399,14 +1435,15 @@
             const xEndFinal = centerX + explodeOffsetX + xEndRot;
             const yEndFinal = centerY + explodeOffsetY + zEndRot;
             
+            ctx.beginPath();
             ctx.moveTo(centerX + explodeOffsetX, centerY + explodeOffsetY);
             ctx.lineTo(xEndFinal, yEndFinal);
             ctx.lineTo(xEndFinal, yEndFinal + depthOffset);
             ctx.lineTo(centerX + explodeOffsetX, centerY + explodeOffsetY + depthOffset);
             ctx.closePath();
             
-            ctx.fillStyle = edgeColor;
-            ctx.globalAlpha = 0.80;
+            ctx.fillStyle = sideColor;
+            ctx.globalAlpha = 0.85;
             ctx.fill();
             ctx.globalAlpha = 1.0;
 
@@ -1495,13 +1532,6 @@
                 
                 ctx.fillStyle = highlightGradient;
                 ctx.fill();
-            }
-            
-            // GLASS EFFECT: Frosted edge stroke
-            if (glassPolish > 0) {
-                ctx.strokeStyle = `rgba(255, 255, 255, ${0.25 * glassPolish})`;
-                ctx.lineWidth = 1 + (glassPolish * 0.5);
-                ctx.stroke();
             }
 
             ctx.restore();
@@ -1716,8 +1746,13 @@
             // Clear table
             tbody.innerHTML = '';
 
-            // Add rows for each category
+            // Add rows for each category (skip "Total" - it's calculated)
             chartData.columns.forEach((col, index) => {
+                // Skip "Total" category - it will be shown as read-only at the bottom
+                if (col.name.toLowerCase() === 'total') {
+                    return;
+                }
+                
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>
@@ -1740,9 +1775,11 @@
                 tbody.appendChild(tr);
             });
 
-            // Add event listeners
+            // Add event listeners (skip "Total" - it's calculated)
             setTimeout(() => {
                 chartData.columns.forEach((col, index) => {
+                    if (col.name.toLowerCase() === 'total') return;
+                    
                     const nameInput = document.getElementById(`modifyCatName_${index}`);
                     const valueInput = document.getElementById(`modifyCatValue_${index}`);
                     if (nameInput) nameInput.addEventListener('input', validateModifyChart);
@@ -1765,6 +1802,9 @@
 
             let sum = 0;
             chartData.columns.forEach((col, index) => {
+                // Skip "Total" category - it's not a slice
+                if (col.name.toLowerCase() === 'total') return;
+                
                 const valueInput = document.getElementById(`modifyCatValue_${index}`);
                 if (valueInput) {
                     const value = parseFloat(valueInput.value) || 0;
@@ -1780,7 +1820,20 @@
             if (sum > 0) {
                 statusDiv.style.display = 'block';
                 statusDiv.className = 'tally-status success';
-                statusDiv.innerHTML = `✅ Total: <span id="modifyChartTallyDifference">${sum.toFixed(2)}</span>`;
+                
+                let message = `✅ Total: <span id="modifyChartTallyDifference">${sum.toFixed(2)}</span>`;
+                
+                // If we have an expected total, show comparison
+                if (chartData.total && chartData.total > 0) {
+                    const difference = Math.abs(sum - chartData.total);
+                    if (difference < 0.01) {
+                        message += ` <span style="color: #28a745;">(matches expected ${chartData.total})</span>`;
+                    } else {
+                        message += ` <span style="color: #ffc107;">(expected: ${chartData.total}, diff: ${(sum - chartData.total).toFixed(2)})</span>`;
+                    }
+                }
+                
+                statusDiv.innerHTML = message;
                 applyBtn.disabled = false;
             } else {
                 statusDiv.style.display = 'none';
@@ -1798,8 +1851,13 @@
                 chartData.title = newTitle;
             }
 
-            // Update category names and values
+            // Update category names and values (skip "Total" - it's calculated)
             chartData.columns.forEach((col, index) => {
+                // Skip "Total" category
+                if (col.name.toLowerCase() === 'total') {
+                    return;
+                }
+                
                 const nameInput = document.getElementById(`modifyCatName_${index}`);
                 const valueInput = document.getElementById(`modifyCatValue_${index}`);
                 
