@@ -827,8 +827,9 @@
                 const rotationXRow = lines[4].split(',').map(r => r.trim());
                 if (rotationXRow[0] === 'RotationX' && rotationXRow[1]) {
                     const rotX = parseFloat(rotationXRow[1]);
-                    if (!isNaN(rotX)) {
-                        document.getElementById('rotationX').value = rotX;
+                    const elem = document.getElementById('rotationX');
+                    if (!isNaN(rotX) && elem) {
+                        elem.value = rotX;
                     }
                 }
             }
@@ -836,8 +837,87 @@
                 const rotationYRow = lines[5].split(',').map(r => r.trim());
                 if (rotationYRow[0] === 'RotationY' && rotationYRow[1]) {
                     const rotY = parseFloat(rotationYRow[1]);
-                    if (!isNaN(rotY)) {
-                        document.getElementById('rotationY').value = rotY;
+                    const elem = document.getElementById('rotationY');
+                    if (!isNaN(rotY) && elem) {
+                        elem.value = rotY;
+                    }
+                }
+            }
+            
+            // Check for depth setting (row 7)
+            if (lines.length >= 7) {
+                const depthRow = lines[6].split(',').map(r => r.trim());
+                if (depthRow[0] === 'Depth' && depthRow[1]) {
+                    const depthVal = parseFloat(depthRow[1]);
+                    const elem = document.getElementById('depth');
+                    if (!isNaN(depthVal) && elem) {
+                        elem.value = depthVal;
+                    }
+                }
+            }
+            
+            // Check for explosion distance setting (row 8)
+            if (lines.length >= 8) {
+                const explosionRow = lines[7].split(',').map(r => r.trim());
+                if (explosionRow[0] === 'ExplosionDistance' && explosionRow[1]) {
+                    const explDist = parseFloat(explosionRow[1]);
+                    const elem = document.getElementById('explosionDistance');
+                    if (!isNaN(explDist) && elem) {
+                        elem.value = explDist;
+                    }
+                }
+            }
+            
+            // Check for title size setting (row 9)
+            if (lines.length >= 9) {
+                const titleSizeRow = lines[8].split(',').map(r => r.trim());
+                if (titleSizeRow[0] === 'TitleSize' && titleSizeRow[1]) {
+                    const titleSizeVal = parseFloat(titleSizeRow[1]);
+                    const elem = document.getElementById('titleSize');
+                    if (!isNaN(titleSizeVal) && elem) {
+                        elem.value = titleSizeVal;
+                    }
+                }
+            }
+            
+            // Check for content size setting (row 10)
+            if (lines.length >= 10) {
+                const contentSizeRow = lines[9].split(',').map(r => r.trim());
+                if (contentSizeRow[0] === 'ContentSize' && contentSizeRow[1]) {
+                    const contentSizeVal = parseFloat(contentSizeRow[1]);
+                    const elem = document.getElementById('contentSize');
+                    if (!isNaN(contentSizeVal) && elem) {
+                        elem.value = contentSizeVal;
+                    }
+                }
+            }
+            
+            // Check for callout threshold setting (row 11)
+            if (lines.length >= 11) {
+                const thresholdRow = lines[10].split(',').map(r => r.trim());
+                if (thresholdRow[0] === 'CalloutThreshold' && thresholdRow[1]) {
+                    const thresholdVal = parseFloat(thresholdRow[1]);
+                    const elem = document.getElementById('labelThreshold');
+                    const display = document.getElementById('thresholdValue');
+                    if (!isNaN(thresholdVal) && elem) {
+                        elem.value = thresholdVal;
+                        if (display) display.textContent = thresholdVal;
+                    }
+                }
+            }
+            
+            // Check for exploded slices setting (row 12)
+            if (lines.length >= 12) {
+                const explodedRow = lines[11].split(',').map(r => r.trim());
+                if (explodedRow[0] === 'ExplodedSlices') {
+                    // Clear existing exploded slices
+                    explodedSlices.clear();
+                    // Add indices from CSV (skip first element which is the label)
+                    for (let i = 1; i < explodedRow.length; i++) {
+                        const index = parseInt(explodedRow[i]);
+                        if (!isNaN(index) && index >= 0) {
+                            explodedSlices.add(index);
+                        }
                     }
                 }
             }
@@ -887,12 +967,23 @@
             // Row 4: Font
             const font = document.getElementById('fontFamily').value;
             
-            // Row 5: Rotation settings (RotationX, RotationY)
-            const rotationX = document.getElementById('rotationX').value;
-            const rotationY = document.getElementById('rotationY').value;
-            const rotations = `RotationX,${rotationX}\nRotationY,${rotationY}`;
+            // Row 5-6: Rotation settings
+            const rotationX = document.getElementById('rotationX')?.value || 0;
+            const rotationY = document.getElementById('rotationY')?.value || 0;
+            
+            // Row 7-8: Depth and Explosion settings
+            const depth = document.getElementById('depth')?.value || 40;
+            const explosionDistance = document.getElementById('explosionDistance')?.value || 30;
+            
+            // Row 9-11: Font sizes and callout threshold
+            const titleSize = document.getElementById('titleSize')?.value || 100;
+            const contentSize = document.getElementById('contentSize')?.value || 100;
+            const labelThreshold = document.getElementById('labelThreshold')?.value || 10;
+            
+            // Row 12: Exploded slices (indices of exploded slices)
+            const explodedIndices = Array.from(explodedSlices).join(',');
 
-            const csv = `${headers}\n${values}\n${colors}\n${font}\n${rotations}`;
+            const csv = `${headers}\n${values}\n${colors}\n${font}\nRotationX,${rotationX}\nRotationY,${rotationY}\nDepth,${depth}\nExplosionDistance,${explosionDistance}\nTitleSize,${titleSize}\nContentSize,${contentSize}\nCalloutThreshold,${labelThreshold}\nExplodedSlices,${explodedIndices}`;
 
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = URL.createObjectURL(blob);

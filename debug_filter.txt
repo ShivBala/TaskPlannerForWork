@@ -1689,3 +1689,15 @@
   >> Calculate-TaskEndDate called: Start=2025-10-23, Duration=3
   >> About to call Add-BusinessDays: taskStartDate=2025-10-23, daysToAdd=2
   >> Add-BusinessDays returned: 2025-10-27
+  >> Calculate-TaskEndDate called: Start=2025-10-24, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-24, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-10-30
+  >> Calculate-TaskEndDate called: Start=2025-10-23, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-23, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-27
+  >> Calculate-TaskEndDate called: Start=2025-10-24, Duration=5
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-24, daysToAdd=4
+  >> Add-BusinessDays returned: 2025-10-30
+  >> Calculate-TaskEndDate called: Start=2025-10-23, Duration=3
+  >> About to call Add-BusinessDays: taskStartDate=2025-10-23, daysToAdd=2
+  >> Add-BusinessDays returned: 2025-10-27

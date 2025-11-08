@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Progress - API Modernization</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Arial', sans-serif;
+            background: #E8ECEF;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 6px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #2C5F7C 0%, #34495E 100%);
+            color: white;
+            padding: 24px 32px;
+            border-bottom: 3px solid #1C3D52;
+        }
+        .header h1 {
+            font-size: 1.8em;
+            font-weight: 600;
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+        .header p {
+            font-size: 0.9em;
+            opacity: 0.92;
+            font-weight: 300;
+        }
+        .content {
+            padding: 32px;
+            background: #FAFBFC;
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+        .stat-card {
+            background: white;
+            border-left: 3px solid #5A7A8F;
+            padding: 16px 20px;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+        }
+        .stat-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: #2C5F7C;
+            margin-bottom: 4px;
+            line-height: 1;
+        }
+        .stat-label {
+            font-size: 0.75em;
+            color: #5A6C7D;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .section-title {
+            font-size: 1.4em;
+            font-weight: 600;
+            color: #2C3E50;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #D5DBE0;
+        }
+        .overall-chart {
+            max-width: 600px;
+            margin: 0 auto 48px;
+            padding: 24px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #D5DBE0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .person-charts {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 24px;
+            margin-top: 32px;
+        }
+        .person-chart {
+            background: white;
+            padding: 20px;
+            border-radius: 6px;
+            border: 1px solid #D5DBE0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        .person-chart h3 {
+            font-size: 1.1em;
+            color: #2C3E50;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+        .task-count {
+            font-size: 0.85em;
+            color: #5A6C7D;
+            font-weight: 400;
+        }
+        .footer {
+            margin-top: 32px;
+            padding: 16px 32px;
+            background: #F4F6F8;
+            text-align: center;
+            color: #5A6C7D;
+            font-size: 0.85em;
+            border-top: 1px solid #D5DBE0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 Task Progress: API Modernization</h1>
+            <p>Initiative Progress Report - Generated October 31, 2025 00:11</p>
+        </div>
+        
+        <div class="content">
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-value">17</div>
+                    <div class="stat-label">Total Tasks</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">10</div>
+                    <div class="stat-label">Team Members</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value">3</div>
+                    <div class="stat-label">Unique Statuses</div>
+                </div>
+            </div>
+            
+            <h2 class="section-title">Overall Task Status Distribution</h2>
+            <div class="overall-chart">
+                <canvas id="overallChart"></canvas>
+            </div>
+            
+            <h2 class="section-title">Per-Person Task Breakdown</h2>
+            <div class="person-charts">
+        <div class="person-chart">
+            <h3>Ahmed <span class="task-count">(3 tasks)</span></h3>
+            <canvas id="personChart0"></canvas>
+        </div>        <div class="person-chart">
+            <h3>David <span class="task-count">(2 tasks)</span></h3>
+            <canvas id="personChart1"></canvas>
+        </div>        <div class="person-chart">
+            <h3>Emma <span class="task-count">(2 tasks)</span></h3>
+            <canvas id="personChart2"></canvas>
+        </div>        <div class="person-chart">
+            <h3>James <span class="task-count">(2 tasks)</span></h3>
+            <canvas id="personChart3"></canvas>
+        </div>        <div class="person-chart">
+            <h3>Lisa <span class="task-count">(2 tasks)</span></h3>
+            <canvas id="personChart4"></canvas>
+        </div>        <div class="person-chart">
+            <h3>Marcus <span class="task-count">(2 tasks)</span></h3>
+            <canvas id="personChart5"></canvas>
+        </div>        <div class="person-chart">
+            <h3>Olivia <span class="task-count">(2 tasks)</span></h3>
+            <canvas id="personChart6"></canvas>
+        </div>        <div class="person-chart">
+            <h3>Priya <span class="task-count">(2 tasks)</span></h3>
+            <canvas id="personChart7"></canvas>
+        </div>        <div class="person-chart">
+            <h3>Robert <span class="task-count">(1 tasks)</span></h3>
+            <canvas id="personChart8"></canvas>
+        </div>        <div class="person-chart">
+            <h3>Sarah <span class="task-count">(1 tasks)</span></h3>
+            <canvas id="personChart9"></canvas>
+        </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Task Progress Report</strong> | Generated from V10 Configuration</p>
+            <p>Initiative: API Modernization | Total Tasks: 17</p>
+        </div>
+    </div>
+    
+    <script>
+        // Overall chart
+        new Chart(document.getElementById('overallChart'), {
+            type: 'pie',
+            data: {
+                labels: ['Done','In Progress','To Do'],
+                datasets: [{
+                    data: [9,3,5],
+                    backgroundColor: ['#5F9E6E','#D4AF37','#7BA3C7'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            boxWidth: 20,
+                            font: { size: 13 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return label + ': ' + value + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // Person charts
+        new Chart(document.getElementById('personChart0'), {
+            type: 'pie',
+            data: {
+                labels: ['Done','To Do'],
+                datasets: [{
+                    data: [1,2],
+                    backgroundColor: ['#5F9E6E','#7BA3C7'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 15,
+                            font: { size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return label + ': ' + value + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        new Chart(document.getElementById('personChart1'), {
+            type: 'pie',
+            data: {
+                labels: ['To Do'],
+                datasets: [{
+                    data: [2],
+                    backgroundColor: ['#7BA3C7'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 15,
+                            font: { size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return label + ': ' + value + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        new Chart(document.getElementById('personChart2'), {
+            type: 'pie',
+            data: {
+                labels: ['Done'],
+                datasets: [{
+                    data: [2],
+                    backgroundColor: ['#5F9E6E'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 15,
+                            font: { size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return label + ': ' + value + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        new Chart(document.getElementById('personChart3'), {
+            type: 'pie',
+            data: {
+                labels: ['Done','In Progress'],
+                datasets: [{
+                    data: [1,1],
+                    backgroundColor: ['#5F9E6E','#D4AF37'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 15,
+                            font: { size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return label + ': ' + value + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        new Chart(document.getElementById('personChart4'), {
+            type: 'pie',
+            data: {
+                labels: ['Done','To Do'],
+                datasets: [{
+                    data: [1,1],
+                    backgroundColor: ['#5F9E6E','#7BA3C7'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 15,
+                            font: { size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return label + ': ' + value + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        new Chart(document.getElementById('personChart5'), {
+            type: 'pie',
+            data: {
+                labels: ['Done','In Progress'],
+                datasets: [{
+                    data: [1,1],
+                    backgroundColor: ['#5F9E6E','#D4AF37'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 15,
+                            font: { size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return label + ': ' + value + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        new Chart(document.getElementById('personChart6'), {
+            type: 'pie',
+            data: {
+                labels: ['Done','To Do'],
+                datasets: [{
+                    data: [1,1],
+                    backgroundColor: ['#5F9E6E','#7BA3C7'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 15,
+                            font: { size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return label + ': ' + value + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        new Chart(document.getElementById('personChart7'), {
+            type: 'pie',
+            data: {
+                labels: ['Done','In Progress'],
+                datasets: [{
+                    data: [1,1],
+                    backgroundColor: ['#5F9E6E','#D4AF37'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 15,
+                            font: { size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return label + ': ' + value + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        new Chart(document.getElementById('personChart8'), {
+            type: 'pie',
+            data: {
+                labels: ['In Progress'],
+                datasets: [{
+                    data: [1],
+                    backgroundColor: ['#D4AF37'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 15,
+                            font: { size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return label + ': ' + value + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        new Chart(document.getElementById('personChart9'), {
+            type: 'pie',
+            data: {
+                labels: ['Done'],
+                datasets: [{
+                    data: [1],
+                    backgroundColor: ['#5F9E6E'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 15,
+                            font: { size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return label + ': ' + value + ' (' + percentage + '%)';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+    </script>
+</body>
+</html>

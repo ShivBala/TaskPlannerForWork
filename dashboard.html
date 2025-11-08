@@ -112,6 +112,159 @@
             font-size: 0.85em;
         }
 
+        /* Timeline Section */
+        .timeline-section {
+            background: white;
+            margin: 20px;
+            padding: 24px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: none;
+        }
+
+        .timeline-section.active {
+            display: block;
+        }
+
+        .timeline-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #D5DBE0;
+        }
+
+        .timeline-header h2 {
+            color: #2C5F7C;
+            font-size: 1.4em;
+        }
+
+        .timeline-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .timeline-stat-card {
+            background: linear-gradient(135deg, #F8FAFB 0%, #EDF3F6 100%);
+            border-left: 4px solid #2C5F7C;
+            padding: 16px 20px;
+            border-radius: 4px;
+        }
+
+        .timeline-stat-value {
+            font-size: 2em;
+            font-weight: 700;
+            color: #2C5F7C;
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .timeline-stat-label {
+            font-size: 0.75em;
+            color: #5A6C7D;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .timeline-legend {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 20px;
+            padding: 12px;
+            background: #F8FAFB;
+            border-radius: 6px;
+            border: 1px solid #D5DBE0;
+        }
+
+        .timeline-legend .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            font-size: 0.9em;
+            color: #2C3E50;
+        }
+
+        .timeline-legend .legend-color {
+            width: 24px;
+            height: 14px;
+            border-radius: 3px;
+            border: 1px solid rgba(0,0,0,0.1);
+        }
+
+        .timeline-chart {
+            margin-top: 20px;
+        }
+
+        .timeline-initiative {
+            display: grid;
+            grid-template-columns: 280px 1fr 350px;
+            gap: 16px;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 10px 0;
+            border-bottom: 1px solid #E8ECEF;
+        }
+
+        .timeline-initiative:last-child {
+            border-bottom: none;
+        }
+
+        .timeline-initiative-name {
+            font-size: 0.95em;
+            font-weight: 600;
+            color: #2C3E50;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .timeline-bar-container {
+            position: relative;
+            background: #F0F2F5;
+            border-radius: 4px;
+            height: 28px;
+            border: 1px solid #D5DBE0;
+        }
+
+        .timeline-bar {
+            height: 100%;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            color: white;
+            font-weight: 600;
+            font-size: 0.8em;
+            transition: all 0.3s ease;
+            box-shadow: inset 0 -2px 4px rgba(0,0,0,0.1);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+            cursor: pointer;
+        }
+
+        .timeline-bar:hover {
+            opacity: 0.85;
+            transform: scaleY(1.05);
+        }
+
+        .timeline-initiative-meta {
+            font-size: 0.8em;
+            color: #5A6C7D;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .timeline-meta-row {
+            display: flex;
+            gap: 12px;
+        }
+
         /* Initiative Selection */
         .selection-section {
             background: white;
@@ -574,13 +727,51 @@
         </div>
     </div>
 
+    <!-- Initiative Timeline Section -->
+    <div class="timeline-section" id="timelineSection">
+        <div class="timeline-header">
+            <h2>📊 Initiative Timeline Overview</h2>
+            <button class="btn btn-primary" onclick="showDetailedDashboard()">
+                View Detailed Progress →
+            </button>
+        </div>
+        
+        <div class="timeline-stats" id="timelineStats">
+            <!-- Stats will be populated here -->
+        </div>
+        
+        <div class="timeline-legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #6B8E23;"></div>
+                <span>Active Now</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #87CEEB;"></div>
+                <span>Future</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FFB6C1;"></div>
+                <span>Paused (>50%)</span>
+            </div>
+        </div>
+        
+        <div class="timeline-chart" id="timelineChart">
+            <!-- Timeline bars will be populated here -->
+        </div>
+    </div>
+
     <!-- Initiative Selection -->
     <div class="selection-section" id="selectionSection">
         <div class="selection-header">
-            <h2>Select Initiatives for Dashboard</h2>
-            <button class="btn btn-primary" onclick="generateDashboard()">
-                Generate Dashboard
-            </button>
+            <h2>Select Initiatives for Detailed Analysis</h2>
+            <div style="display: flex; gap: 12px;">
+                <button class="btn btn-secondary" onclick="backToTimeline()">
+                    ← Back to Timeline
+                </button>
+                <button class="btn btn-primary" onclick="generateDashboard()">
+                    Generate Dashboard
+                </button>
+            </div>
         </div>
 
         <div class="selection-controls">
@@ -740,7 +931,7 @@
             }
 
             csvData = { initiatives, tickets };
-            populateInitiativeSelection();
+            generateTimelineView();
         }
 
         // Parse CSV line handling quoted fields
@@ -765,6 +956,165 @@
             return result;
         }
 
+        // Generate timeline view
+        function generateTimelineView() {
+            const today = new Date();
+            const initiativeData = [];
+
+            // Calculate initiative data
+            csvData.initiatives.forEach(init => {
+                const tasks = csvData.tickets.filter(t => t.initiative === init.name);
+                
+                if (tasks.length === 0) return;
+
+                // Calculate start and end dates
+                const taskDates = tasks
+                    .map(t => t.startDate ? parseDate(t.startDate) : null)
+                    .filter(d => d !== null);
+                
+                if (taskDates.length === 0) return;
+
+                const startDate = new Date(Math.min(...taskDates));
+                const endDate = new Date(Math.max(...taskDates.map(d => d.getTime() + (30 * 24 * 60 * 60 * 1000)))); // Approximate end date
+
+                // Skip past initiatives
+                if (endDate < today) return;
+
+                // Calculate status
+                const pausedTasks = tasks.filter(t => t.status && t.status.toLowerCase().trim() === 'paused').length;
+                const pausedPercentage = (pausedTasks / tasks.length) * 100;
+
+                let color, status;
+                if (pausedPercentage > 50) {
+                    color = '#FFB6C1'; // Light pink
+                    status = `Paused (${pausedPercentage.toFixed(0)}%)`;
+                } else if (startDate <= today && endDate >= today) {
+                    color = '#6B8E23'; // Olive green
+                    status = 'Active';
+                } else {
+                    color = '#87CEEB'; // Light blue
+                    status = 'Future';
+                }
+
+                const durationDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+
+                initiativeData.push({
+                    name: init.name,
+                    startDate,
+                    endDate,
+                    durationDays,
+                    taskCount: tasks.length,
+                    status,
+                    color,
+                    pausedPercentage
+                });
+            });
+
+            // Sort by start date
+            initiativeData.sort((a, b) => a.startDate - b.startDate);
+
+            if (initiativeData.length === 0) {
+                showNotification('No current or future initiatives found', 'error');
+                return;
+            }
+
+            // Calculate stats
+            const activeCount = initiativeData.filter(i => i.status === 'Active').length;
+            const futureCount = initiativeData.filter(i => i.status === 'Future').length;
+            const pausedCount = initiativeData.filter(i => i.status.includes('Paused')).length;
+            const totalTasks = initiativeData.reduce((sum, i) => sum + i.taskCount, 0);
+
+            // Populate stats
+            const statsContainer = document.getElementById('timelineStats');
+            statsContainer.innerHTML = `
+                <div class="timeline-stat-card">
+                    <div class="timeline-stat-value">${activeCount}</div>
+                    <div class="timeline-stat-label">Active Now</div>
+                </div>
+                <div class="timeline-stat-card">
+                    <div class="timeline-stat-value">${futureCount}</div>
+                    <div class="timeline-stat-label">Upcoming</div>
+                </div>
+                <div class="timeline-stat-card">
+                    <div class="timeline-stat-value">${pausedCount}</div>
+                    <div class="timeline-stat-label">Paused</div>
+                </div>
+                <div class="timeline-stat-card">
+                    <div class="timeline-stat-value">${totalTasks}</div>
+                    <div class="timeline-stat-label">Total Tasks</div>
+                </div>
+            `;
+
+            // Populate timeline chart
+            const maxDuration = Math.max(...initiativeData.map(i => i.durationDays));
+            const chartContainer = document.getElementById('timelineChart');
+            chartContainer.innerHTML = '';
+
+            initiativeData.forEach(init => {
+                const barWidth = Math.max(20, (init.durationDays / maxDuration) * 100);
+                const startStr = init.startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                const endStr = init.endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+                const initiativeDiv = document.createElement('div');
+                initiativeDiv.className = 'timeline-initiative';
+                initiativeDiv.innerHTML = `
+                    <div class="timeline-initiative-name">${init.name}</div>
+                    <div class="timeline-bar-container">
+                        <div class="timeline-bar" style="background: ${init.color}; width: ${barWidth}%;">
+                            ${init.durationDays}d
+                        </div>
+                    </div>
+                    <div class="timeline-initiative-meta">
+                        <div class="timeline-meta-row">
+                            <span>▶ ${startStr}</span>
+                            <span>■ ${endStr}</span>
+                        </div>
+                        <div class="timeline-meta-row">
+                            <span>${init.taskCount} tasks</span>
+                            <span>•</span>
+                            <span>${init.status}</span>
+                        </div>
+                    </div>
+                `;
+                chartContainer.appendChild(initiativeDiv);
+            });
+
+            // Show timeline section
+            document.getElementById('importSection').style.display = 'none';
+            document.getElementById('timelineSection').classList.add('active');
+        }
+
+        // Parse date string (handles dd/mm/yyyy format)
+        function parseDate(dateStr) {
+            if (!dateStr) return null;
+            
+            // Try parsing as dd/mm/yyyy
+            const parts = dateStr.split('/');
+            if (parts.length === 3) {
+                const day = parseInt(parts[0]);
+                const month = parseInt(parts[1]) - 1; // Month is 0-indexed
+                const year = parseInt(parts[2]);
+                return new Date(year, month, day);
+            }
+            
+            // Fallback to standard parsing
+            return new Date(dateStr);
+        }
+
+        // Navigate to detailed dashboard
+        function showDetailedDashboard() {
+            populateInitiativeSelection();
+            document.getElementById('timelineSection').classList.remove('active');
+            document.getElementById('selectionSection').classList.add('active');
+        }
+
+        // Back to timeline
+        function backToTimeline() {
+            document.getElementById('selectionSection').classList.remove('active');
+            document.getElementById('dashboardSection').classList.remove('active');
+            document.getElementById('timelineSection').classList.add('active');
+        }
+
         // Populate initiative selection checkboxes
         function populateInitiativeSelection() {
             const grid = document.getElementById('initiativeGrid');
@@ -786,10 +1136,6 @@
                 `;
                 grid.appendChild(checkbox);
             });
-
-            // Show selection section
-            document.getElementById('importSection').style.display = 'none';
-            document.getElementById('selectionSection').classList.add('active');
         }
 
         // Filter initiatives based on search
