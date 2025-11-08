@@ -815,9 +815,30 @@
                 const fontRow = lines[3].split(',').map(f => f.trim());
                 const fontValue = fontRow[0];
                 // Only set font if it's not empty and not "Colors" or similar labels
-                if (fontValue && fontValue !== '' && fontValue !== 'Colors' && fontValue !== 'Font') {
+                if (fontValue && fontValue !== '' && fontValue !== 'Colors' && fontValue !== 'Font' && 
+                    fontValue !== 'RotationX' && fontValue !== 'RotationY') {
                     font = fontValue;
                     document.getElementById('fontFamily').value = font;
+                }
+            }
+
+            // Check for rotation settings (rows 5 and 6)
+            if (lines.length >= 5) {
+                const rotationXRow = lines[4].split(',').map(r => r.trim());
+                if (rotationXRow[0] === 'RotationX' && rotationXRow[1]) {
+                    const rotX = parseFloat(rotationXRow[1]);
+                    if (!isNaN(rotX)) {
+                        document.getElementById('rotationX').value = rotX;
+                    }
+                }
+            }
+            if (lines.length >= 6) {
+                const rotationYRow = lines[5].split(',').map(r => r.trim());
+                if (rotationYRow[0] === 'RotationY' && rotationYRow[1]) {
+                    const rotY = parseFloat(rotationYRow[1]);
+                    if (!isNaN(rotY)) {
+                        document.getElementById('rotationY').value = rotY;
+                    }
                 }
             }
 
@@ -853,12 +874,25 @@
                 return;
             }
 
-            const headers = [chartData.title, ...chartData.columns.map(c => c.name)].join(',');
-            const values = ['', ...chartData.columns.map(c => c.value)].join(',');
-            const colors = ['', ...currentColors.slice(0, chartData.columns.length)].join(',');
+            // Row 1: Headers (Initiative Name, Total, Category1, Category2, ...)
+            const headers = ['Initiative Name', 'Total', ...chartData.columns.map(c => c.name)].join(',');
+            
+            // Row 2: Values (Title, Total, Value1, Value2, ...)
+            const total = chartData.total || chartData.columns.reduce((sum, c) => sum + c.value, 0);
+            const values = [chartData.title, total, ...chartData.columns.map(c => c.value)].join(',');
+            
+            // Row 3: Colors (Colors label, skip Total column, Color1, Color2, ...)
+            const colors = ['Colors', '', ...currentColors.slice(0, chartData.columns.length)].join(',');
+            
+            // Row 4: Font
             const font = document.getElementById('fontFamily').value;
+            
+            // Row 5: Rotation settings (RotationX, RotationY)
+            const rotationX = document.getElementById('rotationX').value;
+            const rotationY = document.getElementById('rotationY').value;
+            const rotations = `RotationX,${rotationX}\nRotationY,${rotationY}`;
 
-            const csv = `${headers}\n${values}\n${colors}\n${font}`;
+            const csv = `${headers}\n${values}\n${colors}\n${font}\n${rotations}`;
 
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = URL.createObjectURL(blob);
