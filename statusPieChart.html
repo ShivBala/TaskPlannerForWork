@@ -47,6 +47,7 @@
             grid-template-columns: 350px 1fr;
             gap: 30px;
             padding: 30px;
+            align-items: start;
         }
 
         .controls-panel {
@@ -54,6 +55,8 @@
             border-radius: 4px;
             padding: 25px;
             border: 1px solid #e9ecef;
+            max-height: calc(100vh - 160px);
+            overflow-y: auto;
         }
 
         .control-section {
@@ -221,6 +224,9 @@
             flex-direction: column;
             align-items: center;
             min-height: 700px;
+            position: sticky;
+            top: 20px;
+            align-self: flex-start;
         }
 
         .chart-title {
@@ -535,6 +541,55 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Font Size Controls -->
+                <div class="control-section">
+                    <h3>Font Sizes</h3>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #495057;">
+                            Title Size: <span id="titleSizeValue">100</span>%
+                        </label>
+                        <input type="range" id="titleSize" min="50" max="200" value="100" step="10" 
+                               oninput="updateTitleSizeLabel(); generateChart();"
+                               style="width: 100%; cursor: pointer;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8em; color: #6c757d; margin-top: 5px;">
+                            <span>50%</span>
+                            <span>100%</span>
+                            <span>200%</span>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #495057;">
+                            Content Size: <span id="contentSizeValue">100</span>%
+                        </label>
+                        <input type="range" id="contentSize" min="50" max="200" value="100" step="10" 
+                               oninput="updateContentSizeLabel(); generateChart();"
+                               style="width: 100%; cursor: pointer;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8em; color: #6c757d; margin-top: 5px;">
+                            <span>50%</span>
+                            <span>100%</span>
+                            <span>200%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shadow Intensity -->
+                <div class="control-section">
+                    <h3>Shadow Intensity</h3>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #495057;">
+                            Box Shadow: <span id="shadowIntensityValue">100</span>%
+                        </label>
+                        <input type="range" id="shadowIntensity" min="0" max="300" value="100" step="25" 
+                               oninput="updateShadowIntensityLabel(); generateChart();"
+                               style="width: 100%; cursor: pointer;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.8em; color: #6c757d; margin-top: 5px;">
+                            <span>0%</span>
+                            <span style="font-size: 0.75em;">Adjust callout & legend shadow strength</span>
+                            <span>300%</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Chart Area -->
@@ -669,6 +724,24 @@
         function updateThresholdLabel() {
             const threshold = document.getElementById('labelThreshold').value;
             document.getElementById('thresholdValue').textContent = threshold;
+        }
+
+        // Update title size label
+        function updateTitleSizeLabel() {
+            const size = document.getElementById('titleSize').value;
+            document.getElementById('titleSizeValue').textContent = size;
+        }
+
+        // Update content size label
+        function updateContentSizeLabel() {
+            const size = document.getElementById('contentSize').value;
+            document.getElementById('contentSizeValue').textContent = size;
+        }
+
+        // Update shadow intensity label
+        function updateShadowIntensityLabel() {
+            const intensity = document.getElementById('shadowIntensity').value;
+            document.getElementById('shadowIntensityValue').textContent = intensity;
         }
 
         // Import CSV
@@ -1252,6 +1325,11 @@
             const showLegend = document.getElementById('showLegend').checked;
             const shadowColor = document.getElementById('shadowColor').value;
             const fontFamily = document.getElementById('fontFamily').value;
+            
+            // Get font size multipliers
+            const titleSizeMultiplier = (parseFloat(document.getElementById('titleSize').value) || 100) / 100;
+            const contentSizeMultiplier = (parseFloat(document.getElementById('contentSize').value) || 100) / 100;
+            const shadowIntensity = (parseFloat(document.getElementById('shadowIntensity').value) || 100) / 100;
 
             // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -1272,7 +1350,8 @@
             const pieY = topMargin + (availableHeight / 2);
 
             // Draw Title
-            ctx.font = `bold 32px "${fontFamily}"`;
+            const titleFontSize = Math.round(32 * titleSizeMultiplier);
+            ctx.font = `bold ${titleFontSize}px "${fontFamily}"`;
             ctx.fillStyle = '#003d5c';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'top';
@@ -1364,7 +1443,7 @@
             // Define safe zones
             const labelMinY = topMargin + 60; // Below title
             const labelMaxY = canvas.height - bottomMargin - 20; // Above summary
-            const labelSpacing = 35;
+            const labelSpacing = Math.round(35 * contentSizeMultiplier); // Scale spacing with content size
 
             // Function to redistribute labels vertically with collision detection
             function redistributeLabels(labels, side) {
@@ -1374,10 +1453,11 @@
                 labels.sort((a, b) => a.naturalY - b.naturalY);
 
                 // Calculate label heights
-                ctx.font = `bold 12px "${fontFamily}"`;
+                const contentFontSize = Math.round(12 * contentSizeMultiplier);
+                ctx.font = `bold ${contentFontSize}px "${fontFamily}"`;
                 labels.forEach(l => {
                     const lines = l.label.split('\n');
-                    l.height = lines.length * 16 + 8; // 8px padding
+                    l.height = lines.length * (contentFontSize + 4) + 8; // 4px line spacing, 8px padding
                 });
 
                 // Calculate total height needed
@@ -1443,27 +1523,42 @@
                 ctx.stroke();
 
                 // Draw label background
-                ctx.font = `bold 12px "${fontFamily}"`;
+                const contentFontSize = Math.round(12 * contentSizeMultiplier);
+                const lineHeight = contentFontSize + 4;
+                ctx.font = `bold ${contentFontSize}px "${fontFamily}"`;
                 const lines = label.split('\n');
                 const maxWidth = Math.max(...lines.map(line => ctx.measureText(line).width));
                 const paddingX = 8;
                 const paddingY = 4;
 
-                // Background with color tint
+                // Background with color tint and modern styling
                 const rectWidth = maxWidth + paddingX * 2;
                 const rectX = isRightSide ? labelX : labelX - rectWidth;
                 const rectY = y;
+                const cornerRadius = 6;
                 
-                // Fill with color (lighter version)
+                // Draw shadow first (modern soft shadow with adjustable intensity)
+                const shadowOpacity = 0.12 * shadowIntensity;
+                const shadowBlurAmount = 6 * shadowIntensity;
+                const shadowOffsetAmount = 2 * shadowIntensity;
+                ctx.shadowColor = `rgba(0, 0, 0, ${Math.min(shadowOpacity, 0.5)})`;
+                ctx.shadowBlur = shadowBlurAmount;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = shadowOffsetAmount;
+                
+                // Fill with color (lighter version) - rounded rectangle
                 ctx.fillStyle = color;
                 ctx.globalAlpha = 0.15;
-                ctx.fillRect(rectX, rectY, rectWidth, height);
+                ctx.beginPath();
+                ctx.roundRect(rectX, rectY, rectWidth, height, cornerRadius);
+                ctx.fill();
                 ctx.globalAlpha = 1.0;
                 
-                // Border
-                ctx.strokeStyle = color;
-                ctx.lineWidth = 2;
-                ctx.strokeRect(rectX, rectY, rectWidth, height);
+                // Reset shadow for text
+                ctx.shadowColor = 'transparent';
+                ctx.shadowBlur = 0;
+                ctx.shadowOffsetX = 0;
+                ctx.shadowOffsetY = 0;
 
                 // Draw label text (center-aligned within box)
                 ctx.fillStyle = '#333';
@@ -1472,7 +1567,7 @@
                 
                 const textCenterX = rectX + rectWidth / 2;
                 lines.forEach((line, i) => {
-                    const textY = labelY + (i - lines.length / 2 + 0.5) * 16;
+                    const textY = labelY + (i - lines.length / 2 + 0.5) * lineHeight;
                     ctx.fillText(line, textCenterX, textY);
                 });
 
@@ -1492,7 +1587,9 @@
                 ctx.save();
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
-                ctx.font = `bold 14px "${fontFamily}"`;
+                const internalLabelSize = Math.round(14 * contentSizeMultiplier);
+                const internalLineHeight = internalLabelSize + 4;
+                ctx.font = `bold ${internalLabelSize}px "${fontFamily}"`;
 
                 // Draw shadow
                 ctx.shadowColor = shadowColor;
@@ -1504,7 +1601,7 @@
 
                 const lines = labelInfo.label.split('\n');
                 lines.forEach((line, i) => {
-                    ctx.fillText(line, labelX, labelY + (i - lines.length / 2 + 0.5) * 18);
+                    ctx.fillText(line, labelX, labelY + (i - lines.length / 2 + 0.5) * internalLineHeight);
                 });
 
                 ctx.restore();
@@ -1515,7 +1612,11 @@
                 const legendX = canvas.width - legendWidth + 20;
                 let legendY = topMargin + 20;
 
-                ctx.font = `bold 18px "${fontFamily}"`;
+                const legendTitleSize = Math.round(18 * contentSizeMultiplier);
+                const legendNameSize = Math.round(14 * contentSizeMultiplier);
+                const legendDetailSize = Math.round(12 * contentSizeMultiplier);
+
+                ctx.font = `bold ${legendTitleSize}px "${fontFamily}"`;
                 ctx.fillStyle = '#003d5c';
                 ctx.textAlign = 'left';
                 ctx.fillText('Legend', legendX, legendY);
@@ -1523,20 +1624,40 @@
                 legendY += 35;
 
                 chartData.columns.forEach((col, index) => {
-                    // Color box
+                    // Color box with modern rounded corners and shadow
+                    const boxSize = 20;
+                    const boxX = legendX;
+                    const boxY = legendY - 12;
+                    const boxRadius = 4;
+                    
+                    // Draw shadow with adjustable intensity
+                    const legendShadowOpacity = 0.1 * shadowIntensity;
+                    const legendShadowBlur = 3 * shadowIntensity;
+                    const legendShadowOffset = 1 * shadowIntensity;
+                    ctx.shadowColor = `rgba(0, 0, 0, ${Math.min(legendShadowOpacity, 0.4)})`;
+                    ctx.shadowBlur = legendShadowBlur;
+                    ctx.shadowOffsetX = 0;
+                    ctx.shadowOffsetY = legendShadowOffset;
+                    
+                    // Fill rounded rectangle
                     ctx.fillStyle = currentColors[index];
-                    ctx.fillRect(legendX, legendY - 12, 20, 20);
-                    ctx.strokeStyle = '#333';
-                    ctx.lineWidth = 1;
-                    ctx.strokeRect(legendX, legendY - 12, 20, 20);
+                    ctx.beginPath();
+                    ctx.roundRect(boxX, boxY, boxSize, boxSize, boxRadius);
+                    ctx.fill();
+                    
+                    // Reset shadow
+                    ctx.shadowColor = 'transparent';
+                    ctx.shadowBlur = 0;
+                    ctx.shadowOffsetX = 0;
+                    ctx.shadowOffsetY = 0;
 
                     // Text
                     ctx.fillStyle = '#333';
-                    ctx.font = `14px "${fontFamily}"`;
+                    ctx.font = `${legendNameSize}px "${fontFamily}"`;
                     ctx.fillText(col.name, legendX + 30, legendY);
 
                     const percentage = ((col.value / total) * 100).toFixed(1);
-                    ctx.font = `12px "${fontFamily}"`;
+                    ctx.font = `${legendDetailSize}px "${fontFamily}"`;
                     ctx.fillStyle = '#666';
                     ctx.fillText(`${percentage}% (${col.value})`, legendX + 30, legendY + 15);
 
@@ -1544,9 +1665,10 @@
                 });
             }
 
-            // Draw Summary at bottom (pipe separated)
+            // Draw Summary at bottom (pipe separated with wrapping)
             const summaryY = canvas.height - 50;
-            ctx.font = `14px "${fontFamily}"`;
+            const summarySize = Math.round(14 * contentSizeMultiplier);
+            ctx.font = `${summarySize}px "${fontFamily}"`;
             ctx.fillStyle = '#003d5c';
             ctx.textAlign = 'center';
             
@@ -1558,7 +1680,33 @@
             });
             const summaryText = summaryParts.join(' | ');
             
-            ctx.fillText(summaryText, canvas.width / 2, summaryY);
+            // Wrap text if it exceeds canvas width
+            const maxWidth = canvas.width - 40; // 20px padding on each side
+            const words = summaryText.split(' ');
+            let lines = [];
+            let currentLine = '';
+            
+            words.forEach(word => {
+                const testLine = currentLine ? currentLine + ' ' + word : word;
+                const metrics = ctx.measureText(testLine);
+                
+                if (metrics.width > maxWidth && currentLine) {
+                    lines.push(currentLine);
+                    currentLine = word;
+                } else {
+                    currentLine = testLine;
+                }
+            });
+            if (currentLine) {
+                lines.push(currentLine);
+            }
+            
+            // Draw wrapped lines
+            const lineHeight = summarySize + 4;
+            const startY = summaryY - ((lines.length - 1) * lineHeight) / 2;
+            lines.forEach((line, i) => {
+                ctx.fillText(line, canvas.width / 2, startY + (i * lineHeight));
+            });
         }
 
         // Copy as PNG
@@ -1615,6 +1763,11 @@
             const showLegend = document.getElementById('showLegend').checked;
             const shadowColor = document.getElementById('shadowColor').value;
             const fontFamily = document.getElementById('fontFamily').value;
+            
+            // Get font size multipliers
+            const titleSizeMultiplier = (parseFloat(document.getElementById('titleSize').value) || 100) / 100;
+            const contentSizeMultiplier = (parseFloat(document.getElementById('contentSize').value) || 100) / 100;
+            const shadowIntensity = (parseFloat(document.getElementById('shadowIntensity').value) || 100) / 100;
 
             // Add extra padding for external labels
             const leftPadding = 120;
@@ -1638,7 +1791,8 @@
             svg += `<rect width="${width}" height="${height}" fill="white"/>`;
 
             // Title
-            svg += `<text x="${width / 2}" y="30" text-anchor="middle" dominant-baseline="hanging" font-family="${fontFamily}" font-size="32" font-weight="bold" fill="#003d5c">${chartData.title}</text>`;
+            const titleFontSize = Math.round(32 * titleSizeMultiplier);
+            svg += `<text x="${width / 2}" y="30" text-anchor="middle" dominant-baseline="hanging" font-family="${fontFamily}" font-size="${titleFontSize}" font-weight="bold" fill="#003d5c">${chartData.title}</text>`;
 
             // Draw pie slices
             let startAngle = -Math.PI / 2;
@@ -1775,7 +1929,8 @@
                 const labelX = isRightSide ? elbowX + 10 : elbowX - 10;
 
                 // Estimate text width (rough approximation for SVG)
-                const textWidth = label.length * 7; // Approximate width
+                const contentFontSize = Math.round(12 * contentSizeMultiplier);
+                const textWidth = label.length * (contentFontSize * 0.6); // Approximate width based on font size
                 const paddingX = 8;
                 const rectWidth = textWidth + paddingX * 2;
                 const rectX = isRightSide ? labelX : labelX - rectWidth;
@@ -1783,12 +1938,17 @@
                 // Leader line with elbow
                 svg += `<polyline points="${innerX},${innerY} ${outerX},${outerY} ${elbowX},${labelY}" fill="none" stroke="${color}" stroke-width="2"/>`;
 
-                // Background rectangle with color tint
-                svg += `<rect x="${rectX}" y="${y}" width="${rectWidth}" height="${height}" fill="${color}" fill-opacity="0.15" stroke="${color}" stroke-width="2"/>`;
+                // Modern rounded rectangle with adjustable shadow
+                const cornerRadius = 6;
+                const calloutShadowBlur = 3 * shadowIntensity;
+                const calloutShadowOpacity = Math.min(0.12 * shadowIntensity, 0.5);
+                const calloutShadowOffset = 2 * shadowIntensity;
+                svg += `<defs><filter id="shadow-${rectX}-${y}"><feDropShadow dx="0" dy="${calloutShadowOffset}" stdDeviation="${calloutShadowBlur}" flood-opacity="${calloutShadowOpacity}"/></filter></defs>`;
+                svg += `<rect x="${rectX}" y="${y}" width="${rectWidth}" height="${height}" rx="${cornerRadius}" ry="${cornerRadius}" fill="${color}" fill-opacity="0.15" filter="url(#shadow-${rectX}-${y})"/>`;
 
                 // Label text (center-aligned within box)
                 const textCenterX = rectX + rectWidth / 2;
-                svg += `<text x="${textCenterX}" y="${labelY}" text-anchor="middle" dominant-baseline="middle" font-family="${fontFamily}" font-size="12" font-weight="bold" fill="#333">${label}</text>`;
+                svg += `<text x="${textCenterX}" y="${labelY}" text-anchor="middle" dominant-baseline="middle" font-family="${fontFamily}" font-size="${contentFontSize}" font-weight="bold" fill="#333">${label}</text>`;
             }
 
             // Draw all external labels
@@ -1800,7 +1960,8 @@
                 const labelX = pieX + Math.cos(labelInfo.midAngle) * (pieRadius * 0.7);
                 const labelY = pieY + Math.sin(labelInfo.midAngle) * (pieRadius * 0.7);
 
-                svg += `<text x="${labelX}" y="${labelY}" text-anchor="middle" dominant-baseline="middle" font-family="${fontFamily}" font-size="14" font-weight="bold" fill="#fff" style="text-shadow: 2px 2px 4px ${shadowColor};">${labelInfo.label}</text>`;
+                const internalLabelSize = Math.round(14 * contentSizeMultiplier);
+                svg += `<text x="${labelX}" y="${labelY}" text-anchor="middle" dominant-baseline="middle" font-family="${fontFamily}" font-size="${internalLabelSize}" font-weight="bold" fill="#fff" style="text-shadow: 2px 2px 4px ${shadowColor};">${labelInfo.label}</text>`;
             });
 
             // Draw legend
@@ -1808,29 +1969,78 @@
                 const legendX = width - rightPadding - legendWidth + 20;
                 let legendY = topMargin + 20;
 
-                svg += `<text x="${legendX}" y="${legendY}" font-family="${fontFamily}" font-size="18" font-weight="bold" fill="#003d5c">Legend</text>`;
+                const legendTitleSize = Math.round(18 * contentSizeMultiplier);
+                const legendNameSize = Math.round(14 * contentSizeMultiplier);
+                const legendDetailSize = Math.round(12 * contentSizeMultiplier);
+
+                svg += `<text x="${legendX}" y="${legendY}" font-family="${fontFamily}" font-size="${legendTitleSize}" font-weight="bold" fill="#003d5c">Legend</text>`;
                 legendY += 35;
 
                 chartData.columns.forEach((col, index) => {
-                    svg += `<rect x="${legendX}" y="${legendY - 12}" width="20" height="20" fill="${currentColors[index]}" stroke="#333"/>`;
+                    const boxX = legendX;
+                    const boxY = legendY - 12;
+                    const boxSize = 20;
+                    const boxRadius = 4;
+                    
+                    // Modern rounded rectangle with shadow for legend (adjustable)
+                    const legendShadowBlur = 1.5 * shadowIntensity;
+                    const legendShadowOpacity = Math.min(0.1 * shadowIntensity, 0.4);
+                    const legendShadowOffset = 1 * shadowIntensity;
+                    svg += `<defs><filter id="legend-shadow-${index}"><feDropShadow dx="0" dy="${legendShadowOffset}" stdDeviation="${legendShadowBlur}" flood-opacity="${legendShadowOpacity}"/></filter></defs>`;
+                    svg += `<rect x="${boxX}" y="${boxY}" width="${boxSize}" height="${boxSize}" rx="${boxRadius}" ry="${boxRadius}" fill="${currentColors[index]}" filter="url(#legend-shadow-${index})"/>`;
                     
                     const percentage = ((col.value / total) * 100).toFixed(1);
-                    svg += `<text x="${legendX + 30}" y="${legendY}" font-family="${fontFamily}" font-size="14" fill="#333">${col.name}</text>`;
-                    svg += `<text x="${legendX + 30}" y="${legendY + 15}" font-family="${fontFamily}" font-size="12" fill="#666">${percentage}% (${col.value})</text>`;
+                    svg += `<text x="${legendX + 30}" y="${legendY}" font-family="${fontFamily}" font-size="${legendNameSize}" fill="#333">${col.name}</text>`;
+                    svg += `<text x="${legendX + 30}" y="${legendY + 15}" font-family="${fontFamily}" font-size="${legendDetailSize}" fill="#666">${percentage}% (${col.value})</text>`;
 
                     legendY += 40;
                 });
             }
 
-            // Summary at bottom
+            // Summary at bottom (with wrapping for SVG)
             const summaryY = height - 50;
+            const summarySize = Math.round(14 * contentSizeMultiplier);
             let summaryParts = [`Total: ${total}`];
             chartData.columns.forEach((col, index) => {
                 const percentage = ((col.value / total) * 100).toFixed(1);
                 summaryParts.push(`${col.name}: ${col.value} (${percentage}%)`);
             });
             const summaryText = summaryParts.join(' | ');
-            svg += `<text x="${width / 2}" y="${summaryY}" text-anchor="middle" font-family="${fontFamily}" font-size="14" fill="#003d5c">${summaryText}</text>`;
+            
+            // Simple wrapping for SVG - split on pipes if too long
+            const maxWidth = width - 40;
+            const approxCharWidth = summarySize * 0.6;
+            const maxChars = maxWidth / approxCharWidth;
+            
+            if (summaryText.length > maxChars) {
+                // Wrap by splitting at pipe separators
+                const parts = summaryText.split(' | ');
+                let lines = [];
+                let currentLine = '';
+                
+                parts.forEach((part, idx) => {
+                    const separator = idx === 0 ? '' : ' | ';
+                    const testLine = currentLine + separator + part;
+                    
+                    if (testLine.length * approxCharWidth > maxWidth && currentLine) {
+                        lines.push(currentLine);
+                        currentLine = part;
+                    } else {
+                        currentLine = testLine;
+                    }
+                });
+                if (currentLine) lines.push(currentLine);
+                
+                // Draw multiple lines
+                const lineHeight = summarySize + 4;
+                const startY = summaryY - ((lines.length - 1) * lineHeight) / 2;
+                lines.forEach((line, i) => {
+                    svg += `<text x="${width / 2}" y="${startY + (i * lineHeight)}" text-anchor="middle" font-family="${fontFamily}" font-size="${summarySize}" fill="#003d5c">${line}</text>`;
+                });
+            } else {
+                // Single line if it fits
+                svg += `<text x="${width / 2}" y="${summaryY}" text-anchor="middle" font-family="${fontFamily}" font-size="${summarySize}" fill="#003d5c">${summaryText}</text>`;
+            }
 
             svg += '</svg>';
             
