@@ -139,11 +139,11 @@ function Sync-ConfigFiles {
     
     # Get latest files from both folders (including .psedited.csv files)
     $downloadsFiles = Get-ChildItem -Path $downloadsPath -Filter "project_config_*.csv" -ErrorAction SilentlyContinue |
-        Where-Object { $_.Name -notmatch '_closed_' } |
+        Where-Object { $_.Name -notmatch '_closed_' -and $_.Name -notmatch '_paused_' } |
         Sort-Object LastWriteTime -Descending
     
     $outputFiles = Get-ChildItem -Path $outputPath -Filter "project_config_*.csv" -ErrorAction SilentlyContinue |
-        Where-Object { $_.Name -notmatch '_closed_' } |
+        Where-Object { $_.Name -notmatch '_closed_' -and $_.Name -notmatch '_paused_' } |
         Sort-Object LastWriteTime -Descending
     
     # If no files in either location
@@ -155,11 +155,24 @@ function Sync-ConfigFiles {
         return $false
     }
     
-    # If no files in Output, copy from Downloads
+    # If no files in Output, copy from Downloads (including closed and paused files for current date)
     if ($outputFiles.Count -eq 0 -and $downloadsFiles.Count -gt 0) {
         $latestDownload = $downloadsFiles[0]
         $destPath = Join-Path $outputPath $latestDownload.Name
         Copy-Item -Path $latestDownload.FullName -Destination $destPath -Force
+        
+        # Also copy any closed/paused files from Downloads for the current date
+        $today = Get-Date -Format "yyyy-MM-dd"
+        $closedPausedFiles = Get-ChildItem -Path $downloadsPath -Filter "project_config_*_${today}*.csv" -ErrorAction SilentlyContinue |
+            Where-Object { $_.Name -match '_closed_' -or $_.Name -match '_paused_' }
+        foreach ($file in $closedPausedFiles) {
+            $destPath = Join-Path $outputPath $file.Name
+            Copy-Item -Path $file.FullName -Destination $destPath -Force
+            if (-not $Silent) {
+                Write-Host "✅ Also copied: $($file.Name)" -ForegroundColor Green
+            }
+        }
+        
         if (-not $Silent) {
             Write-Host "✅ Copied from Downloads: $($latestDownload.Name)" -ForegroundColor Green
         }
@@ -219,13 +232,25 @@ function Sync-ConfigFiles {
         return $true
     }
     
-    # Downloads is newer - copy to Output
+    # Downloads is newer - copy to Output (including closed and paused files for current date)
     if (-not $Silent) {
         Write-Host "📥 Downloads file is newer, copying to Output..." -ForegroundColor Cyan
     }
     
     $destPath = Join-Path $outputPath $latestDownload.Name
     Copy-Item -Path $latestDownload.FullName -Destination $destPath -Force
+    
+    # Also copy any closed/paused files from Downloads for the current date
+    $today = Get-Date -Format "yyyy-MM-dd"
+    $closedPausedFiles = Get-ChildItem -Path $downloadsPath -Filter "project_config_*_${today}*.csv" -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -match '_closed_' -or $_.Name -match '_paused_' }
+    foreach ($file in $closedPausedFiles) {
+        $destPath = Join-Path $outputPath $file.Name
+        Copy-Item -Path $file.FullName -Destination $destPath -Force
+        if (-not $Silent) {
+            Write-Host "✅ Also copied: $($file.Name)" -ForegroundColor Green
+        }
+    }
     
     if (-not $Silent) {
         Write-Host "✅ Copied: $($latestDownload.Name)" -ForegroundColor Green

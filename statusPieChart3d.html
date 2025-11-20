@@ -44,7 +44,7 @@
 
         .main-content {
             display: grid;
-            grid-template-columns: 350px 1fr;
+            grid-template-columns: 420px 1fr;
             gap: 30px;
             padding: 30px;
             align-items: start;
@@ -520,6 +520,41 @@
                                oninput="updateExplosionDistanceLabel(); debouncedGenerateChart();"
                                style="width: 100%; cursor: pointer;">
                     </div>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: flex; align-items: center; cursor: pointer; font-size: 0.9em; color: #495057;">
+                            <input type="checkbox" id="useVariableDepths" 
+                                   onchange="toggleVariableDepths()"
+                                   style="margin-right: 8px; cursor: pointer;">
+                            <span>Variable Depths (show slice complexity)</span>
+                        </label>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #495057;">
+                            Depth Direction:
+                        </label>
+                        <div style="display: flex; gap: 15px; font-size: 0.9em;">
+                            <label style="display: flex; align-items: center; cursor: pointer;">
+                                <input type="radio" name="depthDirection" value="down" 
+                                       onchange="setDepthDirection(false)" checked
+                                       style="margin-right: 5px; cursor: pointer;">
+                                <span>⬇ Down (extruded)</span>
+                            </label>
+                            <label style="display: flex; align-items: center; cursor: pointer;">
+                                <input type="radio" name="depthDirection" value="up" 
+                                       onchange="setDepthDirection(true)"
+                                       style="margin-right: 5px; cursor: pointer;">
+                                <span>⬆ Up (raised)</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 10px;">
+                        <label style="display: block; margin-bottom: 5px; font-size: 0.9em; color: #495057;">
+                            Side Opacity: <span id="sideOpacityValue">100</span>%
+                        </label>
+                        <input type="range" id="sideOpacity" min="0" max="100" value="100" step="5"
+                               oninput="updateSideOpacityLabel(); debouncedGenerateChart();"
+                               style="width: 100%; cursor: pointer;">
+                    </div>
                     <div id="sliceExplodeControls" style="max-height: 200px; overflow-y: auto;">
                         <!-- Dynamically populated -->
                     </div>
@@ -531,6 +566,7 @@
                     <div class="action-buttons">
                         <button class="btn btn-success" onclick="copyAsPNG()">📋 Copy PNG</button>
                         <button class="btn btn-success" onclick="downloadAsPNG()">⬇️ Download PNG</button>
+                        <button class="btn btn-success" onclick="downloadAsSVG()">⬇️ Download SVG</button>
                     </div>
                 </div>
 
@@ -677,6 +713,9 @@
         ];
         let currentColors = [...defaultColors];
         let explodedSlices = new Set();
+        let sliceDepths = {}; // Store per-slice depths (index: depth)
+        let useVariableDepths = false; // Toggle for variable depths feature
+        let depthDirectionUp = false; // false = down (extruded), true = up (raised)
 
         // Update rotation labels
         function updateRotationLabel(axis) {
@@ -729,6 +768,12 @@
             document.getElementById('glassPolishValue').textContent = polish;
         }
 
+        // Update side opacity label
+        function updateSideOpacityLabel() {
+            const opacity = document.getElementById('sideOpacity').value;
+            document.getElementById('sideOpacityValue').textContent = opacity;
+        }
+
         // Toggle slice explosion
         function toggleSliceExplosion(index) {
             if (explodedSlices.has(index)) {
@@ -736,6 +781,28 @@
             } else {
                 explodedSlices.add(index);
             }
+            generateChart();
+        }
+
+        // Toggle variable depths
+        function toggleVariableDepths() {
+            useVariableDepths = document.getElementById('useVariableDepths').checked;
+            setupSliceExplodeControls(); // Rebuild controls to show/hide depth sliders
+            generateChart();
+        }
+
+        // Set depth direction
+        function setDepthDirection(isUp) {
+            depthDirectionUp = isUp;
+            generateChart();
+        }
+
+        // Update individual slice depth
+        function updateSliceDepth(index) {
+            const depthInput = document.getElementById(`sliceDepth${index}`);
+            const depthValue = parseFloat(depthInput.value);
+            sliceDepths[index] = depthValue;
+            document.getElementById(`sliceDepth${index}Value`).textContent = depthValue;
             generateChart();
         }
 
@@ -750,12 +817,29 @@
                 const div = document.createElement('div');
                 div.className = 'slice-explode-control';
                 const color = currentColors[index] || defaultColors[index % defaultColors.length];
+                
+                // Get current depth for this slice (default to global depth)
+                const defaultDepth = parseFloat(document.getElementById('pieDepth')?.value || 30);
+                const currentDepth = sliceDepths[index] !== undefined ? sliceDepths[index] : defaultDepth;
+                
                 div.innerHTML = `
-                    <span style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; background-color: ${color}; margin-right: 8px; vertical-align: middle; border: 1px solid rgba(0,0,0,0.1);"></span>
-                    <label for="explode-${index}" style="vertical-align: middle;">${col.name}</label>
-                    <input type="checkbox" id="explode-${index}" 
-                           ${explodedSlices.has(index) ? 'checked' : ''}
-                           onchange="toggleSliceExplosion(${index})">
+                    <div style="display: flex; align-items: center; margin-bottom: ${useVariableDepths ? '8px' : '0'};">
+                        <span style="display: inline-block; width: 14px; height: 14px; border-radius: 50%; background-color: ${color}; margin-right: 8px; vertical-align: middle; border: 1px solid rgba(0,0,0,0.1);"></span>
+                        <label for="explode-${index}" style="vertical-align: middle; flex: 1;">${col.name}</label>
+                        <input type="checkbox" id="explode-${index}" 
+                               ${explodedSlices.has(index) ? 'checked' : ''}
+                               onchange="toggleSliceExplosion(${index})">
+                    </div>
+                    ${useVariableDepths ? `
+                    <div style="margin-left: 22px; margin-bottom: 4px;">
+                        <label style="font-size: 0.85em; color: #666; display: flex; align-items: center; gap: 8px;">
+                            <span style="min-width: 60px;">Depth: <span id="sliceDepth${index}Value">${currentDepth}</span>px</span>
+                            <input type="range" id="sliceDepth${index}" min="10" max="100" value="${currentDepth}" step="5"
+                                   oninput="updateSliceDepth(${index})"
+                                   style="flex: 1; cursor: pointer;">
+                        </label>
+                    </div>
+                    ` : ''}
                 `;
                 container.appendChild(div);
             });
@@ -849,9 +933,11 @@
                 const depthRow = lines[6].split(',').map(r => r.trim());
                 if (depthRow[0] === 'Depth' && depthRow[1]) {
                     const depthVal = parseFloat(depthRow[1]);
-                    const elem = document.getElementById('depth');
+                    const elem = document.getElementById('pieDepth');
+                    const display = document.getElementById('depthValue');
                     if (!isNaN(depthVal) && elem) {
                         elem.value = depthVal;
+                        if (display) display.textContent = depthVal;
                     }
                 }
             }
@@ -921,6 +1007,62 @@
                     }
                 }
             }
+            
+            // Check for variable depths enabled flag (row 13)
+            if (lines.length >= 13) {
+                const variableDepthsRow = lines[12].split(',').map(r => r.trim());
+                if (variableDepthsRow[0] === 'UseVariableDepths' && variableDepthsRow[1]) {
+                    const enabled = variableDepthsRow[1] === '1';
+                    useVariableDepths = enabled;
+                    const checkbox = document.getElementById('useVariableDepths');
+                    if (checkbox) checkbox.checked = enabled;
+                }
+            }
+            
+            // Check for variable depths data (row 14)
+            if (lines.length >= 14) {
+                const depthsRow = lines[13].split(',').map(r => r.trim());
+                if (depthsRow[0] === 'VariableDepths') {
+                    // Clear existing slice depths
+                    sliceDepths = {};
+                    // Parse depths (skip first two elements: label and Total column)
+                    for (let i = 2; i < depthsRow.length; i++) {
+                        const depthVal = parseFloat(depthsRow[i]);
+                        if (!isNaN(depthVal)) {
+                            sliceDepths[i - 2] = depthVal; // Store with 0-based index
+                        }
+                    }
+                }
+            }
+            
+            // Check for depth direction (row 15)
+            if (lines.length >= 15) {
+                const depthDirectionRow = lines[14].split(',').map(r => r.trim());
+                if (depthDirectionRow[0] === 'DepthDirection' && depthDirectionRow[1]) {
+                    const isUp = depthDirectionRow[1] === '1';
+                    depthDirectionUp = isUp;
+                    // Update radio buttons
+                    const radios = document.getElementsByName('depthDirection');
+                    radios.forEach(radio => {
+                        radio.checked = (radio.value === (isUp ? 'up' : 'down'));
+                    });
+                }
+            }
+            
+            // Check for side opacity (row 16)
+            if (lines.length >= 16) {
+                const sideOpacityRow = lines[15].split(',').map(r => r.trim());
+                if (sideOpacityRow[0] === 'SideOpacity' && sideOpacityRow[1]) {
+                    const opacity = parseFloat(sideOpacityRow[1]);
+                    if (!isNaN(opacity)) {
+                        const opacitySlider = document.getElementById('sideOpacity');
+                        if (opacitySlider) {
+                            opacitySlider.value = opacity;
+                            document.getElementById('sideOpacityValue').textContent = opacity;
+                        }
+                    }
+                }
+            }
 
             // Build columns from headers[2+] and values (skip "Initiative Name" and "Total" columns)
             const columns = [];
@@ -972,7 +1114,7 @@
             const rotationY = document.getElementById('rotationY')?.value || 0;
             
             // Row 7-8: Depth and Explosion settings
-            const depth = document.getElementById('depth')?.value || 40;
+            const depth = document.getElementById('pieDepth')?.value || 30;
             const explosionDistance = document.getElementById('explosionDistance')?.value || 30;
             
             // Row 9-11: Font sizes and callout threshold
@@ -982,8 +1124,24 @@
             
             // Row 12: Exploded slices (indices of exploded slices)
             const explodedIndices = Array.from(explodedSlices).join(',');
+            
+            // Row 13: Variable depths enabled flag
+            const variableDepthsEnabled = useVariableDepths ? '1' : '0';
+            
+            // Row 14: Slice depths (VariableDepths label, skip Total column, Depth1, Depth2, ...)
+            const sliceDepthsArray = [];
+            for (let i = 0; i < chartData.columns.length; i++) {
+                sliceDepthsArray.push(sliceDepths[i] !== undefined ? sliceDepths[i] : depth);
+            }
+            const sliceDepthsStr = ['VariableDepths', '', ...sliceDepthsArray].join(',');
+            
+            // Row 15: Depth direction (0 = down, 1 = up)
+            const depthDirectionValue = depthDirectionUp ? '1' : '0';
+            
+            // Row 16: Side opacity (50-100)
+            const sideOpacity = document.getElementById('sideOpacity')?.value || 100;
 
-            const csv = `${headers}\n${values}\n${colors}\n${font}\nRotationX,${rotationX}\nRotationY,${rotationY}\nDepth,${depth}\nExplosionDistance,${explosionDistance}\nTitleSize,${titleSize}\nContentSize,${contentSize}\nCalloutThreshold,${labelThreshold}\nExplodedSlices,${explodedIndices}`;
+            const csv = `${headers}\n${values}\n${colors}\n${font}\nRotationX,${rotationX}\nRotationY,${rotationY}\nDepth,${depth}\nExplosionDistance,${explosionDistance}\nTitleSize,${titleSize}\nContentSize,${contentSize}\nCalloutThreshold,${labelThreshold}\nExplodedSlices,${explodedIndices}\nUseVariableDepths,${variableDepthsEnabled}\n${sliceDepthsStr}\nDepthDirection,${depthDirectionValue}\nSideOpacity,${sideOpacity}`;
 
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = URL.createObjectURL(blob);
@@ -1015,6 +1173,7 @@
         // Update color
         function updateColor(index, color) {
             currentColors[index] = color;
+            setupSliceExplodeControls(); // Update color indicators in explode controls
             generateChart();
         }
 
@@ -1022,6 +1181,7 @@
         function resetColors() {
             currentColors = [...defaultColors];
             setupColorControls();
+            setupSliceExplodeControls(); // Update color indicators in explode controls
             generateChart();
         }
 
@@ -1159,6 +1319,11 @@
                     explodeOffsetY = midZRot * explosionDistance;
                 }
 
+                // Get depth for this slice (use individual depth if variable depths enabled)
+                const sliceDepth = useVariableDepths && sliceDepths[index] !== undefined 
+                    ? sliceDepths[index] 
+                    : pieDepth;
+
                 slices.push({
                     index,
                     startAngle,
@@ -1170,6 +1335,7 @@
                     name: col.name,
                     explodeOffsetX,
                     explodeOffsetY,
+                    depth: sliceDepth, // Store individual depth
                     // Calculate z-depth for sorting
                     zDepth: Math.sin(midAngle) * pieRadius
                 });
@@ -1182,7 +1348,7 @@
 
             // Draw 3D pie slices
             slices.forEach(slice => {
-                draw3DPieSlice(ctx, pieX, pieY, pieRadius, pieDepth, slice, rotationX, rotationY, shadowIntensity);
+                draw3DPieSlice(ctx, pieX, pieY, pieRadius, slice.depth, slice, rotationX, rotationY, shadowIntensity);
             });
 
             // Prepare labels (internal vs external based on threshold)
@@ -1499,8 +1665,8 @@
                 const x2Final = centerX + explodeOffsetX + x2Rot;
                 const y2Final = centerY + explodeOffsetY + z2Rot;
 
-                // Apply 3D depth (X-axis rotation effect)
-                const depthOffset = depth * Math.sin(rotationXAngle * Math.PI / 180);
+                // Apply 3D depth (X-axis rotation effect) - direction controlled by depthDirectionUp
+                const depthOffset = (depthDirectionUp ? -1 : 1) * depth * Math.sin(rotationXAngle * Math.PI / 180);
 
                 // Calculate gradient based on segment position for better 3D effect
                 const segmentRatio = i / steps;
@@ -1516,7 +1682,8 @@
                 ctx.closePath();
 
                 ctx.fillStyle = adjustedSideColor;
-                ctx.globalAlpha = 0.85; // Glass effect - slight transparency
+                const sideOpacity = (document.getElementById('sideOpacity')?.value || 100) / 100;
+                ctx.globalAlpha = sideOpacity;
                 ctx.fill();
                 ctx.globalAlpha = 1.0;
                 
@@ -1529,7 +1696,7 @@
             }
             
             // Draw radial edges to close the 3D geometry properly
-            const depthOffset = depth * Math.sin(rotationXAngle * Math.PI / 180);
+            const radialDepthOffset = (depthDirectionUp ? -1 : 1) * depth * Math.sin(rotationXAngle * Math.PI / 180);
             
             // Start radial edge
             let xStart = Math.cos(startAngle) * radius;
@@ -1542,13 +1709,14 @@
             ctx.beginPath();
             ctx.moveTo(centerX + explodeOffsetX, centerY + explodeOffsetY);
             ctx.lineTo(xStartFinal, yStartFinal);
-            ctx.lineTo(xStartFinal, yStartFinal + depthOffset);
-            ctx.lineTo(centerX + explodeOffsetX, centerY + explodeOffsetY + depthOffset);
+            ctx.lineTo(xStartFinal, yStartFinal + radialDepthOffset);
+            ctx.lineTo(centerX + explodeOffsetX, centerY + explodeOffsetY + radialDepthOffset);
             ctx.closePath();
             
             // Use same shading as the sides for seamless blend
             ctx.fillStyle = sideColor;
-            ctx.globalAlpha = 0.85;
+            const radialSideOpacity = (document.getElementById('sideOpacity')?.value || 100) / 100;
+            ctx.globalAlpha = radialSideOpacity;
             ctx.fill();
             ctx.globalAlpha = 1.0;
             
@@ -1563,19 +1731,20 @@
             ctx.beginPath();
             ctx.moveTo(centerX + explodeOffsetX, centerY + explodeOffsetY);
             ctx.lineTo(xEndFinal, yEndFinal);
-            ctx.lineTo(xEndFinal, yEndFinal + depthOffset);
-            ctx.lineTo(centerX + explodeOffsetX, centerY + explodeOffsetY + depthOffset);
+            ctx.lineTo(xEndFinal, yEndFinal + radialDepthOffset);
+            ctx.lineTo(centerX + explodeOffsetX, centerY + explodeOffsetY + radialDepthOffset);
             ctx.closePath();
             
             ctx.fillStyle = sideColor;
-            ctx.globalAlpha = 0.85;
+            ctx.globalAlpha = radialSideOpacity;
             ctx.fill();
             ctx.globalAlpha = 1.0;
 
-            // Draw bottom face
+            // Draw back face (bottom when down, top when up) - darker, less glass effect
             ctx.beginPath();
-            const centerDepthOffset = depth * Math.sin(rotationXAngle * Math.PI / 180);
-            ctx.moveTo(centerX + explodeOffsetX, centerY + explodeOffsetY + centerDepthOffset);
+            const centerDepthOffset = (depthDirectionUp ? -1 : 1) * depth * Math.sin(rotationXAngle * Math.PI / 180);
+            const backFaceY = centerY + explodeOffsetY + centerDepthOffset; // Always at the depth offset position
+            ctx.moveTo(centerX + explodeOffsetX, backFaceY);
             
             for (let i = 0; i <= steps; i++) {
                 const angle = startAngle + (endAngle - startAngle) * (i / steps);
@@ -1587,14 +1756,14 @@
                 const zRot = x * sinY + z * cosY;
                 
                 const xFinal = centerX + explodeOffsetX + xRot;
-                const yFinal = centerY + explodeOffsetY + zRot + centerDepthOffset;
+                const yFinal = backFaceY + zRot;
                 ctx.lineTo(xFinal, yFinal);
             }
             ctx.closePath();
             
-            const bottomColor = shadeColor(color, -30);
-            ctx.fillStyle = bottomColor;
-            ctx.globalAlpha = 0.75; // Glass effect - more transparency on bottom
+            const backColor = shadeColor(color, -30);
+            ctx.fillStyle = backColor;
+            ctx.globalAlpha = 0.75; // Less transparency on back face
             ctx.fill();
             ctx.globalAlpha = 1.0;
             
@@ -1604,9 +1773,10 @@
                 ctx.stroke();
             }
 
-            // Draw top face with GLASS EFFECT
+            // Draw front face (top when down, bottom when up) with GLASS EFFECT
             ctx.beginPath();
-            ctx.moveTo(centerX + explodeOffsetX, centerY + explodeOffsetY);
+            const frontFaceY = centerY + explodeOffsetY; // Front face is always at the base level (no offset)
+            ctx.moveTo(centerX + explodeOffsetX, frontFaceY);
             
             for (let i = 0; i <= steps; i++) {
                 const angle = startAngle + (endAngle - startAngle) * (i / steps);
@@ -1618,7 +1788,7 @@
                 const zRot = x * sinY + z * cosY;
                 
                 const xFinal = centerX + explodeOffsetX + xRot;
-                const yFinal = centerY + explodeOffsetY + zRot;
+                const yFinal = frontFaceY + zRot;
                 ctx.lineTo(xFinal, yFinal);
             }
             ctx.closePath();
@@ -1631,7 +1801,7 @@
             const midZRot = midX * sinY + midZ * cosY;
             
             const gradientCenterX = centerX + explodeOffsetX + midXRot;
-            const gradientCenterY = centerY + explodeOffsetY + midZRot;
+            const gradientCenterY = frontFaceY + midZRot;
             const gradient = ctx.createRadialGradient(gradientCenterX, gradientCenterY, 0, gradientCenterX, gradientCenterY, radius * 1.2);
             
             // Glass polish intensity affects gradient brightness
@@ -1646,7 +1816,7 @@
             // GLASS EFFECT: Specular highlight (simulates light reflection)
             if (glassPolish > 0.1) {
                 const highlightX = centerX + explodeOffsetX + midXRot * 0.6;
-                const highlightY = centerY + explodeOffsetY + midZRot * 0.6;
+                const highlightY = frontFaceY + midZRot * 0.6;
                 const highlightGradient = ctx.createRadialGradient(
                     highlightX, highlightY, 0,
                     highlightX, highlightY, radius * 0.5
@@ -1816,6 +1986,35 @@
             link.download = `${chartData.title.replace(/\s+/g, '_')}_3d_chart.png`;
             link.href = canvas.toDataURL();
             link.click();
+        }
+
+        // Download as SVG
+        function downloadAsSVG() {
+            if (!chartData) {
+                alert('Please generate a chart first');
+                return;
+            }
+
+            const canvas = document.getElementById('chartCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Get the image data from canvas
+            const imgData = canvas.toDataURL('image/png');
+            
+            // Create SVG with embedded PNG image
+            const svgContent = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" 
+     width="${canvas.width}" height="${canvas.height}" viewBox="0 0 ${canvas.width} ${canvas.height}">
+    <image width="${canvas.width}" height="${canvas.height}" xlink:href="${imgData}"/>
+</svg>`;
+
+            const blob = new Blob([svgContent], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.download = `${chartData.title.replace(/\s+/g, '_')}_3d_chart.svg`;
+            link.href = url;
+            link.click();
+            URL.revokeObjectURL(url);
         }
 
         // Show create chart modal
