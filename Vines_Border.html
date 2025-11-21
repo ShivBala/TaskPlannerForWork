@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vine Generator V12 (Multi-Layer)</title>
+    <title>V13: Full Botanical Engine</title>
     <style>
         body {
             margin: 0;
@@ -15,7 +15,7 @@
             overflow: hidden;
         }
         #sidebar {
-            width: 360px;
+            width: 380px;
             background: #252525;
             border-right: 1px solid #111;
             display: flex;
@@ -24,19 +24,14 @@
             box-shadow: 5px 0 15px rgba(0,0,0,0.2);
         }
         
-        /* SCROLLABLE SETTINGS AREA */
-        #settings-area {
-            padding: 20px;
-            overflow-y: auto;
-            flex-grow: 1;
-        }
-
+        #settings-area { padding: 10px; overflow-y: auto; flex-grow: 1; }
         #canvas-area {
             flex-grow: 1;
             display: flex;
             justify-content: center;
             align-items: center;
             background-color: #222;
+            /* Checkerboard */
             background-image: 
                 linear-gradient(45deg, #2a2a2a 25%, transparent 25%), 
                 linear-gradient(-45deg, #2a2a2a 25%, transparent 25%), 
@@ -46,41 +41,33 @@
             position: relative;
             cursor: crosshair;
         }
-        canvas {
-            box-shadow: 0 0 30px rgba(0,0,0,0.5);
-            background: transparent; 
-        }
-        
-        /* CONTROLS CSS */
-        .control-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+        canvas { box-shadow: 0 0 30px rgba(0,0,0,0.5); background: transparent; }
+
+        /* UI COMPONENTS */
+        .control-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
         .double-row { display: flex; gap: 10px; }
         .double-row .control-group { flex: 1; }
-
         label { font-size: 0.7rem; color: #bbb; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase;}
         input[type="range"] { width: 100%; cursor: pointer; accent-color: #76c76c; margin: 5px 0;}
         input[type="color"] { width: 100%; height: 30px; border:none; padding: 0; background: none; cursor: pointer;}
-        select { padding: 8px; background: #333; color: white; border: 1px solid #444; border-radius: 4px; width: 100%; }
-
-        /* TABS */
+        select { padding: 6px; background: #333; color: white; border: 1px solid #444; border-radius: 4px; width: 100%; font-size: 0.8rem;}
+        
+        /* TABS & ACCORDIONS */
         .tabs { display: flex; background: #111; padding: 5px; gap: 5px; }
         .tab-btn {
-            flex: 1;
-            padding: 10px;
-            background: #333;
-            border: none;
-            color: #888;
-            cursor: pointer;
-            font-weight: bold;
-            border-radius: 4px;
-            font-size: 0.75rem;
+            flex: 1; padding: 10px; background: #333; border: none; color: #888; cursor: pointer;
+            font-weight: bold; border-radius: 4px; font-size: 0.75rem;
         }
         .tab-btn.active { background: #438a36; color: white; }
         .tab-content { display: none; }
         .tab-content.active { display: block; animation: fadeIn 0.3s; }
         
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        /* FOOTER BUTTONS */
+        details { background: #2a2a2a; margin-bottom: 8px; border-radius: 4px; border: 1px solid #333; }
+        summary { padding: 10px; cursor: pointer; font-size: 0.75rem; font-weight: bold; color: #ddd; user-select: none; outline: none; }
+        summary:hover { background: #333; }
+        .details-content { padding: 10px; border-top: 1px solid #333; }
+        
+        /* BUTTONS */
         .footer { padding: 15px; background: #1e1e1e; border-top: 1px solid #333; display: flex; flex-direction: column; gap: 8px;}
         button.action-btn {
             padding: 12px; border: none; border-radius: 4px; cursor: pointer;
@@ -88,18 +75,17 @@
         }
         .btn-gen { background: #438a36; color: white; } .btn-gen:hover { background: #53a543; }
         .btn-dl { background: #333; color: #ccc; border: 1px solid #444; } .btn-dl:hover { background: #444; color: #fff; }
-        
-        .h-rule { height: 1px; background: #333; margin: 15px 0; }
-        .section-title { color: #fff; font-size: 0.8rem; margin-bottom: 10px; border-left: 3px solid #76c76c; padding-left: 8px; }
 
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .toggle-row { display: flex; align-items: center; justify-content: space-between; }
     </style>
 </head>
 <body>
 
 <div id="sidebar">
-    <div style="padding: 20px 20px 0 20px;">
+    <div style="padding: 15px; border-bottom: 1px solid #333;">
         <div class="control-group">
-            <label>Global Frame Shape</label>
+            <label>Global Shape</label>
             <select id="shapeSelect">
                 <option value="rectangle">Rectangle</option>
                 <option value="oval">Circle / Oval</option>
@@ -120,9 +106,9 @@
     </div>
 
     <div class="tabs">
-        <button class="tab-btn active" onclick="switchTab(0)">Layer A</button>
-        <button class="tab-btn" onclick="switchTab(1)">Layer B</button>
-        <button class="tab-btn" onclick="switchTab(2)">Layer C</button>
+        <button class="tab-btn active" onclick="switchTab(0)">A: Background</button>
+        <button class="tab-btn" onclick="switchTab(1)">B: Main</button>
+        <button class="tab-btn" onclick="switchTab(2)">C: Detail</button>
     </div>
 
     <div id="settings-area">
@@ -132,7 +118,7 @@
     </div>
 
     <div class="footer">
-        <button id="btnRegen" class="action-btn btn-gen">Regenerate All</button>
+        <button id="btnRegen" class="action-btn btn-gen">Regenerate</button>
         <div class="double-row">
             <button id="btnPNG" class="action-btn btn-dl" style="flex:1; color:#4a90e2; border-color:#4a90e2;">PNG</button>
             <button id="btnSVG" class="action-btn btn-dl" style="flex:1;">SVG</button>
@@ -145,99 +131,113 @@
 </div>
 
 <script>
-    // --- CONFIGURATION DEFAULTS FOR 3 LAYERS ---
+    // --- CONFIGURATION ---
     const defaultLayers = [
-        // Layer A: Background, Darker, Thick, Plain Leaves
-        { enabled: true, len: 200, density: 60, dir: 20, curve: 30, leafShape: 'plain', leafSize: 25, 
-          stem1: '#2b1d14', stem2: '#3d2e22', leaf1: '#2d5a2d', leaf2: '#1e3c1e' },
-        
-        // Layer B: Main, Bright, Sawtooth, Wavy
-        { enabled: true, len: 150, density: 80, dir: 50, curve: 50, leafShape: 'sawtooth', leafSize: 18, 
-          stem1: '#4a3b2a', stem2: '#5c4d3c', leaf1: '#9ee38d', leaf2: '#6db35e' },
-
-        // Layer C: Detail, Very Bright, Small, Wavy
-        { enabled: true, len: 100, density: 50, dir: 80, curve: 60, leafShape: 'wavy', leafSize: 12, 
-          stem1: '#5c4d3c', stem2: '#756452', leaf1: '#d4f7cc', leaf2: '#a8e09b' }
+        // LAYER A: HIBISCUS (Round, Background)
+        { 
+            vineEnabled: true, len: 220, density: 50, dir: 30, curve: 40, stem1: '#1a261a', stem2: '#2d402d',
+            leafEnabled: true, leafShape: 'plain', leafSize: 30, leaf1: '#1e3c1e', leaf2: '#2d5a2d',
+            flowerEnabled: true, flowerType: 'round', flowerSize: 25, petals: 5, fColor1: '#d65c5c', fColor2: '#8a2b2b', fCenter: '#ffffaa'
+        },
+        // LAYER B: LILY (Sharp, Main)
+        { 
+            vineEnabled: true, len: 160, density: 70, dir: 50, curve: 50, stem1: '#4a3b2a', stem2: '#5c4d3c',
+            leafEnabled: true, leafShape: 'sawtooth', leafSize: 22, leaf1: '#549145', leaf2: '#78b865',
+            flowerEnabled: true, flowerType: 'pointed', flowerSize: 20, petals: 6, fColor1: '#ffffff', fColor2: '#e0e0e0', fCenter: '#ffaa00'
+        },
+        // LAYER C: DAISY (Delicate, Detail)
+        { 
+            vineEnabled: true, len: 100, density: 60, dir: 80, curve: 70, stem1: '#5c4d3c', stem2: '#756452',
+            leafEnabled: true, leafShape: 'wavy', leafSize: 12, leaf1: '#a8e09b', leaf2: '#d4f7cc',
+            flowerEnabled: true, flowerType: 'daisy', flowerSize: 10, petals: 16, fColor1: '#a3c2fa', fColor2: '#dcebff', fCenter: '#ffeebb'
+        }
     ];
 
-    // --- GENERATE UI FOR LAYERS ---
-    function createLayerControls(index) {
-        const d = defaultLayers[index];
+    function createLayerControls(i) {
+        const d = defaultLayers[i];
         return `
-        <div class="control-group" style="flex-direction:row; align-items:center; gap:10px; margin-bottom:15px; padding-bottom:10px; border-bottom:1px solid #333;">
-            <input type="checkbox" id="en_${index}" ${d.enabled ? 'checked' : ''} onchange="updateLayer(${index})">
-            <label for="en_${index}" style="font-size:0.9rem; color:#fff;">Enable Layer</label>
-        </div>
-
-        <div class="control-group">
-            <label>Leaf Shape</label>
-            <select id="ls_${index}" onchange="updateLayer(${index})">
-                <option value="plain" ${d.leafShape=='plain'?'selected':''}>Plain</option>
-                <option value="wavy" ${d.leafShape=='wavy'?'selected':''}>Wavy</option>
-                <option value="sawtooth" ${d.leafShape=='sawtooth'?'selected':''}>Sawtooth</option>
-            </select>
-        </div>
-
-        <div class="double-row">
-            <div class="control-group">
-                <label>Density</label>
-                <input type="range" id="den_${index}" min="10" max="150" value="${d.density}" oninput="updateLayer(${index})">
+        <details open>
+            <summary class="toggle-row">
+                VINE STRUCTURE
+                <input type="checkbox" id="ve_${i}" ${d.vineEnabled?'checked':''} onclick="event.stopPropagation(); update()">
+            </summary>
+            <div class="details-content">
+                <div class="double-row">
+                    <div class="control-group"><label>Density</label><input type="range" id="den_${i}" min="10" max="150" value="${d.density}" oninput="update()"></div>
+                    <div class="control-group"><label>Length</label><input type="range" id="len_${i}" min="50" max="400" value="${d.len}" oninput="update()"></div>
+                </div>
+                <div class="double-row">
+                    <div class="control-group"><label>Direction</label><input type="range" id="dir_${i}" min="0" max="100" value="${d.dir}" oninput="update()"></div>
+                    <div class="control-group"><label>Curvature</label><input type="range" id="cur_${i}" min="0" max="80" value="${d.curve}" oninput="update()"></div>
+                </div>
+                 <div class="double-row">
+                    <div class="control-group"><label>Stem Dark</label><input type="color" id="sc1_${i}" value="${d.stem1}" oninput="update()"></div>
+                    <div class="control-group"><label>Stem Light</label><input type="color" id="sc2_${i}" value="${d.stem2}" oninput="update()"></div>
+                </div>
             </div>
-            <div class="control-group">
-                <label>Length</label>
-                <input type="range" id="len_${index}" min="50" max="400" value="${d.len}" oninput="updateLayer(${index})">
+        </details>
+
+        <details>
+            <summary class="toggle-row">
+                FOLIAGE (LEAVES)
+                <input type="checkbox" id="le_${i}" ${d.leafEnabled?'checked':''} onclick="event.stopPropagation(); update()">
+            </summary>
+            <div class="details-content">
+                <div class="control-group">
+                    <label>Shape</label>
+                    <select id="ls_${i}" onchange="update()">
+                        <option value="plain" ${d.leafShape=='plain'?'selected':''}>Plain (Smooth)</option>
+                        <option value="wavy" ${d.leafShape=='wavy'?'selected':''}>Wavy (Ruffled)</option>
+                        <option value="sawtooth" ${d.leafShape=='sawtooth'?'selected':''}>Sawtooth (Jagged)</option>
+                    </select>
+                </div>
+                <div class="control-group"><label>Size</label><input type="range" id="lfs_${i}" min="5" max="50" value="${d.leafSize}" oninput="update()"></div>
+                <div class="double-row">
+                    <div class="control-group"><label>Color 1</label><input type="color" id="lc1_${i}" value="${d.leaf1}" oninput="update()"></div>
+                    <div class="control-group"><label>Color 2</label><input type="color" id="lc2_${i}" value="${d.leaf2}" oninput="update()"></div>
+                </div>
             </div>
-        </div>
+        </details>
 
-        <div class="double-row">
-            <div class="control-group">
-                <label>Direction</label>
-                <input type="range" id="dir_${index}" min="0" max="100" value="${d.dir}" oninput="updateLayer(${index})">
+        <details>
+            <summary class="toggle-row">
+                BLOSSOMS (FLOWERS)
+                <input type="checkbox" id="fe_${i}" ${d.flowerEnabled?'checked':''} onclick="event.stopPropagation(); update()">
+            </summary>
+            <div class="details-content">
+                <div class="control-group">
+                    <label>Flower Species</label>
+                    <select id="ft_${i}" onchange="update()">
+                        <option value="round" ${d.flowerType=='round'?'selected':''}>Hibiscus (Round)</option>
+                        <option value="pointed" ${d.flowerType=='pointed'?'selected':''}>Lily (Pointed)</option>
+                        <option value="daisy" ${d.flowerType=='daisy'?'selected':''}>Daisy (Multi-Petal)</option>
+                    </select>
+                </div>
+                <div class="double-row">
+                    <div class="control-group"><label>Size</label><input type="range" id="fs_${i}" min="5" max="60" value="${d.flowerSize}" oninput="update()"></div>
+                    <div class="control-group"><label>Petals</label><input type="range" id="fp_${i}" min="4" max="20" value="${d.petals}" oninput="update()"></div>
+                </div>
+                <div class="double-row">
+                    <div class="control-group"><label>Petal 1</label><input type="color" id="fc1_${i}" value="${d.fColor1}" oninput="update()"></div>
+                    <div class="control-group"><label>Petal 2</label><input type="color" id="fc2_${i}" value="${d.fColor2}" oninput="update()"></div>
+                </div>
+                 <div class="control-group"><label>Center (Pistil)</label><input type="color" id="fcc_${i}" value="${d.fCenter}" oninput="update()"></div>
             </div>
-             <div class="control-group">
-                <label>Curvature</label>
-                <input type="range" id="cur_${index}" min="0" max="80" value="${d.curve}" oninput="updateLayer(${index})">
-            </div>
-        </div>
-
-        <div class="control-group">
-            <label>Leaf Size</label>
-            <input type="range" id="lfs_${index}" min="5" max="50" value="${d.leafSize}" oninput="updateLayer(${index})">
-        </div>
-
-        <div class="h-rule"></div>
-        <label class="section-title">Colors</label>
-
-        <div class="double-row">
-            <div class="control-group"><label>Stem 1</label><input type="color" id="sc1_${index}" value="${d.stem1}" oninput="updateLayer(${index})"></div>
-            <div class="control-group"><label>Stem 2</label><input type="color" id="sc2_${index}" value="${d.stem2}" oninput="updateLayer(${index})"></div>
-        </div>
-        <div class="double-row">
-            <div class="control-group"><label>Leaf 1</label><input type="color" id="lc1_${index}" value="${d.leaf1}" oninput="updateLayer(${index})"></div>
-            <div class="control-group"><label>Leaf 2</label><input type="color" id="lc2_${index}" value="${d.leaf2}" oninput="updateLayer(${index})"></div>
-        </div>
+        </details>
         `;
     }
 
     // Inject HTML
-    document.getElementById('layer-0').innerHTML = createLayerControls(0);
-    document.getElementById('layer-1').innerHTML = createLayerControls(1);
-    document.getElementById('layer-2').innerHTML = createLayerControls(2);
+    for(let i=0; i<3; i++) document.getElementById(`layer-${i}`).innerHTML = createLayerControls(i);
 
-    // --- CORE ENGINE ---
+    // --- ENGINE CORE ---
     const canvas = document.getElementById('artCanvas');
     const ctx = canvas.getContext('2d');
     let svgBuffer = "";
     let isDragging = false;
     let startPos = {x:0, y:0};
     let currentBounds = {x: 250, y: 200, w: 500, h: 400}; 
-    
-    // Global Refs
-    const gEls = {
-        shape: document.getElementById('shapeSelect'),
-        avoid: document.getElementById('avoidCenter'),
-        outer: document.getElementById('outerBound')
-    };
+    const gEls = { shape: document.getElementById('shapeSelect'), avoid: document.getElementById('avoidCenter'), outer: document.getElementById('outerBound') };
 
     function switchTab(idx) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
@@ -246,254 +246,276 @@
         document.querySelectorAll('.tab-btn')[idx].classList.add('active');
     }
 
-    function getLayerConfig(idx) {
+    function getConfig(i) {
         return {
-            enabled: document.getElementById(`en_${idx}`).checked,
-            leafShape: document.getElementById(`ls_${idx}`).value,
-            density: parseInt(document.getElementById(`den_${idx}`).value),
-            len: parseInt(document.getElementById(`len_${idx}`).value),
-            dir: parseInt(document.getElementById(`dir_${idx}`).value),
-            curve: parseInt(document.getElementById(`cur_${idx}`).value),
-            leafSize: parseInt(document.getElementById(`lfs_${idx}`).value),
-            stem1: document.getElementById(`sc1_${idx}`).value,
-            stem2: document.getElementById(`sc2_${idx}`).value,
-            leaf1: document.getElementById(`lc1_${idx}`).value,
-            leaf2: document.getElementById(`lc2_${idx}`).value
+            vineEn: document.getElementById(`ve_${i}`).checked,
+            density: parseInt(document.getElementById(`den_${i}`).value),
+            len: parseInt(document.getElementById(`len_${i}`).value),
+            dir: parseInt(document.getElementById(`dir_${i}`).value),
+            curve: parseInt(document.getElementById(`cur_${i}`).value),
+            stem1: document.getElementById(`sc1_${i}`).value, stem2: document.getElementById(`sc2_${i}`).value,
+            
+            leafEn: document.getElementById(`le_${i}`).checked,
+            leafShape: document.getElementById(`ls_${i}`).value,
+            leafSize: parseInt(document.getElementById(`lfs_${i}`).value),
+            leaf1: document.getElementById(`lc1_${i}`).value, leaf2: document.getElementById(`lc2_${i}`).value,
+
+            flowEn: document.getElementById(`fe_${i}`).checked,
+            flowType: document.getElementById(`ft_${i}`).value,
+            flowSize: parseInt(document.getElementById(`fs_${i}`).value),
+            petals: parseInt(document.getElementById(`fp_${i}`).value),
+            fc1: document.getElementById(`fc1_${i}`).value, fc2: document.getElementById(`fc2_${i}`).value, fcc: document.getElementById(`fcc_${i}`).value
         };
     }
 
-    function updateLayer(idx) { generate(); }
-    
-    // Global Listeners
+    function update() { generate(); }
     gEls.shape.addEventListener('change', generate);
     gEls.avoid.addEventListener('change', generate);
     gEls.outer.addEventListener('input', generate);
-
+    
     // Helper: Color Lerp
     function lerpColor(a, b, amount) {
         const ar = parseInt(a.substring(1, 3), 16), ag = parseInt(a.substring(3, 5), 16), ab = parseInt(a.substring(5, 7), 16);
         const br = parseInt(b.substring(1, 3), 16), bg = parseInt(b.substring(3, 5), 16), bb = parseInt(b.substring(5, 7), 16);
-        const rr = Math.round(ar + amount * (br - ar)), rg = Math.round(ag + amount * (bg - ag)), rb = Math.round(ab + amount * (bb - ab));
-        return '#' + ((1 << 24) + (rr << 16) + (rg << 8) + rb).toString(16).slice(1);
+        return '#' + ((1 << 24) + (Math.round(ar + amount * (br - ar)) << 16) + (Math.round(ag + amount * (bg - ag)) << 8) + Math.round(ab + amount * (bb - ab))).toString(16).slice(1);
     }
 
-    // Geometry & Collision (Same as V11)
-    function getPolygonVertices(n, cx, cy, rx, ry) {
-        const verts = []; const startAng = -Math.PI/2; 
-        for(let i=0; i<n; i++) {
-            const theta = startAng + (i * 2 * Math.PI / n);
-            verts.push({ x: cx + rx * Math.cos(theta), y: cy + ry * Math.sin(theta) });
-        }
-        return verts;
+    // Geometry Helpers
+    function getPoly(n, cx, cy, rx, ry) {
+        const v = []; for(let i=0; i<n; i++) { const t = -Math.PI/2 + (i*2*Math.PI/n); v.push({x: cx+rx*Math.cos(t), y: cy+ry*Math.sin(t)}); } return v;
     }
-    function getPointOnLine(p1, p2, t) { return { x: p1.x + (p2.x - p1.x) * t, y: p1.y + (p2.y - p1.y) * t }; }
-
     function isInsideInner(x, y, shape, bounds) {
-        const cx = bounds.x + bounds.w/2; const cy = bounds.y + bounds.h/2; const rx = bounds.w/2; const ry = bounds.h/2;
-        if(shape === 'rectangle') return (x > bounds.x && x < bounds.x + bounds.w && y > bounds.y && y < bounds.y + bounds.h);
+        const cx = bounds.x+bounds.w/2, cy = bounds.y+bounds.h/2, rx = bounds.w/2, ry = bounds.h/2;
+        if(shape === 'rectangle') return (x>bounds.x && x<bounds.x+bounds.w && y>bounds.y && y<bounds.y+bounds.h);
         else if(shape === 'oval') return ((Math.pow(x-cx,2))/(rx*rx) + (Math.pow(y-cy,2))/(ry*ry)) <= 1;
-        else { 
-            const sides = shape === 'pentagon' ? 5 : 6; const verts = getPolygonVertices(sides, cx, cy, rx, ry);
-            let inside = false;
-            for (let i = 0, j = sides - 1; i < sides; j = i++) {
-                const xi = verts[i].x, yi = verts[i].y; const xj = verts[j].x, yj = verts[j].y;
-                const intersect = ((yi > y) !== (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-                if (intersect) inside = !inside;
-            }
-            return inside;
+        else {
+            const sides = shape==='pentagon'?5:6; const vs = getPoly(sides, cx, cy, rx, ry); let inPoly=false;
+            for(let i=0, j=sides-1; i<sides; j=i++) if(((vs[i].y>y)!==(vs[j].y>y)) && (x<(vs[j].x-vs[i].x)*(y-vs[i].y)/(vs[j].y-vs[i].y)+vs[i].x)) inPoly=!inPoly;
+            return inPoly;
         }
     }
-    function isOutsideOuter(x, y, shape, bounds, limit) {
-        const cx = bounds.x + bounds.w/2; const cy = bounds.y + bounds.h/2;
-        const maxR = Math.max(bounds.w/2, bounds.h/2);
-        return Math.hypot(x - cx, y - cy) > (maxR + limit);
+
+    // --- FLOWER MATH ---
+    // Generates path points for a single petal based on type
+    function getPetalPath(type, scale) {
+        const pts = [];
+        if(type === 'round') { // Hibiscus style
+            pts.push({x:0, y:0});
+            pts.push({x: scale*0.5, y: -scale*0.8}); // Control 1
+            pts.push({x: scale, y: 0}); // Tip
+            pts.push({x: scale*0.5, y: scale*0.8}); // Control 2
+        } else if (type === 'pointed') { // Lily style
+            pts.push({x:0, y:0});
+            pts.push({x: scale*0.3, y: -scale*0.3}); 
+            pts.push({x: scale, y: 0}); 
+            pts.push({x: scale*0.3, y: scale*0.3});
+        } else { // Daisy (narrow)
+            pts.push({x:0, y:0});
+            pts.push({x: scale*0.2, y: -scale*0.1}); 
+            pts.push({x: scale, y: 0}); 
+            pts.push({x: scale*0.2, y: scale*0.1});
+        }
+        return pts;
     }
 
-    // --- MOUSE ---
-    canvas.addEventListener('mousedown', (e) => {
-        const rect = canvas.getBoundingClientRect(); startPos = { x: e.clientX - rect.left, y: e.clientY - rect.top }; isDragging = true;
-    });
-    canvas.addEventListener('mousemove', (e) => {
-        if(!isDragging) return;
-        const rect = canvas.getBoundingClientRect(); const currX = e.clientX - rect.left; const currY = e.clientY - rect.top;
-        ctx.clearRect(0,0,canvas.width, canvas.height);
-        ctx.strokeStyle = "#fff"; ctx.setLineDash([5, 5]); ctx.lineWidth = 2;
-        ctx.strokeRect(startPos.x, startPos.y, currX - startPos.x, currY - startPos.y);
-        ctx.setLineDash([]);
-    });
-    canvas.addEventListener('mouseup', (e) => {
-        if(!isDragging) return; isDragging = false;
-        const rect = canvas.getBoundingClientRect(); const endX = e.clientX - rect.left; const endY = e.clientY - rect.top;
-        currentBounds = { x: Math.min(startPos.x, endX), y: Math.min(startPos.y, endY), w: Math.abs(endX - startPos.x), h: Math.abs(endY - startPos.y) };
-        if(currentBounds.w > 10) generate();
-    });
+    function drawFlower(cx, cy, baseAngle, conf) {
+        const type = conf.flowType;
+        const scale = conf.flowSize;
+        const count = conf.petals;
+        const c1 = conf.fc1; const c2 = conf.fc2; const cC = conf.fcc;
+        
+        // Canvas Draw
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.rotate(baseAngle);
+        
+        // Petals
+        for(let i=0; i<count; i++) {
+            ctx.save();
+            const rot = (Math.PI * 2 * i) / count;
+            ctx.rotate(rot);
+            
+            const color = i % 2 === 0 ? c1 : c2; // Alternate colors
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            
+            if(type === 'round' || type === 'pointed') {
+               // Bezier Petal
+               // M 0,0 Q c1x,c1y tipx,tipy Q c2x,c2y 0,0
+               const wid = type==='round'?0.6:0.25;
+               ctx.moveTo(0,0);
+               ctx.quadraticCurveTo(scale*0.5, -scale*wid, scale, 0);
+               ctx.quadraticCurveTo(scale*0.5, scale*wid, 0, 0);
+            } else {
+                // Daisy (Ellipse-ish)
+                ctx.ellipse(scale/2, 0, scale/2, scale*0.15, 0, 0, Math.PI*2);
+            }
+            ctx.fill();
+            ctx.restore();
+        }
+        // Center Pistil
+        ctx.fillStyle = cC;
+        ctx.beginPath();
+        ctx.arc(0, 0, scale * 0.2, 0, Math.PI*2);
+        ctx.fill();
+        ctx.restore();
 
-    // --- GENERATION LOOP ---
+        // SVG Output
+        const pid = `flower_${Math.floor(Math.random()*10000)}`; // Unique ID for grouping
+        svgBuffer += `<g transform="translate(${cx.toFixed(1)}, ${cy.toFixed(1)}) rotate(${(baseAngle*180/Math.PI).toFixed(1)})">`;
+        
+        for(let i=0; i<count; i++) {
+            const rot = (360 * i) / count;
+            const color = i % 2 === 0 ? c1 : c2;
+            let d = "";
+            if(type === 'round' || type === 'pointed') {
+               const wid = type==='round'?0.6:0.25;
+               d = `M 0,0 Q ${(scale*0.5).toFixed(1)},${(-scale*wid).toFixed(1)} ${scale},0 Q ${(scale*0.5).toFixed(1)},${(scale*wid).toFixed(1)} 0,0`;
+            } else {
+               // Approx ellipse with path
+               const rx = scale/2; const ry = scale*0.15;
+               d = `M 0,0 A ${rx} ${ry} 0 0 1 ${scale} 0 A ${rx} ${ry} 0 0 1 0 0`;
+            }
+            svgBuffer += `<path d="${d}" fill="${color}" stroke="none" transform="rotate(${rot.toFixed(1)})" />`;
+        }
+        svgBuffer += `<circle cx="0" cy="0" r="${(scale*0.2).toFixed(1)}" fill="${cC}" stroke="none" />`;
+        svgBuffer += `</g>`;
+    }
+
+    // --- MAIN GENERATOR ---
     function generate() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         svgBuffer = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${canvas.width} ${canvas.height}" width="${canvas.width}" height="${canvas.height}">`;
 
-        // Loop through 3 Layers
+        const shape = gEls.shape.value;
+        const avoidIn = gEls.avoid.checked;
+        const limitOut = parseInt(gEls.outer.value);
+
+        // Process Layers
         for(let layerIdx = 0; layerIdx < 3; layerIdx++) {
-            const conf = getLayerConfig(layerIdx);
-            if(!conf.enabled) continue;
-
-            // Group SVG for this layer
-            svgBuffer += `<g id="layer_${layerIdx}">`;
-
-            const shape = gEls.shape.value;
-            const dirFactor = conf.dir / 100;
+            const conf = getConfig(layerIdx);
+            if(!conf.vineEn) continue;
             
+            svgBuffer += `<g id="layer_${layerIdx}">`;
+            const dirFactor = conf.dir / 100;
+
             for(let i = 0; i < conf.density; i++) {
-                // Spawn Logic (Shared)
-                const cx = currentBounds.x + currentBounds.w/2; const cy = currentBounds.y + currentBounds.h/2;
-                let sx, sy, normalAngle;
-                
+                // Spawn logic (Same as V12)
+                const cx = currentBounds.x+currentBounds.w/2, cy = currentBounds.y+currentBounds.h/2;
+                let sx, sy, nAng;
                 if(shape === 'rectangle') {
-                    const p = (Math.random() * (2*currentBounds.w + 2*currentBounds.h));
-                    if(p < currentBounds.w) { sx = currentBounds.x + p; sy = currentBounds.y; }
-                    else if(p < currentBounds.w + currentBounds.h) { sx = currentBounds.x + currentBounds.w; sy = currentBounds.y + (p-currentBounds.w); }
-                    else if(p < 2*currentBounds.w + currentBounds.h) { sx = currentBounds.x + currentBounds.w - (p-(currentBounds.w+currentBounds.h)); sy = currentBounds.y + currentBounds.h; }
-                    else { sx = currentBounds.x; sy = currentBounds.y + currentBounds.h - (p-(2*currentBounds.w+currentBounds.h)); }
-                    normalAngle = Math.atan2(sy - cy, sx - cx);
-                    if (sy === currentBounds.y) normalAngle = -Math.PI/2; if (sx === currentBounds.x + currentBounds.w) normalAngle = 0;
-                    if (sy === currentBounds.y + currentBounds.h) normalAngle = Math.PI/2; if (sx === currentBounds.x) normalAngle = Math.PI;
-                } 
-                else if (shape === 'oval') {
-                    const angle = Math.random() * Math.PI * 2;
-                    sx = cx + (currentBounds.w/2) * Math.cos(angle); sy = cy + (currentBounds.h/2) * Math.sin(angle);
-                    normalAngle = angle;
+                    const p = Math.random() * (2*currentBounds.w + 2*currentBounds.h);
+                    if(p < currentBounds.w) { sx = currentBounds.x+p; sy = currentBounds.y; }
+                    else if(p < currentBounds.w+currentBounds.h) { sx = currentBounds.x+currentBounds.w; sy = currentBounds.y+(p-currentBounds.w); }
+                    else if(p < 2*currentBounds.w+currentBounds.h) { sx = currentBounds.x+currentBounds.w-(p-(currentBounds.w+currentBounds.h)); sy = currentBounds.y+currentBounds.h; }
+                    else { sx = currentBounds.x; sy = currentBounds.y+currentBounds.h-(p-(2*currentBounds.w+currentBounds.h)); }
+                    nAng = Math.atan2(sy-cy, sx-cx);
+                    if(sy===currentBounds.y) nAng=-Math.PI/2; if(sx===currentBounds.x+currentBounds.w) nAng=0;
+                    if(sy===currentBounds.y+currentBounds.h) nAng=Math.PI/2; if(sx===currentBounds.x) nAng=Math.PI;
+                } else if(shape === 'oval') {
+                    const a = Math.random()*Math.PI*2; sx = cx + (currentBounds.w/2)*Math.cos(a); sy = cy + (currentBounds.h/2)*Math.sin(a); nAng=a;
                 } else {
-                    const sides = shape === 'pentagon' ? 5 : 6;
-                    const verts = getPolygonVertices(sides, cx, cy, currentBounds.w/2, currentBounds.h/2);
-                    const sideIdx = Math.floor(Math.random() * sides);
-                    const p1 = verts[sideIdx]; const p2 = verts[(sideIdx + 1) % sides];
-                    const pt = getPointOnLine(p1, p2, Math.random());
-                    sx = pt.x; sy = pt.y;
-                    normalAngle = Math.atan2(sy - cy, sx - cx);
+                    const sides = shape==='pentagon'?5:6; const vs = getPoly(sides, cx, cy, currentBounds.w/2, currentBounds.h/2);
+                    const idx = Math.floor(Math.random()*sides);
+                    const pt = getPointOnLine(vs[idx], vs[(idx+1)%sides], Math.random());
+                    sx = pt.x; sy = pt.y; nAng = Math.atan2(sy-cy, sx-cx);
                 }
 
-                const tangentAngle = (Math.random() < 0.5) ? (normalAngle + Math.PI/2) : (normalAngle - Math.PI/2);
-                const mix = dirFactor + (Math.random() * 0.2 - 0.1);
-                let startAngle = (normalAngle * (1-mix)) + (tangentAngle * mix);
-                sx += Math.cos(normalAngle) * 2; sy += Math.sin(normalAngle) * 2;
+                const tAng = (Math.random()<0.5) ? (nAng+Math.PI/2) : (nAng-Math.PI/2);
+                const mix = dirFactor + (Math.random()*0.2 - 0.1);
+                const sAng = (nAng*(1-mix)) + (tAng*mix);
+                sx += Math.cos(nAng)*2; sy += Math.sin(nAng)*2;
 
-                growVine(sx, sy, startAngle, conf);
+                // GROW VINE
+                let vcX = sx, vcY = sy, vAng = sAng;
+                const len = conf.len * (0.6 + Math.random()*0.8);
+                const segs = Math.floor(len/4);
+                const bw = 1.5 + Math.random()*2.5;
+                const stemC = lerpColor(conf.stem1, conf.stem2, Math.random());
+                
+                ctx.strokeStyle = stemC; ctx.lineCap = "round";
+                svgBuffer += `<g fill="none" stroke="${stemC}" stroke-linecap="round">`;
+
+                for(let s=0; s<segs; s++) {
+                    const prog = s/segs;
+                    vAng += (Math.random()-0.5) * (conf.curve*0.01);
+                    
+                    // Bounds Check
+                    const tx = vcX + Math.cos(vAng)*8, ty = vcY + Math.sin(vAng)*8;
+                    if(avoidIn && isInsideInner(tx, ty, shape, currentBounds)) {
+                        const afc = Math.atan2(ty-cy, tx-cx);
+                        vAng += Math.atan2(Math.sin(afc-vAng), Math.cos(afc-vAng)) * 0.25;
+                    }
+                    if(Math.hypot(tx-cx, ty-cy) > (Math.max(currentBounds.w, currentBounds.h)/2 + limitOut)) {
+                         const atc = Math.atan2(cy-ty, cx-tx);
+                         vAng += Math.atan2(Math.sin(atc-vAng), Math.cos(atc-vAng)) * 0.3;
+                    }
+
+                    const cw = Math.max(0.4, bw*(1-prog));
+                    const nx = vcX + Math.cos(vAng)*4, ny = vcY + Math.sin(vAng)*4;
+                    
+                    ctx.lineWidth = cw; ctx.beginPath(); ctx.moveTo(vcX, vcY); ctx.lineTo(nx, ny); ctx.stroke();
+                    svgBuffer += `<line x1="${vcX.toFixed(1)}" y1="${vcY.toFixed(1)}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke-width="${cw.toFixed(2)}" />`;
+                    
+                    // Draw Leaf?
+                    if(conf.leafEn && s>4 && Math.random()<0.2) {
+                        const lang = vAng + (Math.random()<0.5?1:-1)*(Math.PI/2.5);
+                        const lsz = conf.leafSize * (0.4+(1-prog)*0.6);
+                        const lc = lerpColor(conf.leaf1, conf.leaf2, Math.random());
+                        // (Reuse V12 leaf draw logic simplified for space)
+                        // ... Draw Leaf Canvas & SVG ...
+                        drawLeaf(vcX, vcY, lang, lsz, conf.leafShape, lc);
+                    }
+
+                    vcX = nx; vcY = ny;
+                }
+                svgBuffer += `</g>`; // End Vine Stem
+
+                // Draw Flower at Tip?
+                if(conf.flowEn) {
+                    // Close previous stem group first
+                    drawFlower(vcX, vcY, vAng, conf);
+                }
             }
             svgBuffer += `</g>`;
         }
         svgBuffer += `</svg>`;
     }
 
-    function growVine(startX, startY, startAngle, conf) {
-        let cx = startX, cy = startY;
-        let angle = startAngle + (Math.random() - 0.5);
-        
-        const len = conf.len * (0.6 + Math.random() * 0.8);
-        const segments = Math.floor(len / 4);
-        const baseWidth = 1.5 + Math.random() * 2.5; 
-        const stemC = lerpColor(conf.stem1, conf.stem2, Math.random());
-        
-        const shape = gEls.shape.value;
-        const avoidIn = gEls.avoid.checked;
-        const limitOut = parseInt(gEls.outer.value);
-        const center = {x: currentBounds.x + currentBounds.w/2, y: currentBounds.y + currentBounds.h/2};
-
-        ctx.strokeStyle = stemC; ctx.lineCap = "round";
-        svgBuffer += `<g fill="none" stroke="${stemC}" stroke-linecap="round">`;
-
-        for(let i = 0; i < segments; i++) {
-            const progress = i / segments;
-            // Curvature factor from layer config
-            const curveStrength = conf.curve * 0.01;
-            angle += (Math.random() - 0.5) * curveStrength; 
-
-            const testX = cx + Math.cos(angle) * 8; const testY = cy + Math.sin(angle) * 8;
-
-            if (avoidIn && isInsideInner(testX, testY, shape, currentBounds)) {
-                const angleFromCenter = Math.atan2(cy - center.y, cx - center.x);
-                const diff = Math.atan2(Math.sin(angleFromCenter - angle), Math.cos(angleFromCenter - angle));
-                angle += diff * 0.25;
-            }
-            if (isOutsideOuter(testX, testY, shape, currentBounds, limitOut)) {
-                const angleToCenter = Math.atan2(center.y - cy, center.x - cx);
-                const diff = Math.atan2(Math.sin(angleToCenter - angle), Math.cos(angleToCenter - angle));
-                angle += diff * 0.3; 
-            }
-
-            const currentWidth = Math.max(0.4, baseWidth * (1-progress));
-            const nx = cx + Math.cos(angle) * 4; const ny = cy + Math.sin(angle) * 4;
-
-            ctx.lineWidth = currentWidth;
-            ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(nx, ny); ctx.stroke();
-            svgBuffer += `<line x1="${cx.toFixed(1)}" y1="${cy.toFixed(1)}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke-width="${currentWidth.toFixed(2)}" />`;
-
-            if (i > 4 && Math.random() < 0.22) {
-                const leafAng = angle + (Math.random() < 0.5 ? 1 : -1) * (Math.PI / 2.5);
-                const s = conf.leafSize * (0.4 + (1-progress) * 0.6) * (0.8 + Math.random()*0.4);
-                const thisLeafC = lerpColor(conf.leaf1, conf.leaf2, Math.random());
-                const leafPath = generateLeafPath(s, conf.leafShape);
-                
-                drawLeafCanvas(cx, cy, leafAng, leafPath, thisLeafC);
-                svgBuffer += `</g>`; 
-                addLeafSVG(cx, cy, leafAng, leafPath, thisLeafC);
-                svgBuffer += `<g fill="none" stroke="${stemC}" stroke-linecap="round">`;
-            }
-            cx = nx; cy = ny;
+    function drawLeaf(x, y, ang, sz, type, color) {
+        // Quick inline leaf generator to save space
+        const pts = []; const stp=10;
+        for(let t=0; t<=1; t+=1/stp) {
+            let bx = 2*(1-t)*t*(sz*0.8) + t*t*(sz*2.5); let by = 2*(1-t)*t*(-sz*0.6);
+            if(type=='sawtooth') by += (Math.abs(((t*12)%2)-1)-0.5)*(sz*0.2);
+            else if(type=='wavy') by += Math.sin(t*10)*(sz*0.15);
+            pts.push({x:bx, y:by});
         }
-        svgBuffer += `</g>`;
+        for(let t=0; t<=1; t+=1/stp) {
+            let bx = (1-t)*(1-t)*(sz*2.5) + 2*(1-t)*t*(sz*0.8); let by = 2*(1-t)*t*(sz*0.6);
+            if(type=='sawtooth') by += (Math.abs(((t*12)%2)-1)-0.5)*(sz*0.2);
+            else if(type=='wavy') by += Math.sin(t*10)*(sz*0.15);
+            pts.push({x:bx, y:by});
+        }
+        // Canvas
+        ctx.save(); ctx.translate(x, y); ctx.rotate(ang); ctx.fillStyle=color;
+        ctx.beginPath(); ctx.moveTo(0,0); for(let p of pts) ctx.lineTo(p.x, p.y); ctx.fill(); ctx.restore();
+        // SVG
+        svgBuffer += `<g transform="translate(${x.toFixed(1)},${y.toFixed(1)}) rotate(${(ang*180/Math.PI).toFixed(1)})" fill="${color}"><path d="M 0,0 `;
+        for(let p of pts) svgBuffer += `L ${p.x.toFixed(1)} ${p.y.toFixed(1)} `;
+        svgBuffer += `Z" stroke="none"/></g>`;
     }
 
-    // Leaf Geom (Shared)
-    function generateLeafPath(scale, type) {
-        const points = []; const steps = 12; // Reduced steps slightly for performance with 3 layers
-        for(let t=0; t<=1; t+=1/steps) {
-            const P1 = {x: scale*0.8, y: -scale*1.1}; const P2 = {x: scale*2.5, y: 0};
-            let bx = 2*(1-t)*t*P1.x + t*t*P2.x; let by = 2*(1-t)*t*P1.y + t*t*P2.y;
-            if (type === 'sawtooth') by += (Math.abs(((t * 18) % 2) - 1) - 0.5) * (scale*0.15*Math.sin(t*Math.PI));
-            else if (type === 'wavy') by += Math.sin(t * 15) * (scale*0.15*Math.sin(t*Math.PI));
-            points.push({x: bx, y: by});
-        }
-        for(let t=0; t<=1; t+=1/steps) {
-            const P0 = {x: scale*2.5, y: 0}; const P1 = {x: scale*0.8, y: scale*1.1};
-            let bx = (1-t)*(1-t)*P0.x + 2*(1-t)*t*P1.x; let by = (1-t)*(1-t)*P0.y + 2*(1-t)*t*P1.y;
-            if (type === 'sawtooth') by += (Math.abs(((t * 18) % 2) - 1) - 0.5) * (scale*0.15*Math.sin(t*Math.PI));
-            else if (type === 'wavy') by += Math.sin(t * 15) * (scale*0.15*Math.sin(t*Math.PI));
-            points.push({x: bx, y: by});
-        }
-        return points;
-    }
-    function drawLeafCanvas(x, y, angle, points, color) {
-        ctx.save(); ctx.translate(x, y); ctx.rotate(angle); ctx.fillStyle = color;
-        ctx.beginPath(); ctx.moveTo(0, 0); for(let p of points) ctx.lineTo(p.x, p.y); ctx.fill();
-        ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(points[points.length/2].x*0.9, 0);
-        ctx.strokeStyle="rgba(0,0,0,0.25)"; ctx.lineWidth=1; ctx.stroke(); ctx.restore();
-    }
-    function addLeafSVG(x, y, angle, points, color) {
-        const rot = (px, py, th) => ({ x: px * Math.cos(th) - py * Math.sin(th), y: px * Math.sin(th) + py * Math.cos(th) });
-        let d = `M ${x} ${y} `;
-        for(let p of points) { const r = rot(p.x, p.y, angle); d += `L ${(x + r.x).toFixed(1)} ${(y + r.y).toFixed(1)} `; }
-        d += "Z";
-        const tip = points[Math.floor(points.length/2)]; const rTip = rot(tip.x * 0.9, 0, angle);
-        svgBuffer += `<g fill="${color}"><path d="${d}" stroke="none" />`;
-        svgBuffer += `<line x1="${x.toFixed(1)}" y1="${y.toFixed(1)}" x2="${(x+rTip.x).toFixed(1)}" y2="${(y+rTip.y).toFixed(1)}" stroke="rgba(0,0,0,0.25)" stroke-width="1" stroke-linecap="round"/></g>`;
-    }
+    // Mouse
+    canvas.addEventListener('mousedown', e => { const r=canvas.getBoundingClientRect(); startPos={x:e.clientX-r.left, y:e.clientY-r.top}; isDragging=true; });
+    canvas.addEventListener('mousemove', e => { if(!isDragging)return; const r=canvas.getBoundingClientRect(); const x=e.clientX-r.left, y=e.clientY-r.top; ctx.clearRect(0,0,canvas.width,canvas.height); ctx.strokeStyle="#fff"; ctx.setLineDash([5,5]); ctx.lineWidth=2; ctx.strokeRect(startPos.x,startPos.y,x-startPos.x,y-startPos.y); ctx.setLineDash([]); });
+    canvas.addEventListener('mouseup', e => { if(!isDragging)return; isDragging=false; const r=canvas.getBoundingClientRect(); const x=e.clientX-r.left, y=e.clientY-r.top; currentBounds={x:Math.min(startPos.x,x), y:Math.min(startPos.y,y), w:Math.abs(x-startPos.x), h:Math.abs(y-startPos.y)}; if(currentBounds.w>10) generate(); });
 
-    // Downloads
-    document.getElementById('btnSVG').addEventListener('click', () => {
-        const blob = new Blob([svgBuffer], {type: 'image/svg+xml'});
-        const link = document.createElement('a'); link.download = `multi-vine.svg`;
-        link.href = URL.createObjectURL(blob); link.click();
-    });
-    document.getElementById('btnPNG').addEventListener('click', () => {
-        const link = document.createElement('a'); link.download = `multi-vine.png`;
-        link.href = canvas.toDataURL('image/png'); link.click();
-    });
     document.getElementById('btnRegen').addEventListener('click', generate);
-
-    // Init
+    document.getElementById('btnPNG').addEventListener('click', () => { const a=document.createElement('a'); a.download='botanical.png'; a.href=canvas.toDataURL(); a.click(); });
+    document.getElementById('btnSVG').addEventListener('click', () => { const b=new Blob([svgBuffer],{type:'image/svg+xml'}); const a=document.createElement('a'); a.download='botanical.svg'; a.href=URL.createObjectURL(b); a.click(); });
+    
     setTimeout(generate, 100);
-
 </script>
 </body>
 </html>
