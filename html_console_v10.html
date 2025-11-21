@@ -499,6 +499,7 @@
                                     <th class="px-4 py-2 text-left text-xs font-semibold text-orange-800 border-b">Initiative Name</th>
                                     <th class="px-4 py-2 text-left text-xs font-semibold text-orange-800 border-b">Created</th>
                                     <th class="px-4 py-2 text-left text-xs font-semibold text-orange-800 border-b">Start Date</th>
+                                    <th class="px-4 py-2 text-center text-xs font-semibold text-orange-800 border-b">Bugs</th>
                                     <th class="px-4 py-2 text-center text-xs font-semibold text-orange-800 border-b">Details</th>
                                     <th class="px-4 py-2 text-center text-xs font-semibold text-orange-800 border-b">Actions</th>
                                 </tr>
@@ -719,11 +720,26 @@
                                   class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"></textarea>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-purple-700 mb-2">🔴 Issues</label>
-                        <textarea id="initiative-details-issues"
-                                  rows="5"
-                                  placeholder="Known issues, blockers, dependencies..."
-                                  class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm"></textarea>
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="block text-sm font-medium text-purple-700">🐞 Issues / Bugs</label>
+                            <button onclick="addInitiativeBug()" class="px-3 py-1 bg-purple-600 text-white rounded text-xs hover:bg-purple-700 transition">
+                                ➕ Add Bug
+                            </button>
+                        </div>
+                        <div class="border border-gray-300 rounded-lg overflow-hidden">
+                            <table class="w-full" id="initiative-bugs-table">
+                                <thead class="bg-gray-100">
+                                    <tr>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 w-3/4">Bug Description</th>
+                                        <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 w-1/4">Status</th>
+                                        <th class="px-3 py-2 w-16"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="initiative-bugs-tbody">
+                                    <!-- Bug rows will be added here dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
                 <div class="flex gap-3 mt-6 justify-end">
@@ -732,6 +748,32 @@
                     </button>
                     <button onclick="saveInitiativeDetails()" class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
                         💾 Save Initiative Details
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Bug Summary -->
+    <div id="bug-summary-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 60vw; width: 60vw;">
+            <div class="modal-header">
+                <h3 class="modal-title">🐞 Bug Summary Report</h3>
+                <button class="modal-close" onclick="closeBugSummaryModal()">&times;</button>
+            </div>
+            <div style="padding: 20px;">
+                <div id="bug-summary-content" style="font-family: 'Segoe UI', sans-serif; line-height: 1.8;">
+                    <!-- Bug summary content will be inserted here -->
+                </div>
+                <div class="flex gap-3 mt-6 justify-end">
+                    <button onclick="copyBugStats()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        📊 Copy Stats
+                    </button>
+                    <button onclick="copyBugFormattedText()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                        📋 Copy Formatted Text
+                    </button>
+                    <button onclick="closeBugSummaryModal()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors">
+                        Close
                     </button>
                 </div>
             </div>
@@ -1018,8 +1060,8 @@
 
     <!-- Week Task Details Modal -->
     <div id="week-task-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
-        <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden">
-            <div class="bg-blue-600 text-white px-6 py-4 flex justify-between items-center">
+        <div id="week-task-modal-content" class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] overflow-hidden" style="position: absolute;">
+            <div id="week-task-modal-header" class="bg-blue-600 text-white px-6 py-4 flex justify-between items-center cursor-move">
                 <h3 id="modal-title" class="text-xl font-semibold">Week Task Details</h3>
                 <button onclick="closeWeekTaskModal()" class="text-white hover:text-gray-200 text-2xl">&times;</button>
             </div>
@@ -1027,6 +1069,66 @@
                 <div id="modal-content">
                     <!-- Task details will be loaded here -->
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Import Mode Selection Modal -->
+    <div id="import-mode-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
+            <div class="bg-blue-600 text-white px-6 py-4 flex justify-between items-center">
+                <h3 class="text-xl font-semibold">📥 Import Mode</h3>
+                <button onclick="closeImportModeModal()" class="text-white hover:text-gray-200 text-2xl">&times;</button>
+            </div>
+            <div class="p-6">
+                <p class="text-gray-700 mb-4">How would you like to import this configuration?</p>
+                <div class="space-y-3">
+                    <label class="flex items-center p-3 border-2 rounded cursor-pointer hover:bg-blue-50 transition">
+                        <input type="radio" name="import-mode" value="replace" checked class="mr-3 h-4 w-4">
+                        <div>
+                            <div class="font-semibold">Replace All Tasks</div>
+                            <div class="text-sm text-gray-600">Delete all existing data and import new configuration</div>
+                        </div>
+                    </label>
+                    <label class="flex items-center p-3 border-2 rounded cursor-pointer hover:bg-green-50 transition">
+                        <input type="radio" name="import-mode" value="merge" class="mr-3 h-4 w-4">
+                        <div>
+                            <div class="font-semibold">Add to Existing</div>
+                            <div class="text-sm text-gray-600">Merge with current data and resolve conflicts</div>
+                        </div>
+                    </label>
+                </div>
+                <div class="mt-6 flex gap-3">
+                    <button onclick="proceedWithImport()" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition font-semibold">
+                        Continue
+                    </button>
+                    <button onclick="closeImportModeModal()" class="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition font-semibold">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Merge Conflicts Modal -->
+    <div id="merge-conflicts-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg shadow-xl max-w-5xl w-full mx-4 max-h-[85vh] overflow-hidden">
+            <div class="bg-orange-600 text-white px-6 py-4 flex justify-between items-center">
+                <h3 class="text-xl font-semibold">🔀 Resolve Import Conflicts</h3>
+                <button onclick="closeMergeConflictsModal()" class="text-white hover:text-gray-200 text-2xl">&times;</button>
+            </div>
+            <div class="p-6 overflow-y-auto max-h-[70vh]">
+                <div id="merge-conflicts-content">
+                    <!-- Conflicts will be loaded here -->
+                </div>
+            </div>
+            <div class="bg-gray-100 px-6 py-4 flex gap-3">
+                <button onclick="completeMergeImport()" class="flex-1 bg-green-600 text-white px-6 py-3 rounded hover:bg-green-700 transition font-semibold text-lg">
+                    ✅ Complete Import
+                </button>
+                <button onclick="closeMergeConflictsModal()" class="bg-gray-400 text-white px-6 py-3 rounded hover:bg-gray-500 transition font-semibold">
+                    Cancel
+                </button>
             </div>
         </div>
     </div>
@@ -1066,6 +1168,16 @@
         }
         const STORAGE_KEY = 'projectSchedulerDataV10'; // V10 to avoid conflicts with V9
         const APP_VERSION = '10.0.0';
+        
+        // Import merge state
+        let pendingImportData = null;
+        let importMode = 'replace';
+        let mergeResolutions = {
+            tasks: [],
+            initiatives: [],
+            stakeholders: []
+        };
+        
         let people = [];
         let tickets = [];
         let stakeholders = ['General']; // NEW: Stakeholder list with default
@@ -1078,7 +1190,7 @@
                 positives: '',
                 negatives: '',
                 clarifications: '',
-                issues: ''
+                issues: [] // Changed to array: [{description: '', status: 'Open'}]
             }
         ]; // NEW: Initiative list with default and detailed fields
         let estimationBaseHours = 5; // Hours per day used for initial task estimation (after meetings, etc.)
@@ -1222,6 +1334,47 @@
             return date.getFullYear() + '-' +
                 String(date.getMonth() + 1).padStart(2, '0') + '-' +
                 String(date.getDate()).padStart(2, '0');
+        }
+
+        // Levenshtein distance algorithm for string similarity
+        function levenshteinDistance(str1, str2) {
+            const len1 = str1.length;
+            const len2 = str2.length;
+            const matrix = Array(len2 + 1).fill(null).map(() => Array(len1 + 1).fill(0));
+
+            for (let i = 0; i <= len1; i++) matrix[0][i] = i;
+            for (let j = 0; j <= len2; j++) matrix[j][0] = j;
+
+            for (let j = 1; j <= len2; j++) {
+                for (let i = 1; i <= len1; i++) {
+                    const cost = str1[i - 1] === str2[j - 1] ? 0 : 1;
+                    matrix[j][i] = Math.min(
+                        matrix[j][i - 1] + 1,
+                        matrix[j - 1][i] + 1,
+                        matrix[j - 1][i - 1] + cost
+                    );
+                }
+            }
+            return matrix[len2][len1];
+        }
+
+        // Calculate similarity percentage between two strings
+        function calculateSimilarity(str1, str2) {
+            const s1 = (str1 || '').toLowerCase().trim();
+            const s2 = (str2 || '').toLowerCase().trim();
+            if (s1 === s2) return 100;
+            if (!s1 || !s2) return 0;
+            
+            const distance = levenshteinDistance(s1, s2);
+            const maxLen = Math.max(s1.length, s2.length);
+            return ((maxLen - distance) / maxLen) * 100;
+        }
+
+        // Extract numerical parts from string (e.g., "#123", "Task-456", "T789")
+        function extractNumbers(str) {
+            if (!str) return [];
+            const matches = str.match(/(?:#|Task-?|T)?(\d+)/gi);
+            return matches ? matches.map(m => m.match(/\d+/)[0]) : [];
         }
 
         // Initialize start date history for backward compatibility
@@ -3101,15 +3254,44 @@
                 const startDateDisplay = init.startDate 
                     ? formatDate(init.startDate)
                     : '<span class="text-gray-400 italic">No tasks yet</span>';
-                const hasDetails = init.description || init.positives || init.negatives || init.clarifications || init.issues;
+                const hasDetails = init.description || init.positives || init.negatives || init.clarifications || (Array.isArray(init.issues) && init.issues.length > 0);
                 const detailsIcon = hasDetails 
                     ? '<span class="text-green-600 font-bold text-lg" title="Has details">✓</span>'
                     : '<span class="text-gray-400 text-lg" title="No details">—</span>';
                 
+                // Determine bug icon based on issue statuses
+                let bugIcon = '';
+                if (Array.isArray(init.issues) && init.issues.length > 0) {
+                    const openCount = init.issues.filter(bug => bug.status === 'Open').length;
+                    const closedCount = init.issues.filter(bug => bug.status === 'Closed').length;
+                    const totalCount = init.issues.length;
+                    
+                    if (closedCount === totalCount) {
+                        // All bugs are closed - GREEN
+                        bugIcon = `<button onclick="showBugSummary('${init.name.replace(/'/g, "\\'")}')" 
+                                          class="hover:opacity-80 transition"
+                                          title="${totalCount} bug(s) - all closed">
+                                          <span style="filter: hue-rotate(90deg) saturate(1.5);">🐞</span>
+                                   </button>`;
+                    } else if (openCount > 0) {
+                        // At least one open bug - RED (default emoji color)
+                        bugIcon = `<button onclick="showBugSummary('${init.name.replace(/'/g, "\\'")}')" 
+                                          class="hover:opacity-80 transition"
+                                          title="${openCount} open bug(s), ${totalCount} total">🐞</button>`;
+                    } else {
+                        // Other statuses (Withdrawn/Blocked, no Open) - GREY
+                        bugIcon = `<button onclick="showBugSummary('${init.name.replace(/'/g, "\\'")}')" 
+                                          class="hover:opacity-80 transition"
+                                          title="${totalCount} bug(s) - no open issues">
+                                          <span style="filter: grayscale(100%);">🐞</span>
+                                   </button>`;
+                    }
+                }
+                
                 return `
                     <tr class="hover:bg-orange-50 transition border-b border-gray-100">
                         <td class="px-4 py-3 text-sm font-semibold text-gray-800">
-                            <span class="inline-flex items-center">
+                            <span class="inline-flex items-center gap-2">
                                 📊 ${init.name}
                                 ${!canRemove ? '<span class="ml-2 text-[10px] text-orange-600 italic px-2 py-0.5 bg-orange-100 rounded-full">(default)</span>' : ''}
                             </span>
@@ -3119,6 +3301,9 @@
                         </td>
                         <td class="px-4 py-3 text-sm text-gray-600">
                             ${startDateDisplay}
+                        </td>
+                        <td class="px-4 py-3 text-center">
+                            ${bugIcon}
                         </td>
                         <td class="px-4 py-3 text-center">
                             ${detailsIcon}
@@ -3239,7 +3424,7 @@
                 positives: '',
                 negatives: '',
                 clarifications: '',
-                issues: ''
+                issues: []
             });
             
             input.value = '';
@@ -3304,6 +3489,11 @@
                 return;
             }
             
+            // Ensure issues is an array
+            if (!Array.isArray(initiative.issues)) {
+                initiative.issues = [];
+            }
+            
             // Store the initiative name for saving later
             document.getElementById('initiative-details-modal-name').value = initiativeName;
             document.getElementById('initiative-details-modal-title').textContent = `Initiative: ${initiativeName}`;
@@ -3313,10 +3503,111 @@
             document.getElementById('initiative-details-positives').value = initiative.positives || '';
             document.getElementById('initiative-details-negatives').value = initiative.negatives || '';
             document.getElementById('initiative-details-clarifications').value = initiative.clarifications || '';
-            document.getElementById('initiative-details-issues').value = initiative.issues || '';
+            
+            // Render bugs table
+            renderInitiativeBugsTable();
             
             // Show the modal
             document.getElementById('initiative-details-modal').classList.add('active');
+        }
+        
+        // Render bugs table in initiative details modal
+        function renderInitiativeBugsTable() {
+            const initiativeName = document.getElementById('initiative-details-modal-name').value;
+            const initiative = initiatives.find(init => init.name === initiativeName);
+            if (!initiative || !Array.isArray(initiative.issues)) return;
+            
+            const tbody = document.getElementById('initiative-bugs-tbody');
+            tbody.innerHTML = '';
+            
+            if (initiative.issues.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="px-3 py-4 text-center text-gray-500 text-sm">No bugs added yet. Click "Add Bug" to create one.</td></tr>';
+                return;
+            }
+            
+            initiative.issues.forEach((bug, index) => {
+                const row = document.createElement('tr');
+                row.className = 'border-b border-gray-200';
+                row.innerHTML = `
+                    <td class="px-3 py-2">
+                        <textarea 
+                            rows="2" 
+                            class="w-full p-2 border border-gray-300 rounded text-sm resize-y"
+                            onchange="updateBugDescription(${index}, this.value)"
+                            placeholder="Bug description...">${bug.description || ''}</textarea>
+                    </td>
+                    <td class="px-3 py-2">
+                        <select 
+                            class="w-full p-2 border border-gray-300 rounded text-sm"
+                            onchange="updateBugStatus(${index}, this.value)">
+                            <option value="Open" ${bug.status === 'Open' ? 'selected' : ''}>Open</option>
+                            <option value="Closed" ${bug.status === 'Closed' ? 'selected' : ''}>Closed</option>
+                            <option value="Withdrawn" ${bug.status === 'Withdrawn' ? 'selected' : ''}>Withdrawn</option>
+                            <option value="Blocked" ${bug.status === 'Blocked' ? 'selected' : ''}>Blocked</option>
+                        </select>
+                    </td>
+                    <td class="px-3 py-2 text-center">
+                        <button onclick="removeInitiativeBug(${index})" 
+                                class="text-red-600 hover:text-red-800 font-bold"
+                                title="Remove bug">
+                            ✕
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+        
+        // Add new bug to initiative
+        window.addInitiativeBug = function() {
+            const initiativeName = document.getElementById('initiative-details-modal-name').value;
+            const initiative = initiatives.find(init => init.name === initiativeName);
+            if (!initiative) return;
+            
+            if (!Array.isArray(initiative.issues)) {
+                initiative.issues = [];
+            }
+            
+            initiative.issues.push({
+                description: '',
+                status: 'Open'
+            });
+            
+            renderInitiativeBugsTable();
+        }
+        
+        // Update bug description
+        window.updateBugDescription = function(index, description) {
+            const initiativeName = document.getElementById('initiative-details-modal-name').value;
+            const initiative = initiatives.find(init => init.name === initiativeName);
+            if (!initiative || !Array.isArray(initiative.issues)) return;
+            
+            if (initiative.issues[index]) {
+                initiative.issues[index].description = description;
+            }
+        }
+        
+        // Update bug status
+        window.updateBugStatus = function(index, status) {
+            const initiativeName = document.getElementById('initiative-details-modal-name').value;
+            const initiative = initiatives.find(init => init.name === initiativeName);
+            if (!initiative || !Array.isArray(initiative.issues)) return;
+            
+            if (initiative.issues[index]) {
+                initiative.issues[index].status = status;
+            }
+        }
+        
+        // Remove bug from initiative
+        window.removeInitiativeBug = function(index) {
+            const initiativeName = document.getElementById('initiative-details-modal-name').value;
+            const initiative = initiatives.find(init => init.name === initiativeName);
+            if (!initiative || !Array.isArray(initiative.issues)) return;
+            
+            if (confirm('Remove this bug?')) {
+                initiative.issues.splice(index, 1);
+                renderInitiativeBugsTable();
+            }
         }
         
         // V10: Close Initiative Details Modal
@@ -3339,7 +3630,7 @@
             initiative.positives = document.getElementById('initiative-details-positives').value.trim();
             initiative.negatives = document.getElementById('initiative-details-negatives').value.trim();
             initiative.clarifications = document.getElementById('initiative-details-clarifications').value.trim();
-            initiative.issues = document.getElementById('initiative-details-issues').value.trim();
+            // issues are already updated via updateBugDescription and updateBugStatus
             
             // Mark as dirty and save
             markDirty();
@@ -3352,6 +3643,150 @@
             closeInitiativeDetailsModal();
             
             console.log(`✅ Saved details for initiative: "${initiativeName}"`);
+        }
+        
+        // Show bug summary modal
+        window.showBugSummary = function(initiativeName) {
+            const initiative = initiatives.find(init => init.name === initiativeName);
+            if (!initiative || !Array.isArray(initiative.issues) || initiative.issues.length === 0) {
+                alert('No bugs found for this initiative.');
+                return;
+            }
+            
+            const totalBugs = initiative.issues.length;
+            const openBugs = initiative.issues.filter(bug => bug.status === 'Open');
+            const hasOpenIssues = openBugs.length > 0;
+            
+            // Group bugs by status
+            const bugsByStatus = {
+                'Open': initiative.issues.filter(bug => bug.status === 'Open'),
+                'Closed': initiative.issues.filter(bug => bug.status === 'Closed'),
+                'Withdrawn': initiative.issues.filter(bug => bug.status === 'Withdrawn'),
+                'Blocked': initiative.issues.filter(bug => bug.status === 'Blocked')
+            };
+            
+            // Generate HTML content
+            let html = `<p style="margin-bottom: 20px;">Testing of the '<strong>${initiativeName}</strong>' has been completed. A total of <strong>${totalBugs}</strong> issue${totalBugs !== 1 ? 's were' : ' was'} identified.</p>`;
+            
+            // Add bugs grouped by status
+            for (const [status, bugs] of Object.entries(bugsByStatus)) {
+                if (bugs.length > 0) {
+                    html += `<div style="margin-bottom: 20px;">`;
+                    html += `<h4 style="font-weight: bold; margin-bottom: 10px;">Issues in <strong>${status}</strong></h4>`;
+                    html += `<ul style="list-style: disc; margin-left: 20px;">`;
+                    bugs.forEach(bug => {
+                        html += `<li style="margin-bottom: 5px;">${bug.description || '(No description)'}</li>`;
+                    });
+                    html += `</ul></div>`;
+                }
+            }
+            
+            // Add message about open issues
+            if (!hasOpenIssues) {
+                html += `<p style="margin-top: 20px; font-weight: bold; color: green;">There are no outstanding open issues.</p>`;
+            }
+            
+            // Set content and show modal
+            document.getElementById('bug-summary-content').innerHTML = html;
+            
+            // Store initiative name for copy functions
+            window.currentBugSummaryInitiative = initiativeName;
+            
+            document.getElementById('bug-summary-modal').classList.add('active');
+        }
+        
+        // Close bug summary modal
+        window.closeBugSummaryModal = function() {
+            document.getElementById('bug-summary-modal').classList.remove('active');
+            window.currentBugSummaryInitiative = null;
+        }
+        
+        // Copy formatted text to clipboard
+        window.copyBugFormattedText = function() {
+            const initiativeName = window.currentBugSummaryInitiative;
+            if (!initiativeName) return;
+            
+            const initiative = initiatives.find(init => init.name === initiativeName);
+            if (!initiative || !Array.isArray(initiative.issues)) return;
+            
+            const totalBugs = initiative.issues.length;
+            const openBugs = initiative.issues.filter(bug => bug.status === 'Open');
+            const hasOpenIssues = openBugs.length > 0;
+            
+            // Group bugs by status
+            const bugsByStatus = {
+                'Open': initiative.issues.filter(bug => bug.status === 'Open'),
+                'Closed': initiative.issues.filter(bug => bug.status === 'Closed'),
+                'Withdrawn': initiative.issues.filter(bug => bug.status === 'Withdrawn'),
+                'Blocked': initiative.issues.filter(bug => bug.status === 'Blocked')
+            };
+            
+            // Build formatted text
+            let text = `Testing of the '${initiativeName}' has been completed. A total of ${totalBugs} issue${totalBugs !== 1 ? 's were' : ' was'} identified.\n\n`;
+            
+            for (const [status, bugs] of Object.entries(bugsByStatus)) {
+                if (bugs.length > 0) {
+                    text += `Issues in ${status.toUpperCase()}:\n`;
+                    bugs.forEach(bug => {
+                        text += `• ${bug.description || '(No description)'}\n`;
+                    });
+                    text += '\n';
+                }
+            }
+            
+            if (!hasOpenIssues) {
+                text += 'There are no outstanding open issues.\n';
+            }
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(text).then(() => {
+                alert('✅ Formatted text copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy text:', err);
+                alert('❌ Failed to copy to clipboard. Please try again.');
+            });
+        }
+        
+        // Copy bug stats as CSV to clipboard
+        window.copyBugStats = function() {
+            const initiativeName = window.currentBugSummaryInitiative;
+            if (!initiativeName) return;
+            
+            const initiative = initiatives.find(init => init.name === initiativeName);
+            if (!initiative || !Array.isArray(initiative.issues)) return;
+            
+            const totalBugs = initiative.issues.length;
+            const openCount = initiative.issues.filter(bug => bug.status === 'Open').length;
+            const closedCount = initiative.issues.filter(bug => bug.status === 'Closed').length;
+            const withdrawnCount = initiative.issues.filter(bug => bug.status === 'Withdrawn').length;
+            const blockedCount = initiative.issues.filter(bug => bug.status === 'Blocked').length;
+            
+            // Build CSV format - include Open (always), and only non-zero counts for others
+            let csvHeader = 'Initiative Name,Number Of Bugs,Bugs in Open';
+            let csvData = `${initiativeName},${totalBugs},${openCount}`;
+            
+            if (closedCount > 0) {
+                csvHeader += ',Bugs in Closed';
+                csvData += `,${closedCount}`;
+            }
+            if (withdrawnCount > 0) {
+                csvHeader += ',Bugs in Withdrawn';
+                csvData += `,${withdrawnCount}`;
+            }
+            if (blockedCount > 0) {
+                csvHeader += ',Bugs in Blocked';
+                csvData += `,${blockedCount}`;
+            }
+            
+            const csv = csvHeader + '\n' + csvData;
+            
+            // Copy to clipboard
+            navigator.clipboard.writeText(csv).then(() => {
+                alert('✅ Bug stats copied to clipboard as CSV!');
+            }).catch(err => {
+                console.error('Failed to copy stats:', err);
+                alert('❌ Failed to copy to clipboard. Please try again.');
+            });
         }
         
         function renderPeople() {
@@ -4154,8 +4589,18 @@
                 const positives = (init.positives || '').replace(/"/g, '""').replace(/\r\n/g, '\n');
                 const negatives = (init.negatives || '').replace(/"/g, '""').replace(/\r\n/g, '\n');
                 const clarifications = (init.clarifications || '').replace(/"/g, '""').replace(/\r\n/g, '\n');
-                const issues = (init.issues || '').replace(/"/g, '""').replace(/\r\n/g, '\n');
-                csvContent += `"${init.name}",${init.creationDate},${init.startDate || ''},"${description}","${positives}","${negatives}","${clarifications}","${issues}"\n`;
+                
+                // Convert bugs array to string format with ~~~ delimiter
+                let issuesStr = '';
+                if (Array.isArray(init.issues) && init.issues.length > 0) {
+                    issuesStr = init.issues.map(bug => {
+                        const desc = (bug.description || '').replace(/"/g, '""').replace(/\r\n/g, '\n');
+                        return `${desc}~~~${bug.status}`;
+                    }).join(' | ');
+                }
+                issuesStr = issuesStr.replace(/"/g, '""');
+                
+                csvContent += `"${init.name}",${init.creationDate},${init.startDate || ''},"${description}","${positives}","${negatives}","${clarifications}","${issuesStr}"\n`;
             });
             csvContent += "\n";
             
@@ -4457,8 +4902,17 @@
                 const positives = (init.positives || '').replace(/"/g, '""').replace(/\r\n/g, '\n');
                 const negatives = (init.negatives || '').replace(/"/g, '""').replace(/\r\n/g, '\n');
                 const clarifications = (init.clarifications || '').replace(/"/g, '""').replace(/\r\n/g, '\n');
-                const issues = (init.issues || '').replace(/"/g, '""').replace(/\r\n/g, '\n');
-                csvContent += `"${init.name}",${init.creationDate},${init.startDate || ''},"${description}","${positives}","${negatives}","${clarifications}","${issues}"\n`;
+                
+                // Handle issues array (bug tracking)
+                let issuesStr = '';
+                if (Array.isArray(init.issues) && init.issues.length > 0) {
+                    issuesStr = init.issues.map(bug => {
+                        const desc = (bug.description || '').replace(/"/g, '""').replace(/\r\n/g, '\n');
+                        return `${desc}~~~${bug.status}`;
+                    }).join(' | ');
+                }
+                
+                csvContent += `"${init.name}",${init.creationDate},${init.startDate || ''},"${description}","${positives}","${negatives}","${clarifications}","${issuesStr}"\n`;
             });
             csvContent += "\n";
             
@@ -4633,7 +5087,9 @@
             reader.onload = function(e) {
                 try {
                     const csvContent = e.target.result;
-                    importConfiguration(csvContent);
+                    // Store the CSV content and show mode selection modal
+                    pendingImportData = csvContent;
+                    showImportModeModal();
                 } catch (error) {
                     alert(`❌ Error reading file: ${error.message}`);
                 }
@@ -4642,6 +5098,477 @@
 
             // Clear the file input for repeated imports
             event.target.value = '';
+        }
+
+        function showImportModeModal() {
+            document.getElementById('import-mode-modal').classList.remove('hidden');
+        }
+
+        function closeImportModeModal() {
+            document.getElementById('import-mode-modal').classList.add('hidden');
+            pendingImportData = null;
+        }
+
+        function proceedWithImport() {
+            const selectedMode = document.querySelector('input[name="import-mode"]:checked').value;
+            importMode = selectedMode;
+            
+            closeImportModeModal();
+            
+            if (importMode === 'replace') {
+                // Original behavior - replace all
+                importConfiguration(pendingImportData);
+            } else {
+                // New merge behavior
+                startMergeImport(pendingImportData);
+            }
+        }
+
+        function startMergeImport(csvContent) {
+            // Parse the imported data
+            const importedData = parseCSVConfiguration(csvContent);
+            
+            // Detect conflicts
+            const conflicts = detectConflicts(importedData);
+            
+            if (conflicts.tasks.length === 0 && conflicts.initiatives.length === 0 && conflicts.stakeholders.length === 0) {
+                // No conflicts - merge automatically
+                performAutoMerge(importedData);
+                alert('✅ Import completed successfully! No conflicts detected.');
+                return;
+            }
+            
+            // Show merge conflicts modal
+            mergeResolutions = conflicts;
+            showMergeConflictsModal(conflicts);
+        }
+
+        function detectConflicts(importedData) {
+            const conflicts = {
+                tasks: [],
+                initiatives: [],
+                stakeholders: []
+            };
+
+            // Detect task conflicts
+            importedData.tickets.forEach(newTask => {
+                let conflictType = null;
+                let matchingTask = null;
+                let similarity = 0;
+
+                // Level 1: Exact match (auto-skip)
+                const exactMatch = tickets.find(existing => 
+                    existing.description === newTask.description &&
+                    existing.initiative === newTask.initiative &&
+                    existing.size === newTask.size &&
+                    existing.priority === newTask.priority &&
+                    existing.status === newTask.status
+                );
+
+                if (exactMatch) {
+                    conflictType = 'exact';
+                    matchingTask = exactMatch;
+                } else {
+                    // Level 2: Numerical match
+                    const newNumbers = extractNumbers(newTask.description);
+                    if (newNumbers.length > 0) {
+                        matchingTask = tickets.find(existing => {
+                            const existingNumbers = extractNumbers(existing.description);
+                            return existingNumbers.some(num => newNumbers.includes(num));
+                        });
+                        if (matchingTask) {
+                            conflictType = 'numerical';
+                        }
+                    }
+
+                    // Level 3: Fuzzy match (if no numerical match)
+                    if (!matchingTask) {
+                        tickets.forEach(existing => {
+                            const sim = calculateSimilarity(existing.description, newTask.description);
+                            if (sim > 75 && sim > similarity) {
+                                similarity = sim;
+                                matchingTask = existing;
+                                conflictType = 'fuzzy';
+                            }
+                        });
+                    }
+                }
+
+                if (conflictType === 'exact') {
+                    // Auto-skip exact matches
+                    conflicts.tasks.push({
+                        type: 'exact',
+                        existing: matchingTask,
+                        incoming: newTask,
+                        resolution: 'skip',
+                        autoResolved: true
+                    });
+                } else if (matchingTask) {
+                    conflicts.tasks.push({
+                        type: conflictType,
+                        existing: matchingTask,
+                        incoming: newTask,
+                        similarity: similarity,
+                        resolution: null
+                    });
+                } else {
+                    // No conflict - will be added
+                    conflicts.tasks.push({
+                        type: 'new',
+                        incoming: newTask,
+                        resolution: 'add',
+                        autoResolved: true
+                    });
+                }
+            });
+
+            // Detect initiative conflicts
+            importedData.initiatives.forEach(newInit => {
+                const existing = initiatives.find(init => init.name === newInit.name);
+                if (existing) {
+                    // Check if data differs
+                    const differs = existing.description !== newInit.description ||
+                                  existing.positives !== newInit.positives ||
+                                  existing.negatives !== newInit.negatives ||
+                                  existing.clarifications !== newInit.clarifications ||
+                                  JSON.stringify(existing.issues) !== JSON.stringify(newInit.issues);
+                    
+                    if (differs) {
+                        conflicts.initiatives.push({
+                            type: 'conflict',
+                            existing: existing,
+                            incoming: newInit,
+                            resolution: null
+                        });
+                    }
+                } else if (newInit.name !== 'General') {
+                    // New initiative
+                    conflicts.initiatives.push({
+                        type: 'new',
+                        incoming: newInit,
+                        resolution: 'add',
+                        autoResolved: true
+                    });
+                }
+            });
+
+            // Detect stakeholder conflicts
+            importedData.stakeholders.forEach(newStake => {
+                if (stakeholders.includes(newStake)) {
+                    // Exact match - skip
+                    return;
+                }
+                
+                // Check for fuzzy match
+                let matchingStake = null;
+                let maxSim = 0;
+                stakeholders.forEach(existing => {
+                    const sim = calculateSimilarity(existing, newStake);
+                    if (sim > 75 && sim > maxSim) {
+                        maxSim = sim;
+                        matchingStake = existing;
+                    }
+                });
+
+                if (matchingStake) {
+                    conflicts.stakeholders.push({
+                        type: 'fuzzy',
+                        existing: matchingStake,
+                        incoming: newStake,
+                        similarity: maxSim,
+                        resolution: null
+                    });
+                } else if (newStake !== 'General') {
+                    // New stakeholder
+                    conflicts.stakeholders.push({
+                        type: 'new',
+                        incoming: newStake,
+                        resolution: 'add',
+                        autoResolved: true
+                    });
+                }
+            });
+
+            return conflicts;
+        }
+
+        function showMergeConflictsModal(conflicts) {
+            const modal = document.getElementById('merge-conflicts-modal');
+            const content = document.getElementById('merge-conflicts-content');
+            
+            let html = '<div class="space-y-6">';
+            
+            // Summary
+            const taskConflicts = conflicts.tasks.filter(c => !c.autoResolved).length;
+            const initConflicts = conflicts.initiatives.filter(c => !c.autoResolved).length;
+            const stakeConflicts = conflicts.stakeholders.filter(c => !c.autoResolved).length;
+            
+            html += `<div class="bg-blue-50 border-l-4 border-blue-500 p-4">
+                <p class="font-semibold text-blue-900">📊 Import Summary</p>
+                <p class="text-sm text-blue-800 mt-2">
+                    ${taskConflicts} task conflicts • ${initConflicts} initiative conflicts • ${stakeConflicts} stakeholder conflicts
+                </p>
+            </div>`;
+            
+            // Task conflicts
+            if (taskConflicts > 0) {
+                html += '<div><h3 class="text-lg font-bold text-gray-800 mb-3">📋 Task Conflicts</h3>';
+                let conflictIndex = 0;
+                conflicts.tasks.forEach((conflict, index) => {
+                    if (conflict.autoResolved) return;
+                    
+                    html += `<div class="border rounded-lg p-4 mb-3 bg-gray-50">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex-1">
+                                <span class="inline-block px-2 py-1 text-xs font-semibold rounded ${
+                                    conflict.type === 'numerical' ? 'bg-orange-200 text-orange-800' : 'bg-purple-200 text-purple-800'
+                                }">${conflict.type === 'numerical' ? 'Numerical Match' : 'Fuzzy Match (' + Math.round(conflict.similarity) + '%)'}</span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 mb-3">
+                            <div class="border rounded p-3 bg-white">
+                                <p class="text-xs font-semibold text-gray-500 mb-1">Existing Task</p>
+                                <p class="font-semibold">${conflict.existing.description}</p>
+                                <p class="text-sm text-gray-600 mt-1">Initiative: ${conflict.existing.initiative || 'None'} • Size: ${conflict.existing.size} • Priority: ${conflict.existing.priority}</p>
+                            </div>
+                            <div class="border rounded p-3 bg-green-50">
+                                <p class="text-xs font-semibold text-gray-500 mb-1">Incoming Task</p>
+                                <p class="font-semibold">${conflict.incoming.description}</p>
+                                <p class="text-sm text-gray-600 mt-1">Initiative: ${conflict.incoming.initiative || 'None'} • Size: ${conflict.incoming.size} • Priority: ${conflict.incoming.priority}</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="setTaskResolution(${index}, 'replace')" class="flex-1 px-3 py-2 text-sm bg-orange-500 text-white rounded hover:bg-orange-600 transition font-semibold">
+                                Replace with Incoming
+                            </button>
+                            <button onclick="setTaskResolution(${index}, 'keep')" class="flex-1 px-3 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition font-semibold">
+                                Keep Original
+                            </button>
+                            <button onclick="setTaskResolution(${index}, 'skip')" class="flex-1 px-3 py-2 text-sm bg-gray-400 text-white rounded hover:bg-gray-500 transition font-semibold">
+                                Skip
+                            </button>
+                        </div>
+                        <div id="task-resolution-${index}" class="mt-2 text-sm text-center font-semibold text-green-600 hidden"></div>
+                    </div>`;
+                    conflictIndex++;
+                });
+                html += '</div>';
+            }
+            
+            // Initiative conflicts
+            if (initConflicts > 0) {
+                html += '<div><h3 class="text-lg font-bold text-gray-800 mb-3">📊 Initiative Conflicts</h3>';
+                let conflictIndex = 0;
+                conflicts.initiatives.forEach((conflict, index) => {
+                    if (conflict.autoResolved) return;
+                    
+                    html += `<div class="border rounded-lg p-4 mb-3 bg-gray-50">
+                        <div class="mb-2">
+                            <span class="inline-block px-2 py-1 text-xs font-semibold rounded bg-red-200 text-red-800">Same Name, Different Data</span>
+                        </div>
+                        <p class="font-bold text-lg mb-3">${conflict.existing.name}</p>
+                        <div class="grid grid-cols-2 gap-4 mb-3 text-sm">
+                            <div class="border rounded p-3 bg-white">
+                                <p class="text-xs font-semibold text-gray-500 mb-1">Existing</p>
+                                <p><strong>Description:</strong> ${(conflict.existing.description || '(none)').substring(0, 100)}</p>
+                                <p><strong>Positives:</strong> ${(conflict.existing.positives || '(none)').substring(0, 100)}</p>
+                            </div>
+                            <div class="border rounded p-3 bg-green-50">
+                                <p class="text-xs font-semibold text-gray-500 mb-1">Incoming</p>
+                                <p><strong>Description:</strong> ${(conflict.incoming.description || '(none)').substring(0, 100)}</p>
+                                <p><strong>Positives:</strong> ${(conflict.incoming.positives || '(none)').substring(0, 100)}</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="setInitiativeResolution(${index}, 'replace')" class="flex-1 px-3 py-2 text-sm bg-orange-500 text-white rounded hover:bg-orange-600 transition font-semibold">
+                                Replace
+                            </button>
+                            <button onclick="setInitiativeResolution(${index}, 'keep')" class="flex-1 px-3 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition font-semibold">
+                                Keep Original
+                            </button>
+                            <button onclick="setInitiativeResolution(${index}, 'merge')" class="flex-1 px-3 py-2 text-sm bg-purple-500 text-white rounded hover:bg-purple-600 transition font-semibold">
+                                Merge
+                            </button>
+                            <button onclick="setInitiativeResolution(${index}, 'skip')" class="flex-1 px-3 py-2 text-sm bg-gray-400 text-white rounded hover:bg-gray-500 transition font-semibold">
+                                Skip
+                            </button>
+                        </div>
+                        <div id="initiative-resolution-${index}" class="mt-2 text-sm text-center font-semibold text-green-600 hidden"></div>
+                    </div>`;
+                    conflictIndex++;
+                });
+                html += '</div>';
+            }
+            
+            // Stakeholder conflicts
+            if (stakeConflicts > 0) {
+                html += '<div><h3 class="text-lg font-bold text-gray-800 mb-3">👥 Stakeholder Conflicts</h3>';
+                let conflictIndex = 0;
+                conflicts.stakeholders.forEach((conflict, index) => {
+                    if (conflict.autoResolved) return;
+                    
+                    html += `<div class="border rounded-lg p-4 mb-3 bg-gray-50">
+                        <div class="mb-2">
+                            <span class="inline-block px-2 py-1 text-xs font-semibold rounded bg-purple-200 text-purple-800">Similar Name (${Math.round(conflict.similarity)}% match)</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-4 mb-3">
+                            <div class="border rounded p-3 bg-white">
+                                <p class="text-xs font-semibold text-gray-500 mb-1">Existing</p>
+                                <p class="font-semibold text-lg">${conflict.existing}</p>
+                            </div>
+                            <div class="border rounded p-3 bg-green-50">
+                                <p class="text-xs font-semibold text-gray-500 mb-1">Incoming</p>
+                                <p class="font-semibold text-lg">${conflict.incoming}</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="setStakeholderResolution(${index}, 'replace')" class="flex-1 px-3 py-2 text-sm bg-orange-500 text-white rounded hover:bg-orange-600 transition font-semibold">
+                                Replace
+                            </button>
+                            <button onclick="setStakeholderResolution(${index}, 'keep')" class="flex-1 px-3 py-2 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 transition font-semibold">
+                                Keep Original
+                            </button>
+                            <button onclick="setStakeholderResolution(${index}, 'skip')" class="flex-1 px-3 py-2 text-sm bg-gray-400 text-white rounded hover:bg-gray-500 transition font-semibold">
+                                Skip
+                            </button>
+                        </div>
+                        <div id="stakeholder-resolution-${index}" class="mt-2 text-sm text-center font-semibold text-green-600 hidden"></div>
+                    </div>`;
+                    conflictIndex++;
+                });
+                html += '</div>';
+            }
+            
+            html += '</div>';
+            content.innerHTML = html;
+            modal.classList.remove('hidden');
+        }
+
+        function closeMergeConflictsModal() {
+            document.getElementById('merge-conflicts-modal').classList.add('hidden');
+        }
+
+        window.setTaskResolution = (index, resolution) => {
+            mergeResolutions.tasks[index].resolution = resolution;
+            const indicator = document.getElementById(`task-resolution-${index}`);
+            indicator.textContent = `✓ Resolution set: ${resolution}`;
+            indicator.classList.remove('hidden');
+        }
+
+        window.setInitiativeResolution = (index, resolution) => {
+            mergeResolutions.initiatives[index].resolution = resolution;
+            const indicator = document.getElementById(`initiative-resolution-${index}`);
+            indicator.textContent = `✓ Resolution set: ${resolution}`;
+            indicator.classList.remove('hidden');
+        }
+
+        window.setStakeholderResolution = (index, resolution) => {
+            mergeResolutions.stakeholders[index].resolution = resolution;
+            const indicator = document.getElementById(`stakeholder-resolution-${index}`);
+            indicator.textContent = `✓ Resolution set: ${resolution}`;
+            indicator.classList.remove('hidden');
+        }
+
+        window.completeMergeImport = function() {
+            // Check all conflicts are resolved
+            const unresolvedTasks = mergeResolutions.tasks.filter(c => !c.autoResolved && !c.resolution).length;
+            const unresolvedInits = mergeResolutions.initiatives.filter(c => !c.autoResolved && !c.resolution).length;
+            const unresolvedStakes = mergeResolutions.stakeholders.filter(c => !c.autoResolved && !c.resolution).length;
+            
+            if (unresolvedTasks + unresolvedInits + unresolvedStakes > 0) {
+                alert(`⚠️ Please resolve all conflicts before completing import.\n\n${unresolvedTasks} task(s), ${unresolvedInits} initiative(s), ${unresolvedStakes} stakeholder(s) need resolution.`);
+                return;
+            }
+            
+            // Apply all resolutions
+            applyMergeResolutions();
+            
+            closeMergeConflictsModal();
+            alert('✅ Import completed successfully!');
+        }
+
+        function applyMergeResolutions() {
+            // Apply task resolutions
+            mergeResolutions.tasks.forEach(conflict => {
+                if (conflict.resolution === 'add') {
+                    tickets.push(conflict.incoming);
+                } else if (conflict.resolution === 'replace') {
+                    const index = tickets.findIndex(t => t.id === conflict.existing.id);
+                    if (index >= 0) {
+                        tickets[index] = conflict.incoming;
+                    }
+                }
+                // 'keep' and 'skip' do nothing
+            });
+            
+            // Apply initiative resolutions
+            mergeResolutions.initiatives.forEach(conflict => {
+                if (conflict.resolution === 'add') {
+                    initiatives.push(conflict.incoming);
+                } else if (conflict.resolution === 'replace') {
+                    const index = initiatives.findIndex(i => i.name === conflict.existing.name);
+                    if (index >= 0) {
+                        initiatives[index] = conflict.incoming;
+                    }
+                } else if (conflict.resolution === 'merge') {
+                    const index = initiatives.findIndex(i => i.name === conflict.existing.name);
+                    if (index >= 0) {
+                        initiatives[index].description += '\n' + conflict.incoming.description;
+                        initiatives[index].positives += '\n' + conflict.incoming.positives;
+                        initiatives[index].negatives += '\n' + conflict.incoming.negatives;
+                        initiatives[index].clarifications += '\n' + conflict.incoming.clarifications;
+                        // Merge issues array
+                        if (Array.isArray(conflict.incoming.issues)) {
+                            initiatives[index].issues = [...initiatives[index].issues, ...conflict.incoming.issues];
+                        }
+                    }
+                }
+            });
+            
+            // Apply stakeholder resolutions
+            mergeResolutions.stakeholders.forEach(conflict => {
+                if (conflict.resolution === 'add') {
+                    stakeholders.push(conflict.incoming);
+                } else if (conflict.resolution === 'replace') {
+                    const index = stakeholders.indexOf(conflict.existing);
+                    if (index >= 0) {
+                        stakeholders[index] = conflict.incoming;
+                    }
+                }
+            });
+            
+            markDirty();
+            saveToLocalStorage();
+            calculateProjection();
+        }
+
+        function performAutoMerge(importedData) {
+            // Add all new items that don't conflict
+            importedData.tickets.forEach(newTask => {
+                const exists = tickets.some(existing => 
+                    existing.description === newTask.description &&
+                    existing.initiative === newTask.initiative
+                );
+                if (!exists) {
+                    tickets.push(newTask);
+                }
+            });
+            
+            importedData.initiatives.forEach(newInit => {
+                if (newInit.name !== 'General' && !initiatives.some(i => i.name === newInit.name)) {
+                    initiatives.push(newInit);
+                }
+            });
+            
+            importedData.stakeholders.forEach(newStake => {
+                if (newStake !== 'General' && !stakeholders.includes(newStake)) {
+                    stakeholders.push(newStake);
+                }
+            });
+            
+            markDirty();
+            saveToLocalStorage();
+            calculateProjection();
         }
 
         // Helper function to parse CSV configuration and return structured data
@@ -4664,7 +5591,7 @@
                     positives: '',
                     negatives: '',
                     clarifications: '',
-                    issues: ''
+                    issues: []
                 }]
             };
 
@@ -4723,6 +5650,31 @@
                             if (importedData.initiatives.length === 1 && importedData.initiatives[0].name === 'General') {
                                 importedData.initiatives = [];
                             }
+                            
+                            // Parse issues string into array (bug tracking format: "desc~~~status | desc2~~~status2")
+                            const issuesArray = [];
+                            if (issues && issues.trim()) {
+                                // Check if new format (contains ~~~)
+                                if (issues.includes('~~~')) {
+                                    const bugEntries = issues.split(' | ');
+                                    bugEntries.forEach(entry => {
+                                        const parts = entry.split('~~~');
+                                        if (parts.length === 2) {
+                                            issuesArray.push({ 
+                                                description: parts[0].trim(), 
+                                                status: parts[1].trim() || 'Open' 
+                                            });
+                                        }
+                                    });
+                                } else {
+                                    // Backward compatibility: old format (plain text), convert to Open bugs
+                                    const oldIssues = issues.split(/[\n|]/g).filter(iss => iss.trim());
+                                    oldIssues.forEach(iss => {
+                                        issuesArray.push({ description: iss.trim(), status: 'Open' });
+                                    });
+                                }
+                            }
+                            
                             importedData.initiatives.push({
                                 name: name,
                                 creationDate: creationDate || getLocalDateString(new Date()),
@@ -4731,7 +5683,7 @@
                                 positives: positives || '',
                                 negatives: negatives || '',
                                 clarifications: clarifications || '',
-                                issues: issues || ''
+                                issues: issuesArray
                             });
                         }
                     } else if (currentSection === 'PEOPLE') {
@@ -8329,9 +9281,76 @@ ${quickSummary}
             modal.classList.remove('hidden');
         }
 
+        // Modal drag functionality
+        let weekTaskModalDragState = {
+            isDragging: false,
+            currentX: 0,
+            currentY: 0,
+            initialX: 0,
+            initialY: 0,
+            xOffset: 0,
+            yOffset: 0
+        };
+
+        function initWeekTaskModalDrag() {
+            const header = document.getElementById('week-task-modal-header');
+            const modalContent = document.getElementById('week-task-modal-content');
+            
+            if (!header || !modalContent) return;
+
+            header.addEventListener('mousedown', (e) => {
+                // Don't drag if clicking the close button
+                if (e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+                
+                weekTaskModalDragState.initialX = e.clientX - weekTaskModalDragState.xOffset;
+                weekTaskModalDragState.initialY = e.clientY - weekTaskModalDragState.yOffset;
+                weekTaskModalDragState.isDragging = true;
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!weekTaskModalDragState.isDragging) return;
+
+                e.preventDefault();
+                weekTaskModalDragState.currentX = e.clientX - weekTaskModalDragState.initialX;
+                weekTaskModalDragState.currentY = e.clientY - weekTaskModalDragState.initialY;
+                weekTaskModalDragState.xOffset = weekTaskModalDragState.currentX;
+                weekTaskModalDragState.yOffset = weekTaskModalDragState.currentY;
+
+                // Keep modal within viewport bounds
+                const rect = modalContent.getBoundingClientRect();
+                const maxX = window.innerWidth - rect.width;
+                const maxY = window.innerHeight - rect.height;
+                
+                const boundedX = Math.max(0, Math.min(weekTaskModalDragState.xOffset, maxX));
+                const boundedY = Math.max(0, Math.min(weekTaskModalDragState.yOffset, maxY));
+
+                modalContent.style.transform = `translate(${boundedX}px, ${boundedY}px)`;
+            });
+
+            document.addEventListener('mouseup', () => {
+                weekTaskModalDragState.isDragging = false;
+            });
+        }
+
+        // Initialize drag functionality when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initWeekTaskModalDrag);
+        } else {
+            initWeekTaskModalDrag();
+        }
+
         function closeWeekTaskModal() {
             const modal = document.getElementById('week-task-modal');
+            const modalContent = document.getElementById('week-task-modal-content');
+            
             modal.classList.add('hidden');
+            
+            // Reset position when closing
+            weekTaskModalDragState.xOffset = 0;
+            weekTaskModalDragState.yOffset = 0;
+            if (modalContent) {
+                modalContent.style.transform = 'translate(0px, 0px)';
+            }
         }
 
         // Helper: Adjust date in modal

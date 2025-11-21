@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional 3D Pie Chart (Final)</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        :root { --bg-color: #f4f7f6; --panel-bg: #ffffff; --text: #333; --accent: #3b82f6; --border: #e0e0e0; }
+        
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background: var(--bg-color); display: flex; height: 100vh; }
+        
+        /* --- CANVAS AREA --- */
+        #canvas-container { 
+            flex-grow: 1; 
+            position: relative; 
+            overflow: hidden; 
+            background: radial-gradient(circle, #ffffff 0%, #e0e0e0 100%); 
+            cursor: grab; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #canvas-container:active { cursor: grabbing; }
+        
+        #title-display { 
+            position: absolute; 
+            top: 20px; 
+            left: 20px; 
+            font-size: 28px; 
+            font-weight: 700; 
+            color: #333; 
+            pointer-events: none; 
+            z-index: 20; 
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        #webgl-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+
+        /* --- LAYERS --- */
+        #labels-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
+
+        /* --- LABELS --- */
+        .pie-label {
+            position: absolute; 
+            padding: 6px 12px; 
+            border-radius: 6px;
+            font-size: 14px; 
+            white-space: nowrap; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2); 
+            border: 1px solid rgba(0,0,0,0.1);
+            
+            /* Bottom-Left Corner Alignment */
+            transform-origin: bottom left; 
+            
+            cursor: move;
+            pointer-events: auto;
+            user-select: none;
+            font-weight: 600;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        
+        /* --- LEGEND (Movable) --- */
+        #on-canvas-legend {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.9);
+            backdrop-filter: blur(5px);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            border: 1px solid #ccc;
+            z-index: 30;
+            min-width: 150px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            cursor: move; 
+            user-select: none;
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #444; font-weight: 500; pointer-events: none; }
+        .color-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+
+        /* --- SIDEBAR CONTROLS --- */
+        #sidebar { width: 440px; background: var(--panel-bg); padding: 20px; box-shadow: -2px 0 15px rgba(0,0,0,0.05); display: flex; flex-direction: column; gap: 15px; overflow-y: auto; z-index: 40; }
+        
+        h3 { margin: 0 0 8px 0; font-size: 0.85rem; text-transform: uppercase; color: #888; letter-spacing: 1px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        .control-group { margin-bottom: 15px; }
+        
+        /* Data Table */
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { text-align: left; color: #888; font-weight: 600; padding-bottom: 5px; }
+        td { padding: 3px 2px; vertical-align: middle; }
+        
+        input[type="text"], input[type="number"], select { width: 100%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; background: #fafafa; }
+        input[type="color"] { border: none; width: 100%; height: 30px; cursor: pointer; padding: 0; background: none; }
+        
+        button.icon-btn { background: none; border: none; color: #ff4d4d; cursor: pointer; font-size: 16px; }
+        button.icon-btn:hover { color: #d32f2f; }
+        
+        button.primary-btn { background: var(--accent); color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: 600; width: 100%; margin-top: 10px; }
+        button.primary-btn:hover { background: #2563eb; }
+        
+        button.secondary-btn { background: #f3f4f6; color: #333; border: 1px solid #ddd; padding: 8px; border-radius: 4px; cursor: pointer; font-weight: 600; width: 100%; margin-top: 5px; }
+        button.secondary-btn:hover { background: #e5e7eb; }
+
+        #csv-input { display: none; }
+        .row-flex { display: flex; gap: 10px; }
+        .col { flex: 1; }
+        
+        label { font-size: 0.9rem; color: #444; display: block; margin-bottom: 3px; font-weight: 500; }
+        input[type=range] { width: 100%; }
+        hr { border: 0; border-top: 1px solid #eee; margin: 15px 0; }
+    </style>
+</head>
+<body>
+
+    <div id="canvas-container">
+        <div id="title-display">Project Priorities</div>
+        <canvas id="webgl-canvas"></canvas>
+        <div id="labels-layer"></div>
+        <div id="on-canvas-legend"></div>
+    </div>
+
+    <div id="sidebar">
+        <div class="control-group">
+            <h3>Visual Themes</h3>
+            <div class="row-flex">
+                <div class="col">
+                    <label>Color Palette</label>
+                    <select id="theme-select" onchange="applyTheme()"></select>
+                </div>
+                <div class="col">
+                    <label>Typography</label>
+                    <select id="font-select" onchange="applyFont()"></select>
+                </div>
+            </div>
+            
+            <div class="row-flex" style="margin-top:10px;">
+                <div class="col">
+                    <label>Surface Finish</label>
+                    <select id="finish-select" onchange="applyFinish()">
+                        <option value="satin" selected>Satin (Standard)</option>
+                        <option value="matte">Matte (Paper)</option>
+                        <option value="glossy">Glossy (Shiny)</option>
+                        <option value="plastic">Plastic (Bright)</option>
+                        <option value="flat">Flat (Vector)</option>
+                    </select>
+                </div>
+            </div>
+
+            <label style="margin-top:10px;">Chart Title</label>
+            <input type="text" id="title-input" value="Project Priorities" oninput="updateTitle()">
+        </div>
+        <hr>
+
+        <div class="control-group">
+            <h3>Slice Data</h3>
+            <table id="data-table">
+                <thead>
+                    <tr>
+                        <th style="width: 25%">Name</th>
+                        <th style="width: 15%">Val</th>
+                        <th style="width: 15%">Size</th>
+                        <th style="width: 15%">Color</th>
+                        <th style="width: 15%">Hght</th>
+                        <th style="width: 10%"></th>
+                    </tr>
+                </thead>
+                <tbody id="table-body"></tbody>
+            </table>
+            <button class="secondary-btn" onclick="addRow()">+ Add Slice</button>
+            <button class="primary-btn" onclick="updateChartFromTable()">Update Chart</button>
+        </div>
+        <hr>
+
+        <div class="control-group">
+            <h3>View Controls</h3>
+            <div class="row-flex">
+                <div class="col">
+                    <label>Spin</label>
+                    <input type="range" id="spin" min="0" max="360" value="0">
+                </div>
+                <div class="col">
+                    <label>Tilt</label>
+                    <input type="range" id="tilt" min="0" max="90" value="35">
+                </div>
+            </div>
+            <div class="row-flex" style="margin-top:10px;">
+                <div class="col">
+                    <label>Radius</label>
+                    <input type="range" id="radius" min="5" max="25" value="12">
+                </div>
+                <div class="col">
+                    <label>Label Text</label>
+                    <input type="color" id="label-text-color" value="#333333" style="width:100%; padding:0; height:30px;">
+                </div>
+            </div>
+        </div>
+
+        <div class="control-group">
+            <h3>Auto-Label Threshold</h3>
+            <label>Angle: <span id="val-thresh">45</span>°</label>
+            <input type="range" id="threshold" min="0" max="360" value="45">
+            <div style="display:flex; gap:10px; margin-top:5px;">
+                <label><input type="checkbox" id="show-name" checked> Name</label>
+                <label><input type="checkbox" id="show-val" checked> Val</label>
+                <label><input type="checkbox" id="show-perc" checked> %</label>
+            </div>
+        </div>
+        <hr>
+
+        <div class="control-group">
+            <h3>Export / Import</h3>
+            <div class="row-flex">
+                <button class="secondary-btn" onclick="exportToCSV()">Export CSV</button>
+                <button class="secondary-btn" onclick="document.getElementById('csv-input').click()">Import CSV</button>
+                <input type="file" id="csv-input" accept=".csv" onchange="importFromCSV(this)">
+            </div>
+            <div class="row-flex" style="margin-top:10px;">
+                <button class="secondary-btn" id="btn-copy">Copy Image</button>
+                <button class="secondary-btn" id="btn-download">Save PNG</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION & STATE ---
+        const container = document.getElementById('canvas-container');
+        const canvas = document.getElementById('webgl-canvas');
+        const labelsLayer = document.getElementById('labels-layer');
+        const legendElement = document.getElementById('on-canvas-legend');
+
+        // --- DEFINITIONS ---
+        const colorThemes = {
+            "Corporate Blue": ["#2c3e50", "#3498db", "#ecf0f1", "#bdc3c7", "#2980b9"],
+            "Wall Street": ["#003f5c", "#2f4b7c", "#665191", "#a05195", "#d45087"],
+            "Executive": ["#3E4053", "#6B717E", "#AFA060", "#D8D0A7", "#FFFFFF"],
+            "Clean Slate": ["#4e545c", "#828a95", "#b5bdc8", "#e1e6ed", "#ffffff"],
+            "Teal & Coral": ["#264653", "#2a9d8f", "#e9c46a", "#f4a261", "#e76f51"],
+            "Nordic": ["#bfd7ed", "#60a3d9", "#0074e4", "#003b73", "#ffffff"],
+            "Earth Tones": ["#606c38", "#283618", "#fefae0", "#dda15e", "#bc6c25"],
+            "Modern Purple": ["#482ff7", "#2d6cdf", "#46c3db", "#28c2ff", "#b9e6ff"],
+            "Marshmallow": ["#ffcdb2", "#ffb4a2", "#e5989b", "#b5838d", "#6d6875"],
+            "Mint & Lavender": ["#cdb4db", "#ffc8dd", "#ffafcc", "#bde0fe", "#a2d2ff"],
+            "Soft Focus": ["#F7F5FB", "#EADCF8", "#D0BCF2", "#B69CEB", "#9B7CE4"],
+            "Nature": ["#D8E2DC", "#FFE5D9", "#FFCAD4", "#F4ACB7", "#9D8189"],
+            "Confetti": ["#EF476F", "#FFD166", "#06D6A0", "#118AB2", "#073B4C"],
+            "Sunset": ["#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93"],
+            "Neon Cyberpunk": ["#f72585", "#7209b7", "#3a0ca3", "#4361ee", "#4cc9f0"],
+            "Vitamin C": ["#ffbe0b", "#fb5607", "#ff006e", "#8338ec", "#3a86ff"],
+            "Picnic": ["#e63946", "#f1faee", "#a8dadc", "#457b9d", "#1d3557"],
+            "High Contrast": ["#001219", "#005f73", "#0a9396", "#94d2bd", "#e9d8a6"],
+            "Berry Smoothie": ["#540d6e", "#ee4266", "#ffd23f", "#3bceac", "#0ead69"],
+            "Classic ROI": ["#FF6384", "#36A2EB", "#FFCE56", "#4BC0C0", "#9966FF"]
+        };
+
+        const fontThemes = {
+            "Modern (Segoe)": "'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
+            "Clean (Helvetica)": "'Helvetica Neue', Helvetica, Arial, sans-serif",
+            "System Default": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+            "Geometric (Futura)": "'Futura', 'Trebuchet MS', Arial, sans-serif",
+            "Humanist (Verdana)": "Verdana, Geneva, sans-serif",
+            "Rounded (Arial Round)": "'Arial Rounded MT Bold', Arial, sans-serif",
+            "Elegant Serif (Didot)": "'Didot', 'Bodoni MT', 'Times New Roman', serif",
+            "Classic Serif (Georgia)": "Georgia, 'Times New Roman', Times, serif",
+            "Slab Serif (Rockwell)": "'Rockwell', 'Courier Bold', Courier, serif",
+            "Monospace Code": "'Courier New', Courier, monospace",
+            "Console": "'Lucida Console', Monaco, monospace",
+            "Impactful": "Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif",
+            "Playful (Comic)": "'Comic Sans MS', 'Chalkboard SE', sans-serif",
+            "Wide (Arial Black)": "'Arial Black', Gadget, sans-serif",
+            "Narrow": "'Arial Narrow', sans-serif"
+        };
+
+        // Surface Finish Properties
+        const finishPresets = {
+            "matte":   { shininess: 2, specular: 0x111111, flatShading: false },
+            "satin":   { shininess: 20, specular: 0x444444, flatShading: false },
+            "glossy":  { shininess: 90, specular: 0xaaaaaa, flatShading: false },
+            "plastic": { shininess: 60, specular: 0xffffff, flatShading: false },
+            "flat":    { shininess: 0, specular: 0x000000, flatShading: true }
+        };
+
+        // --- APP STATE ---
+        let chartData = [
+            { name: "Services", value: 45, scale: 1, thickness: 4, color: "#2c3e50", manualOffset: {x:0, y:0} },
+            { name: "Hosting", value: 25, scale: 1, thickness: 4, color: "#3498db", manualOffset: {x:0, y:0} },
+            { name: "Licensing", value: 20, scale: 1.2, thickness: 8, color: "#ecf0f1", manualOffset: {x:0, y:0} },
+            { name: "Consulting", value: 10, scale: 1.0, thickness: 20, color: "#bdc3c7", manualOffset: {x:0, y:0} }
+        ];
+        
+        let scene, camera, renderer, pieGroup, raycaster, mouse;
+        let slices = [];
+        let labelMap = new Map();
+
+        // Interactions
+        let isDraggingSlice = false;
+        let selectedSlice = null;
+        let dragOffset = new THREE.Vector3();
+        const intersectPoint = new THREE.Vector3();
+
+        let isDraggingLabel = false;
+        let draggedLabelElement = null;
+        let labelDragStart = { x: 0, y: 0 };
+        let labelInitialOffset = { x: 0, y: 0 };
+
+        let isDraggingLegend = false;
+        let legendDragStart = { x: 0, y: 0 };
+        let legendInitialPos = { x: 0, y: 0 };
+
+        // --- INITIALIZATION ---
+        function init() {
+            // Dropdowns
+            const themeSel = document.getElementById('theme-select');
+            Object.keys(colorThemes).forEach(k => {
+                let opt = document.createElement('option');
+                opt.value = k;
+                opt.innerText = k;
+                themeSel.appendChild(opt);
+            });
+
+            const fontSel = document.getElementById('font-select');
+            Object.keys(fontThemes).forEach(k => {
+                let opt = document.createElement('option');
+                opt.value = k;
+                opt.innerText = k;
+                fontSel.appendChild(opt);
+            });
+
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 45, 45);
+            camera.lookAt(0, 0, 0);
+
+            renderer = new THREE.WebGLRenderer({ 
+                canvas: canvas, 
+                alpha: true, 
+                antialias: true,
+                preserveDrawingBuffer: true 
+            });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.7);
+            dirLight.position.set(10, 25, 15);
+            scene.add(dirLight);
+
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            pieGroup = new THREE.Group();
+            scene.add(pieGroup);
+
+            window.addEventListener('resize', onWindowResize);
+            canvas.addEventListener('mousedown', onCanvasMouseDown);
+            window.addEventListener('mousemove', onGlobalMouseMove);
+            window.addEventListener('mouseup', onGlobalMouseUp);
+            legendElement.addEventListener('mousedown', onLegendMouseDown);
+
+            applyTheme(); // Initial Load
+            animate();
+        }
+
+        function updateTitle() {
+            document.getElementById('title-display').innerText = document.getElementById('title-input').value;
+        }
+
+        function applyTheme() {
+            const themeName = document.getElementById('theme-select').value;
+            const palette = colorThemes[themeName];
+            chartData.forEach((item, index) => {
+                item.color = palette[index % palette.length];
+            });
+            renderTable();
+            buildPie();
+        }
+
+        function applyFinish() {
+            // Just rebuild since logic is in buildPie loop (safest for flatShading changes)
+            buildPie();
+        }
+
+        function applyFont() {
+            const fontName = document.getElementById('font-select').value;
+            const fontFamily = fontThemes[fontName];
+            document.body.style.fontFamily = fontFamily;
+            document.getElementById('title-display').style.fontFamily = fontFamily;
+            updateLabels();
+        }
+
+        function getPaleColor(hex) {
+            if(hex.startsWith('#')) hex = hex.slice(1);
+            if(hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+            let r = parseInt(hex.substring(0, 2), 16);
+            let g = parseInt(hex.substring(2, 4), 16);
+            let b = parseInt(hex.substring(4, 6), 16);
+            const mix = 0.88; 
+            r = Math.round(r + (255 - r) * mix);
+            g = Math.round(g + (255 - g) * mix);
+            b = Math.round(b + (255 - b) * mix);
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+        // --- TABLE LOGIC ---
+        function renderTable() {
+            const tbody = document.getElementById('table-body');
+            tbody.innerHTML = '';
+            chartData.forEach((row, index) => {
+                const tr = document.createElement('tr');
+                let options = '';
+                [0.8, 1.0, 1.2, 1.5, 2.0].forEach(s => {
+                    options += `<option value="${s}" ${row.scale == s ? 'selected' : ''}>${s}x</option>`;
+                });
+                tr.innerHTML = `
+                    <td><input type="text" value="${row.name}" class="inp-name"></td>
+                    <td><input type="number" value="${row.value}" class="inp-val"></td>
+                    <td><select class="size-select inp-scale">${options}</select></td>
+                    <td><input type="color" value="${row.color}" class="inp-color"></td>
+                    <td><input type="number" value="${row.thickness}" class="inp-thick"></td>
+                    <td style="text-align:center"><button class="icon-btn" onclick="removeRow(${index})">&times;</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function addRow() {
+            const themeName = document.getElementById('theme-select').value;
+            const palette = colorThemes[themeName];
+            const color = palette[chartData.length % palette.length];
+            chartData.push({ name: "New Item", value: 10, scale: 1, thickness: 5, color: color, manualOffset: {x:0, y:0} });
+            renderTable();
+            updateChartFromTable();
+        }
+
+        function removeRow(index) {
+            if(chartData.length <= 1) return;
+            chartData.splice(index, 1);
+            const themeName = document.getElementById('theme-select').value;
+            const palette = colorThemes[themeName];
+            chartData.forEach((item, i) => item.color = palette[i % palette.length]);
+            renderTable();
+            updateChartFromTable();
+        }
+
+        window.updateChartFromTable = function() {
+            const tbody = document.getElementById('table-body');
+            const rows = tbody.querySelectorAll('tr');
+            const newData = [];
+            rows.forEach((tr, i) => {
+                const name = tr.querySelector('.inp-name').value;
+                const val = parseFloat(tr.querySelector('.inp-val').value) || 0;
+                const scale = parseFloat(tr.querySelector('.inp-scale').value) || 1;
+                const thick = parseFloat(tr.querySelector('.inp-thick').value) || 5;
+                const color = tr.querySelector('.inp-color').value;
+                const oldItem = chartData[i];
+                const offset = oldItem && oldItem.manualOffset ? oldItem.manualOffset : {x:0, y:0};
+                newData.push({ name, value: val, scale, thickness: thick, color, manualOffset: offset });
+            });
+            chartData = newData;
+            buildPie();
+        };
+
+        // --- PIE BUILDER ---
+        function buildPie() {
+            while(pieGroup.children.length > 0){ pieGroup.remove(pieGroup.children[0]); }
+            slices = [];
+            labelMap.clear();
+            labelsLayer.innerHTML = ''; 
+
+            const total = chartData.reduce((sum, item) => sum + item.value, 0);
+            let currentAngle = 0;
+            const radius = parseFloat(document.getElementById('radius').value);
+            const GAP = 0.01; // Tighter Gap
+
+            // Get Finish Settings
+            const finishKey = document.getElementById('finish-select').value;
+            const finishProps = finishPresets[finishKey];
+
+            chartData.forEach((item) => {
+                if(item.value <= 0) return;
+                const sliceAngle = (item.value / total) * Math.PI * 2;
+                let drawStart = currentAngle + (GAP/2);
+                let drawEnd = currentAngle + sliceAngle - (GAP/2);
+                if (sliceAngle < GAP) { drawStart = currentAngle; drawEnd = currentAngle + sliceAngle; }
+
+                const shape = new THREE.Shape();
+                shape.moveTo(0, 0);
+                shape.arc(0, 0, radius, drawStart, drawEnd, false);
+                shape.lineTo(0, 0);
+
+                const extrudeSettings = { 
+                    depth: item.thickness, bevelEnabled: true, bevelSegments: 8, steps: 1, bevelSize: 0.2, bevelThickness: 0.2 
+                };
+                
+                const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+                
+                // Apply Finish Properties
+                const material = new THREE.MeshPhongMaterial({ 
+                    color: item.color, 
+                    shininess: finishProps.shininess, 
+                    specular: finishProps.specular,
+                    flatShading: finishProps.flatShading
+                });
+
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.rotation.x = -Math.PI / 2; 
+                
+                const labelDiv = document.createElement('div');
+                labelDiv.className = 'pie-label';
+                labelDiv.addEventListener('mousedown', (e) => onLabelMouseDown(e, mesh.uuid));
+                labelsLayer.appendChild(labelDiv);
+
+                mesh.userData = {
+                    name: item.name, value: item.value, scale: item.scale, color: item.color,
+                    percent: ((item.value/total)*100).toFixed(1),
+                    angleCenter: currentAngle + (sliceAngle / 2),
+                    radius: radius, depth: item.thickness,
+                    manualOffset: item.manualOffset || { x: 0, y: 0 } 
+                };
+                labelMap.set(mesh.uuid, labelDiv);
+                pieGroup.add(mesh);
+                slices.push(mesh);
+                currentAngle += sliceAngle;
+            });
+
+            updateLegend();
+            updateTransforms();
+            applyFont();
+        }
+
+        function updateLegend() {
+            legendElement.innerHTML = '<strong>Legend</strong>';
+            chartData.forEach(d => {
+                const div = document.createElement('div');
+                div.className = 'legend-item';
+                div.innerHTML = `<div class="color-dot" style="background:${d.color}"></div> ${d.name}`;
+                legendElement.appendChild(div);
+            });
+        }
+
+        // --- INTERACTION ---
+        function onLegendMouseDown(e) {
+            e.stopPropagation(); e.preventDefault();
+            isDraggingLegend = true;
+            legendDragStart = { x: e.clientX, y: e.clientY };
+            const rect = legendElement.getBoundingClientRect();
+            const contRect = container.getBoundingClientRect();
+            legendInitialPos = { left: rect.left - contRect.left, top: rect.top - contRect.top };
+            container.style.cursor = "move";
+        }
+
+        function onLabelMouseDown(e, meshUUID) {
+            e.stopPropagation(); e.preventDefault();
+            isDraggingLabel = true;
+            draggedLabelElement = labelMap.get(meshUUID);
+            const mesh = slices.find(s => s.uuid === meshUUID);
+            if(!mesh) return;
+            selectedSlice = mesh; 
+            labelDragStart = { x: e.clientX, y: e.clientY };
+            labelInitialOffset = { ...mesh.userData.manualOffset };
+            container.style.cursor = "move";
+            draggedLabelElement.style.zIndex = 100;
+        }
+
+        function onCanvasMouseDown(event) {
+            if(event.button !== 0) return;
+            const rect = canvas.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(pieGroup.children);
+            
+            if (intersects.length > 0) {
+                isDraggingSlice = true;
+                selectedSlice = intersects[0].object;
+                container.style.cursor = "grabbing";
+                const normal = new THREE.Vector3(0, 1, 0).applyQuaternion(pieGroup.quaternion);
+                const worldPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, pieGroup.position);
+                raycaster.ray.intersectPlane(worldPlane, intersectPoint);
+                if(intersectPoint) {
+                    const localHit = pieGroup.worldToLocal(intersectPoint.clone());
+                    dragOffset.copy(selectedSlice.position).sub(localHit);
+                }
+            }
+        }
+
+        function onGlobalMouseMove(event) {
+            if(isDraggingLegend) {
+                const dx = event.clientX - legendDragStart.x;
+                const dy = event.clientY - legendDragStart.y;
+                legendElement.style.bottom = 'auto';
+                legendElement.style.right = 'auto';
+                legendElement.style.left = (legendInitialPos.left + dx) + 'px';
+                legendElement.style.top = (legendInitialPos.top + dy) + 'px';
+                return;
+            }
+
+            if(isDraggingLabel && selectedSlice) {
+                const dx = event.clientX - labelDragStart.x;
+                const dy = event.clientY - labelDragStart.y;
+                selectedSlice.userData.manualOffset.x = labelInitialOffset.x + dx;
+                selectedSlice.userData.manualOffset.y = labelInitialOffset.y + dy;
+                const dataIndex = slices.indexOf(selectedSlice);
+                if(chartData[dataIndex]) chartData[dataIndex].manualOffset = { ...selectedSlice.userData.manualOffset };
+                return;
+            }
+
+            if (isDraggingSlice && selectedSlice) {
+                const rect = canvas.getBoundingClientRect();
+                mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+                raycaster.setFromCamera(mouse, camera);
+                const normal = new THREE.Vector3(0, 1, 0).applyQuaternion(pieGroup.quaternion);
+                const worldPlane = new THREE.Plane().setFromNormalAndCoplanarPoint(normal, pieGroup.position);
+                raycaster.ray.intersectPlane(worldPlane, intersectPoint);
+                if (intersectPoint) {
+                    const localVal = pieGroup.worldToLocal(intersectPoint.clone());
+                    selectedSlice.position.x = localVal.x + dragOffset.x;
+                    selectedSlice.position.z = localVal.z + dragOffset.z;
+                    selectedSlice.position.y = 0; 
+                }
+            }
+        }
+
+        function onGlobalMouseUp() {
+            if(isDraggingLabel && draggedLabelElement) draggedLabelElement.style.zIndex = "";
+            isDraggingSlice = false;
+            isDraggingLabel = false;
+            isDraggingLegend = false;
+            selectedSlice = null;
+            container.style.cursor = "grab";
+        }
+
+        // --- UPDATE LOOP ---
+        function updateLabels() {
+            const threshold = parseInt(document.getElementById('threshold').value);
+            const showName = document.getElementById('show-name').checked;
+            const showVal = document.getElementById('show-val').checked;
+            const showPerc = document.getElementById('show-perc').checked;
+            const labelColor = document.getElementById('label-text-color').value;
+
+            const totalVal = chartData.reduce((acc, d) => acc + d.value, 0);
+
+            slices.forEach((mesh) => {
+                const label = labelMap.get(mesh.uuid);
+                if(!label) return;
+                const data = mesh.userData;
+
+                let text = [];
+                if(showName) text.push(`<b>${data.name}</b>`);
+                if(showVal) text.push(data.value);
+                if(showPerc) text.push(`<span style="opacity:0.7">${data.percent}%</span>`);
+                label.innerHTML = text.join('<br>');
+                label.style.color = labelColor;
+                label.style.backgroundColor = getPaleColor(data.color);
+
+                // 1. Anchor: Top-Middle of Outer Rim
+                const angle = data.angleCenter;
+                const r = data.radius;
+                const geomX = Math.cos(angle) * r;
+                const geomY = Math.sin(angle) * r;
+                const geomZ = data.depth; 
+
+                const rimVec = new THREE.Vector3(geomX, geomY, geomZ);
+                rimVec.applyMatrix4(mesh.matrix); 
+                rimVec.applyMatrix4(pieGroup.matrix); 
+
+                const screenAnchor = rimVec.clone().project(camera);
+                const anchorX = (screenAnchor.x * .5 + .5) * container.clientWidth;
+                const anchorY = (screenAnchor.y * -.5 + .5) * container.clientHeight;
+
+                // 2. Auto-Placement
+                const distFromCenter = mesh.position.length();
+                const sliceDeg = (data.value / totalVal) * 360;
+                const isOutside = sliceDeg < threshold || distFromCenter > 2;
+
+                let autoX, autoY;
+                if (isOutside) {
+                     autoX = anchorX;
+                     autoY = anchorY;
+                } else {
+                    const midR = r * 0.6;
+                    const midX = Math.cos(angle) * midR;
+                    const midY = Math.sin(angle) * midR;
+                    const midZ = data.depth;
+                    const midVec = new THREE.Vector3(midX, midY, midZ).applyMatrix4(mesh.matrix).applyMatrix4(pieGroup.matrix);
+                    const midScreen = midVec.project(camera);
+                    autoX = (midScreen.x * .5 + .5) * container.clientWidth;
+                    autoY = (midScreen.y * -.5 + .5) * container.clientHeight;
+                }
+
+                const finalX = autoX + data.manualOffset.x;
+                const finalY = autoY + data.manualOffset.y;
+                
+                label.style.left = `${finalX}px`;
+                label.style.top = `${finalY}px`;
+                
+                // Bottom-Left Corner Logic handled by CSS origin + translate
+                // We translate Y -100% so the box sits above the point
+                label.style.transform = `translateY(-100%) scale(${data.scale})`;
+                
+                label.style.opacity = 1;
+            });
+        }
+
+        function updateTransforms() {
+            const spin = parseFloat(document.getElementById('spin').value);
+            const tilt = parseFloat(document.getElementById('tilt').value);
+            pieGroup.rotation.y = THREE.MathUtils.degToRad(spin);
+            pieGroup.rotation.x = THREE.MathUtils.degToRad(tilt);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+            updateLabels();
+        }
+
+        function onWindowResize() {
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        // --- EXPORT / IMPORT ---
+        function exportToCSV() {
+            const meta = {
+                title: document.getElementById('title-input').value,
+                theme: document.getElementById('theme-select').value,
+                finish: document.getElementById('finish-select').value,
+                font: document.getElementById('font-select').value,
+                spin: document.getElementById('spin').value,
+                tilt: document.getElementById('tilt').value,
+                radius: document.getElementById('radius').value,
+                threshold: document.getElementById('threshold').value,
+                labelColor: document.getElementById('label-text-color').value,
+                showName: document.getElementById('show-name').checked,
+                showVal: document.getElementById('show-val').checked,
+                showPerc: document.getElementById('show-perc').checked
+            };
+            let csvContent = "#METADATA\nKey,Value\n";
+            Object.keys(meta).forEach(key => csvContent += `${key},${meta[key]}\n`);
+            csvContent += "#DATA\nName,Value,Scale,Height,Color,OffX,OffY\n";
+            chartData.forEach(row => {
+                const safeName = row.name.replace(/,/g, "");
+                csvContent += `${safeName},${row.value},${row.scale},${row.thickness},${row.color},${row.manualOffset.x},${row.manualOffset.y}\n`;
+            });
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", "chart_data.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function importFromCSV(input) {
+            const file = input.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.split('\n');
+                let mode = null;
+                let newData = [];
+                lines.forEach(line => {
+                    line = line.trim();
+                    if(!line) return;
+                    if(line === "#METADATA") { mode = "meta"; return; }
+                    if(line === "#DATA") { mode = "data"; return; }
+                    if(line.startsWith("Key,") || line.startsWith("Name,")) return; 
+
+                    if(mode === "meta") {
+                        const parts = line.split(',');
+                        const key = parts[0];
+                        const val = parts[1];
+                        if(key === 'title') { document.getElementById('title-input').value = val; updateTitle(); }
+                        if(key === 'theme') document.getElementById('theme-select').value = val;
+                        if(key === 'finish') document.getElementById('finish-select').value = val;
+                        if(key === 'font') document.getElementById('font-select').value = val;
+                        if(key === 'spin') document.getElementById('spin').value = val;
+                        if(key === 'tilt') document.getElementById('tilt').value = val;
+                        if(key === 'radius') document.getElementById('radius').value = val;
+                        if(key === 'threshold') document.getElementById('threshold').value = val;
+                        if(key === 'labelColor') document.getElementById('label-text-color').value = val;
+                        if(key === 'showName') document.getElementById('show-name').checked = (val === 'true');
+                        if(key === 'showVal') document.getElementById('show-val').checked = (val === 'true');
+                        if(key === 'showPerc') document.getElementById('show-perc').checked = (val === 'true');
+                    }
+                    if(mode === "data") {
+                        const cols = line.split(',');
+                        if(cols.length >= 7) {
+                            newData.push({
+                                name: cols[0],
+                                value: parseFloat(cols[1]),
+                                scale: parseFloat(cols[2]),
+                                thickness: parseFloat(cols[3]),
+                                color: cols[4],
+                                manualOffset: { x: parseFloat(cols[5]), y: parseFloat(cols[6]) }
+                            });
+                        }
+                    }
+                });
+                chartData = newData;
+                applyFont();
+                renderTable();
+                buildPie();
+            };
+            reader.readAsText(file);
+            input.value = ''; 
+        }
+
+        document.getElementById('btn-download').addEventListener('click', () => {
+            html2canvas(container, { backgroundColor: null, scale: 2 }).then(c => {
+                const link = document.createElement('a');
+                link.download = '3d-pie-chart.png';
+                link.href = c.toDataURL('image/png');
+                link.click();
+            });
+        });
+
+        document.getElementById('btn-copy').addEventListener('click', () => {
+            html2canvas(container, { backgroundColor: null, scale: 2 }).then(c => {
+                c.toBlob(blob => {
+                    navigator.clipboard.write([new ClipboardItem({'image/png': blob})])
+                        .then(() => alert("Copied to clipboard!"))
+                        .catch(err => alert("Failed to copy: " + err));
+                });
+            });
+        });
+
+        document.getElementById('spin').addEventListener('input', updateTransforms);
+        document.getElementById('tilt').addEventListener('input', updateTransforms);
+        document.getElementById('radius').addEventListener('input', buildPie);
+
+        init();
+    </script>
+</body>
+</html>
