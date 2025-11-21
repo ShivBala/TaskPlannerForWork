@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vine Generator V7 (PNG Support)</title>
+    <style>
+        body {
+            margin: 0;
+            background: #1a1a1a;
+            color: #eee;
+            font-family: "Segoe UI", sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #controls {
+            width: 300px;
+            background: #252525;
+            padding: 20px;
+            border-right: 1px solid #111;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+            z-index: 10;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.2);
+        }
+        #canvas-area {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #222;
+            /* Checkerboard Pattern for Transparency Visualization */
+            background-image: 
+                linear-gradient(45deg, #2a2a2a 25%, transparent 25%), 
+                linear-gradient(-45deg, #2a2a2a 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #2a2a2a 75%), 
+                linear-gradient(-45deg, transparent 75%, #2a2a2a 75%);
+            background-size: 20px 20px;
+            position: relative;
+            cursor: crosshair;
+        }
+        canvas {
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            /* The canvas element background is transparent, 
+               so the checkerboard behind it shows through */
+            background: transparent; 
+        }
+        .control-group { display: flex; flex-direction: column; gap: 5px; }
+        .double-row { display: flex; gap: 10px; }
+        .double-row .control-group { flex: 1; }
+
+        label { font-size: 0.8rem; color: #bbb; font-weight: 600; letter-spacing: 0.5px;}
+        input[type="range"] { width: 100%; cursor: pointer; accent-color: #76c76c; }
+        input[type="color"] { width: 100%; height: 30px; border:none; padding: 0; background: none; cursor: pointer;}
+        
+        button {
+            padding: 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            transition: 0.2s;
+            letter-spacing: 1px;
+        }
+        .btn-gen { background: #438a36; color: white; }
+        .btn-gen:hover { background: #53a543; }
+        
+        .btn-dl { background: #333; color: #ccc; border: 1px solid #444; margin-top: 5px;}
+        .btn-dl:hover { background: #444; color: #fff;}
+        
+        .h-rule { height: 1px; background: #333; margin: 5px 0; }
+        .guide { color:#888; font-size: 0.75rem; font-style: italic; text-align: center; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;}
+        h2 { margin-top: 0; color: #76c76c; }
+    </style>
+</head>
+<body>
+
+<div id="controls">
+    <h2>Organic V7</h2>
+    <div class="guide">Click & Drag to set frame.</div>
+
+    <div class="control-group">
+        <label>Vine Length</label>
+        <input type="range" id="vineLen" min="50" max="400" value="200">
+    </div>
+    <div class="control-group">
+        <label>Curvature</label>
+        <input type="range" id="curve" min="0" max="80" value="40">
+    </div>
+    <div class="control-group">
+        <label>Density</label>
+        <input type="range" id="density" min="10" max="200" value="60">
+    </div>
+    <div class="control-group">
+        <label>Leaf Size</label>
+        <input type="range" id="leafSize" min="5" max="50" value="20">
+    </div>
+    
+    <div class="h-rule"></div>
+
+    <div class="control-group">
+        <label>Stem Color</label>
+        <input type="color" id="stemColor" value="#2b1d14">
+    </div>
+    
+    <div class="double-row">
+        <div class="control-group">
+            <label>Leaf (Light)</label>
+            <input type="color" id="leafColor1" value="#9ee38d">
+        </div>
+        <div class="control-group">
+            <label>Leaf (Dark)</label>
+            <input type="color" id="leafColor2" value="#2d5a2d">
+        </div>
+    </div>
+
+    <div class="h-rule"></div>
+
+    <button id="btnRegen" class="btn-gen">New Random Seeds</button>
+    <button id="btnPNG" class="btn-dl" style="border-color: #4a90e2; color: #4a90e2;">Download PNG (Transparent)</button>
+    <button id="btnSVG" class="btn-dl">Download SVG (Vector)</button>
+</div>
+
+<div id="canvas-area">
+    <canvas id="artCanvas" width="1000" height="800"></canvas>
+</div>
+
+<script>
+    const canvas = document.getElementById('artCanvas');
+    const ctx = canvas.getContext('2d');
+    let svgBuffer = "";
+    let isDragging = false;
+    let startPos = {x:0, y:0};
+    let currentRect = {x: 250, y: 200, w: 500, h: 400}; 
+    
+    const els = {
+        len: document.getElementById('vineLen'),
+        curve: document.getElementById('curve'),
+        leafSize: document.getElementById('leafSize'),
+        density: document.getElementById('density'),
+        stemColor: document.getElementById('stemColor'),
+        leafColor1: document.getElementById('leafColor1'),
+        leafColor2: document.getElementById('leafColor2')
+    };
+
+    function lerpColor(a, b, amount) {
+        const ar = parseInt(a.substring(1, 3), 16), ag = parseInt(a.substring(3, 5), 16), ab = parseInt(a.substring(5, 7), 16);
+        const br = parseInt(b.substring(1, 3), 16), bg = parseInt(b.substring(3, 5), 16), bb = parseInt(b.substring(5, 7), 16);
+        const rr = Math.round(ar + amount * (br - ar)), rg = Math.round(ag + amount * (bg - ag)), rb = Math.round(ab + amount * (bb - ab));
+        return '#' + ((1 << 24) + (rr << 16) + (rg << 8) + rb).toString(16).slice(1);
+    }
+
+    // --- MOUSE HANDLERS ---
+    canvas.addEventListener('mousedown', (e) => {
+        const rect = canvas.getBoundingClientRect();
+        startPos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        isDragging = true;
+    });
+
+    canvas.addEventListener('mousemove', (e) => {
+        if(!isDragging) return;
+        const rect = canvas.getBoundingClientRect();
+        const currX = e.clientX - rect.left;
+        const currY = e.clientY - rect.top;
+        
+        // While dragging, we clear everything and JUST draw the box
+        ctx.clearRect(0,0,canvas.width, canvas.height);
+        ctx.strokeStyle = "#fff";
+        ctx.setLineDash([5, 5]);
+        ctx.lineWidth = 2;
+        ctx.strokeRect(startPos.x, startPos.y, currX - startPos.x, currY - startPos.y);
+        ctx.setLineDash([]);
+    });
+
+    canvas.addEventListener('mouseup', (e) => {
+        if(!isDragging) return;
+        isDragging = false;
+        const rect = canvas.getBoundingClientRect();
+        const endX = e.clientX - rect.left;
+        const endY = e.clientY - rect.top;
+        currentRect = {
+            x: Math.min(startPos.x, endX), y: Math.min(startPos.y, endY),
+            w: Math.abs(endX - startPos.x), h: Math.abs(endY - startPos.y)
+        };
+        if(currentRect.w > 10 && currentRect.h > 10) generate();
+    });
+
+    // --- GENERATION ---
+    function generate() {
+        // 1. Clear Canvas (This creates transparency)
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        // Start SVG Buffer
+        svgBuffer = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${canvas.width} ${canvas.height}" width="${canvas.width}" height="${canvas.height}">`;
+        
+        // NOTE: We deliberately do NOT draw the guide rectangle here.
+        // This ensures the final PNG/SVG has no weird box lines in it.
+        // The user defines the box via interaction, but the result is just vines.
+
+        const w = currentRect.w; h = currentRect.h;
+        const count = parseInt(els.density.value);
+        const maxLen = parseInt(els.len.value);
+        const curvature = parseInt(els.curve.value) * 0.01;
+        const leafS = parseInt(els.leafSize.value);
+
+        for(let i = 0; i < count; i++) {
+            const p = (Math.random() * (2*w + 2*h));
+            let sx, sy, startAngle;
+            if (p < w) { sx = currentRect.x + p; sy = currentRect.y; startAngle = -Math.PI/2; }
+            else if (p < w + h) { sx = currentRect.x + w; sy = currentRect.y + (p-w); startAngle = 0; }
+            else if (p < 2*w + h) { sx = currentRect.x + w - (p-(w+h)); sy = currentRect.y + h; startAngle = Math.PI/2; }
+            else { sx = currentRect.x; sy = currentRect.y + h - (p-(2*w+h)); startAngle = Math.PI; }
+
+            sx += Math.cos(startAngle)*2; sy += Math.sin(startAngle)*2;
+            growVine(sx, sy, startAngle, maxLen, curvature, leafS);
+        }
+        svgBuffer += `</svg>`;
+    }
+
+    function growVine(x, y, startAngle, maxLen, curvature, leafScale) {
+        let cx = x, cy = y;
+        let angle = startAngle + (Math.random() - 0.5);
+        const len = maxLen * (0.6 + Math.random() * 0.8);
+        const segLen = 4; 
+        const segments = Math.floor(len / segLen);
+        const baseWidth = 1.5 + Math.random() * 2.5; 
+        const stemC = els.stemColor.value;
+
+        ctx.strokeStyle = stemC; ctx.lineCap = "round";
+        svgBuffer += `<g fill="none" stroke="${stemC}" stroke-linecap="round">`;
+
+        for(let i = 0; i < segments; i++) {
+            const progress = i / segments; const inverse = 1 - progress;
+            angle += (Math.random() - 0.5) * curvature * (1+progress); 
+            const currentWidth = Math.max(0.4, baseWidth * inverse);
+            const nx = cx + Math.cos(angle) * segLen; const ny = cy + Math.sin(angle) * segLen;
+
+            ctx.lineWidth = currentWidth;
+            ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(nx, ny); ctx.stroke();
+            svgBuffer += `<line x1="${cx.toFixed(1)}" y1="${cy.toFixed(1)}" x2="${nx.toFixed(1)}" y2="${ny.toFixed(1)}" stroke-width="${currentWidth.toFixed(2)}" />`;
+
+            if (i > 4 && Math.random() < 0.22) {
+                const leafAng = angle + (Math.random() < 0.5 ? 1 : -1) * (Math.PI / 2.5);
+                const s = leafScale * (0.4 + inverse * 0.6) * (0.8 + Math.random()*0.4);
+                const colorVar = Math.random();
+                const thisLeafC = lerpColor(els.leafColor1.value, els.leafColor2.value, colorVar);
+
+                drawLeafCanvas(cx, cy, leafAng, s, thisLeafC);
+                svgBuffer += `</g>`;
+                addLeafSVG(cx, cy, leafAng, s, thisLeafC);
+                svgBuffer += `<g fill="none" stroke="${stemC}" stroke-linecap="round">`;
+            }
+            cx = nx; cy = ny;
+        }
+        svgBuffer += `</g>`;
+    }
+
+    function drawLeafCanvas(x, y, angle, scale, color) {
+        ctx.save(); ctx.translate(x, y); ctx.rotate(angle);
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.quadraticCurveTo(scale*0.8, -scale*1.1, scale * 2.5, 0);
+        ctx.quadraticCurveTo(scale*0.8, scale*1.1, 0, 0);
+        ctx.fill();
+        
+        // Veins
+        ctx.beginPath();
+        ctx.moveTo(0,0); ctx.lineTo(scale*2.2, 0);
+        ctx.strokeStyle = "rgba(0,0,0,0.25)"; ctx.lineWidth = scale * 0.05;
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    function addLeafSVG(x, y, angle, scale, color) {
+        const rot = (px, py, th) => ({ x: px * Math.cos(th) - py * Math.sin(th), y: px * Math.sin(th) + py * Math.cos(th) });
+        const p1 = {x:0, y:0};
+        const cp1 = rot(scale*0.8, -scale*1.1, angle);
+        const p2 = rot(scale * 2.5, 0, angle);
+        const cp2 = rot(scale*0.8, scale*1.1, angle);
+        const veinEnd = rot(scale*2.2, 0, angle);
+        const d = `M ${x+p1.x} ${y+p1.y} Q ${x+cp1.x} ${y+cp1.y} ${x+p2.x} ${y+p2.y} Q ${x+cp2.x} ${y+cp2.y} ${x+p1.x} ${y+p1.y}`;
+        
+        svgBuffer += `<g fill="${color}"><path d="${d}" stroke="none" />`;
+        svgBuffer += `<line x1="${x+p1.x.toFixed(1)}" y1="${y+p1.y.toFixed(1)}" x2="${x+veinEnd.x.toFixed(1)}" y2="${y+veinEnd.y.toFixed(1)}" stroke="rgba(0,0,0,0.25)" stroke-width="${(scale*0.05).toFixed(2)}" stroke-linecap="round"/></g>`;
+    }
+
+    document.getElementById('btnSVG').addEventListener('click', () => {
+        const blob = new Blob([svgBuffer], {type: 'image/svg+xml'});
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a'); link.download = 'organic-vines.svg'; link.href = url; link.click();
+    });
+    
+    // --- PNG DOWNLOAD LOGIC ---
+    document.getElementById('btnPNG').addEventListener('click', () => {
+        const link = document.createElement('a');
+        link.download = 'organic-design.png';
+        // toDataURL exports 32-bit PNG (with alpha channel) by default
+        link.href = canvas.toDataURL('image/png'); 
+        link.click();
+    });
+
+    document.getElementById('btnRegen').addEventListener('click', generate);
+    Object.values(els).forEach(el => el.addEventListener('input', generate));
+    setTimeout(generate, 100); 
+
+</script>
+</body>
+</html>

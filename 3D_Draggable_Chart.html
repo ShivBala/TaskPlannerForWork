@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional 3D Pie Chart (Final)</title>
+    <title>Professional 3D Pie Chart (Movable Title)</title>
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -26,16 +26,30 @@
         }
         #canvas-container:active { cursor: grabbing; }
         
+        /* --- MOVABLE TITLE --- */
         #title-display { 
             position: absolute; 
+            /* Default Position */
             top: 20px; 
             left: 20px; 
+            
             font-size: 28px; 
             font-weight: 700; 
             color: #333; 
-            pointer-events: none; 
-            z-index: 20; 
+            z-index: 30; /* Above labels */
             text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            
+            /* Interaction Styles */
+            cursor: move; 
+            pointer-events: auto;
+            user-select: none;
+            padding: 5px 10px;
+            border: 1px dashed transparent; /* Visual cue when hovering? Optional */
+            transition: border 0.2s;
+        }
+        #title-display:hover {
+            border: 1px dashed rgba(0,0,0,0.1);
+            border-radius: 4px;
         }
 
         #webgl-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
@@ -234,8 +248,9 @@
         const canvas = document.getElementById('webgl-canvas');
         const labelsLayer = document.getElementById('labels-layer');
         const legendElement = document.getElementById('on-canvas-legend');
+        const titleElement = document.getElementById('title-display');
 
-        // --- DEFINITIONS ---
+        // --- THEME DEFINITIONS ---
         const colorThemes = {
             "Corporate Blue": ["#2c3e50", "#3498db", "#ecf0f1", "#bdc3c7", "#2980b9"],
             "Wall Street": ["#003f5c", "#2f4b7c", "#665191", "#a05195", "#d45087"],
@@ -277,7 +292,6 @@
             "Narrow": "'Arial Narrow', sans-serif"
         };
 
-        // Surface Finish Properties
         const finishPresets = {
             "matte":   { shininess: 2, specular: 0x111111, flatShading: false },
             "satin":   { shininess: 20, specular: 0x444444, flatShading: false },
@@ -298,7 +312,7 @@
         let slices = [];
         let labelMap = new Map();
 
-        // Interactions
+        // Interaction Flags
         let isDraggingSlice = false;
         let selectedSlice = null;
         let dragOffset = new THREE.Vector3();
@@ -313,9 +327,12 @@
         let legendDragStart = { x: 0, y: 0 };
         let legendInitialPos = { x: 0, y: 0 };
 
+        let isDraggingTitle = false;
+        let titleDragStart = { x: 0, y: 0 };
+        let titleInitialPos = { left: 0, top: 0 };
+
         // --- INITIALIZATION ---
         function init() {
-            // Dropdowns
             const themeSel = document.getElementById('theme-select');
             Object.keys(colorThemes).forEach(k => {
                 let opt = document.createElement('option');
@@ -362,14 +379,17 @@
             canvas.addEventListener('mousedown', onCanvasMouseDown);
             window.addEventListener('mousemove', onGlobalMouseMove);
             window.addEventListener('mouseup', onGlobalMouseUp);
+            
+            // UI Element Drag Listeners
             legendElement.addEventListener('mousedown', onLegendMouseDown);
+            titleElement.addEventListener('mousedown', onTitleMouseDown);
 
-            applyTheme(); // Initial Load
+            applyTheme(); 
             animate();
         }
 
         function updateTitle() {
-            document.getElementById('title-display').innerText = document.getElementById('title-input').value;
+            titleElement.innerText = document.getElementById('title-input').value;
         }
 
         function applyTheme() {
@@ -383,15 +403,14 @@
         }
 
         function applyFinish() {
-            // Just rebuild since logic is in buildPie loop (safest for flatShading changes)
-            buildPie();
+            buildPie(); // Rebuild to apply material changes
         }
 
         function applyFont() {
             const fontName = document.getElementById('font-select').value;
             const fontFamily = fontThemes[fontName];
             document.body.style.fontFamily = fontFamily;
-            document.getElementById('title-display').style.fontFamily = fontFamily;
+            titleElement.style.fontFamily = fontFamily;
             updateLabels();
         }
 
@@ -442,9 +461,6 @@
         function removeRow(index) {
             if(chartData.length <= 1) return;
             chartData.splice(index, 1);
-            const themeName = document.getElementById('theme-select').value;
-            const palette = colorThemes[themeName];
-            chartData.forEach((item, i) => item.color = palette[i % palette.length]);
             renderTable();
             updateChartFromTable();
         }
@@ -459,6 +475,7 @@
                 const scale = parseFloat(tr.querySelector('.inp-scale').value) || 1;
                 const thick = parseFloat(tr.querySelector('.inp-thick').value) || 5;
                 const color = tr.querySelector('.inp-color').value;
+                
                 const oldItem = chartData[i];
                 const offset = oldItem && oldItem.manualOffset ? oldItem.manualOffset : {x:0, y:0};
                 newData.push({ name, value: val, scale, thickness: thick, color, manualOffset: offset });
@@ -477,9 +494,8 @@
             const total = chartData.reduce((sum, item) => sum + item.value, 0);
             let currentAngle = 0;
             const radius = parseFloat(document.getElementById('radius').value);
-            const GAP = 0.01; // Tighter Gap
+            const GAP = 0.01; // Reduced Gap
 
-            // Get Finish Settings
             const finishKey = document.getElementById('finish-select').value;
             const finishProps = finishPresets[finishKey];
 
@@ -500,8 +516,6 @@
                 };
                 
                 const geometry = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-                
-                // Apply Finish Properties
                 const material = new THREE.MeshPhongMaterial({ 
                     color: item.color, 
                     shininess: finishProps.shininess, 
@@ -545,7 +559,20 @@
             });
         }
 
-        // --- INTERACTION ---
+        // --- INTERACTION MANAGERS ---
+        
+        // 1. Title Drag
+        function onTitleMouseDown(e) {
+            e.stopPropagation(); e.preventDefault();
+            isDraggingTitle = true;
+            titleDragStart = { x: e.clientX, y: e.clientY };
+            const rect = titleElement.getBoundingClientRect();
+            const contRect = container.getBoundingClientRect();
+            titleInitialPos = { left: rect.left - contRect.left, top: rect.top - contRect.top };
+            container.style.cursor = "move";
+        }
+
+        // 2. Legend Drag
         function onLegendMouseDown(e) {
             e.stopPropagation(); e.preventDefault();
             isDraggingLegend = true;
@@ -556,6 +583,7 @@
             container.style.cursor = "move";
         }
 
+        // 3. Label Drag
         function onLabelMouseDown(e, meshUUID) {
             e.stopPropagation(); e.preventDefault();
             isDraggingLabel = true;
@@ -569,6 +597,7 @@
             draggedLabelElement.style.zIndex = 100;
         }
 
+        // 4. Slice Drag (3D)
         function onCanvasMouseDown(event) {
             if(event.button !== 0) return;
             const rect = canvas.getBoundingClientRect();
@@ -591,7 +620,18 @@
             }
         }
 
+        // --- GLOBAL MOVE HANDLER ---
         function onGlobalMouseMove(event) {
+            // Title
+            if(isDraggingTitle) {
+                const dx = event.clientX - titleDragStart.x;
+                const dy = event.clientY - titleDragStart.y;
+                titleElement.style.left = (titleInitialPos.left + dx) + 'px';
+                titleElement.style.top = (titleInitialPos.top + dy) + 'px';
+                return;
+            }
+
+            // Legend
             if(isDraggingLegend) {
                 const dx = event.clientX - legendDragStart.x;
                 const dy = event.clientY - legendDragStart.y;
@@ -602,6 +642,7 @@
                 return;
             }
 
+            // Label
             if(isDraggingLabel && selectedSlice) {
                 const dx = event.clientX - labelDragStart.x;
                 const dy = event.clientY - labelDragStart.y;
@@ -612,6 +653,7 @@
                 return;
             }
 
+            // Slice
             if (isDraggingSlice && selectedSlice) {
                 const rect = canvas.getBoundingClientRect();
                 mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -634,6 +676,7 @@
             isDraggingSlice = false;
             isDraggingLabel = false;
             isDraggingLegend = false;
+            isDraggingTitle = false;
             selectedSlice = null;
             container.style.cursor = "grab";
         }
@@ -661,7 +704,7 @@
                 label.style.color = labelColor;
                 label.style.backgroundColor = getPaleColor(data.color);
 
-                // 1. Anchor: Top-Middle of Outer Rim
+                // Anchor: Top-Middle of Outer Rim
                 const angle = data.angleCenter;
                 const r = data.radius;
                 const geomX = Math.cos(angle) * r;
@@ -676,7 +719,7 @@
                 const anchorX = (screenAnchor.x * .5 + .5) * container.clientWidth;
                 const anchorY = (screenAnchor.y * -.5 + .5) * container.clientHeight;
 
-                // 2. Auto-Placement
+                // Auto-Placement
                 const distFromCenter = mesh.position.length();
                 const sliceDeg = (data.value / totalVal) * 360;
                 const isOutside = sliceDeg < threshold || distFromCenter > 2;
@@ -702,8 +745,7 @@
                 label.style.left = `${finalX}px`;
                 label.style.top = `${finalY}px`;
                 
-                // Bottom-Left Corner Logic handled by CSS origin + translate
-                // We translate Y -100% so the box sits above the point
+                // Translate Y -100% so Bottom-Left sits on the point
                 label.style.transform = `translateY(-100%) scale(${data.scale})`;
                 
                 label.style.opacity = 1;
@@ -731,8 +773,15 @@
 
         // --- EXPORT / IMPORT ---
         function exportToCSV() {
+            const rectTitle = titleElement.getBoundingClientRect();
+            const contRect = container.getBoundingClientRect();
+            const titleX = rectTitle.left - contRect.left;
+            const titleY = rectTitle.top - contRect.top;
+
             const meta = {
                 title: document.getElementById('title-input').value,
+                titleX: titleX,
+                titleY: titleY,
                 theme: document.getElementById('theme-select').value,
                 finish: document.getElementById('finish-select').value,
                 font: document.getElementById('font-select').value,
@@ -771,6 +820,7 @@
                 const lines = text.split('\n');
                 let mode = null;
                 let newData = [];
+                
                 lines.forEach(line => {
                     line = line.trim();
                     if(!line) return;
@@ -783,6 +833,8 @@
                         const key = parts[0];
                         const val = parts[1];
                         if(key === 'title') { document.getElementById('title-input').value = val; updateTitle(); }
+                        if(key === 'titleX') { titleElement.style.left = val + 'px'; }
+                        if(key === 'titleY') { titleElement.style.top = val + 'px'; }
                         if(key === 'theme') document.getElementById('theme-select').value = val;
                         if(key === 'finish') document.getElementById('finish-select').value = val;
                         if(key === 'font') document.getElementById('font-select').value = val;
