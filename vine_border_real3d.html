@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>V32: Stable 3D Studio</title>
+    <title>V34: High Performance 3D</title>
     <style>
         body { margin: 0; background: #e0e0e0; color: #333; font-family: "Segoe UI", sans-serif; display: flex; height: 100vh; overflow: hidden; }
         
-        /* SIDEBAR */
         #sidebar { width: 460px; background: #222; color: #eee; border-right: 1px solid #444; display: flex; flex-direction: column; z-index: 10; box-shadow: 5px 0 20px rgba(0,0,0,0.2); flex-shrink: 0; }
         #fixed-header { background: #2a2a2a; border-bottom: 1px solid #444; display: flex; flex-direction: column; gap: 10px; padding: 15px; flex-shrink: 0; }
         
@@ -57,8 +56,11 @@
         #canvas-wrapper { flex-grow: 1; position: relative; background: #f5f5f5; overflow: auto; display: flex; }
         #three-canvas { display: block; outline: none; box-shadow: 0 0 50px rgba(0,0,0,0.2); background: #fff; margin: 50px; cursor: crosshair; }
         
-        #loading-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #f5f5f5; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; transition: opacity 0.5s; pointer-events: none;}
-        #loading-text { font-size: 1.2rem; font-weight: bold; color: #333; margin-bottom: 10px;}
+        /* LOADING & PROGRESS */
+        #loading-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(245,245,245,0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; transition: opacity 0.3s; backdrop-filter: blur(2px);}
+        #loading-text { font-size: 1rem; font-weight: bold; color: #333; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;}
+        #progress-bar-bg { width: 200px; height: 6px; background: #ddd; border-radius: 3px; overflow: hidden; }
+        #progress-fill { width: 0%; height: 100%; background: #76c76c; transition: width 0.2s; }
         
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
@@ -165,19 +167,21 @@
 
 <div id="canvas-wrapper">
     <div id="loading-screen">
-        <div id="loading-text">Initializing 3D Engine...</div>
+        <div id="loading-text">Initializing...</div>
+        <div id="progress-bar-bg"><div id="progress-fill"></div></div>
     </div>
     <canvas id="three-canvas"></canvas>
 </div>
 
 <script>
-    // --- GLOBAL SCOPE (To fix reference errors) ---
+    // GLOBALS
     let scene, camera, renderer, controls, rootGroup;
     let canvas; 
     let vectorData = [];
-    let gEls = {}; // Defined globally
+    let gEls = {};
     let zones = { TL: true, T: true, TR: true, L: true, R: true, BL: true, B: true, BR: true };
     const zoneAngles = { TL: 3*Math.PI/4, T: Math.PI/2, TR: Math.PI/4, L: Math.PI, R: 0, BL: -3*Math.PI/4, B: -Math.PI/2, BR: -Math.PI/4 };
+    let isGenerating = false;
 
     window.onload = function() {
         window.onerror = function(msg) {
@@ -186,21 +190,22 @@
         };
 
         const defaultLayers = [
-            { vineEnabled: true, len: 220, density: 50, dir: 30, curve: 40, stem1: '#1a261a', stem2: '#2d402d', leafEnabled: true, leafShape: 'plain', leafSize: 30, leaf1: '#1e3c1e', leaf2: '#2d5a2d', flowerEnabled: true, flowerType: 'round', flowerSize: 25, petals: 5, fColor1: '#d65c5c', fColor2: '#8a2b2b', fCenter: '#ffffaa' },
-            { vineEnabled: true, len: 160, density: 70, dir: 50, curve: 50, stem1: '#4a3b2a', stem2: '#5c4d3c', leafEnabled: true, leafShape: 'sawtooth', leafSize: 22, leaf1: '#549145', leaf2: '#78b865', flowerEnabled: true, flowerType: 'pointed', flowerSize: 20, petals: 6, fColor1: '#ffffff', fColor2: '#e0e0e0', fCenter: '#ffaa00' },
-            { vineEnabled: true, len: 100, density: 60, dir: 80, curve: 70, stem1: '#5c4d3c', stem2: '#756452', leafEnabled: true, leafShape: 'wavy', leafSize: 12, leaf1: '#a8e09b', leaf2: '#d4f7cc', flowerEnabled: true, flowerType: 'daisy', flowerSize: 10, petals: 16, fColor1: '#a3c2fa', fColor2: '#dcebff', fCenter: '#ffeebb' }
+            { vineEnabled: true, len: 220, density: 50, dir: 30, splitAng: 45, curve: 40, stem1: '#1a261a', stem2: '#2d402d', leafEnabled: true, leafShape: 'plain', leafSize: 30, leaf1: '#1e3c1e', leaf2: '#2d5a2d', flowerEnabled: true, flowerType: 'round', flowerSize: 25, petals: 5, fColor1: '#d65c5c', fColor2: '#8a2b2b', fCenter: '#ffffaa' },
+            { vineEnabled: true, len: 160, density: 70, dir: 50, splitAng: 60, curve: 50, stem1: '#4a3b2a', stem2: '#5c4d3c', leafEnabled: true, leafShape: 'sawtooth', leafSize: 22, leaf1: '#549145', leaf2: '#78b865', flowerEnabled: true, flowerType: 'pointed', flowerSize: 20, petals: 6, fColor1: '#ffffff', fColor2: '#e0e0e0', fCenter: '#ffaa00' },
+            { vineEnabled: true, len: 100, density: 60, dir: 80, splitAng: 30, curve: 70, stem1: '#5c4d3c', stem2: '#756452', leafEnabled: true, leafShape: 'wavy', leafSize: 12, leaf1: '#a8e09b', leaf2: '#d4f7cc', flowerEnabled: true, flowerType: 'daisy', flowerSize: 10, petals: 16, fColor1: '#a3c2fa', fColor2: '#dcebff', fCenter: '#ffeebb' }
         ];
 
         function injectUI() {
             const createLC = (i, d) => `
-            <details open><summary><span>VINE</span><div class="checkbox-row"><input type="checkbox" id="ve_${i}" ${d.vineEnabled?'checked':''} class="trigger-update"></div></summary><div class="details-content"><div class="control-grid"><div class="control-group"><label>Density</label><input type="range" id="den_${i}" min="10" max="150" value="${d.density}" class="trigger-update"></div><div class="control-group"><label>Length</label><input type="range" id="len_${i}" min="50" max="400" value="${d.len}" class="trigger-update"></div><div class="control-group"><label>Direction</label><input type="range" id="dir_${i}" min="0" max="100" value="${d.dir}" class="trigger-update"></div><div class="control-group"><label>Curvature</label><input type="range" id="cur_${i}" min="0" max="80" value="${d.curve}" class="trigger-update"></div><div class="control-group"><label>Stem Dk</label><input type="color" id="sc1_${i}" value="${d.stem1}" class="trigger-update"></div><div class="control-group"><label>Stem Lt</label><input type="color" id="sc2_${i}" value="${d.stem2}" class="trigger-update"></div></div></div></details>
-            <details><summary><span>FOLIAGE</span><div class="checkbox-row"><input type="checkbox" id="le_${i}" ${d.leafEnabled?'checked':''} class="trigger-update"></div></summary><div class="details-content"><div class="control-grid"><div class="control-group full-width"><label>Shape</label><select id="ls_${i}" class="trigger-update"><option value="plain" ${d.leafShape=='plain'?'selected':''}>Plain</option><option value="wavy" ${d.leafShape=='wavy'?'selected':''}>Wavy</option><option value="sawtooth" ${d.leafShape=='sawtooth'?'selected':''}>Sawtooth</option></select></div><div class="control-group full-width"><label>Size</label><input type="range" id="lfs_${i}" min="5" max="50" value="${d.leafSize}" class="trigger-update"></div><div class="control-group"><label>Color 1</label><input type="color" id="lc1_${i}" value="${d.leaf1}" class="trigger-update"></div><div class="control-group"><label>Color 2</label><input type="color" id="lc2_${i}" value="${d.leaf2}" class="trigger-update"></div></div></div></details>
+            <details open><summary><span>VINE</span><div class="checkbox-row"><input type="checkbox" id="ve_${i}" ${d.vineEnabled?'checked':''} class="trigger-update"></div></summary><div class="details-content"><div class="control-grid"><div class="control-group"><label>Density</label><input type="range" id="den_${i}" min="5" max="100" value="${d.density}" class="trigger-update"></div><div class="control-group"><label>Length</label><input type="range" id="len_${i}" min="50" max="400" value="${d.len}" class="trigger-update"></div><div class="control-group"><label>Direction</label><input type="range" id="dir_${i}" min="0" max="100" value="${d.dir}" class="trigger-update"></div><div class="control-group"><label>Curvature</label><input type="range" id="cur_${i}" min="0" max="80" value="${d.curve}" class="trigger-update"></div>
+            <div class="control-group"><label>Split Angle</label><input type="range" id="sa_${i}" min="10" max="90" value="${d.splitAng}" class="trigger-update"></div>
+            <div class="control-group"><label>Stem Dk</label><input type="color" id="sc1_${i}" value="${d.stem1}" class="trigger-update"></div><div class="control-group"><label>Stem Lt</label><input type="color" id="sc2_${i}" value="${d.stem2}" class="trigger-update"></div></div></div></details>
+            <details><summary><span>FOLIAGE</span><div class="checkbox-row"><input type="checkbox" id="le_${i}" ${d.leafEnabled?'checked':''} class="trigger-update"></div></summary><div class="details-content"><div class="control-grid"><div class="control-group full-width"><label>Shape</label><select id="ls_${i}" class="trigger-update"><option value="plain" ${d.leafShape=='plain'?'selected':''}>Plain</option><option value="wavy" ${d.leafShape=='wavy'?'selected':''}>Wavy</option><option value="sawtooth" ${d.leafShape=='sawtooth'?'selected':''}>Serrated (Rose)</option></select></div><div class="control-group full-width"><label>Size</label><input type="range" id="lfs_${i}" min="5" max="50" value="${d.leafSize}" class="trigger-update"></div><div class="control-group"><label>Color 1</label><input type="color" id="lc1_${i}" value="${d.leaf1}" class="trigger-update"></div><div class="control-group"><label>Color 2</label><input type="color" id="lc2_${i}" value="${d.leaf2}" class="trigger-update"></div></div></div></details>
             <details><summary><span>BLOSSOMS</span><div class="checkbox-row"><input type="checkbox" id="fe_${i}" ${d.flowerEnabled?'checked':''} class="trigger-update"></div></summary><div class="details-content"><div class="control-grid"><div class="control-group full-width"><label>Type</label><select id="ft_${i}" class="trigger-update"><option value="round" ${d.flowerType=='round'?'selected':''}>Hibiscus</option><option value="pointed" ${d.flowerType=='pointed'?'selected':''}>Lily</option><option value="daisy" ${d.flowerType=='daisy'?'selected':''}>Daisy</option></select></div><div class="control-group"><label>Size</label><input type="range" id="fs_${i}" min="5" max="60" value="${d.flowerSize}" class="trigger-update"></div><div class="control-group"><label>Petals</label><input type="range" id="fp_${i}" min="4" max="20" value="${d.petals}" class="trigger-update"></div><div class="control-group"><label>P Color 1</label><input type="color" id="fc1_${i}" value="${d.fColor1}" class="trigger-update"></div><div class="control-group"><label>P Color 2</label><input type="color" id="fc2_${i}" value="${d.fColor2}" class="trigger-update"></div><div class="control-group full-width"><label>Center</label><input type="color" id="fcc_${i}" value="${d.fCenter}" class="trigger-update"></div></div></div></details>`;
             for(let i=0; i<3; i++) document.getElementById(`layer-${i}`).innerHTML = createLC(i, defaultLayers[i]);
         }
         injectUI();
 
-        // Populate Global Elements Object (AFTER UI Injection)
         gEls = { 
             shape: document.getElementById('shapeSelect'), avoid: document.getElementById('avoidCenter'), 
             outer: document.getElementById('outerBound'), spread: document.getElementById('zoneSpread'), 
@@ -211,26 +216,24 @@
             useGlobalLeaf: document.getElementById('useGlobalLeaf'), leafMin: document.getElementById('leafMin'), leafMax: document.getElementById('leafMax')
         };
 
-        // --- HELPERS (Safe Access) ---
         function getVal(id, def) { const el = document.getElementById(id); return el ? el.value : def; }
         function getCheck(id, def) { const el = document.getElementById(id); return el ? el.checked : def; }
 
-        // --- TEXTURES ---
         let barkTexture, leafTexture, petalTexture;
         function generateTextures() {
             const cvs = document.createElement('canvas'); cvs.width=256; cvs.height=256; const ctx=cvs.getContext('2d');
             ctx.fillStyle='#999'; ctx.fillRect(0,0,256,256);
-            for(let i=0;i<100;i++){ ctx.fillStyle=`rgba(50,50,50,${Math.random()*0.2})`; ctx.fillRect(Math.random()*256,0,2,256); }
+            for(let i=0;i<100;i++){ ctx.fillStyle=`rgba(50,50,50,${Math.random()*0.3})`; ctx.fillRect(Math.random()*256,0,2,256); }
             barkTexture=new THREE.CanvasTexture(cvs); barkTexture.wrapS=THREE.RepeatWrapping; barkTexture.wrapT=THREE.RepeatWrapping;
             
             const lcvs=document.createElement('canvas'); lcvs.width=256; lcvs.height=256; const lctx=lcvs.getContext('2d');
-            lctx.fillStyle='#eee'; lctx.fillRect(0,0,256,256);
-            for(let i=0;i<5000;i++){ lctx.fillStyle=`rgba(0,0,0,${Math.random()*0.05})`; lctx.fillRect(Math.random()*256,Math.random()*256,2,2); }
-            lctx.strokeStyle='#aaa'; lctx.lineWidth=8; lctx.beginPath(); lctx.moveTo(0,128); lctx.lineTo(256,128); lctx.stroke();
+            lctx.fillStyle='#fff'; lctx.fillRect(0,0,256,256);
+            lctx.strokeStyle='#000'; lctx.lineWidth=8; lctx.beginPath(); lctx.moveTo(0,128); lctx.lineTo(256,128); lctx.stroke();
+            lctx.lineWidth=4; for(let i=0;i<8;i++) { let x = 40 + i*30; lctx.beginPath(); lctx.moveTo(x, 128); lctx.quadraticCurveTo(x+20, 60, x+40, 10); lctx.stroke(); lctx.beginPath(); lctx.moveTo(x, 128); lctx.quadraticCurveTo(x+20, 190, x+40, 240); lctx.stroke(); }
             leafTexture=new THREE.CanvasTexture(lcvs);
 
             const pcvs=document.createElement('canvas'); pcvs.width=64; pcvs.height=256; const pctx=pcvs.getContext('2d');
-            const grd=pctx.createLinearGradient(0,0,0,256); grd.addColorStop(0,"#fff"); grd.addColorStop(1,"#ccc");
+            const grd=pctx.createLinearGradient(0,0,0,256); grd.addColorStop(0,"#fff"); grd.addColorStop(1,"#bbb");
             pctx.fillStyle=grd; pctx.fillRect(0,0,64,256);
             petalTexture=new THREE.CanvasTexture(pcvs);
         }
@@ -241,50 +244,44 @@
 
             canvas = document.querySelector('#three-canvas');
             renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
-            renderer.setSize(2400, 1600);
+            renderer.setSize(2400, 1800);
             renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             
             scene = new THREE.Scene(); scene.background = new THREE.Color(0xf5f5f5); 
             
-            camera = new THREE.PerspectiveCamera(45, 2400/1600, 1, 5000);
+            camera = new THREE.PerspectiveCamera(45, 2400/1800, 1, 5000);
             camera.position.set(0, 0, 1200);
             
             controls = new THREE.OrbitControls(camera, canvas);
             controls.enableDamping = true; controls.enableZoom = false;
 
             const ambLight = new THREE.AmbientLight(0xffffff, 0.6); scene.add(ambLight);
-            const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.1);
             dirLight.position.set(300, 800, 500); dirLight.castShadow = true;
             dirLight.shadow.mapSize.width=2048; dirLight.shadow.mapSize.height=2048; dirLight.shadow.radius=3; 
             scene.add(dirLight);
 
-            const plane = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), new THREE.ShadowMaterial({ opacity: 0.1 })); 
+            const plane = new THREE.Mesh(new THREE.PlaneGeometry(5000, 5000), new THREE.ShadowMaterial({ opacity: 0.15 })); 
             plane.position.z = -150; plane.receiveShadow = true; scene.add(plane);
 
             rootGroup = new THREE.Group(); scene.add(rootGroup);
 
-            document.getElementById('loading-screen').style.opacity = 0;
-            setTimeout(() => document.getElementById('loading-screen').style.display = 'none', 500);
-            setTimeout(() => { document.getElementById('canvas-wrapper').scrollTo((2400-window.innerWidth)/2, (1600-window.innerHeight)/2); }, 100);
+            setTimeout(() => { document.getElementById('canvas-wrapper').scrollTo((2400-window.innerWidth)/2, (1800-window.innerHeight)/2); }, 100);
 
             animate();
-            generate();
+            requestGenerate();
         }
 
         function getConfig(i) {
             return {
                 vineEn: getCheck(`ve_${i}`, true), density: parseInt(getVal(`den_${i}`, 30)), len: parseInt(getVal(`len_${i}`, 100)), dir: parseInt(getVal(`dir_${i}`, 50)), curve: parseInt(getVal(`cur_${i}`, 50)), stem1: getVal(`sc1_${i}`, '#000'), stem2: getVal(`sc2_${i}`, '#000'),
+                splitAng: parseInt(getVal(`sa_${i}`, 45)),
                 leafEn: getCheck(`le_${i}`, true), leafShape: getVal(`ls_${i}`, 'plain'), leafSize: parseInt(getVal(`lfs_${i}`, 20)), leaf1: getVal(`lc1_${i}`, '#0f0'), leaf2: getVal(`lc2_${i}`, '#0f0'),
                 flowEn: getCheck(`fe_${i}`, true), flowType: getVal(`ft_${i}`, 'round'), flowSize: parseInt(getVal(`fs_${i}`, 20)), petals: parseInt(getVal(`fp_${i}`, 5)), fc1: getVal(`fc1_${i}`, '#f00'), fc2: getVal(`fc2_${i}`, '#f00'), fcc: getVal(`fcc_${i}`, '#ff0')
             };
         }
 
-        // --- HELPER (Safe) ---
-        function getVal(id, def) { const el = document.getElementById(id); return el ? el.value : def; }
-        function getCheck(id, def) { const el = document.getElementById(id); return el ? el.checked : def; }
-
         function lerpColor(a, b, amount) { return new THREE.Color(a).lerp(new THREE.Color(b), amount); }
-        function getPoly(n, w, h) { const v=[]; for(let i=0; i<n; i++) { const t = -Math.PI/2 + (i*2*Math.PI/n); v.push({x: w/2*Math.cos(t), y: h/2*Math.sin(t)}); } return v; }
         function getIntersect(shape, angle) {
             const dx=Math.cos(angle), dy=Math.sin(angle), w2=250, h2=200; 
             if(shape === 'oval') return {x: w2*dx, y: h2*dy, norm: angle};
@@ -294,7 +291,7 @@
                 let n=angle; if(Math.abs(ix-w2)<1)n=0; else if(Math.abs(ix+w2)<1)n=Math.PI; else if(Math.abs(iy-h2)<1)n=Math.PI/2; else if(Math.abs(iy+h2)<1)n=-Math.PI/2;
                 return {x:ix, y:iy, norm:n};
             } else {
-                const sides = shape==='pentagon'?5:6; const verts = getPoly(sides, 500, 400);
+                const sides = shape==='pentagon'?5:6; const startAng = Math.PI/2; const verts=[]; for(let i=0;i<sides;i++){const th=startAng+(i*2*Math.PI/sides);verts.push({x:300*Math.cos(th),y:250*Math.sin(th)});}
                 for(let i=0;i<sides;i++) {
                     const p1=verts[i], p2=verts[(i+1)%sides];
                     const den = (0-dx*1000)*(p1.y-p2.y) - (0-dy*1000)*(p1.x-p2.x);
@@ -313,14 +310,22 @@
             return false;
         }
 
-        // --- GENERATOR ---
-        function generate() {
+        // --- ASYNC GENERATOR ---
+        async function requestGenerate() {
+            if(isGenerating) return;
+            isGenerating = true;
+            document.getElementById('loading-screen').style.display = 'flex';
+            document.getElementById('loading-text').innerText = "GENERATING...";
+            
+            // Wait for UI update
+            await new Promise(r => setTimeout(r, 50));
+            
             if(!rootGroup) return;
             for(let i = rootGroup.children.length - 1; i >= 0; i--) { rootGroup.remove(rootGroup.children[i]); }
             vectorData = []; 
 
             const activeZones = Object.keys(zones).filter(k => zones[k]);
-            if(activeZones.length === 0) return;
+            if(activeZones.length === 0) { isGenerating=false; document.getElementById('loading-screen').style.display = 'none'; return; }
 
             const shape = getVal('shapeSelect', 'rectangle');
             const strict = getCheck('strictZones', false);
@@ -363,7 +368,9 @@
                     svgPts.push({x:cx, y:cy});
 
                     if(generation > 0 && s > 5 && Math.random() < (branchProb * 0.3)) { 
-                        const branchAng = moveAng + (Math.random()<0.5?1:-1)*(Math.PI/3);
+                        // SPLIT ANG
+                        const splitRad = (conf.splitAng || 45) * (Math.PI/180);
+                        const branchAng = moveAng + (Math.random()<0.5?1:-1)*splitRad;
                         growVineRecursive(parentGroup, currPt, branchAng, len*0.5, width*0.6, generation-1, conf);
                         s += 2;
                     }
@@ -378,7 +385,7 @@
                 if(points.length > 1) {
                     const curve = new THREE.CatmullRomCurve3(points);
                     const geo = new THREE.TubeGeometry(curve, Math.floor(points.length/2), width, 6, false); 
-                    const mat = new THREE.MeshStandardMaterial({ color: lerpColor(conf.stem1, conf.stem2, Math.random()), roughness: 0.9, map: barkTexture, bumpMap: barkTexture, bumpScale: 0.2 });
+                    const mat = new THREE.MeshStandardMaterial({ color: lerpColor(conf.stem1, conf.stem2, Math.random()), roughness: 0.9, map: barkTexture, bumpMap: barkTexture, bumpScale: 0.15 });
                     const mesh = new THREE.Mesh(geo, mat);
                     mesh.castShadow = true; mesh.receiveShadow = true;
                     parentGroup.add(mesh);
@@ -391,6 +398,7 @@
                 }
             }
 
+            // MAIN LOOP with AWAIT
             for(let l=0; l<3; l++) {
                 const conf = getConfig(l);
                 if(!conf.vineEn) continue;
@@ -398,6 +406,7 @@
                 layerGroup.position.z = l * 8; 
                 rootGroup.add(layerGroup);
 
+                const batchSize = 2; 
                 for(let i=0; i<conf.density; i++) {
                     const zKey = activeZones[Math.floor(Math.random() * activeZones.length)];
                     const baseAng = zoneAngles[zKey];
@@ -411,18 +420,33 @@
                     let moveAng = ang*(1-mix) + tang*mix;
                     cx += Math.cos(ang)*5; cy += Math.sin(ang)*5;
                     growVineRecursive(layerGroup, new THREE.Vector3(cx, cy, cz), moveAng, conf.len, baseTubeRad, 2, conf);
+                    
+                    // Yield to UI
+                    if(i % batchSize === 0) {
+                        let pct = ((l*conf.density + i) / (3*conf.density)) * 100;
+                        document.getElementById('progress-fill').style.width = pct + "%";
+                        await new Promise(r => setTimeout(r, 0));
+                    }
                 }
             }
+            isGenerating = false;
+            document.getElementById('loading-screen').style.display = 'none';
         }
 
         function createLeaf3D(parent, x, y, z, ang, scale, shape, color) {
             const shape2D = new THREE.Shape();
             shape2D.moveTo(0,0);
             if(shape === 'plain') { shape2D.quadraticCurveTo(scale*0.5, -scale*0.6, scale*1.5, 0); shape2D.quadraticCurveTo(scale*0.5, scale*0.6, 0, 0); } 
-            else if (shape === 'sawtooth') { shape2D.lineTo(scale*0.5, -scale*0.4); shape2D.lineTo(scale*0.8, -scale*0.6); shape2D.lineTo(scale*1.5, 0); shape2D.lineTo(scale*0.8, scale*0.6); shape2D.lineTo(scale*0.5, scale*0.4); shape2D.lineTo(0,0); } 
+            else if (shape === 'sawtooth') { 
+                let cx=0, cy=0;
+                for(let k=0; k<6; k++) { cx+=scale*0.25; cy-=scale*0.1; shape2D.lineTo(cx, cy); cx-=scale*0.05; cy+=scale*0.02; shape2D.lineTo(cx, cy); }
+                shape2D.lineTo(scale*1.5, 0);
+                for(let k=0; k<6; k++) { cx-=scale*0.25; cy+=scale*0.12; shape2D.lineTo(cx, cy); }
+                shape2D.lineTo(0,0);
+            } 
             else { shape2D.bezierCurveTo(scale*0.5, -scale*0.8, scale*1.2, -scale*0.2, scale*1.5, 0); shape2D.bezierCurveTo(scale*1.2, scale*0.2, scale*0.5, scale*0.8, 0, 0); }
             const geo = new THREE.ShapeGeometry(shape2D);
-            const mat = new THREE.MeshStandardMaterial({ color: color, side: THREE.DoubleSide, roughness: 0.9, map: leafTexture, bumpMap: leafTexture, bumpScale: 0.1 });
+            const mat = new THREE.MeshStandardMaterial({ color: color, side: THREE.DoubleSide, roughness: 0.9, map: leafTexture, bumpMap: leafTexture, bumpScale: 0.3 });
             const mesh = new THREE.Mesh(geo, mat);
             mesh.position.set(x, y, z); mesh.rotation.z = ang; mesh.rotation.x = (Math.random()-0.5)*0.5; mesh.rotation.y = (Math.random()-0.5)*0.5;
             mesh.castShadow = true; mesh.receiveShadow = true;
@@ -433,14 +457,20 @@
             const group = new THREE.Group();
             group.position.set(x, y, z); group.rotation.z = ang; group.rotation.x = 0.5; 
             const count = conf.petals; const scale = conf.flowSize * 0.6 * scaleMult; const type = conf.flowType;
+            
             const petalShape = new THREE.Shape(); petalShape.moveTo(0,0);
-            if(type === 'round') { petalShape.quadraticCurveTo(scale*0.5, -scale*0.6, scale, 0); petalShape.quadraticCurveTo(scale*0.5, scale*0.6, 0, 0); } else { petalShape.lineTo(scale*0.8, -scale*0.2); petalShape.lineTo(scale, 0); petalShape.lineTo(scale*0.8, scale*0.2); petalShape.lineTo(0,0); }
+            if(type === 'round') { 
+                petalShape.quadraticCurveTo(scale*0.2, -scale*0.6, scale*0.5, -scale*0.5);
+                petalShape.quadraticCurveTo(scale*0.8, -scale*0.4, scale, 0);
+                petalShape.quadraticCurveTo(scale*0.8, scale*0.4, scale*0.5, scale*0.5);
+                petalShape.quadraticCurveTo(scale*0.2, scale*0.6, 0, 0);
+            } else { petalShape.lineTo(scale*0.8, -scale*0.2); petalShape.lineTo(scale, 0); petalShape.lineTo(scale*0.8, scale*0.2); petalShape.lineTo(0,0); }
             const petalGeo = new THREE.ShapeGeometry(petalShape);
             for(let i=0; i<count; i++) {
                 const rot = (Math.PI*2*i)/count; const col = i%2===0 ? new THREE.Color(conf.fc1) : new THREE.Color(conf.fc2);
                 const mat = new THREE.MeshStandardMaterial({ color: col, side: THREE.DoubleSide, map: petalTexture, roughness: 1.0 });
                 const petal = new THREE.Mesh(petalGeo, mat);
-                petal.rotation.z = rot; petal.rotation.x = type==='round' ? 0.3 : -0.1; petal.castShadow = true;
+                petal.rotation.z = rot; petal.rotation.x = (type==='round' ? 0.3 : -0.1) + Math.sin(i)*0.1; petal.castShadow = true;
                 group.add(petal);
             }
             const centerGeo = new THREE.SphereGeometry(scale*0.25, 8, 8); const centerMat = new THREE.MeshStandardMaterial({ color: conf.fcc }); const center = new THREE.Mesh(centerGeo, centerMat); center.position.z = 1; group.add(center);
@@ -450,12 +480,12 @@
         function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
 
         window.addEventListener('resize', () => { camera.aspect = canvas.clientWidth/canvas.clientHeight; camera.updateProjectionMatrix(); renderer.setSize(canvas.clientWidth, canvas.clientHeight, false); });
-        document.getElementById('btnRegen').addEventListener('click', generate);
-        document.querySelectorAll('.trigger-update').forEach(el => el.addEventListener(el.type==='checkbox'?'change':'input', generate));
-        document.querySelectorAll('.zone-btn').forEach(btn => btn.addEventListener('click', (e) => { zones[e.target.dataset.zone] = !zones[e.target.dataset.zone]; e.target.classList.toggle('active'); generate(); }));
-        Object.values(gEls).forEach(el => { if(el) el.addEventListener(el.type==='checkbox'?'change':'input', generate); });
+        document.getElementById('btnRegen').addEventListener('click', requestGenerate);
+        document.querySelectorAll('.trigger-update').forEach(el => el.addEventListener(el.type==='checkbox'?'change':'input', requestGenerate));
+        document.querySelectorAll('.zone-btn').forEach(btn => btn.addEventListener('click', (e) => { zones[e.target.dataset.zone] = !zones[e.target.dataset.zone]; e.target.classList.toggle('active'); requestGenerate(); }));
+        Object.values(gEls).forEach(el => { if(el) el.addEventListener(el.type==='checkbox'?'change':'input', requestGenerate); });
 
-        document.getElementById('btnPNG').addEventListener('click', () => { renderer.render(scene, camera); const a = document.createElement('a'); a.download = 'botanical_realistic.png'; a.href = canvas.toDataURL('image/png'); a.click(); });
+        document.getElementById('btnPNG').addEventListener('click', () => { renderer.render(scene, camera); const a = document.createElement('a'); a.download = 'botanical_organic.png'; a.href = canvas.toDataURL('image/png'); a.click(); });
         document.getElementById('btnSVG').addEventListener('click', () => {
             let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-600 -500 1200 1000">`; const flipY = -1; 
             for(let item of vectorData) {
@@ -468,7 +498,7 @@
 
         document.getElementById('btnSave').addEventListener('click', () => { const data = { layers: [getConfig(0), getConfig(1), getConfig(2)], global: { shape: gEls.shape.value, avoid: gEls.avoid.checked, spread: gEls.spread.value, limit: gEls.outer.value, strict: gEls.strict.checked, useGl: gEls.useGlobalLeaf.checked, glMin: gEls.leafMin.value, glMax: gEls.leafMax.value, wF: gEls.wallForce.value, cT: gEls.cornerTension ? gEls.cornerTension.value : 30, zDepth: gEls.zDepth.value, tThick: gEls.tubeThick.value, vScale: gEls.viewScale.value, bProb: gEls.branchProb.value, zones: zones } }; const blob = new Blob([JSON.stringify(data)], {type: 'application/json'}); const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='botanical-preset.json'; a.click(); });
         document.getElementById('btnLoad').addEventListener('click', () => document.getElementById('fileInput').click());
-        document.getElementById('fileInput').addEventListener('change', (e) => { const r = new FileReader(); r.onload = (ev) => { const d = JSON.parse(ev.target.result); gEls.shape.value = d.global.shape; gEls.avoid.checked = d.global.avoid; gEls.spread.value = d.global.spread; gEls.outer.value = d.global.limit; gEls.strict.checked = d.global.strict; gEls.useGlobalLeaf.checked = d.global.useGl; gEls.leafMin.value = d.global.glMin; gEls.leafMax.value = d.global.glMax; gEls.wallForce.value = d.global.wF; if(gEls.cornerTension) gEls.cornerTension.value = d.global.cT; gEls.zDepth.value = d.global.zDepth; gEls.tubeThick.value = d.global.tThick; gEls.viewScale.value = d.global.vScale; gEls.branchProb.value = d.global.bProb; zones = d.global.zones; d.layers.forEach((l, i) => { document.getElementById(`ve_${i}`).checked = l.vineEn; document.getElementById(`den_${i}`).value = l.density; document.getElementById(`len_${i}`).value = l.len; document.getElementById(`dir_${i}`).value = l.dir; document.getElementById(`cur_${i}`).value = l.curve; document.getElementById(`sc1_${i}`).value = l.stem1; document.getElementById(`sc2_${i}`).value = l.stem2; document.getElementById(`le_${i}`).checked = l.leafEn; document.getElementById(`ls_${i}`).value = l.leafShape; document.getElementById(`lfs_${i}`).value = l.leafSize; document.getElementById(`lc1_${i}`).value = l.leaf1; document.getElementById(`lc2_${i}`).value = l.leaf2; document.getElementById(`fe_${i}`).checked = l.flowEn; document.getElementById(`ft_${i}`).value = l.flowType; document.getElementById(`fs_${i}`).value = l.flowSize; document.getElementById(`fp_${i}`).value = l.petals; document.getElementById(`fc1_${i}`).value = l.fc1; document.getElementById(`fc2_${i}`).value = l.fc2; document.getElementById(`fcc_${i}`).value = l.fcc; }); document.querySelectorAll('.zone-btn').forEach(b => { if(zones[b.dataset.zone]) b.classList.add('active'); else b.classList.remove('active'); }); generate(); }; r.readAsText(e.target.files[0]); });
+        document.getElementById('fileInput').addEventListener('change', (e) => { const r = new FileReader(); r.onload = (ev) => { const d = JSON.parse(ev.target.result); gEls.shape.value = d.global.shape; gEls.avoid.checked = d.global.avoid; gEls.spread.value = d.global.spread; gEls.outer.value = d.global.limit; gEls.strict.checked = d.global.strict; gEls.useGlobalLeaf.checked = d.global.useGl; gEls.leafMin.value = d.global.glMin; gEls.leafMax.value = d.global.glMax; gEls.wallForce.value = d.global.wF; if(gEls.cornerTension) gEls.cornerTension.value = d.global.cT; gEls.zDepth.value = d.global.zDepth; gEls.tubeThick.value = d.global.tThick; gEls.viewScale.value = d.global.vScale; gEls.branchProb.value = d.global.bProb; zones = d.global.zones; d.layers.forEach((l, i) => { document.getElementById(`ve_${i}`).checked = l.vineEn; document.getElementById(`den_${i}`).value = l.density; document.getElementById(`len_${i}`).value = l.len; document.getElementById(`dir_${i}`).value = l.dir; document.getElementById(`cur_${i}`).value = l.curve; document.getElementById(`sc1_${i}`).value = l.stem1; document.getElementById(`sc2_${i}`).value = l.stem2; document.getElementById(`le_${i}`).checked = l.leafEn; document.getElementById(`ls_${i}`).value = l.leafShape; document.getElementById(`lfs_${i}`).value = l.leafSize; document.getElementById(`lc1_${i}`).value = l.leaf1; document.getElementById(`lc2_${i}`).value = l.leaf2; document.getElementById(`fe_${i}`).checked = l.flowEn; document.getElementById(`ft_${i}`).value = l.flowType; document.getElementById(`fs_${i}`).value = l.flowSize; document.getElementById(`fp_${i}`).value = l.petals; document.getElementById(`fc1_${i}`).value = l.fc1; document.getElementById(`fc2_${i}`).value = l.fc2; document.getElementById(`fcc_${i}`).value = l.fcc; }); document.querySelectorAll('.zone-btn').forEach(b => { if(zones[b.dataset.zone]) b.classList.add('active'); else b.classList.remove('active'); }); requestGenerate(); }; r.readAsText(e.target.files[0]); });
 
         document.getElementById('btnAnim').addEventListener('click', () => { let s=Date.now(); let o=camera.position.clone(); function loop(){ let e=Date.now()-s; if(e>5000){camera.position.copy(o);return;} let a=(e/5000)*Math.PI*2; camera.position.x=o.z*Math.sin(a); camera.position.z=o.z*Math.cos(a); camera.lookAt(0,0,0); requestAnimationFrame(loop); } loop(); });
 
