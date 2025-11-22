@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>V21: Perfected Studio (Scrollable + SVG Fix)</title>
+    <title>V42: Bug Fixed Studio</title>
     <style>
         body { margin: 0; background: #121212; color: #eee; font-family: "Segoe UI", sans-serif; display: flex; height: 100vh; overflow: hidden; }
         
@@ -51,7 +51,7 @@
         #recStatus { font-size: 0.7rem; color: #a83232; text-align: center; display: none; font-weight: bold; animation: blink 1s infinite; margin-top: 5px;}
         @keyframes blink { 50% { opacity: 0; } }
 
-        /* SCROLL AREA FOR CONTROLS */
+        /* SCROLL AREA */
         #scrollable-content { padding: 10px; overflow-y: auto; flex-grow: 1; scrollbar-width: thin; scrollbar-color: #444 #1e1e1e; }
         .tabs { display: flex; background: #151515; padding: 5px; gap: 5px; border-bottom: 1px solid #333; margin-top: 10px; }
         .tab-btn { flex: 1; padding: 8px; background: #252525; border: 1px solid #333; color: #888; cursor: pointer; font-weight: bold; border-radius: 4px; font-size: 0.7rem; }
@@ -62,25 +62,22 @@
         summary { padding: 8px 12px; cursor: pointer; font-size: 0.75rem; font-weight: bold; color: #ddd; background: #2a2a2a; display: flex; justify-content: space-between; align-items: center; }
         .details-content { padding: 10px; border-top: 1px solid #333; background: #222; }
 
-        /* CANVAS AREA (SCROLLABLE) */
-        #canvas-wrapper {
-            flex-grow: 1;
-            overflow: auto; /* Enable scrolling */
-            background-color: #101010;
-            position: relative;
-            display: flex;
-            /* Center the canvas initially, but allow scrolling to edges */
-            align-items: flex-start; 
-            justify-content: flex-start;
+        /* CANVAS */
+        #canvas-wrapper { 
+            flex-grow: 1; 
+            display: block; 
+            overflow: auto; 
+            background-color: #101010; 
+            position: relative; 
         }
-        
         canvas { 
-            background-color: #181818;
+            background-color: #181818; 
             background-image: linear-gradient(#222 1px, transparent 1px), linear-gradient(90deg, #222 1px, transparent 1px); 
             background-size: 40px 40px; 
             box-shadow: 0 0 50px rgba(0,0,0,0.5); 
-            margin: 50px; /* Breathing room for scroll */
+            margin: 100px; /* Large margin */
             cursor: crosshair; 
+            transform-origin: top left; 
         }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
@@ -99,7 +96,11 @@
                         <option value="hexagon">Hexagon</option>
                     </select>
                 </div>
-                
+                <div class="control-group"><label>Render Scale (Resolution)</label>
+                    <input type="range" id="outputScale" min="1.0" max="4.0" step="0.5" value="1.0">
+                    <div style="font-size: 0.6rem; color: #666; text-align: right;">Higher = Massive PNG</div>
+                </div>
+
                 <div class="global-panel">
                     <div class="gp-header" onclick="toggleGP(this)">LEAF VARIATION (GLOBAL) <span>▼</span></div>
                     <div class="gp-content">
@@ -113,7 +114,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="global-panel">
                     <div class="gp-header" onclick="toggleGP(this)">GARDENER PHYSICS <span>▼</span></div>
                     <div class="gp-content">
@@ -127,7 +127,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div class="global-panel">
                     <div class="gp-header" onclick="toggleGP(this)">3D & SHADOWS <span>▼</span></div>
                     <div class="gp-content">
@@ -142,7 +141,6 @@
                     </div>
                 </div>
             </div>
-
             <div class="col-right">
                 <label>Zones</label>
                 <div class="zone-grid">
@@ -160,7 +158,6 @@
                 <div class="control-group" style="width:100%;"><label>Spread</label><input type="range" id="zoneSpread" min="0" max="60" value="15"></div>
             </div>
         </div>
-
         <div class="action-panel">
             <div class="btn-row">
                 <button id="btnRegen" class="action-btn btn-gen">Regenerate</button>
@@ -194,15 +191,15 @@
 </div>
 
 <div id="canvas-wrapper">
-    <canvas id="artCanvas" width="2400" height="1800"></canvas>
+    <canvas id="artCanvas"></canvas>
 </div>
 
 <script>
-    // --- DEFAULTS ---
+    // DEFAULTS
     const defaultLayers = [
-        { vineEnabled: true, len: 220, density: 50, dir: 30, curve: 40, stem1: '#1a261a', stem2: '#2d402d', leafEnabled: true, leafShape: 'plain', leafSize: 30, leaf1: '#1e3c1e', leaf2: '#2d5a2d', flowerEnabled: true, flowerType: 'round', flowerSize: 25, petals: 5, fColor1: '#d65c5c', fColor2: '#8a2b2b', fCenter: '#ffffaa' },
-        { vineEnabled: true, len: 160, density: 70, dir: 50, curve: 50, stem1: '#4a3b2a', stem2: '#5c4d3c', leafEnabled: true, leafShape: 'sawtooth', leafSize: 22, leaf1: '#549145', leaf2: '#78b865', flowerEnabled: true, flowerType: 'pointed', flowerSize: 20, petals: 6, fColor1: '#ffffff', fColor2: '#e0e0e0', fCenter: '#ffaa00' },
-        { vineEnabled: true, len: 100, density: 60, dir: 80, curve: 70, stem1: '#5c4d3c', stem2: '#756452', leafEnabled: true, leafShape: 'wavy', leafSize: 12, leaf1: '#a8e09b', leaf2: '#d4f7cc', flowerEnabled: true, flowerType: 'daisy', flowerSize: 10, petals: 16, fColor1: '#a3c2fa', fColor2: '#dcebff', fCenter: '#ffeebb' }
+        { vineEnabled: true, density: 50, len: 220, dir: 30, branchProb: 30, angleMin: 30, angleMax: 60, curve: 40, stem1: '#1a261a', stem2: '#2d402d', leafEnabled: true, leafShape: 'plain', leafSize: 30, leafDensity: 20, leaf1: '#1e3c1e', leaf2: '#2d5a2d', flowerEnabled: true, flowerType: 'round', flowerSize: 25, flowerDensity: 100, petals: 5, fColor1: '#d65c5c', fColor2: '#8a2b2b', fCenter: '#ffffaa' },
+        { vineEnabled: true, density: 70, len: 160, dir: 50, branchProb: 50, angleMin: 20, angleMax: 50, curve: 50, stem1: '#4a3b2a', stem2: '#5c4d3c', leafEnabled: true, leafShape: 'maple', leafSize: 22, leafDensity: 30, leaf1: '#549145', leaf2: '#78b865', flowerEnabled: true, flowerType: 'pointed', flowerSize: 20, flowerDensity: 80, petals: 6, fColor1: '#ffffff', fColor2: '#e0e0e0', fCenter: '#ffaa00' },
+        { vineEnabled: true, density: 60, len: 100, dir: 80, branchProb: 20, angleMin: 45, angleMax: 90, curve: 70, stem1: '#5c4d3c', stem2: '#756452', leafEnabled: true, leafShape: 'fern', leafSize: 12, leafDensity: 40, leaf1: '#a8e09b', leaf2: '#d4f7cc', flowerEnabled: true, flowerType: 'daisy', flowerSize: 10, flowerDensity: 50, petals: 16, fColor1: '#a3c2fa', fColor2: '#dcebff', fCenter: '#ffeebb' }
     ];
 
     function createLayerControls(i) {
@@ -211,19 +208,32 @@
         <details open><summary><span>VINE STRUCTURE</span><div class="checkbox-row"><input type="checkbox" id="ve_${i}" ${d.vineEnabled?'checked':''} onclick="event.stopPropagation(); update()"></div></summary>
             <div class="details-content">
                 <div class="control-grid">
-                    <div class="control-group"><label>Density</label><input type="range" id="den_${i}" min="10" max="150" value="${d.density}" oninput="update()"></div>
+                    <div class="control-group"><label>Density</label><input type="range" id="den_${i}" min="5" max="150" value="${d.density}" oninput="update()"></div>
                     <div class="control-group"><label>Length</label><input type="range" id="len_${i}" min="50" max="400" value="${d.len}" oninput="update()"></div>
                     <div class="control-group"><label>Direction</label><input type="range" id="dir_${i}" min="0" max="100" value="${d.dir}" oninput="update()"></div>
+                    <div class="control-group"><label>Branching %</label><input type="range" id="br_${i}" min="0" max="100" value="${d.branchProb}" oninput="update()"></div>
+                    <div class="control-group"><label>Min Angle</label><input type="range" id="angMin_${i}" min="10" max="90" value="${d.angleMin}" oninput="update()"></div>
+                    <div class="control-group"><label>Max Angle</label><input type="range" id="angMax_${i}" min="10" max="90" value="${d.angleMax}" oninput="update()"></div>
                     <div class="control-group"><label>Curvature</label><input type="range" id="cur_${i}" min="0" max="80" value="${d.curve}" oninput="update()"></div>
-                    <div class="control-group"><label>Stem Dk</label><input type="color" id="sc1_${i}" value="${d.stem1}" oninput="update()"></div>
-                    <div class="control-group"><label>Stem Lt</label><input type="color" id="sc2_${i}" value="${d.stem2}" oninput="update()"></div>
+                </div>
+                <div class="control-grid">
+                    <div class="control-group"><label>Stem Color From</label><input type="color" id="sc1_${i}" value="${d.stem1}" oninput="update()"></div>
+                    <div class="control-group"><label>Stem Color To</label><input type="color" id="sc2_${i}" value="${d.stem2}" oninput="update()"></div>
                 </div>
             </div></details>
         <details><summary><span>FOLIAGE</span><div class="checkbox-row"><input type="checkbox" id="le_${i}" ${d.leafEnabled?'checked':''} onclick="event.stopPropagation(); update()"></div></summary>
             <div class="details-content">
                 <div class="control-grid">
-                    <div class="control-group full-width"><label>Shape</label><select id="ls_${i}" onchange="update()"><option value="plain" ${d.leafShape=='plain'?'selected':''}>Plain</option><option value="wavy" ${d.leafShape=='wavy'?'selected':''}>Wavy</option><option value="sawtooth" ${d.leafShape=='sawtooth'?'selected':''}>Sawtooth</option></select></div>
-                    <div class="control-group full-width"><label>Size (Layer)</label><input type="range" id="lfs_${i}" min="5" max="50" value="${d.leafSize}" oninput="update()"></div>
+                    <div class="control-group full-width"><label>Shape</label><select id="ls_${i}" onchange="update()">
+                        <option value="plain" ${d.leafShape=='plain'?'selected':''}>Plain</option>
+                        <option value="wavy" ${d.leafShape=='wavy'?'selected':''}>Wavy</option>
+                        <option value="sawtooth" ${d.leafShape=='sawtooth'?'selected':''}>Sawtooth</option>
+                        <option value="maple" ${d.leafShape=='maple'?'selected':''}>Maple</option>
+                        <option value="oak" ${d.leafShape=='oak'?'selected':''}>Oak</option>
+                        <option value="fern" ${d.leafShape=='fern'?'selected':''}>Fern</option>
+                    </select></div>
+                    <div class="control-group"><label>Density</label><input type="range" id="lden_${i}" min="0" max="100" value="${d.leafDensity}" oninput="update()"></div>
+                    <div class="control-group"><label>Size (Layer)</label><input type="range" id="lfs_${i}" min="5" max="50" value="${d.leafSize}" oninput="update()"></div>
                     <div class="control-group"><label>Color 1</label><input type="color" id="lc1_${i}" value="${d.leaf1}" oninput="update()"></div>
                     <div class="control-group"><label>Color 2</label><input type="color" id="lc2_${i}" value="${d.leaf2}" oninput="update()"></div>
                 </div>
@@ -231,11 +241,18 @@
         <details><summary><span>BLOSSOMS</span><div class="checkbox-row"><input type="checkbox" id="fe_${i}" ${d.flowerEnabled?'checked':''} onclick="event.stopPropagation(); update()"></div></summary>
             <div class="details-content">
                 <div class="control-grid">
-                    <div class="control-group full-width"><label>Type</label><select id="ft_${i}" onchange="update()"><option value="round" ${d.flowerType=='round'?'selected':''}>Hibiscus</option><option value="pointed" ${d.flowerType=='pointed'?'selected':''}>Lily</option><option value="daisy" ${d.flowerType=='daisy'?'selected':''}>Daisy</option></select></div>
+                    <div class="control-group full-width"><label>Type</label><select id="ft_${i}" onchange="update()">
+                        <option value="round" ${d.flowerType=='round'?'selected':''}>Hibiscus</option>
+                        <option value="pointed" ${d.flowerType=='pointed'?'selected':''}>Lily</option>
+                        <option value="daisy" ${d.flowerType=='daisy'?'selected':''}>Daisy</option>
+                        <option value="rose" ${d.flowerType=='rose'?'selected':''}>Rose (Spiral)</option>
+                        <option value="sakura" ${d.flowerType=='sakura'?'selected':''}>Sakura (Notched)</option>
+                    </select></div>
+                    <div class="control-group"><label>Density</label><input type="range" id="fden_${i}" min="0" max="100" value="${d.flowerDensity}" oninput="update()"></div>
                     <div class="control-group"><label>Size</label><input type="range" id="fs_${i}" min="5" max="60" value="${d.flowerSize}" oninput="update()"></div>
-                    <div class="control-group"><label>Petals</label><input type="range" id="fp_${i}" min="4" max="20" value="${d.petals}" oninput="update()"></div>
-                    <div class="control-group"><label>P Color 1</label><input type="color" id="fc1_${i}" value="${d.fColor1}" oninput="update()"></div>
-                    <div class="control-group"><label>P Color 2</label><input type="color" id="fc2_${i}" value="${d.fColor2}" oninput="update()"></div>
+                    <div class="control-group full-width"><label>Petals</label><input type="range" id="fp_${i}" min="4" max="20" value="${d.petals}" oninput="update()"></div>
+                    <div class="control-group"><label>Color 1</label><input type="color" id="fc1_${i}" value="${d.fColor1}" oninput="update()"></div>
+                    <div class="control-group"><label>Color 2</label><input type="color" id="fc2_${i}" value="${d.fColor2}" oninput="update()"></div>
                     <div class="control-group full-width"><label>Center</label><input type="color" id="fcc_${i}" value="${d.fCenter}" oninput="update()"></div>
                 </div>
             </div></details>`;
@@ -245,15 +262,16 @@
     // --- GLOBALS ---
     const canvas = document.getElementById('artCanvas');
     const ctx = canvas.getContext('2d');
-    let isDragging = false, startPos = {x:0, y:0}, currentBounds = {x: 950, y: 650, w: 500, h: 400}; // Center of 2400x1800
-    
+    let svgBuffer = "";
+    let isDragging = false, startPos = {x:0, y:0}, currentBounds = {x: 950, y: 650, w: 500, h: 400}; 
     const gEls = { 
         shape: document.getElementById('shapeSelect'), avoid: document.getElementById('avoidCenter'), 
         outer: document.getElementById('outerBound'), spread: document.getElementById('zoneSpread'), 
         strict: document.getElementById('strictZones'), is3D: document.getElementById('enable3D'),
         useGlobalLeaf: document.getElementById('useGlobalLeaf'), leafMin: document.getElementById('leafMin'), leafMax: document.getElementById('leafMax'),
         wallForce: document.getElementById('wallForce'), cornerTension: document.getElementById('cornerTension'),
-        shadowOp: document.getElementById('shadowOp'), shadowOff: document.getElementById('shadowOff')
+        shadowOp: document.getElementById('shadowOp'), shadowOff: document.getElementById('shadowOff'),
+        outputScale: document.getElementById('outputScale')
     };
     
     let zones = { TL: true, T: true, TR: true, L: true, R: true, BL: true, B: true, BR: true };
@@ -261,27 +279,31 @@
 
     let renderQueue = [];
     let isAnimating = false;
-    let mediaRecorder;
-    let chunks = [];
+    let mediaRecorder, chunks = [];
 
     function toggleZone(btn) { zones[btn.dataset.zone] = !zones[btn.dataset.zone]; btn.classList.toggle('active'); prepareRender(false); }
     function toggleGP(header) { header.nextElementSibling.classList.toggle('open'); }
-    function switchTab(idx) {
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-        document.getElementById(`layer-${idx}`).classList.add('active');
-        document.querySelectorAll('.tab-btn')[idx].classList.add('active');
-    }
+    function switchTab(idx) { document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active')); document.getElementById(`layer-${idx}`).classList.add('active'); document.querySelectorAll('.tab-btn')[idx].classList.add('active'); }
+    
     function getConfig(i) { return {
-        vineEn: document.getElementById(`ve_${i}`).checked, density: parseInt(document.getElementById(`den_${i}`).value), len: parseInt(document.getElementById(`len_${i}`).value), dir: parseInt(document.getElementById(`dir_${i}`).value), curve: parseInt(document.getElementById(`cur_${i}`).value), stem1: document.getElementById(`sc1_${i}`).value, stem2: document.getElementById(`sc2_${i}`).value,
-        leafEn: document.getElementById(`le_${i}`).checked, leafShape: document.getElementById(`ls_${i}`).value, leafSize: parseInt(document.getElementById(`lfs_${i}`).value), leaf1: document.getElementById(`lc1_${i}`).value, leaf2: document.getElementById(`lc2_${i}`).value,
-        flowEn: document.getElementById(`fe_${i}`).checked, flowType: document.getElementById(`ft_${i}`).value, flowSize: parseInt(document.getElementById(`fs_${i}`).value), petals: parseInt(document.getElementById(`fp_${i}`).value), fc1: document.getElementById(`fc1_${i}`).value, fc2: document.getElementById(`fc2_${i}`).value, fcc: document.getElementById(`fcc_${i}`).value
+        vineEn: document.getElementById(`ve_${i}`).checked, density: parseInt(document.getElementById(`den_${i}`).value), len: parseInt(document.getElementById(`len_${i}`).value), dir: parseInt(document.getElementById(`dir_${i}`).value), curve: parseInt(document.getElementById(`cur_${i}`).value), branchProb: parseInt(document.getElementById(`br_${i}`).value), stem1: document.getElementById(`sc1_${i}`).value, stem2: document.getElementById(`sc2_${i}`).value,
+        angMin: parseInt(document.getElementById(`angMin_${i}`).value), angMax: parseInt(document.getElementById(`angMax_${i}`).value),
+        leafEn: document.getElementById(`le_${i}`).checked, leafDensity: parseInt(document.getElementById(`lden_${i}`).value), leafShape: document.getElementById(`ls_${i}`).value, leafSize: parseInt(document.getElementById(`lfs_${i}`).value), leaf1: document.getElementById(`lc1_${i}`).value, leaf2: document.getElementById(`lc2_${i}`).value,
+        flowEn: document.getElementById(`fe_${i}`).checked, flowDensity: parseInt(document.getElementById(`fden_${i}`).value), flowType: document.getElementById(`ft_${i}`).value, flowSize: parseInt(document.getElementById(`fs_${i}`).value), petals: parseInt(document.getElementById(`fp_${i}`).value), fc1: document.getElementById(`fc1_${i}`).value, fc2: document.getElementById(`fc2_${i}`).value, fcc: document.getElementById(`fcc_${i}`).value
     };}
+
+    function centerView() {
+        const wrapper = document.getElementById('canvas-wrapper');
+        if(canvas && wrapper) {
+            wrapper.scrollLeft = (canvas.width - wrapper.clientWidth) / 2;
+            wrapper.scrollTop = (canvas.height - wrapper.clientHeight) / 2;
+        }
+    }
 
     function update() { prepareRender(false); }
     Object.values(gEls).forEach(el => el.addEventListener(el.type==='checkbox'?'change':'input', update));
+    gEls.outputScale.addEventListener('change', () => { prepareRender(false); centerView(); });
 
-    // --- MATH ---
     function lerpColor(a, b, amount) { const ar=parseInt(a.substring(1,3),16), ag=parseInt(a.substring(3,5),16), ab=parseInt(a.substring(5,7),16); const br=parseInt(b.substring(1,3),16), bg=parseInt(b.substring(3,5),16), bb=parseInt(b.substring(5,7),16); return '#'+((1<<24)+(Math.round(ar+amount*(br-ar))<<16)+(Math.round(ag+amount*(bg-ag))<<8)+Math.round(ab+amount*(bb-ab))).toString(16).slice(1); }
     function shadeColor(color, percent) { let R = parseInt(color.substring(1,3),16); let G = parseInt(color.substring(3,5),16); let B = parseInt(color.substring(5,7),16); R = parseInt(R * (100 + percent) / 100); G = parseInt(G * (100 + percent) / 100); B = parseInt(B * (100 + percent) / 100); R = (R<255)?R:255; G = (G<255)?G:255; B = (B<255)?B:255; return "#"+((1<<24)+(R<<16)+(G<<8)+B).toString(16).slice(1); }
     function getPoly(n, cx, cy, rx, ry) { const v = []; for(let i=0; i<n; i++) { const t = -Math.PI/2 + (i*2*Math.PI/n); v.push({x: cx+rx*Math.cos(t), y: cy+ry*Math.sin(t)}); } return v; }
@@ -294,12 +316,63 @@
         if(isAnimating) return;
         renderQueue = [];
         
+        const scale = parseFloat(gEls.outputScale.value);
+        canvas.width = 2400 * scale;
+        canvas.height = 1800 * scale;
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        ctx.scale(scale, scale);
+
         const shape = gEls.shape.value; const avoidIn = gEls.avoid.checked; const limitOut = parseInt(gEls.outer.value); const spreadDeg = parseInt(gEls.spread.value); const spreadRad = spreadDeg * (Math.PI/180); const strict = gEls.strict.checked; const activeZones = Object.keys(zones).filter(k => zones[k]);
         if(activeZones.length === 0) { ctx.clearRect(0,0,canvas.width,canvas.height); return; }
 
         const useGl = gEls.useGlobalLeaf.checked; const glMin = parseInt(gEls.leafMin.value); const glMax = parseInt(gEls.leafMax.value);
         const wallForce = parseInt(gEls.wallForce.value) / 100; const cornerTension = parseInt(gEls.cornerTension.value) / 100;
         const is3D = gEls.is3D.checked;
+
+        function growVineRecursive(x, y, angle, len, conf, generation) {
+            if(generation < 0) return;
+            const segments = Math.floor(len / 4);
+            let cx = x, cy = y, vAng = angle;
+            const width = Math.max(0.5, (1.5 + Math.random()*2.5) * (0.7 + 0.3*generation)); 
+            
+            for(let s=0; s<segments; s++) {
+                const prog = s/segments;
+                vAng += (Math.random()-0.5) * (conf.curve*0.01);
+                const tx = cx + Math.cos(vAng)*8, ty = cy + Math.sin(vAng)*8;
+                const center = {x: currentBounds.x+currentBounds.w/2, y: currentBounds.y+currentBounds.h/2};
+
+                if(avoidIn && isInsideInner(tx, ty, shape, currentBounds)) { const afc = Math.atan2(ty-center.y, tx-center.x); vAng += Math.atan2(Math.sin(afc-vAng), Math.cos(afc-vAng)) * (0.1 + wallForce*0.5); if (wallForce > 0.5) vAng += (Math.random()-0.5)*cornerTension; }
+                if(Math.hypot(tx-center.x, ty-center.y) > (Math.max(currentBounds.w, currentBounds.h)/2 + limitOut)) { const atc = Math.atan2(center.y-ty, center.x-tx); vAng += Math.atan2(Math.sin(atc-vAng), Math.cos(atc-vAng)) * 0.3; }
+                if(strict && !isPointInAllowedZone(tx, ty, currentBounds, activeZones)) break; 
+
+                const cw = Math.max(0.4, width*(1-prog));
+                const nx = cx + Math.cos(vAng)*4, ny = cy + Math.sin(vAng)*4;
+                
+                renderQueue.push({ type: 'stem', x1: cx, y1: cy, x2: nx, y2: ny, w: cw, c: conf.stem1, is3D: is3D, step: s + (2-generation)*100 });
+
+                if(generation > 0 && s > 5 && Math.random() < (conf.branchProb / 100 * 0.2)) {
+                    const splitRad = (conf.angMin + Math.random()*(conf.angMax - conf.angMin)) * (Math.PI/180);
+                    const branchAng = vAng + (Math.random()<0.5?1:-1)*splitRad;
+                    growVineRecursive(cx, cy, branchAng, len*0.5, conf, generation-1);
+                    s += 2;
+                }
+
+                if(conf.leafEn && s>4 && Math.random() < (conf.leafDensity/100 * 0.4)) {
+                    const lang = vAng + (Math.random()<0.5?1:-1)*(Math.PI/2.5);
+                    let lsz = useGl ? (glMin + Math.random()*(glMax-glMin)) : (conf.leafSize * (0.4+(1-prog)*0.6));
+                    lsz *= (0.6 + 0.4*generation/2);
+                    const lc = lerpColor(conf.leaf1, conf.leaf2, Math.random());
+                    const distTip = Math.hypot((cx + Math.cos(lang)*lsz)-center.x, (cy + Math.sin(lang)*lsz)-center.y);
+                    const distStem = Math.hypot(cx-center.x, cy-center.y);
+                    if(avoidIn && distTip < distStem && wallForce > 0.3) lsz *= 0.4;
+                    renderQueue.push({ type: 'leaf', x: cx, y: cy, ang: lang, sz: lsz, shape: conf.leafShape, c: lc, is3D: is3D, step: s + (2-generation)*100 });
+                }
+                cx = nx; cy = ny;
+            }
+            if(conf.flowEn && Math.random() < (conf.flowDensity/100)) {
+                renderQueue.push({ type: 'flower', x: cx, y: cy, ang: vAng, conf: conf, is3D: is3D, step: segments + (2-generation)*100 });
+            }
+        }
 
         for(let layerIdx = 0; layerIdx < 3; layerIdx++) {
             const conf = getConfig(layerIdx);
@@ -319,63 +392,22 @@
                 const sAng = (nAng*(1-mix)) + (tAng*mix);
                 sx += Math.cos(nAng)*2; sy += Math.sin(nAng)*2;
 
-                let vcX = sx, vcY = sy, vAng = sAng;
-                const len = conf.len * (0.6 + Math.random()*0.8);
-                const segs = Math.floor(len/4);
-                const bw = 1.5 + Math.random()*2.5;
-                const stemC = lerpColor(conf.stem1, conf.stem2, Math.random());
-                let cutEarly = false;
+                const sCol = lerpColor(conf.stem1, conf.stem2, Math.random());
+                const instConf = {...conf, stem1: sCol}; 
 
-                for(let s=0; s<segs; s++) {
-                    const prog = s/segs;
-                    vAng += (Math.random()-0.5) * (conf.curve*0.01);
-                    const tx = vcX + Math.cos(vAng)*8, ty = vcY + Math.sin(vAng)*8;
-                    const center = {x: currentBounds.x+currentBounds.w/2, y: currentBounds.y+currentBounds.h/2};
-
-                    if(avoidIn) {
-                        if(isInsideInner(tx, ty, shape, currentBounds)) {
-                            const afc = Math.atan2(ty-center.y, tx-center.x);
-                            vAng += Math.atan2(Math.sin(afc-vAng), Math.cos(afc-vAng)) * (0.1 + wallForce*0.5);
-                            if (wallForce > 0.5) vAng += (Math.random()-0.5)*cornerTension; 
-                        }
-                    }
-                    if(Math.hypot(tx-center.x, ty-center.y) > (Math.max(currentBounds.w, currentBounds.h)/2 + limitOut)) { 
-                        const atc = Math.atan2(center.y-ty, center.x-tx);
-                        vAng += Math.atan2(Math.sin(atc-vAng), Math.cos(atc-vAng)) * 0.3; 
-                    }
-                    if(strict && !isPointInAllowedZone(tx, ty, currentBounds, activeZones)) { cutEarly = true; break; }
-
-                    const cw = Math.max(0.4, bw*(1-prog));
-                    const nx = vcX + Math.cos(vAng)*4, ny = vcY + Math.sin(vAng)*4;
-                    
-                    renderQueue.push({ type: 'stem', x1: vcX, y1: vcY, x2: nx, y2: ny, w: cw, c: stemC, is3D: is3D, step: s });
-
-                    if(conf.leafEn && s>4 && Math.random()<0.2) {
-                        const lang = vAng + (Math.random()<0.5?1:-1)*(Math.PI/2.5);
-                        let lsz = useGl ? (glMin + Math.random()*(glMax-glMin)) : (conf.leafSize * (0.4+(1-prog)*0.6));
-                        const lc = lerpColor(conf.leaf1, conf.leaf2, Math.random());
-                        const distTip = Math.hypot((vcX + Math.cos(lang)*lsz)-center.x, (vcY + Math.sin(lang)*lsz)-center.y);
-                        const distStem = Math.hypot(vcX-center.x, vcY-center.y);
-                        if(avoidIn && distTip < distStem && wallForce > 0.3) lsz *= 0.4;
-
-                        renderQueue.push({ type: 'leaf', x: vcX, y: vcY, ang: lang, sz: lsz, shape: conf.leafShape, c: lc, is3D: is3D, step: s });
-                    }
-                    vcX = nx; vcY = ny;
-                }
-                if(conf.flowEn && !cutEarly) renderQueue.push({ type: 'flower', x: vcX, y: vcY, ang: vAng, conf: conf, is3D: is3D, step: segs });
+                growVineRecursive(sx, sy, sAng, conf.len, instConf, 2);
             }
         }
         
         if(isAnimation) { renderQueue.sort((a, b) => a.step - b.step); animate(); } else { drawImmediate(); }
     }
 
-    // --- CANVAS DRAWING ---
     function drawItem(item) {
         if(item.type === 'stem') drawStem(item.x1, item.y1, item.x2, item.y2, item.w, item.c, item.is3D);
         else if (item.type === 'leaf') drawLeaf(item.x, item.y, item.ang, item.sz, item.shape, item.c, item.is3D);
         else if (item.type === 'flower') drawFlower(item.x, item.y, item.ang, item.conf, item.is3D);
     }
-    function drawImmediate() { ctx.clearRect(0, 0, canvas.width, canvas.height); for(let item of renderQueue) drawItem(item); }
+    function drawImmediate() { ctx.clearRect(0, 0, canvas.width/gEls.outputScale.value, canvas.height/gEls.outputScale.value); for(let item of renderQueue) drawItem(item); }
 
     function drawStem(x1, y1, x2, y2, w, c, is3D) {
         const sOp = parseInt(gEls.shadowOp.value)/100; const sOff = parseInt(gEls.shadowOff.value);
@@ -385,25 +417,64 @@
         } else { ctx.strokeStyle = c; }
         ctx.lineWidth = w; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
     }
-    function drawLeaf(x, y, ang, sz, type, color, is3D) {
+    function getLeafPoints(type, sz) {
         const pts = []; const stp=10;
+        if(type==='maple') { for(let t=0; t<=1; t+=1/stp) { let w = Math.sin(t*Math.PI); let lobe = Math.abs(Math.sin(t*Math.PI*3)); pts.push({x:t*sz*3, y:-w*sz*(0.5 + 0.5*lobe)}); } let rPts = []; for(let p of pts) rPts.push({x:p.x, y:-p.y}); return {top:pts, bot:rPts.reverse()}; }
+        if(type==='oak') { for(let t=0; t<=1; t+=1/stp) { let bx = t*sz*2.5; let by = -Math.sin(t*Math.PI)*sz*0.5 - Math.abs(Math.sin(t*Math.PI*4))*sz*0.2; pts.push({x:bx, y:by}); } let rPts = []; for(let p of pts) rPts.push({x:p.x, y:-p.y}); return {top:pts, bot:rPts.reverse()}; }
+        if(type==='fern') { for(let t=0; t<=1; t+=1/stp) pts.push({x:t*sz*3, y:-sz*0.5*(1-t)}); let rPts = []; for(let p of pts) rPts.push({x:p.x, y:-p.y}); return {top:pts, bot:rPts.reverse()}; }
         for(let t=0; t<=1; t+=1/stp) { let bx = 2*(1-t)*t*(sz*0.8) + t*t*(sz*2.5); let by = 2*(1-t)*t*(-sz*0.6); if(type=='sawtooth') by += (Math.abs(((t*12)%2)-1)-0.5)*(sz*0.2); else if(type=='wavy') by += Math.sin(t*10)*(sz*0.15); pts.push({x:bx, y:by}); }
-        for(let t=0; t<=1; t+=1/stp) { let bx = (1-t)*(1-t)*(sz*2.5) + 2*(1-t)*t*(sz*0.8); let by = 2*(1-t)*t*(sz*0.6); if(type=='sawtooth') by += (Math.abs(((t*12)%2)-1)-0.5)*(sz*0.2); else if(type=='wavy') by += Math.sin(t*10)*(sz*0.15); pts.push({x:bx, y:by}); }
+        const bot = []; for(let t=0; t<=1; t+=1/stp) { let bx = (1-t)*(1-t)*(sz*2.5) + 2*(1-t)*t*(sz*0.8); let by = 2*(1-t)*t*(sz*0.6); if(type=='sawtooth') by += (Math.abs(((t*12)%2)-1)-0.5)*(sz*0.2); else if(type=='wavy') by += Math.sin(t*10)*(sz*0.15); bot.push({x:bx, y:by}); }
+        return {top:pts, bot:bot};
+    }
+
+    function drawLeaf(x, y, ang, sz, type, color, is3D) {
+        if(type === 'fern') {
+            const leaflets = 5;
+            for(let i=0; i<leaflets; i++) {
+                let pos = (i/leaflets)*sz*2; let lSz = sz * (1 - i/leaflets);
+                drawLeafShape(x+Math.cos(ang)*pos, y+Math.sin(ang)*pos, ang+1.2, lSz*0.4, 'plain', color, is3D);
+                drawLeafShape(x+Math.cos(ang)*pos, y+Math.sin(ang)*pos, ang-1.2, lSz*0.4, 'plain', color, is3D);
+            }
+            ctx.lineWidth = 1; ctx.strokeStyle=color; ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+Math.cos(ang)*sz*2, y+Math.sin(ang)*sz*2); ctx.stroke();
+            return;
+        }
+        drawLeafShape(x, y, ang, sz, type, color, is3D);
+    }
+
+    function drawLeafShape(x, y, ang, sz, type, color, is3D) {
+        const data = getLeafPoints(type, sz);
         ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
-        if(gEls.is3D.checked) { const sOff = parseInt(gEls.shadowOff.value); const sOp = parseInt(gEls.shadowOp.value)/100; ctx.fillStyle = `rgba(0,0,0,${sOp})`; ctx.beginPath(); ctx.moveTo(sOff,sOff); for(let p of pts) ctx.lineTo(p.x+sOff, p.y+sOff); ctx.fill(); }
-        ctx.fillStyle=color; ctx.beginPath(); ctx.moveTo(0,0); for(let p of pts) ctx.lineTo(p.x, p.y); ctx.fill(); 
-        ctx.strokeStyle="rgba(0,0,0,0.2)"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(sz*2.2, 0); ctx.stroke();
+        if(is3D) { const sOff = parseInt(gEls.shadowOff.value); const sOp = parseInt(gEls.shadowOp.value)/100; ctx.fillStyle = `rgba(0,0,0,${sOp})`; ctx.beginPath(); ctx.moveTo(sOff,sOff); for(let p of data.top) ctx.lineTo(p.x+sOff, p.y+sOff); for(let p of data.bot) ctx.lineTo(p.x+sOff, p.y+sOff); ctx.fill(); }
+        ctx.fillStyle=color; ctx.beginPath(); ctx.moveTo(0,0); for(let p of data.top) ctx.lineTo(p.x, p.y); for(let p of data.bot) ctx.lineTo(p.x, p.y); ctx.fill(); 
+        ctx.strokeStyle="rgba(0,0,0,0.2)"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(sz*(type==='maple'?3:2.2), 0); ctx.stroke();
         ctx.restore();
     }
+
     function drawFlower(cx, cy, baseAngle, conf, is3D) {
         const type=conf.flowType, scale=conf.flowSize, count=conf.petals; ctx.save(); ctx.translate(cx, cy); ctx.rotate(baseAngle);
-        if(gEls.is3D.checked) { const sOff = parseInt(gEls.shadowOff.value); const sOp = parseInt(gEls.shadowOp.value)/100; ctx.save(); ctx.translate(sOff,sOff); ctx.fillStyle=`rgba(0,0,0,${sOp})`; for(let i=0; i<count; i++) { ctx.save(); ctx.rotate((Math.PI*2*i)/count); ctx.beginPath(); if(type==='round'||type==='pointed'){const wid=type==='round'?0.6:0.25;ctx.moveTo(0,0);ctx.quadraticCurveTo(scale*0.5,-scale*wid,scale,0);ctx.quadraticCurveTo(scale*0.5,scale*wid,0,0);}else{ctx.ellipse(scale/2,0,scale/2,scale*0.15,0,0,Math.PI*2);} ctx.fill(); ctx.restore(); } ctx.restore(); }
-        for(let i=0; i<count; i++) { ctx.save(); ctx.rotate((Math.PI*2*i)/count); if(gEls.is3D.checked) { const g = ctx.createRadialGradient(0,0, 0, scale, 0, scale); g.addColorStop(0, i%2===0?conf.fc1:conf.fc2); g.addColorStop(1, shadeColor(i%2===0?conf.fc1:conf.fc2, -20)); ctx.fillStyle=g; } else { ctx.fillStyle=i%2===0?conf.fc1:conf.fc2; } ctx.beginPath(); if(type==='round'||type==='pointed'){const wid=type==='round'?0.6:0.25;ctx.moveTo(0,0);ctx.quadraticCurveTo(scale*0.5,-scale*wid,scale,0);ctx.quadraticCurveTo(scale*0.5,scale*wid,0,0);}else{ctx.ellipse(scale/2,0,scale/2,scale*0.15,0,0,Math.PI*2);} ctx.fill(); ctx.restore(); }
+        if(is3D) { const sOff = parseInt(gEls.shadowOff.value); const sOp = parseInt(gEls.shadowOp.value)/100; ctx.save(); ctx.translate(sOff,sOff); ctx.fillStyle=`rgba(0,0,0,${sOp})`; for(let i=0; i<count; i++) { ctx.save(); ctx.rotate((Math.PI*2*i)/count); ctx.beginPath(); if(type==='round'||type==='pointed'){const wid=type==='round'?0.6:0.25;ctx.moveTo(0,0);ctx.quadraticCurveTo(scale*0.5,-scale*wid,scale,0);ctx.quadraticCurveTo(scale*0.5,scale*wid,0,0);}else{ctx.ellipse(scale/2,0,scale/2,scale*0.15,0,0,Math.PI*2);} ctx.fill(); ctx.restore(); } ctx.restore(); }
+        
+        if(type === 'rose') {
+            for(let i=0; i<count*1.5; i++) {
+                ctx.save();
+                const r = (i/count)*scale*0.5; const ang = i * 1.0; 
+                ctx.translate(Math.cos(ang)*r, Math.sin(ang)*r); ctx.rotate(ang);
+                ctx.fillStyle = i%2===0?conf.fc1:conf.fc2; if(i < count/2) ctx.fillStyle = shadeColor(conf.fc1, -20);
+                ctx.beginPath(); ctx.arc(0, 0, scale*0.3 + (i/count)*scale*0.2, 0, Math.PI*1.5); ctx.fill(); ctx.restore();
+            }
+        } else if (type === 'sakura') {
+             for(let i=0; i<5; i++) {
+                ctx.save(); ctx.rotate((Math.PI*2*i)/5); ctx.fillStyle=i%2===0?conf.fc1:conf.fc2; 
+                ctx.beginPath(); ctx.moveTo(0,0); ctx.quadraticCurveTo(scale*0.4, -scale*0.5, scale, -scale*0.2); ctx.lineTo(scale*0.8, 0); ctx.lineTo(scale, scale*0.2); ctx.quadraticCurveTo(scale*0.4, scale*0.5, 0, 0); ctx.fill(); ctx.restore();
+            }
+        } else {
+            for(let i=0; i<count; i++) { ctx.save(); ctx.rotate((Math.PI*2*i)/count); if(is3D) { const g = ctx.createRadialGradient(0,0, 0, scale, 0, scale); g.addColorStop(0, i%2===0?conf.fc1:conf.fc2); g.addColorStop(1, shadeColor(i%2===0?conf.fc1:conf.fc2, -20)); ctx.fillStyle=g; } else { ctx.fillStyle=i%2===0?conf.fc1:conf.fc2; } ctx.beginPath(); if(type==='round'||type==='pointed'){const wid=type==='round'?0.6:0.25;ctx.moveTo(0,0);ctx.quadraticCurveTo(scale*0.5,-scale*wid,scale,0);ctx.quadraticCurveTo(scale*0.5,scale*wid,0,0);}else{ctx.ellipse(scale/2,0,scale/2,scale*0.15,0,0,Math.PI*2);} ctx.fill(); ctx.restore(); }
+        }
         ctx.fillStyle = conf.fcc; ctx.beginPath(); ctx.arc(0, 0, scale*0.2, 0, Math.PI*2); ctx.fill(); ctx.restore();
     }
 
     function animate() {
-        isAnimating = true; ctx.clearRect(0, 0, canvas.width, canvas.height);
+        isAnimating = true; ctx.clearRect(0, 0, canvas.width/gEls.outputScale.value, canvas.height/gEls.outputScale.value);
         const stream = canvas.captureStream(60); mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' }); chunks = [];
         mediaRecorder.ondataavailable = e => chunks.push(e.data);
         mediaRecorder.onstop = e => { const blob = new Blob(chunks, { type: 'video/webm' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'botanical_growth.webm'; a.click(); document.getElementById('recStatus').style.display = 'none'; isAnimating = false; };
@@ -413,67 +484,55 @@
         loop();
     }
 
-    // --- SVG EXPORT ---
     function exportSVG() {
         let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${canvas.width} ${canvas.height}" width="${canvas.width}" height="${canvas.height}">`;
-        
         for(let item of renderQueue) {
             if(item.type === 'stem') {
-                if(item.is3D) {
-                    const sOp = parseInt(gEls.shadowOp.value)/100; const sOff = parseInt(gEls.shadowOff.value);
-                    if(sOp > 0) s += `<line x1="${(item.x1+sOff).toFixed(1)}" y1="${(item.y1+sOff).toFixed(1)}" x2="${(item.x2+sOff).toFixed(1)}" y2="${(item.y2+sOff).toFixed(1)}" stroke="black" stroke-width="${(item.w+1).toFixed(2)}" stroke-opacity="${sOp}" stroke-linecap="round" />`;
-                }
+                if(item.is3D) { const sOp = parseInt(gEls.shadowOp.value)/100; const sOff = parseInt(gEls.shadowOff.value); if(sOp > 0) s += `<line x1="${(item.x1+sOff).toFixed(1)}" y1="${(item.y1+sOff).toFixed(1)}" x2="${(item.x2+sOff).toFixed(1)}" y2="${(item.y2+sOff).toFixed(1)}" stroke="black" stroke-width="${(item.w+1).toFixed(2)}" stroke-opacity="${sOp}" stroke-linecap="round" />`; }
                 s += `<line x1="${item.x1.toFixed(1)}" y1="${item.y1.toFixed(1)}" x2="${item.x2.toFixed(1)}" y2="${item.y2.toFixed(1)}" stroke="${item.c}" stroke-width="${item.w.toFixed(2)}" stroke-linecap="round" />`;
-            }
-            else if (item.type === 'leaf') {
-                const pts = []; const stp=10; const sz=item.sz; const type=item.shape;
-                for(let t=0; t<=1; t+=1/stp) { let bx = 2*(1-t)*t*(sz*0.8) + t*t*(sz*2.5); let by = 2*(1-t)*t*(-sz*0.6); if(type=='sawtooth') by += (Math.abs(((t*12)%2)-1)-0.5)*(sz*0.2); else if(type=='wavy') by += Math.sin(t*10)*(sz*0.15); pts.push({x:bx, y:by}); }
-                for(let t=0; t<=1; t+=1/stp) { let bx = (1-t)*(1-t)*(sz*2.5) + 2*(1-t)*t*(sz*0.8); let by = 2*(1-t)*t*(sz*0.6); if(type=='sawtooth') by += (Math.abs(((t*12)%2)-1)-0.5)*(sz*0.2); else if(type=='wavy') by += Math.sin(t*10)*(sz*0.15); pts.push({x:bx, y:by}); }
-                let d = `M 0,0 `; for(let p of pts) d += `L ${p.x.toFixed(1)} ${p.y.toFixed(1)} `; d += "Z";
-                
-                s += `<g transform="translate(${item.x.toFixed(1)},${item.y.toFixed(1)}) rotate(${(item.ang*180/Math.PI).toFixed(1)})">`;
-                if(item.is3D) {
-                    const sOp = parseInt(gEls.shadowOp.value)/100; const sOff = parseInt(gEls.shadowOff.value);
-                    if(sOp > 0) s += `<path d="${d}" fill="black" fill-opacity="${sOp}" transform="translate(${sOff},${sOff})" stroke="none" />`;
+            } else if (item.type === 'leaf') {
+                if(item.shape === 'fern') {
+                    s += `<g transform="translate(${item.x.toFixed(1)},${item.y.toFixed(1)}) rotate(${(item.ang*180/Math.PI).toFixed(1)})">`;
+                    s += `<line x1="0" y1="0" x2="${(item.sz*2).toFixed(1)}" y2="0" stroke="${item.c}" stroke-width="1" />`;
+                    for(let k=0; k<5; k++) { let p = (k/5)*item.sz*2; let lz = item.sz*(1-k/5)*0.4; s += `<line x1="${p}" y1="0" x2="${p+lz*0.5}" y2="${-lz}" stroke="${item.c}" stroke-width="2" /><line x1="${p}" y1="0" x2="${p+lz*0.5}" y2="${lz}" stroke="${item.c}" stroke-width="2" />`; }
+                    s += `</g>`;
+                } else {
+                    const dObj = getLeafPoints(item.shape, item.sz);
+                    let d = `M 0,0 `; for(let p of dObj.top) d += `L ${p.x.toFixed(1)} ${p.y.toFixed(1)} `; for(let p of dObj.bot) d += `L ${p.x.toFixed(1)} ${p.y.toFixed(1)} `; d+="Z";
+                    s += `<g transform="translate(${item.x.toFixed(1)},${item.y.toFixed(1)}) rotate(${(item.ang*180/Math.PI).toFixed(1)})">`;
+                    if(item.is3D) { const sOp = parseInt(gEls.shadowOp.value)/100; const sOff = parseInt(gEls.shadowOff.value); if(sOp > 0) s += `<path d="${d}" fill="black" fill-opacity="${sOp}" transform="translate(${sOff},${sOff})" stroke="none" />`; }
+                    s += `<path d="${d}" fill="${item.c}" stroke="none" />`;
+                    s += `<line x1="0" y1="0" x2="${(item.sz*(item.shape==='maple'?3:2.2)).toFixed(1)}" y2="0" stroke="rgba(0,0,0,0.2)" stroke-width="1" />`;
+                    s += `</g>`;
                 }
-                s += `<path d="${d}" fill="${item.c}" stroke="none" />`;
-                // Vein line inside the group
-                s += `<line x1="0" y1="0" x2="${(item.sz*2.2).toFixed(1)}" y2="0" stroke="rgba(0,0,0,0.2)" stroke-width="1" />`;
-                s += `</g>`;
-            }
-            else if (item.type === 'flower') {
+            } else if (item.type === 'flower') {
                 const scale=item.conf.flowSize; const count=item.conf.petals; const type=item.conf.flowType;
                 s += `<g transform="translate(${item.x.toFixed(1)},${item.y.toFixed(1)}) rotate(${(item.ang*180/Math.PI).toFixed(1)})">`;
-                if(item.is3D) {
-                    const sOp = parseInt(gEls.shadowOp.value)/100; const sOff = parseInt(gEls.shadowOff.value);
-                    if(sOp > 0) {
-                        s += `<g transform="translate(${sOff},${sOff})">`;
-                        for(let i=0; i<count; i++) {
-                            const rot = (360*i)/count;
-                            let d = ""; if(type==='round'||type==='pointed'){const wid=type==='round'?0.6:0.25;d=`M 0,0 Q ${(scale*0.5).toFixed(1)},${(-scale*wid).toFixed(1)} ${scale},0 Q ${(scale*0.5).toFixed(1)},${(scale*wid).toFixed(1)} 0,0`;}else{const rx=scale/2;const ry=scale*0.15;d=`M 0,0 A ${rx} ${ry} 0 0 1 ${scale} 0 A ${rx} ${ry} 0 0 1 0 0`;}
-                            s += `<path d="${d}" fill="black" fill-opacity="${sOp}" transform="rotate(${rot})" />`;
-                        }
-                        s += `</g>`;
+                if(item.is3D) { const sOp = parseInt(gEls.shadowOp.value)/100; const sOff = parseInt(gEls.shadowOff.value); if(sOp > 0) { s += `<g transform="translate(${sOff},${sOff})">`; for(let i=0; i<count; i++) { const rot = (360*i)/count; let d = ""; if(type==='round'||type==='pointed'){const wid=type==='round'?0.6:0.25;d=`M 0,0 Q ${(scale*0.5).toFixed(1)},${(-scale*wid).toFixed(1)} ${scale},0 Q ${(scale*0.5).toFixed(1)},${(scale*wid).toFixed(1)} 0,0`;}else{const rx=scale/2;const ry=scale*0.15;d=`M 0,0 A ${rx} ${ry} 0 0 1 ${scale} 0 A ${rx} ${ry} 0 0 1 0 0`;} s += `<path d="${d}" fill="black" fill-opacity="${sOp}" transform="rotate(${rot})" />`; } s += `</g>`; } }
+                if(type === 'rose') {
+                    for(let i=0; i<count*1.5; i++) {
+                         const r = (i/count)*scale*0.5; const ang = i*1.0;
+                         s += `<circle cx="${Math.cos(ang)*r}" cy="${Math.sin(ang)*r}" r="${scale*0.3 + (i/count)*scale*0.2}" fill="${i%2===0?item.conf.fc1:item.conf.fc2}" />`;
                     }
+                } else if (type === 'sakura') {
+                    for(let i=0; i<5; i++) {
+                        // Simple notched path for SVG
+                        const rot = i*72;
+                        s += `<path d="M 0,0 Q ${scale*0.4},${-scale*0.5} ${scale},${-scale*0.2} L ${scale*0.8},0 L ${scale},${scale*0.2} Q ${scale*0.4},${scale*0.5} 0,0" fill="${i%2===0?item.conf.fc1:item.conf.fc2}" transform="rotate(${rot})" />`;
+                    }
+                } else {
+                    for(let i=0; i<count; i++) { const rot = (360*i)/count; const col = i%2===0?item.conf.fc1:item.conf.fc2; let d = ""; if(type==='round'||type==='pointed'){const wid=type==='round'?0.6:0.25;d=`M 0,0 Q ${(scale*0.5).toFixed(1)},${(-scale*wid).toFixed(1)} ${scale},0 Q ${(scale*0.5).toFixed(1)},${(scale*wid).toFixed(1)} 0,0`;}else{const rx=scale/2;const ry=scale*0.15;d=`M 0,0 A ${rx} ${ry} 0 0 1 ${scale} 0 A ${rx} ${ry} 0 0 1 0 0`;} s += `<path d="${d}" fill="${col}" transform="rotate(${rot})" />`; }
                 }
-                for(let i=0; i<count; i++) {
-                    const rot = (360*i)/count; const color = i%2===0?item.conf.fc1:item.conf.fc2;
-                    let d = ""; if(type==='round'||type==='pointed'){const wid=type==='round'?0.6:0.25;d=`M 0,0 Q ${(scale*0.5).toFixed(1)},${(-scale*wid).toFixed(1)} ${scale},0 Q ${(scale*0.5).toFixed(1)},${(scale*wid).toFixed(1)} 0,0`;}else{const rx=scale/2;const ry=scale*0.15;d=`M 0,0 A ${rx} ${ry} 0 0 1 ${scale} 0 A ${rx} ${ry} 0 0 1 0 0`;}
-                    s += `<path d="${d}" fill="${color}" stroke="none" transform="rotate(${rot})" />`;
-                }
-                s += `<circle cx="0" cy="0" r="${(scale*0.2).toFixed(1)}" fill="${item.conf.fcc}" /></g>`;
+                s += `<circle r="${scale*0.25}" fill="${item.conf.fcc}" /></g>`;
             }
         }
         s += `</svg>`;
-        const blob = new Blob([s], {type: 'image/svg+xml'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = 'botanical-vector.svg'; a.click();
+        const blob = new Blob([s], {type: 'image/svg+xml'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.download = 'botanical_vector.svg'; a.href = url; a.click();
     }
 
-    // --- IO ---
     document.getElementById('btnSave').addEventListener('click', () => { const data = { layers: [getConfig(0), getConfig(1), getConfig(2)], global: { shape: gEls.shape.value, avoid: gEls.avoid.checked, spread: gEls.spread.value, limit: gEls.outer.value, strict: gEls.strict.checked, is3D: gEls.is3D.checked, useGl: gEls.useGlobalLeaf.checked, glMin: gEls.leafMin.value, glMax: gEls.leafMax.value, wF: gEls.wallForce.value, cT: gEls.cornerTension.value, sOp: gEls.shadowOp.value, sOff: gEls.shadowOff.value, zones: zones } }; const blob = new Blob([JSON.stringify(data)], {type: 'application/json'}); const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='botanical-preset.json'; a.click(); });
     document.getElementById('btnLoad').addEventListener('click', () => document.getElementById('fileInput').click());
-    document.getElementById('fileInput').addEventListener('change', (e) => { const r = new FileReader(); r.onload = (ev) => { const d = JSON.parse(ev.target.result); gEls.shape.value = d.global.shape; gEls.avoid.checked = d.global.avoid; gEls.spread.value = d.global.spread; gEls.outer.value = d.global.limit; gEls.strict.checked = d.global.strict; gEls.is3D.checked = d.global.is3D; gEls.useGlobalLeaf.checked = d.global.useGl; gEls.leafMin.value = d.global.glMin; gEls.leafMax.value = d.global.glMax; gEls.wallForce.value = d.global.wF; gEls.cornerTension.value = d.global.cT; gEls.shadowOp.value = d.global.sOp; gEls.shadowOff.value = d.global.sOff; zones = d.global.zones; d.layers.forEach((l, i) => { document.getElementById(`ve_${i}`).checked = l.vineEn; document.getElementById(`den_${i}`).value = l.density; document.getElementById(`len_${i}`).value = l.len; document.getElementById(`dir_${i}`).value = l.dir; document.getElementById(`cur_${i}`).value = l.curve; document.getElementById(`sc1_${i}`).value = l.stem1; document.getElementById(`sc2_${i}`).value = l.stem2; document.getElementById(`le_${i}`).checked = l.leafEn; document.getElementById(`ls_${i}`).value = l.leafShape; document.getElementById(`lfs_${i}`).value = l.leafSize; document.getElementById(`lc1_${i}`).value = l.leaf1; document.getElementById(`lc2_${i}`).value = l.leaf2; document.getElementById(`fe_${i}`).checked = l.flowEn; document.getElementById(`ft_${i}`).value = l.flowType; document.getElementById(`fs_${i}`).value = l.flowSize; document.getElementById(`fp_${i}`).value = l.petals; document.getElementById(`fc1_${i}`).value = l.fc1; document.getElementById(`fc2_${i}`).value = l.fc2; document.getElementById(`fcc_${i}`).value = l.fcc; }); document.querySelectorAll('.zone-btn').forEach(b => { if(zones[b.dataset.zone]) b.classList.add('active'); else b.classList.remove('active'); }); update(); }; r.readAsText(e.target.files[0]); });
+    document.getElementById('fileInput').addEventListener('change', (e) => { const r = new FileReader(); r.onload = (ev) => { const d = JSON.parse(ev.target.result); gEls.shape.value = d.global.shape; gEls.avoid.checked = d.global.avoid; gEls.spread.value = d.global.spread; gEls.outer.value = d.global.limit; gEls.strict.checked = d.global.strict; gEls.is3D.checked = d.global.is3D; gEls.useGlobalLeaf.checked = d.global.useGl; gEls.leafMin.value = d.global.glMin; gEls.leafMax.value = d.global.glMax; gEls.wallForce.value = d.global.wF; gEls.cornerTension.value = d.global.cT; gEls.shadowOp.value = d.global.sOp; gEls.shadowOff.value = d.global.sOff; zones = d.global.zones; d.layers.forEach((l, i) => { document.getElementById(`ve_${i}`).checked = l.vineEn; document.getElementById(`den_${i}`).value = l.density; document.getElementById(`len_${i}`).value = l.len; document.getElementById(`dir_${i}`).value = l.dir; document.getElementById(`cur_${i}`).value = l.curve; document.getElementById(`br_${i}`).value = l.branchProb; document.getElementById(`angMin_${i}`).value = l.angleMin || 30; document.getElementById(`angMax_${i}`).value = l.angleMax || 60; document.getElementById(`sc1_${i}`).value = l.stem1; document.getElementById(`sc2_${i}`).value = l.stem2; document.getElementById(`le_${i}`).checked = l.leafEn; document.getElementById(`ls_${i}`).value = l.leafShape; document.getElementById(`lfs_${i}`).value = l.leafSize; document.getElementById(`lc1_${i}`).value = l.leaf1; document.getElementById(`lc2_${i}`).value = l.leaf2; document.getElementById(`fe_${i}`).checked = l.flowEn; document.getElementById(`ft_${i}`).value = l.flowType; document.getElementById(`fs_${i}`).value = l.flowSize; document.getElementById(`fp_${i}`).value = l.petals; document.getElementById(`fc1_${i}`).value = l.fc1; document.getElementById(`fc2_${i}`).value = l.fc2; document.getElementById(`fcc_${i}`).value = l.fcc; }); document.querySelectorAll('.zone-btn').forEach(b => { if(zones[b.dataset.zone]) b.classList.add('active'); else b.classList.remove('active'); }); update(); }; r.readAsText(e.target.files[0]); });
     
     canvas.addEventListener('mousedown', e => { const r=canvas.getBoundingClientRect(); startPos={x:e.clientX-r.left, y:e.clientY-r.top}; isDragging=true; });
     canvas.addEventListener('mousemove', e => { if(!isDragging)return; const r=canvas.getBoundingClientRect(); const x=e.clientX-r.left, y=e.clientY-r.top; ctx.clearRect(0,0,canvas.width,canvas.height); ctx.strokeStyle="#fff"; ctx.setLineDash([5,5]); ctx.lineWidth=2; ctx.strokeRect(startPos.x,startPos.y,x-startPos.x,y-startPos.y); ctx.setLineDash([]); });
@@ -483,12 +542,9 @@
     document.getElementById('btnPNG').addEventListener('click', () => { const a=document.createElement('a'); a.download='botanical-studio.png'; a.href=canvas.toDataURL(); a.click(); });
     document.getElementById('btnSVG').addEventListener('click', exportSVG);
 
-    // Auto-scroll to center on load
     setTimeout(() => {
         prepareRender(false);
-        const wrapper = document.getElementById('canvas-wrapper');
-        // Center the view: (CanvasWidth - WindowWidth)/2
-        wrapper.scrollTo((2400 - wrapper.clientWidth)/2, (1800 - wrapper.clientHeight)/2);
+        centerView();
     }, 100);
 </script>
 </body>
