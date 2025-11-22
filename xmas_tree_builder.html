@@ -112,6 +112,17 @@
             <div class="space-y-3">
                 <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider border-b border-slate-700 pb-1">Foliage Palette</h3>
                 
+                <!-- Leaf Type Selector Restored -->
+                <div>
+                    <label class="block text-xs mb-1">Leaf Type</label>
+                    <select id="leafType" class="w-full bg-slate-800 border border-slate-600 text-sm rounded p-2 focus:outline-none focus:border-green-500">
+                        <option value="pine">Pine Needles</option>
+                        <option value="fern">Fern Fronds</option>
+                        <option value="round">Round Leaves</option>
+                        <option value="sparse">Winter (Sparse)</option>
+                    </select>
+                </div>
+
                 <div class="grid grid-cols-2 gap-2">
                     <div>
                         <label class="block text-xs mb-1">Inner/Short</label>
@@ -155,18 +166,16 @@
             <div class="space-y-3">
                 <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wider border-b border-slate-700 pb-1">Decorations</h3>
                 
-                <!-- Density -->
-                <div>
-                    <label class="flex justify-between text-xs mb-1">Total Density <span id="val-baubleProb">20%</span></label>
-                    <input type="range" id="baubleProb" min="0" max="100" step="5" value="20" class="w-full h-2 bg-slate-700 rounded-lg appearance-none slider-thumb">
-                </div>
-
                 <!-- Baubles Control -->
                 <div class="control-group">
                     <label class="flex items-center space-x-2 text-sm font-semibold mb-2 cursor-pointer">
                         <input type="checkbox" id="hasBaubles" class="custom-checkbox w-4 h-4 rounded bg-slate-700" checked>
                         <span>Baubles</span>
                     </label>
+                    <div class="mb-2">
+                        <label class="flex justify-between text-[10px] mb-1">Density <span id="val-baubleDensity">20%</span></label>
+                        <input type="range" id="baubleDensity" min="0" max="100" step="5" value="20" class="w-full h-1 bg-slate-700 rounded-lg appearance-none slider-thumb">
+                    </div>
                     <div class="grid grid-cols-2 gap-2 mb-2">
                          <div>
                             <label class="text-[10px] block mb-1">Size</label>
@@ -175,6 +184,31 @@
                         <div class="flex gap-1">
                              <input type="color" id="baubleColor1" value="#ef4444" class="flex-1 h-6 rounded bg-slate-800 p-0.5">
                              <input type="color" id="baubleColor2" value="#fbbf24" class="flex-1 h-6 rounded bg-slate-800 p-0.5">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lights Control -->
+                <div class="control-group">
+                    <label class="flex items-center space-x-2 text-sm font-semibold mb-2 cursor-pointer">
+                        <input type="checkbox" id="hasLights" class="custom-checkbox w-4 h-4 rounded bg-slate-700" checked>
+                        <span>Fairy Lights</span>
+                    </label>
+                    <div class="mb-2">
+                        <label class="flex justify-between text-[10px] mb-1">Density <span id="val-lightDensity">15%</span></label>
+                        <input type="range" id="lightDensity" min="0" max="100" step="5" value="15" class="w-full h-1 bg-slate-700 rounded-lg appearance-none slider-thumb">
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 items-end">
+                         <div class="col-span-1">
+                            <label class="text-[10px] block mb-1">Size</label>
+                            <input type="range" id="lightSize" min="1" max="6" value="3" class="w-full h-1 bg-slate-700 rounded-lg appearance-none slider-thumb">
+                        </div>
+                         <div class="col-span-1">
+                            <label class="text-[10px] block mb-1">Glow</label>
+                            <input type="range" id="glow" min="0" max="40" value="15" class="w-full h-1 bg-slate-700 rounded-lg appearance-none slider-thumb">
+                        </div>
+                        <div class="col-span-1">
+                             <input type="color" id="lightColor" value="#ffffaa" class="w-full h-6 rounded bg-slate-800 p-0.5">
                         </div>
                     </div>
                 </div>
@@ -207,27 +241,6 @@
                              <label class="text-[10px] block mb-1">Top Color</label>
                              <input type="color" id="topStarColor" value="#FFD700" class="w-full h-6 rounded bg-slate-800 p-0.5">
                          </div>
-                    </div>
-                </div>
-
-                <!-- Lights Control -->
-                <div class="control-group">
-                    <label class="flex items-center space-x-2 text-sm font-semibold mb-2 cursor-pointer">
-                        <input type="checkbox" id="hasLights" class="custom-checkbox w-4 h-4 rounded bg-slate-700" checked>
-                        <span>Fairy Lights</span>
-                    </label>
-                    <div class="grid grid-cols-3 gap-2 items-end">
-                         <div class="col-span-1">
-                            <label class="text-[10px] block mb-1">Size</label>
-                            <input type="range" id="lightSize" min="1" max="6" value="3" class="w-full h-1 bg-slate-700 rounded-lg appearance-none slider-thumb">
-                        </div>
-                         <div class="col-span-1">
-                            <label class="text-[10px] block mb-1">Glow</label>
-                            <input type="range" id="glow" min="0" max="40" value="15" class="w-full h-1 bg-slate-700 rounded-lg appearance-none slider-thumb">
-                        </div>
-                        <div class="col-span-1">
-                             <input type="color" id="lightColor" value="#ffffaa" class="w-full h-6 rounded bg-slate-800 p-0.5">
-                        </div>
                     </div>
                 </div>
 
@@ -339,6 +352,7 @@
             widthDecay: 0.7,
             
             // Colors
+            leafType: 'pine',
             leafColorStart: '#143625', // Dark Inner
             leafColorEnd: '#4ade80',   // Light Outer
             shadowColor: '#000000',
@@ -348,7 +362,7 @@
 
             // Decor Settings
             hasBaubles: true,
-            baubleProb: 0.2, 
+            baubleDensity: 0.2, 
             baubleSize: 5,
             baubleColor1: '#ef4444',
             baubleColor2: '#fbbf24',
@@ -361,6 +375,7 @@
             topStarColor: '#FFD700',
 
             hasLights: true,
+            lightDensity: 0.15,
             lightSize: 3,
             lightColor: '#ffffaa',
             glow: 15,
@@ -451,6 +466,7 @@
             angle: document.getElementById('angle'),
             len: document.getElementById('len'),
             
+            leafType: document.getElementById('leafType'),
             leafColorStart: document.getElementById('leafColorStart'),
             leafColorEnd: document.getElementById('leafColorEnd'),
             shadowColor: document.getElementById('shadowColor'),
@@ -459,7 +475,7 @@
             woodColorEnd: document.getElementById('woodColorEnd'),
             frost: document.getElementById('frost'),
             
-            baubleProb: document.getElementById('baubleProb'),
+            baubleDensity: document.getElementById('baubleDensity'),
             
             hasBaubles: document.getElementById('hasBaubles'),
             baubleSize: document.getElementById('baubleSize'),
@@ -474,6 +490,7 @@
             topStarColor: document.getElementById('topStarColor'),
 
             hasLights: document.getElementById('hasLights'),
+            lightDensity: document.getElementById('lightDensity'),
             lightSize: document.getElementById('lightSize'),
             lightColor: document.getElementById('lightColor'),
             glow: document.getElementById('glow'),
@@ -531,7 +548,8 @@
                 const el = document.getElementById(id);
                 if (el) el.textContent = value;
             };
-            setLabel('val-baubleProb', Math.round(params.baubleProb * 100) + "%");
+            setLabel('val-baubleDensity', Math.round(params.baubleDensity * 100) + "%");
+            setLabel('val-lightDensity', Math.round(params.lightDensity * 100) + "%");
             setLabel('val-frost', params.frost + "%");
         }
 
@@ -556,11 +574,6 @@
             inputs.lightColor.value = theme.lightColor;
             inputs.stockingColor.value = theme.stockingColor;
             inputs.shadowColor.value = theme.shadowColor;
-            
-            // Handle Ribbon dropdown manually since it has limited options in HTML
-            // We check if the theme color matches an option, if not we default or add it dynamically?
-            // For now, simpler to just update the visual ribbon color in code.
-            // The HTML select for ribbon is restrictive, but params[ribbonColor] overrides it in drawing.
             
             generateAndDraw();
         }
@@ -628,7 +641,7 @@
 
             renderQueue.forEach(item => {
                 if (item.type === 'wood') drawWood(item, startX, startY);
-                else if (item.type === 'leaf') drawPineTuft(item, startX, startY);
+                else if (item.type === 'leaf') drawLeaf(item, startX, startY);
                 else if (item.type === 'decor') drawDecor(item);
                 else if (item.type === 'star') drawStar(item);
                 else if (item.type === 'ribbon') drawRibbonSegment(item);
@@ -746,25 +759,45 @@
                 
                 // Decorations
                 if (level >= 2) {
-                    const r = Math.random();
-                    const density = params.baubleProb;
+                    // Force z-offset to be POSITIVE relative to branch end to ensure it renders ON TOP of leaves
+                    // +5 is a safety buffer, +random(15) adds slight variance
+                    const popZ = endZ + 5 + (Math.random() * 15); 
 
-                    // Decor placement logic: Push items "out" so they are visible
-                    // We add a random Z offset with a positive bias to pop things out of the foliage
-                    const popZ = endZ + (Math.random() * 40 - 10); // -10 to +30 range approx
-
-                    // Probability Logic
-                    if (params.hasBaubles && r < density) {
-                        renderQueue.push({ type: 'decor', subtype: 'bauble', z: popZ, x: endX, y: endY });
-                    } else if (params.hasLights && r < density + 0.15) {
-                        renderQueue.push({ type: 'decor', subtype: 'light', z: popZ, x: endX, y: endY });
-                    } else if (params.hasStockings && level >= 2 && Math.random() < 0.05) {
-                         // Stockings need extra visibility
-                         renderQueue.push({ type: 'decor', subtype: 'stocking', z: popZ + 10, x: endX, y: endY });
-                    } else if (params.hasStarScatter && Math.random() < 0.05) {
-                         // Scatter stars random inside/outside
-                         const starZ = endZ + (Math.random() * 60 - 20); 
+                    // 1. Scatter Stars - Independent Check (doesn't return)
+                    if (params.hasStarScatter && Math.random() < 0.05) {
+                         const starZ = popZ + 10 + (Math.random() * 10); 
                          renderQueue.push({ type: 'star', x: endX, y: endY, z: starZ, size: params.starSize, color: params.starColor });
+                    }
+
+                    // 2. Mutually Exclusive Ornaments (Baubles, Lights, Stockings)
+                    const r = Math.random();
+                    let currentProb = 0;
+
+                    // Check Stockings First (Rare, independent)
+                    if (params.hasStockings) {
+                        // 5% chance for a stocking if enabled
+                        if (Math.random() < 0.05) {
+                             renderQueue.push({ type: 'decor', subtype: 'stocking', z: popZ, x: endX, y: endY });
+                             return; 
+                        }
+                    }
+
+                    // Check Lights Second (Priority over Baubles if density is high)
+                    if (params.hasLights) {
+                        currentProb += params.lightDensity;
+                        if (r < currentProb) {
+                            renderQueue.push({ type: 'decor', subtype: 'light', z: popZ, x: endX, y: endY });
+                            return;
+                        }
+                    }
+
+                    // Check Baubles Last (Fill remaining probability space)
+                    if (params.hasBaubles) {
+                        currentProb += params.baubleDensity;
+                        if (r < currentProb) {
+                            renderQueue.push({ type: 'decor', subtype: 'bauble', z: popZ, x: endX, y: endY });
+                            return;
+                        }
                     }
                 }
             }
@@ -800,8 +833,10 @@
             });
         }
 
-        function drawPineTuft(item, startX, startY) {
-            const count = 8; 
+        function drawLeaf(item, startX, startY) {
+            // Replaced drawPineTuft with generic drawLeaf to handle types
+            const type = params.leafType || 'pine';
+            const count = (type === 'sparse') ? 3 : (type === 'pine' ? 8 : 1); 
             const r = item.size; 
 
             // Base Distance Gradient
@@ -818,26 +853,88 @@
             ctx.lineWidth = 1.5;
             let d = "";
 
+            if (type === 'round') {
+                // Round Leaf Style
+                let colorFactor = distFactor;
+                let leafColor = interpolateColor(params.leafColorStart, params.leafColorEnd, colorFactor);
+                leafColor = adjustColor(leafColor, zAmt);
+                
+                ctx.fillStyle = leafColor;
+                ctx.beginPath();
+                ctx.arc(item.x, item.y, r/2, 0, Math.PI*2);
+                ctx.fill();
+                
+                // Shadow for round
+                if(params.shadowOffset > 0) {
+                    ctx.fillStyle = params.shadowColor + "44";
+                    ctx.beginPath();
+                    ctx.arc(item.x+params.shadowOffset, item.y+params.shadowOffset, r/2, 0, Math.PI*2);
+                    ctx.fill();
+                }
+                // Re-draw main to be on top of shadow
+                ctx.fillStyle = leafColor;
+                ctx.beginPath();
+                ctx.arc(item.x, item.y, r/2, 0, Math.PI*2);
+                ctx.fill();
+                
+                addToSVG("circle", { cx: item.x, cy: item.y, r: r/2, fill: leafColor });
+                return;
+            }
+
+            // Pine, Sparse, Fern logic (Line based)
+            if (type === 'fern') {
+                // Fern Frond Style
+                let colorFactor = distFactor;
+                let leafColor = interpolateColor(params.leafColorStart, params.leafColorEnd, colorFactor);
+                leafColor = adjustColor(leafColor, zAmt);
+                ctx.strokeStyle = leafColor;
+                
+                // Main Stem
+                const angle = (item.angle || -90) * Math.PI / 180;
+                const ex = item.x + Math.cos(angle) * r * 1.5;
+                const ey = item.y + Math.sin(angle) * r * 1.5;
+                
+                ctx.beginPath(); ctx.moveTo(item.x, item.y); ctx.lineTo(ex, ey); ctx.stroke();
+                d += `M${item.x},${item.y} L${ex},${ey} `;
+                
+                // Side Fronds
+                for(let j=1; j<=3; j++) {
+                    const t = j/4;
+                    const fx = item.x + (ex-item.x)*t;
+                    const fy = item.y + (ey-item.y)*t;
+                    const w = r * (1-t) * 0.8;
+                    // Left
+                    ctx.beginPath(); ctx.moveTo(fx, fy); 
+                    ctx.lineTo(fx - w, fy); ctx.stroke();
+                    d += `M${fx},${fy} L${fx-w},${fy} `;
+                    // Right
+                    ctx.beginPath(); ctx.moveTo(fx, fy); 
+                    ctx.lineTo(fx + w, fy); ctx.stroke();
+                    d += `M${fx},${fy} L${fx+w},${fy} `;
+                }
+                addToSVG("path", { d: d, stroke: leafColor, "stroke-width": 1, fill: "none" });
+                return;
+            }
+
+            // Standard Pine / Sparse
             for(let i=0; i<count; i++) {
                 const ang = Math.random() * Math.PI * 2;
-                // Length of this specific needle
-                const lenRatio = 0.4 + Math.random() * 0.6; // 0.4 to 1.0
+                const lenRatio = 0.4 + Math.random() * 0.6;
                 const len = r * lenRatio;
                 
                 const nx = item.x + Math.cos(ang) * len;
                 const ny = item.y + Math.sin(ang) * len;
                 
-                // === PER NEEDLE COLOR LOGIC ===
                 const colorFactor = (distFactor * 0.6) + (lenRatio * 0.4); 
                 let needleColor = interpolateColor(params.leafColorStart, params.leafColorEnd, colorFactor);
-                needleColor = adjustColor(needleColor, zAmt); // Apply lighting
+                needleColor = adjustColor(needleColor, zAmt);
                 
                 // Shadow Pass
                 if (params.shadowOffset > 0) {
                     ctx.beginPath();
                     ctx.moveTo(item.x + params.shadowOffset, item.y + params.shadowOffset);
                     ctx.lineTo(nx + params.shadowOffset, ny + params.shadowOffset);
-                    ctx.strokeStyle = params.shadowColor + "66"; // 40% opacity hex approx
+                    ctx.strokeStyle = params.shadowColor + "66";
                     ctx.stroke();
                 }
 
@@ -1021,7 +1118,7 @@
                 
                 if (['iterations', 'coneAngle', 'angle', 'len', 'baubleSize', 'starSize', 'topStarSize', 'lightSize', 'stockingSize', 'glow', 'frost'].includes(key)) val = parseInt(val);
                 if (key === 'widthDecay' || key === 'shadowOffset') val = parseFloat(val);
-                if (key === 'baubleProb') val = parseInt(val) / 100;
+                if (key === 'baubleDensity' || key === 'lightDensity') val = parseInt(val) / 100;
 
                 if (key === 'len') params.initialLength = val;
                 else params[key] = val;
@@ -1070,7 +1167,8 @@
                            const input = inputs[k];
                            if(!input || k==='saveCsv' || k==='loadCsv' || k==='themeSelector') return;
                            if(input.type === 'checkbox') input.checked = params[k];
-                           else if(k === 'baubleProb') input.value = params[k]*100;
+                           else if(k === 'baubleDensity') input.value = params[k]*100;
+                           else if(k === 'lightDensity') input.value = params[k]*100;
                            else if(k === 'len') input.value = params.initialLength;
                            else if(params[k] !== undefined) input.value = params[k];
                         });
