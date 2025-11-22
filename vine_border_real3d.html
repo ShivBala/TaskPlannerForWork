@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V32: Stable 3D Studio</title>
+    <style>
+        body { margin: 0; background: #e0e0e0; color: #333; font-family: "Segoe UI", sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        
+        /* SIDEBAR */
+        #sidebar { width: 460px; background: #222; color: #eee; border-right: 1px solid #444; display: flex; flex-direction: column; z-index: 10; box-shadow: 5px 0 20px rgba(0,0,0,0.2); flex-shrink: 0; }
+        #fixed-header { background: #2a2a2a; border-bottom: 1px solid #444; display: flex; flex-direction: column; gap: 10px; padding: 15px; flex-shrink: 0; }
+        
+        .header-row { display: flex; gap: 15px; align-items: start; }
+        .col-left { flex-grow: 1; display: flex; flex-direction: column; gap: 8px; }
+        .col-right { flex-shrink: 0; width: 100px; display: flex; flex-direction: column; align-items: center; gap: 5px;}
+        .control-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 5px; }
+        .control-group { display: flex; flex-direction: column; gap: 2px; }
+        
+        label { font-size: 0.65rem; color: #aaa; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; display: flex; justify-content: space-between; white-space: nowrap; }
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: #444; border-radius: 2px; cursor: pointer; margin-top: 4px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; background: #76c76c; border-radius: 50%; border: 1px solid #fff; }
+        input[type="color"] { width: 100%; height: 25px; border:none; padding: 0; background: none; cursor: pointer; border-radius: 4px;}
+        select { padding: 6px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; width: 100%; font-size: 0.75rem;}
+        input[type="checkbox"] { accent-color: #76c76c; cursor: pointer; margin: 0; }
+        .checkbox-row { display: flex; align-items: center; gap: 8px; font-size: 0.75rem; color: #ccc; }
+
+        .zone-grid { display: grid; grid-template-columns: repeat(3, 28px); grid-template-rows: repeat(3, 28px); gap: 2px; background: #111; padding: 3px; border-radius: 4px; border: 1px solid #444; }
+        .zone-btn { width: 100%; height: 100%; padding: 0; background: #333; border: 1px solid #555; border-radius: 2px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #888; font-size: 0.7rem; transition: 0.1s; }
+        .zone-btn:hover { background: #444; color: #fff; }
+        .zone-btn.active { background: #438a36; color: white; border-color: #53a543; }
+        .zone-center { width: 100%; height: 100%; background: #000; border: 1px dashed #555; border-radius: 2px; }
+
+        .global-panel { background: #2a2a2a; border: 1px solid #444; border-radius: 4px; overflow: hidden; margin-bottom: 5px; }
+        .gp-header { padding: 8px 12px; font-size: 0.7rem; font-weight: bold; color: #eee; background: #333; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .gp-content { padding: 10px; display: none; }
+        .gp-content.open { display: block; }
+
+        .action-panel { background: #2a2a2a; padding: 10px; border: 1px solid #444; border-radius: 4px; display: flex; flex-direction: column; gap: 6px; margin-top: 10px;}
+        .btn-row { display: flex; gap: 6px; }
+        button.action-btn { padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 0.5px; flex: 1; transition: 0.2s; }
+        .btn-gen { background: #438a36; color: white; } .btn-gen:hover { background: #53a543; }
+        .btn-dl { background: #444; color: #ccc; border: 1px solid #555; } .btn-dl:hover { background: #555; color: #fff; }
+        .btn-util { background: #333; color: #aaa; border: 1px solid #444; } .btn-util:hover { background: #444; color: #fff; }
+        .btn-anim { background: #a83232; color: white; } .btn-anim:hover { background: #c93f3f; }
+
+        #scrollable-content { padding: 10px; overflow-y: auto; flex-grow: 1; scrollbar-width: thin; scrollbar-color: #555 #222; }
+        .tabs { display: flex; background: #151515; padding: 5px; gap: 5px; border-bottom: 1px solid #444; margin-top: 10px; }
+        .tab-btn { flex: 1; padding: 8px; background: #333; border: 1px solid #444; color: #aaa; cursor: pointer; font-weight: bold; border-radius: 4px; font-size: 0.7rem; }
+        .tab-btn.active { background: #438a36; color: white; border-color: #53a543; }
+        .tab-content { display: none; margin-top: 10px;}
+        .tab-content.active { display: block; animation: fadeIn 0.3s; }
+        details { background: #2a2a2a; margin-bottom: 8px; border-radius: 4px; border: 1px solid #444; overflow: hidden; }
+        summary { padding: 8px 12px; cursor: pointer; font-size: 0.75rem; font-weight: bold; color: #eee; background: #333; display: flex; justify-content: space-between; align-items: center; }
+        .details-content { padding: 10px; border-top: 1px solid #444; background: #222; }
+
+        #canvas-wrapper { flex-grow: 1; position: relative; background: #f5f5f5; overflow: auto; display: flex; }
+        #three-canvas { display: block; outline: none; box-shadow: 0 0 50px rgba(0,0,0,0.2); background: #fff; margin: 50px; cursor: crosshair; }
+        
+        #loading-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #f5f5f5; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; transition: opacity 0.5s; pointer-events: none;}
+        #loading-text { font-size: 1.2rem; font-weight: bold; color: #333; margin-bottom: 10px;}
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+<div id="sidebar">
+    <div id="fixed-header">
+        <div class="header-row">
+            <div class="col-left">
+                <div class="control-group"><label>Frame Shape</label>
+                    <select id="shapeSelect">
+                        <option value="rectangle">Rectangle</option>
+                        <option value="oval">Oval / Circle</option>
+                        <option value="pentagon">Pentagon</option>
+                        <option value="hexagon">Hexagon</option>
+                    </select>
+                </div>
+                
+                <div class="global-panel">
+                    <div class="gp-header" onclick="toggleGP(this)">VIEW & PHYSICS <span>▼</span></div>
+                    <div class="gp-content">
+                        <div class="control-grid">
+                            <div class="control-group"><label>View Scale</label><input type="range" id="viewScale" min="0.5" max="3.0" step="0.1" value="1.0"></div>
+                            <div class="control-group"><label>Tube Thick</label><input type="range" id="tubeThick" min="2" max="40" value="10"></div>
+                            <div class="control-group"><label>Branching %</label><input type="range" id="branchProb" min="0" max="100" value="40"></div>
+                            <div class="control-group"><label>Tension</label><input type="range" id="cornerTension" min="0" max="50" value="30"></div>
+                            <div class="control-group"><label>Z-Depth</label><input type="range" id="zDepth" min="0" max="100" value="40"></div>
+                            <div class="control-group"><label>Strictness</label><input type="range" id="wallForce" min="0" max="100" value="80"></div>
+                        </div>
+                        <div class="checkbox-row">
+                            <input type="checkbox" id="strictZones"> <label for="strictZones">Strict Zones</label>
+                            <input type="checkbox" id="avoidCenter" checked style="margin-left:10px;"> <label for="avoidCenter">Avoid Center</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="global-panel">
+                    <div class="gp-header" onclick="toggleGP(this)">LEAF VARIATION <span>▼</span></div>
+                    <div class="gp-content">
+                        <div class="checkbox-row" style="margin-bottom:5px;">
+                            <input type="checkbox" id="useGlobalLeaf">
+                            <label for="useGlobalLeaf" style="cursor:pointer; margin:0;">Override Layer Sizes</label>
+                        </div>
+                        <div class="control-grid">
+                            <div class="control-group"><label>Size From</label><input type="range" id="leafMin" min="5" max="30" value="10"></div>
+                            <div class="control-group"><label>Size To</label><input type="range" id="leafMax" min="10" max="60" value="35"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-right">
+                <label>Zones</label>
+                <div class="zone-grid">
+                    <button class="zone-btn active" data-zone="TL" onclick="toggleZone(this)">↖</button>
+                    <button class="zone-btn active" data-zone="T" onclick="toggleZone(this)">↑</button>
+                    <button class="zone-btn active" data-zone="TR" onclick="toggleZone(this)">↗</button>
+                    <button class="zone-btn active" data-zone="L" onclick="toggleZone(this)">←</button>
+                    <div class="zone-center"></div>
+                    <button class="zone-btn active" data-zone="R" onclick="toggleZone(this)">→</button>
+                    <button class="zone-btn active" data-zone="BL" onclick="toggleZone(this)">↙</button>
+                    <button class="zone-btn active" data-zone="B" onclick="toggleZone(this)">↓</button>
+                    <button class="zone-btn active" data-zone="BR" onclick="toggleZone(this)">↘</button>
+                </div>
+                <div class="control-group" style="width:100%; margin-top:5px;"><label>Limit</label><input type="range" id="outerBound" min="20" max="300" value="100"></div>
+                <div class="control-group" style="width:100%;"><label>Spread</label><input type="range" id="zoneSpread" min="0" max="60" value="15"></div>
+            </div>
+        </div>
+
+        <div class="action-panel">
+            <div class="btn-row">
+                <button id="btnRegen" class="action-btn btn-gen">Generate</button>
+                <button id="btnAnim" class="action-btn btn-anim">Animate</button>
+            </div>
+            <div class="btn-row">
+                <button id="btnSave" class="action-btn btn-util">Save</button>
+                <button id="btnLoad" class="action-btn btn-util">Load</button>
+                <input type="file" id="fileInput" style="display:none" accept=".json">
+            </div>
+            <div class="btn-row">
+                <button id="btnPNG" class="action-btn btn-dl">PNG (3D)</button>
+                <button id="btnSVG" class="action-btn btn-dl">SVG (Flat)</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="scrollable-content">
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab(0)">Layer A</button>
+            <button class="tab-btn" onclick="switchTab(1)">Layer B</button>
+            <button class="tab-btn" onclick="switchTab(2)">Layer C</button>
+        </div>
+        <div id="settings-area">
+            <div id="layer-0" class="tab-content active"></div>
+            <div id="layer-1" class="tab-content"></div>
+            <div id="layer-2" class="tab-content"></div>
+        </div>
+    </div>
+</div>
+
+<div id="canvas-wrapper">
+    <div id="loading-screen">
+        <div id="loading-text">Initializing 3D Engine...</div>
+    </div>
+    <canvas id="three-canvas"></canvas>
+</div>
+
+<script>
+    // --- GLOBAL SCOPE (To fix reference errors) ---
+    let scene, camera, renderer, controls, rootGroup;
+    let canvas; 
+    let vectorData = [];
+    let gEls = {}; // Defined globally
+    let zones = { TL: true, T: true, TR: true, L: true, R: true, BL: true, B: true, BR: true };
+    const zoneAngles = { TL: 3*Math.PI/4, T: Math.PI/2, TR: Math.PI/4, L: Math.PI, R: 0, BL: -3*Math.PI/4, B: -Math.PI/2, BR: -Math.PI/4 };
+
+    window.onload = function() {
+        window.onerror = function(msg) {
+            document.getElementById('loading-text').innerText = "Error: " + msg;
+            document.getElementById('loading-text').style.color = "red";
+        };
+
+        const defaultLayers = [
+            { vineEnabled: true, len: 220, density: 50, dir: 30, curve: 40, stem1: '#1a261a', stem2: '#2d402d', leafEnabled: true, leafShape: 'plain', leafSize: 30, leaf1: '#1e3c1e', leaf2: '#2d5a2d', flowerEnabled: true, flowerType: 'round', flowerSize: 25, petals: 5, fColor1: '#d65c5c', fColor2: '#8a2b2b', fCenter: '#ffffaa' },
+            { vineEnabled: true, len: 160, density: 70, dir: 50, curve: 50, stem1: '#4a3b2a', stem2: '#5c4d3c', leafEnabled: true, leafShape: 'sawtooth', leafSize: 22, leaf1: '#549145', leaf2: '#78b865', flowerEnabled: true, flowerType: 'pointed', flowerSize: 20, petals: 6, fColor1: '#ffffff', fColor2: '#e0e0e0', fCenter: '#ffaa00' },
+            { vineEnabled: true, len: 100, density: 60, dir: 80, curve: 70, stem1: '#5c4d3c', stem2: '#756452', leafEnabled: true, leafShape: 'wavy', leafSize: 12, leaf1: '#a8e09b', leaf2: '#d4f7cc', flowerEnabled: true, flowerType: 'daisy', flowerSize: 10, petals: 16, fColor1: '#a3c2fa', fColor2: '#dcebff', fCenter: '#ffeebb' }
+        ];
+
+        function injectUI() {
+            const createLC = (i, d) => `
+            <details open><summary><span>VINE</span><div class="checkbox-row"><input type="checkbox" id="ve_${i}" ${d.vineEnabled?'checked':''} class="trigger-update"></div></summary><div class="details-content"><div class="control-grid"><div class="control-group"><label>Density</label><input type="range" id="den_${i}" min="10" max="150" value="${d.density}" class="trigger-update"></div><div class="control-group"><label>Length</label><input type="range" id="len_${i}" min="50" max="400" value="${d.len}" class="trigger-update"></div><div class="control-group"><label>Direction</label><input type="range" id="dir_${i}" min="0" max="100" value="${d.dir}" class="trigger-update"></div><div class="control-group"><label>Curvature</label><input type="range" id="cur_${i}" min="0" max="80" value="${d.curve}" class="trigger-update"></div><div class="control-group"><label>Stem Dk</label><input type="color" id="sc1_${i}" value="${d.stem1}" class="trigger-update"></div><div class="control-group"><label>Stem Lt</label><input type="color" id="sc2_${i}" value="${d.stem2}" class="trigger-update"></div></div></div></details>
+            <details><summary><span>FOLIAGE</span><div class="checkbox-row"><input type="checkbox" id="le_${i}" ${d.leafEnabled?'checked':''} class="trigger-update"></div></summary><div class="details-content"><div class="control-grid"><div class="control-group full-width"><label>Shape</label><select id="ls_${i}" class="trigger-update"><option value="plain" ${d.leafShape=='plain'?'selected':''}>Plain</option><option value="wavy" ${d.leafShape=='wavy'?'selected':''}>Wavy</option><option value="sawtooth" ${d.leafShape=='sawtooth'?'selected':''}>Sawtooth</option></select></div><div class="control-group full-width"><label>Size</label><input type="range" id="lfs_${i}" min="5" max="50" value="${d.leafSize}" class="trigger-update"></div><div class="control-group"><label>Color 1</label><input type="color" id="lc1_${i}" value="${d.leaf1}" class="trigger-update"></div><div class="control-group"><label>Color 2</label><input type="color" id="lc2_${i}" value="${d.leaf2}" class="trigger-update"></div></div></div></details>
+            <details><summary><span>BLOSSOMS</span><div class="checkbox-row"><input type="checkbox" id="fe_${i}" ${d.flowerEnabled?'checked':''} class="trigger-update"></div></summary><div class="details-content"><div class="control-grid"><div class="control-group full-width"><label>Type</label><select id="ft_${i}" class="trigger-update"><option value="round" ${d.flowerType=='round'?'selected':''}>Hibiscus</option><option value="pointed" ${d.flowerType=='pointed'?'selected':''}>Lily</option><option value="daisy" ${d.flowerType=='daisy'?'selected':''}>Daisy</option></select></div><div class="control-group"><label>Size</label><input type="range" id="fs_${i}" min="5" max="60" value="${d.flowerSize}" class="trigger-update"></div><div class="control-group"><label>Petals</label><input type="range" id="fp_${i}" min="4" max="20" value="${d.petals}" class="trigger-update"></div><div class="control-group"><label>P Color 1</label><input type="color" id="fc1_${i}" value="${d.fColor1}" class="trigger-update"></div><div class="control-group"><label>P Color 2</label><input type="color" id="fc2_${i}" value="${d.fColor2}" class="trigger-update"></div><div class="control-group full-width"><label>Center</label><input type="color" id="fcc_${i}" value="${d.fCenter}" class="trigger-update"></div></div></div></details>`;
+            for(let i=0; i<3; i++) document.getElementById(`layer-${i}`).innerHTML = createLC(i, defaultLayers[i]);
+        }
+        injectUI();
+
+        // Populate Global Elements Object (AFTER UI Injection)
+        gEls = { 
+            shape: document.getElementById('shapeSelect'), avoid: document.getElementById('avoidCenter'), 
+            outer: document.getElementById('outerBound'), spread: document.getElementById('zoneSpread'), 
+            strict: document.getElementById('strictZones'), wallForce: document.getElementById('wallForce'), 
+            cornerTension: document.getElementById('cornerTension'), zDepth: document.getElementById('zDepth'), 
+            tubeThick: document.getElementById('tubeThick'), viewScale: document.getElementById('viewScale'),
+            branchProb: document.getElementById('branchProb'),
+            useGlobalLeaf: document.getElementById('useGlobalLeaf'), leafMin: document.getElementById('leafMin'), leafMax: document.getElementById('leafMax')
+        };
+
+        // --- HELPERS (Safe Access) ---
+        function getVal(id, def) { const el = document.getElementById(id); return el ? el.value : def; }
+        function getCheck(id, def) { const el = document.getElementById(id); return el ? el.checked : def; }
+
+        // --- TEXTURES ---
+        let barkTexture, leafTexture, petalTexture;
+        function generateTextures() {
+            const cvs = document.createElement('canvas'); cvs.width=256; cvs.height=256; const ctx=cvs.getContext('2d');
+            ctx.fillStyle='#999'; ctx.fillRect(0,0,256,256);
+            for(let i=0;i<100;i++){ ctx.fillStyle=`rgba(50,50,50,${Math.random()*0.2})`; ctx.fillRect(Math.random()*256,0,2,256); }
+            barkTexture=new THREE.CanvasTexture(cvs); barkTexture.wrapS=THREE.RepeatWrapping; barkTexture.wrapT=THREE.RepeatWrapping;
+            
+            const lcvs=document.createElement('canvas'); lcvs.width=256; lcvs.height=256; const lctx=lcvs.getContext('2d');
+            lctx.fillStyle='#eee'; lctx.fillRect(0,0,256,256);
+            for(let i=0;i<5000;i++){ lctx.fillStyle=`rgba(0,0,0,${Math.random()*0.05})`; lctx.fillRect(Math.random()*256,Math.random()*256,2,2); }
+            lctx.strokeStyle='#aaa'; lctx.lineWidth=8; lctx.beginPath(); lctx.moveTo(0,128); lctx.lineTo(256,128); lctx.stroke();
+            leafTexture=new THREE.CanvasTexture(lcvs);
+
+            const pcvs=document.createElement('canvas'); pcvs.width=64; pcvs.height=256; const pctx=pcvs.getContext('2d');
+            const grd=pctx.createLinearGradient(0,0,0,256); grd.addColorStop(0,"#fff"); grd.addColorStop(1,"#ccc");
+            pctx.fillStyle=grd; pctx.fillRect(0,0,64,256);
+            petalTexture=new THREE.CanvasTexture(pcvs);
+        }
+
+        function init3D() {
+            if (typeof THREE === 'undefined') { setTimeout(init3D, 100); return; }
+            generateTextures();
+
+            canvas = document.querySelector('#three-canvas');
+            renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, preserveDrawingBuffer: true });
+            renderer.setSize(2400, 1600);
+            renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            
+            scene = new THREE.Scene(); scene.background = new THREE.Color(0xf5f5f5); 
+            
+            camera = new THREE.PerspectiveCamera(45, 2400/1600, 1, 5000);
+            camera.position.set(0, 0, 1200);
+            
+            controls = new THREE.OrbitControls(camera, canvas);
+            controls.enableDamping = true; controls.enableZoom = false;
+
+            const ambLight = new THREE.AmbientLight(0xffffff, 0.6); scene.add(ambLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+            dirLight.position.set(300, 800, 500); dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width=2048; dirLight.shadow.mapSize.height=2048; dirLight.shadow.radius=3; 
+            scene.add(dirLight);
+
+            const plane = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), new THREE.ShadowMaterial({ opacity: 0.1 })); 
+            plane.position.z = -150; plane.receiveShadow = true; scene.add(plane);
+
+            rootGroup = new THREE.Group(); scene.add(rootGroup);
+
+            document.getElementById('loading-screen').style.opacity = 0;
+            setTimeout(() => document.getElementById('loading-screen').style.display = 'none', 500);
+            setTimeout(() => { document.getElementById('canvas-wrapper').scrollTo((2400-window.innerWidth)/2, (1600-window.innerHeight)/2); }, 100);
+
+            animate();
+            generate();
+        }
+
+        function getConfig(i) {
+            return {
+                vineEn: getCheck(`ve_${i}`, true), density: parseInt(getVal(`den_${i}`, 30)), len: parseInt(getVal(`len_${i}`, 100)), dir: parseInt(getVal(`dir_${i}`, 50)), curve: parseInt(getVal(`cur_${i}`, 50)), stem1: getVal(`sc1_${i}`, '#000'), stem2: getVal(`sc2_${i}`, '#000'),
+                leafEn: getCheck(`le_${i}`, true), leafShape: getVal(`ls_${i}`, 'plain'), leafSize: parseInt(getVal(`lfs_${i}`, 20)), leaf1: getVal(`lc1_${i}`, '#0f0'), leaf2: getVal(`lc2_${i}`, '#0f0'),
+                flowEn: getCheck(`fe_${i}`, true), flowType: getVal(`ft_${i}`, 'round'), flowSize: parseInt(getVal(`fs_${i}`, 20)), petals: parseInt(getVal(`fp_${i}`, 5)), fc1: getVal(`fc1_${i}`, '#f00'), fc2: getVal(`fc2_${i}`, '#f00'), fcc: getVal(`fcc_${i}`, '#ff0')
+            };
+        }
+
+        // --- HELPER (Safe) ---
+        function getVal(id, def) { const el = document.getElementById(id); return el ? el.value : def; }
+        function getCheck(id, def) { const el = document.getElementById(id); return el ? el.checked : def; }
+
+        function lerpColor(a, b, amount) { return new THREE.Color(a).lerp(new THREE.Color(b), amount); }
+        function getPoly(n, w, h) { const v=[]; for(let i=0; i<n; i++) { const t = -Math.PI/2 + (i*2*Math.PI/n); v.push({x: w/2*Math.cos(t), y: h/2*Math.sin(t)}); } return v; }
+        function getIntersect(shape, angle) {
+            const dx=Math.cos(angle), dy=Math.sin(angle), w2=250, h2=200; 
+            if(shape === 'oval') return {x: w2*dx, y: h2*dy, norm: angle};
+            else if (shape === 'rectangle') {
+                const sx=(dx>0?w2:-w2)/dx, sy=(dy>0?h2:-h2)/dy, t=Math.min(Math.abs(sx), Math.abs(sy));
+                const ix=dx*t, iy=dy*t;
+                let n=angle; if(Math.abs(ix-w2)<1)n=0; else if(Math.abs(ix+w2)<1)n=Math.PI; else if(Math.abs(iy-h2)<1)n=Math.PI/2; else if(Math.abs(iy+h2)<1)n=-Math.PI/2;
+                return {x:ix, y:iy, norm:n};
+            } else {
+                const sides = shape==='pentagon'?5:6; const verts = getPoly(sides, 500, 400);
+                for(let i=0;i<sides;i++) {
+                    const p1=verts[i], p2=verts[(i+1)%sides];
+                    const den = (0-dx*1000)*(p1.y-p2.y) - (0-dy*1000)*(p1.x-p2.x);
+                    if(den!=0) { const t = ((0-p1.x)*(p1.y-p2.y) - (0-p1.y)*(p1.x-p2.x)) / den; if(t>0) { const ix=dx*t, iy=dy*t; const minX=Math.min(p1.x,p2.x)-1, maxX=Math.max(p1.x,p2.x)+1, minY=Math.min(p1.y,p2.y)-1, maxY=Math.max(p1.y,p2.y)+1; if(ix>=minX && ix<=maxX && iy>=minY && iy<=maxY) return {x:ix, y:iy, norm:Math.atan2(p2.y-p1.y, p2.x-p1.x)+Math.PI/2}; } }
+                }
+                return {x:0, y:0, norm:0};
+            }
+        }
+        function isInsideInner(x, y, shape) { const w2=250, h2=200; if(shape==='rectangle') return (x>-w2 && x<w2 && y>-h2 && y<h2); if(shape==='oval') return ((x*x)/(w2*w2) + (y*y)/(h2*h2)) <= 1; return false; }
+        function isPointInAllowedZone(x, y, allowedKeys) {
+            let angle = Math.atan2(y, x); const tol = Math.PI/8;
+            for(const [key, base] of Object.entries(zoneAngles)) {
+                let d = angle - base; while(d<=-Math.PI)d+=Math.PI*2; while(d>Math.PI)d-=Math.PI*2;
+                if(Math.abs(d)<=tol) return allowedKeys.includes(key);
+            }
+            return false;
+        }
+
+        // --- GENERATOR ---
+        function generate() {
+            if(!rootGroup) return;
+            for(let i = rootGroup.children.length - 1; i >= 0; i--) { rootGroup.remove(rootGroup.children[i]); }
+            vectorData = []; 
+
+            const activeZones = Object.keys(zones).filter(k => zones[k]);
+            if(activeZones.length === 0) return;
+
+            const shape = getVal('shapeSelect', 'rectangle');
+            const strict = getCheck('strictZones', false);
+            const avoid = getCheck('avoidCenter', true);
+            const maxDepth = parseInt(getVal('zDepth', 40));
+            const baseTubeRad = parseInt(getVal('tubeThick', 10)) / 10;
+            const spreadRad = parseInt(getVal('zoneSpread', 15)) * (Math.PI/180);
+            const limit = parseInt(getVal('outerBound', 100)) + 250; 
+            const wallF = parseInt(getVal('wallForce', 80))/100;
+            const cornerT = parseInt(getVal('cornerTension', 30))/100;
+            const scale = parseFloat(getVal('viewScale', 1.0));
+            const branchProb = parseInt(getVal('branchProb', 40)) / 100;
+            
+            rootGroup.scale.set(scale, scale, scale);
+
+            const useGl = getCheck('useGlobalLeaf', false);
+            const glMin = parseInt(getVal('leafMin', 10));
+            const glMax = parseInt(getVal('leafMax', 35));
+
+            function growVineRecursive(parentGroup, startPt, angle, len, width, generation, conf) {
+                if(generation < 0) return;
+                const points = []; points.push(startPt.clone());
+                let cx = startPt.x, cy = startPt.y, cz = startPt.z;
+                let moveAng = angle;
+                const segments = Math.floor(len / 5);
+                if(segments < 2) return;
+                let svgPts = [{x:cx, y:cy}];
+                
+                for(let s=0; s<segments; s++) {
+                    moveAng += (Math.random()-0.5) * (conf.curve*0.01);
+                    if(generation === 2) {
+                        const tx = cx + Math.cos(moveAng)*10, ty = cy + Math.sin(moveAng)*10;
+                        if(avoid && isInsideInner(tx, ty, shape)) { const afc = Math.atan2(ty, tx); moveAng += Math.atan2(Math.sin(afc-moveAng), Math.cos(afc-moveAng)) * (0.2 + wallF); if(wallF>0.5) moveAng+=(Math.random()-0.5)*cornerT; }
+                        if(Math.hypot(tx, ty) > limit) { const atc = Math.atan2(0-ty, 0-tx); moveAng += Math.atan2(Math.sin(atc-moveAng), Math.cos(atc-moveAng)) * 0.3; }
+                        if(strict && !isPointInAllowedZone(tx, ty, activeZones)) break; 
+                    }
+                    cx += Math.cos(moveAng)*5; cy += Math.sin(moveAng)*5; cz += (Math.random()-0.5)*2;
+                    const currPt = new THREE.Vector3(cx, cy, cz);
+                    points.push(currPt);
+                    svgPts.push({x:cx, y:cy});
+
+                    if(generation > 0 && s > 5 && Math.random() < (branchProb * 0.3)) { 
+                        const branchAng = moveAng + (Math.random()<0.5?1:-1)*(Math.PI/3);
+                        growVineRecursive(parentGroup, currPt, branchAng, len*0.5, width*0.6, generation-1, conf);
+                        s += 2;
+                    }
+                    if(conf.leafEn && s>4 && Math.random()<0.2) {
+                        const lAng = moveAng + (Math.random()<0.5?1:-1)*(Math.PI/3);
+                        const lSz = (useGl ? (glMin + Math.random()*(glMax-glMin)) : conf.leafSize) * (0.3 + 0.2*generation); 
+                        const lCol = lerpColor(conf.leaf1, conf.leaf2, Math.random());
+                        createLeaf3D(parentGroup, cx, cy, cz, lAng, lSz, conf.leafShape, lCol);
+                        vectorData.push({ type: 'leaf', x:cx, y:cy, ang:lAng, sz: lSz, shape: conf.leafShape, color: '#'+lCol.getHexString() });
+                    }
+                }
+                if(points.length > 1) {
+                    const curve = new THREE.CatmullRomCurve3(points);
+                    const geo = new THREE.TubeGeometry(curve, Math.floor(points.length/2), width, 6, false); 
+                    const mat = new THREE.MeshStandardMaterial({ color: lerpColor(conf.stem1, conf.stem2, Math.random()), roughness: 0.9, map: barkTexture, bumpMap: barkTexture, bumpScale: 0.2 });
+                    const mesh = new THREE.Mesh(geo, mat);
+                    mesh.castShadow = true; mesh.receiveShadow = true;
+                    parentGroup.add(mesh);
+                    vectorData.push({ type: 'vine', points: svgPts, color: '#'+mat.color.getHexString(), width: width*10 });
+                }
+                if(conf.flowEn) {
+                    const tip = points[points.length-1];
+                    createFlower3D(parentGroup, tip.x, tip.y, tip.z, moveAng, conf, 0.5 + 0.25*generation);
+                    vectorData.push({ type: 'flower', x:tip.x, y:tip.y, ang:moveAng, conf:conf });
+                }
+            }
+
+            for(let l=0; l<3; l++) {
+                const conf = getConfig(l);
+                if(!conf.vineEn) continue;
+                const layerGroup = new THREE.Group();
+                layerGroup.position.z = l * 8; 
+                rootGroup.add(layerGroup);
+
+                for(let i=0; i<conf.density; i++) {
+                    const zKey = activeZones[Math.floor(Math.random() * activeZones.length)];
+                    const baseAng = zoneAngles[zKey];
+                    const rayAng = baseAng + (Math.random()-0.5)*spreadRad;
+                    const hit = getIntersect(shape, rayAng);
+                    let cx = hit.x, cy = hit.y, ang = hit.norm;
+                    if(strict && !isPointInAllowedZone(cx, cy, activeZones)) continue;
+                    let cz = (Math.random() - 0.5) * maxDepth;
+                    const tang = (Math.random()<0.5) ? ang+Math.PI/2 : ang-Math.PI/2;
+                    const mix = conf.dir/100;
+                    let moveAng = ang*(1-mix) + tang*mix;
+                    cx += Math.cos(ang)*5; cy += Math.sin(ang)*5;
+                    growVineRecursive(layerGroup, new THREE.Vector3(cx, cy, cz), moveAng, conf.len, baseTubeRad, 2, conf);
+                }
+            }
+        }
+
+        function createLeaf3D(parent, x, y, z, ang, scale, shape, color) {
+            const shape2D = new THREE.Shape();
+            shape2D.moveTo(0,0);
+            if(shape === 'plain') { shape2D.quadraticCurveTo(scale*0.5, -scale*0.6, scale*1.5, 0); shape2D.quadraticCurveTo(scale*0.5, scale*0.6, 0, 0); } 
+            else if (shape === 'sawtooth') { shape2D.lineTo(scale*0.5, -scale*0.4); shape2D.lineTo(scale*0.8, -scale*0.6); shape2D.lineTo(scale*1.5, 0); shape2D.lineTo(scale*0.8, scale*0.6); shape2D.lineTo(scale*0.5, scale*0.4); shape2D.lineTo(0,0); } 
+            else { shape2D.bezierCurveTo(scale*0.5, -scale*0.8, scale*1.2, -scale*0.2, scale*1.5, 0); shape2D.bezierCurveTo(scale*1.2, scale*0.2, scale*0.5, scale*0.8, 0, 0); }
+            const geo = new THREE.ShapeGeometry(shape2D);
+            const mat = new THREE.MeshStandardMaterial({ color: color, side: THREE.DoubleSide, roughness: 0.9, map: leafTexture, bumpMap: leafTexture, bumpScale: 0.1 });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(x, y, z); mesh.rotation.z = ang; mesh.rotation.x = (Math.random()-0.5)*0.5; mesh.rotation.y = (Math.random()-0.5)*0.5;
+            mesh.castShadow = true; mesh.receiveShadow = true;
+            parent.add(mesh);
+        }
+
+        function createFlower3D(parent, x, y, z, ang, conf, scaleMult) {
+            const group = new THREE.Group();
+            group.position.set(x, y, z); group.rotation.z = ang; group.rotation.x = 0.5; 
+            const count = conf.petals; const scale = conf.flowSize * 0.6 * scaleMult; const type = conf.flowType;
+            const petalShape = new THREE.Shape(); petalShape.moveTo(0,0);
+            if(type === 'round') { petalShape.quadraticCurveTo(scale*0.5, -scale*0.6, scale, 0); petalShape.quadraticCurveTo(scale*0.5, scale*0.6, 0, 0); } else { petalShape.lineTo(scale*0.8, -scale*0.2); petalShape.lineTo(scale, 0); petalShape.lineTo(scale*0.8, scale*0.2); petalShape.lineTo(0,0); }
+            const petalGeo = new THREE.ShapeGeometry(petalShape);
+            for(let i=0; i<count; i++) {
+                const rot = (Math.PI*2*i)/count; const col = i%2===0 ? new THREE.Color(conf.fc1) : new THREE.Color(conf.fc2);
+                const mat = new THREE.MeshStandardMaterial({ color: col, side: THREE.DoubleSide, map: petalTexture, roughness: 1.0 });
+                const petal = new THREE.Mesh(petalGeo, mat);
+                petal.rotation.z = rot; petal.rotation.x = type==='round' ? 0.3 : -0.1; petal.castShadow = true;
+                group.add(petal);
+            }
+            const centerGeo = new THREE.SphereGeometry(scale*0.25, 8, 8); const centerMat = new THREE.MeshStandardMaterial({ color: conf.fcc }); const center = new THREE.Mesh(centerGeo, centerMat); center.position.z = 1; group.add(center);
+            parent.add(group);
+        }
+
+        function animate() { requestAnimationFrame(animate); controls.update(); renderer.render(scene, camera); }
+
+        window.addEventListener('resize', () => { camera.aspect = canvas.clientWidth/canvas.clientHeight; camera.updateProjectionMatrix(); renderer.setSize(canvas.clientWidth, canvas.clientHeight, false); });
+        document.getElementById('btnRegen').addEventListener('click', generate);
+        document.querySelectorAll('.trigger-update').forEach(el => el.addEventListener(el.type==='checkbox'?'change':'input', generate));
+        document.querySelectorAll('.zone-btn').forEach(btn => btn.addEventListener('click', (e) => { zones[e.target.dataset.zone] = !zones[e.target.dataset.zone]; e.target.classList.toggle('active'); generate(); }));
+        Object.values(gEls).forEach(el => { if(el) el.addEventListener(el.type==='checkbox'?'change':'input', generate); });
+
+        document.getElementById('btnPNG').addEventListener('click', () => { renderer.render(scene, camera); const a = document.createElement('a'); a.download = 'botanical_realistic.png'; a.href = canvas.toDataURL('image/png'); a.click(); });
+        document.getElementById('btnSVG').addEventListener('click', () => {
+            let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-600 -500 1200 1000">`; const flipY = -1; 
+            for(let item of vectorData) {
+                if(item.type === 'vine') { let path = ""; item.points.forEach((p, i) => path += (i===0?`M ${p.x.toFixed(1)} ${(p.y*flipY).toFixed(1)} `: `L ${p.x.toFixed(1)} ${(p.y*flipY).toFixed(1)} `)); s += `<path d="${path}" stroke="${item.color}" stroke-width="${item.width.toFixed(1)}" fill="none" stroke-linecap="round" />`; } 
+                else if (item.type === 'leaf') { const sz = item.sz * 2; const pts = []; const stp=5; for(let t=0; t<=1; t+=1/stp) { let bx = 2*(1-t)*t*(sz*0.8) + t*t*(sz*2.5); let by = 2*(1-t)*t*(-sz*0.6); if(item.shape=='sawtooth') by+=(Math.abs(((t*12)%2)-1)-0.5)*(sz*0.2); else if(item.shape=='wavy') by+=Math.sin(t*10)*(sz*0.15); pts.push({x:bx, y:by}); } for(let t=0; t<=1; t+=1/stp) { let bx = (1-t)*(1-t)*(sz*2.5) + 2*(1-t)*t*(sz*0.8); let by = 2*(1-t)*t*(sz*0.6); if(item.shape=='sawtooth') by+=(Math.abs(((t*12)%2)-1)-0.5)*(sz*0.2); else if(item.shape=='wavy') by+=Math.sin(t*10)*(sz*0.15); pts.push({x:bx, y:by}); } let d = `M 0,0 `; for(let p of pts) d += `L ${p.x.toFixed(1)} ${p.y.toFixed(1)} `; d += "Z"; s += `<g transform="translate(${item.x.toFixed(1)},${(item.y*flipY).toFixed(1)}) rotate(${(-item.ang*180/Math.PI).toFixed(1)})"><path d="${d}" fill="${item.color}" stroke="none" /><line x1="0" y1="0" x2="${(sz*2.2).toFixed(1)}" y2="0" stroke="rgba(0,0,0,0.2)" stroke-width="1"/></g>`; } 
+                else if (item.type === 'flower') { const scale = item.conf.flowSize; const count = item.conf.petals; s += `<g transform="translate(${item.x.toFixed(1)},${(item.y*flipY).toFixed(1)}) rotate(${(-item.ang*180/Math.PI).toFixed(1)})">`; for(let i=0; i<count; i++) { const rot = (360*i)/count; const col = i%2===0?item.conf.fc1:item.conf.fc2; const d = `M 0,0 Q ${scale*0.5},${-scale*0.3} ${scale},0 Q ${scale*0.5},${scale*0.3} 0,0`; s += `<path d="${d}" fill="${col}" transform="rotate(${rot})" />`; } s += `<circle r="${scale*0.25}" fill="${item.conf.fcc}" /></g>`; }
+            } s += `</svg>`;
+            const blob = new Blob([s], {type: 'image/svg+xml'}); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.download = 'botanical_vector.svg'; a.href = url; a.click();
+        });
+
+        document.getElementById('btnSave').addEventListener('click', () => { const data = { layers: [getConfig(0), getConfig(1), getConfig(2)], global: { shape: gEls.shape.value, avoid: gEls.avoid.checked, spread: gEls.spread.value, limit: gEls.outer.value, strict: gEls.strict.checked, useGl: gEls.useGlobalLeaf.checked, glMin: gEls.leafMin.value, glMax: gEls.leafMax.value, wF: gEls.wallForce.value, cT: gEls.cornerTension ? gEls.cornerTension.value : 30, zDepth: gEls.zDepth.value, tThick: gEls.tubeThick.value, vScale: gEls.viewScale.value, bProb: gEls.branchProb.value, zones: zones } }; const blob = new Blob([JSON.stringify(data)], {type: 'application/json'}); const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='botanical-preset.json'; a.click(); });
+        document.getElementById('btnLoad').addEventListener('click', () => document.getElementById('fileInput').click());
+        document.getElementById('fileInput').addEventListener('change', (e) => { const r = new FileReader(); r.onload = (ev) => { const d = JSON.parse(ev.target.result); gEls.shape.value = d.global.shape; gEls.avoid.checked = d.global.avoid; gEls.spread.value = d.global.spread; gEls.outer.value = d.global.limit; gEls.strict.checked = d.global.strict; gEls.useGlobalLeaf.checked = d.global.useGl; gEls.leafMin.value = d.global.glMin; gEls.leafMax.value = d.global.glMax; gEls.wallForce.value = d.global.wF; if(gEls.cornerTension) gEls.cornerTension.value = d.global.cT; gEls.zDepth.value = d.global.zDepth; gEls.tubeThick.value = d.global.tThick; gEls.viewScale.value = d.global.vScale; gEls.branchProb.value = d.global.bProb; zones = d.global.zones; d.layers.forEach((l, i) => { document.getElementById(`ve_${i}`).checked = l.vineEn; document.getElementById(`den_${i}`).value = l.density; document.getElementById(`len_${i}`).value = l.len; document.getElementById(`dir_${i}`).value = l.dir; document.getElementById(`cur_${i}`).value = l.curve; document.getElementById(`sc1_${i}`).value = l.stem1; document.getElementById(`sc2_${i}`).value = l.stem2; document.getElementById(`le_${i}`).checked = l.leafEn; document.getElementById(`ls_${i}`).value = l.leafShape; document.getElementById(`lfs_${i}`).value = l.leafSize; document.getElementById(`lc1_${i}`).value = l.leaf1; document.getElementById(`lc2_${i}`).value = l.leaf2; document.getElementById(`fe_${i}`).checked = l.flowEn; document.getElementById(`ft_${i}`).value = l.flowType; document.getElementById(`fs_${i}`).value = l.flowSize; document.getElementById(`fp_${i}`).value = l.petals; document.getElementById(`fc1_${i}`).value = l.fc1; document.getElementById(`fc2_${i}`).value = l.fc2; document.getElementById(`fcc_${i}`).value = l.fcc; }); document.querySelectorAll('.zone-btn').forEach(b => { if(zones[b.dataset.zone]) b.classList.add('active'); else b.classList.remove('active'); }); generate(); }; r.readAsText(e.target.files[0]); });
+
+        document.getElementById('btnAnim').addEventListener('click', () => { let s=Date.now(); let o=camera.position.clone(); function loop(){ let e=Date.now()-s; if(e>5000){camera.position.copy(o);return;} let a=(e/5000)*Math.PI*2; camera.position.x=o.z*Math.sin(a); camera.position.z=o.z*Math.cos(a); camera.lookAt(0,0,0); requestAnimationFrame(loop); } loop(); });
+
+        window.switchTab = function(idx) { document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active')); document.getElementById(`layer-${idx}`).classList.add('active'); document.querySelectorAll('.tab-btn')[idx].classList.add('active'); }
+        window.toggleGP = function(header) { header.nextElementSibling.classList.toggle('open'); }
+        window.toggleZone = function(btn) { /* Handled above */ }
+
+        // Start
+        init3D();
+    };
+</script>
+</body>
+</html>
