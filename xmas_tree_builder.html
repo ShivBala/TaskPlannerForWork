@@ -6,6 +6,8 @@
     <title>L-System Xmas Tree Generator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    <!-- Paper.js for Boolean Operations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.12.17/paper-full.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@400;700&family=Inter:wght@300;400;600&display=swap');
         
@@ -285,7 +287,7 @@
             </div>
 
             <!-- Actions -->
-            <div class="pt-4 space-y-2">
+            <div class="pt-4 space-y-2 pb-8">
                 <button id="generateBtn" class="w-full py-2 bg-green-600 hover:bg-green-500 text-white font-bold rounded shadow-lg transition transform active:scale-95">
                     <i class="fa-solid fa-arrows-rotate mr-2"></i> Regenerate Tree
                 </button>
@@ -295,9 +297,13 @@
                         <i class="fa-solid fa-image mr-1"></i> PNG
                     </button>
                     <button id="dlSvg" class="py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs font-semibold rounded transition">
-                        <i class="fa-solid fa-bezier-curve mr-1"></i> SVG
+                        <i class="fa-solid fa-bezier-curve mr-1"></i> Vector SVG
                     </button>
                 </div>
+
+                <button id="dlLaser" class="w-full py-2 bg-orange-700 hover:bg-orange-600 text-white text-xs font-semibold rounded transition shadow-md">
+                    <i class="fa-solid fa-wand-magic-sparkles mr-2"></i> Export Laser SVG (Merged)
+                </button>
                 
                 <div class="grid grid-cols-2 gap-2">
                     <button id="saveCsv" class="py-2 bg-blue-900 hover:bg-blue-800 text-white text-xs font-semibold rounded transition text-center">
@@ -322,9 +328,21 @@
 
         <canvas id="treeCanvas" class="relative z-10 shadow-2xl rounded-sm"></canvas>
         
+        <!-- Hidden canvas for Paper.js logic -->
+        <canvas id="paperCanvas" class="hidden"></canvas>
+
         <div class="absolute bottom-4 right-4 text-slate-500 text-xs z-10 text-right opacity-50">
             Render Mode: Per-Needle Shading<br>
             Z-Sorted Geometry
+        </div>
+        
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="absolute inset-0 bg-slate-900 bg-opacity-80 z-50 flex items-center justify-center hidden">
+            <div class="text-center">
+                <i class="fa-solid fa-circle-notch fa-spin text-4xl text-green-400 mb-2"></i>
+                <p class="text-white font-bold">Merging Geometry...</p>
+                <p class="text-xs text-slate-300">This may take a few seconds</p>
+            </div>
         </div>
     </div>
 
@@ -332,9 +350,16 @@
         /**
          * L-System & Rendering Logic
          */
+        
+        // Initialize Paper.js on window load
+        window.onload = function() {
+            const pCanvas = document.getElementById('paperCanvas');
+            paper.setup(pCanvas);
+        }
 
         const canvas = document.getElementById('treeCanvas');
         const ctx = canvas.getContext('2d');
+        const loadingOverlay = document.getElementById('loadingOverlay');
         
         let svgContent = "";
         let svgWidth = 0;
@@ -506,6 +531,7 @@
             generateBtn: document.getElementById('generateBtn'),
             dlPng: document.getElementById('dlPng'),
             dlSvg: document.getElementById('dlSvg'),
+            dlLaser: document.getElementById('dlLaser'),
             saveCsv: document.getElementById('saveCsv'),
             loadCsv: document.getElementById('loadCsv')
         };
@@ -600,6 +626,10 @@
 
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             renderQueue = []; 
+            
+            // Reset Global SVG Content
+            svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" style="background-color:#0f172a">`;
+            svgContent += `<defs><filter id="glow"><feGaussianBlur stdDeviation="2.5" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
 
             const startX = canvas.width / 2;
             const startY = canvas.height - 60;
@@ -636,9 +666,7 @@
 
             renderQueue.sort((a, b) => a.z - b.z);
 
-            svgContent = `<svg xmlns="http://www.w3.org/2000/svg" width="${svgWidth}" height="${svgHeight}" viewBox="0 0 ${svgWidth} ${svgHeight}" style="background-color:#0f172a">`;
-            svgContent += `<defs><filter id="glow"><feGaussianBlur stdDeviation="2.5" result="coloredBlur"/><feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>`;
-
+            // Draw items to Canvas AND append to SVG string
             renderQueue.forEach(item => {
                 if (item.type === 'wood') drawWood(item, startX, startY);
                 else if (item.type === 'leaf') drawLeaf(item, startX, startY);
@@ -1108,6 +1136,122 @@
                 stroke: color, "stroke-width": 4
             });
         }
+        
+        /**
+         * Paper.js Boolean Logic for Export
+         */
+        async function generateLaserSVG() {
+             loadingOverlay.classList.remove('hidden');
+             
+             // Wait a tick to let UI update
+             await new Promise(r => setTimeout(r, 50));
+
+             // 1. Setup Project
+             // Ensure hidden canvas has dimensions!
+             const pCanvas = document.getElementById('paperCanvas');
+             pCanvas.width = canvas.width;
+             pCanvas.height = canvas.height;
+             
+             paper.setup(pCanvas);
+             paper.view.viewSize = new paper.Size(canvas.width, canvas.height);
+             paper.project.clear();
+             
+             // 2. Extract Wood items
+             const woodItems = renderQueue.filter(i => i.type === 'wood');
+             
+             // 3. Create Main Union Path
+             let trunkPath = new paper.Path();
+             
+             // Create paths for every branch segment
+             // We must convert line segments (x1,y1 -> x2,y2 with width) into Rectangles/Polygons
+             woodItems.forEach(w => {
+                 const p1 = new paper.Point(w.x1, w.y1);
+                 const p2 = new paper.Point(w.x2, w.y2);
+                 const vec = p2.subtract(p1);
+                 const norm = vec.normalize().rotate(90);
+                 const offset = norm.multiply(w.width / 2);
+                 
+                 const c1 = p1.add(offset);
+                 const c2 = p2.add(offset);
+                 const c3 = p2.subtract(offset);
+                 const c4 = p1.subtract(offset);
+                 
+                 const branchPoly = new paper.Path({
+                     segments: [c1, c2, c3, c4],
+                     closed: true,
+                     insert: false
+                 });
+                 
+                 // Add round caps at ends for smoothness (circles)
+                 const cap1 = new paper.Path.Circle({ center: p1, radius: w.width/2, insert:false });
+                 const cap2 = new paper.Path.Circle({ center: p2, radius: w.width/2, insert:false });
+                 
+                 const segmentShape = branchPoly.unite(cap1).unite(cap2);
+                 
+                 // Unite into main trunk
+                 const newTrunk = trunkPath.unite(segmentShape);
+                 // Clean up old paths to free memory
+                 trunkPath.remove(); 
+                 trunkPath = newTrunk;
+             });
+             
+             trunkPath.style = {
+                 fillColor: null,
+                 strokeColor: 'red',
+                 strokeWidth: 1 // Hairline for cutting
+             };
+             // Ensure path is added to project
+             paper.project.activeLayer.addChild(trunkPath);
+             
+             // 4. Create Decor/Needles Group (Engraving)
+             // We don't unite these, we just export them as lines/circles
+             const engraveGroup = new paper.Group();
+             
+             renderQueue.filter(i => i.type !== 'wood').forEach(i => {
+                 if (i.type === 'leaf') {
+                    const type = params.leafType || 'pine';
+                    const count = (type === 'sparse') ? 3 : (type === 'pine' ? 8 : 1); 
+                    const r = i.size;
+                    
+                    for(let k=0; k<count; k++) {
+                        const ang = Math.random() * Math.PI * 2;
+                        const len = r * (0.4 + Math.random() * 0.6);
+                        const nx = i.x + Math.cos(ang) * len;
+                        const ny = i.y + Math.sin(ang) * len;
+                        const line = new paper.Path.Line(new paper.Point(i.x, i.y), new paper.Point(nx, ny));
+                        line.strokeColor = 'blue'; // Blue for engrave
+                        engraveGroup.addChild(line);
+                    }
+                 } else if (i.type === 'star') {
+                     const star = new paper.Path.Star(new paper.Point(i.x, i.y), 5, i.size/2, i.size);
+                     star.strokeColor = 'blue';
+                     engraveGroup.addChild(star);
+                 } else if (i.type === 'decor') {
+                     const c = new paper.Path.Circle(new paper.Point(i.x, i.y), params.baubleSize);
+                     c.strokeColor = 'blue';
+                     engraveGroup.addChild(c);
+                 }
+             });
+             
+             // 5. Export
+             // Force bounds update
+             paper.view.update();
+             const svgString = paper.project.exportSVG({ asString: true, bounds: 'content' });
+             
+             const blob = new Blob([svgString], {type: 'image/svg+xml;charset=utf-8'});
+             const url = URL.createObjectURL(blob);
+             const link = document.createElement('a');
+             link.download = 'tree_laser_cut_ready.svg';
+             link.href = url;
+             link.click();
+             
+             loadingOverlay.classList.add('hidden');
+        }
+        
+        inputs.dlLaser.addEventListener('click', () => {
+            // Use timeout to allow UI to render the loading spinner first
+            setTimeout(generateLaserSVG, 10);
+        });
 
         Object.keys(inputs).forEach(key => {
             const el = inputs[key];
