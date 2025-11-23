@@ -3,43 +3,67 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Golden Studio - v8 (Controls Restored)</title>
+    <title>Golden Studio v15 - Perfect Rail</title>
     <style>
         body { margin: 0; background: #050505; color: #ccc; font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; }
-        .sidebar { width: 360px; background: #111; border-right: 1px solid #222; display: flex; flex-direction: column; z-index: 10; box-shadow: 5px 0 30px rgba(0,0,0,0.9); }
-        .scroll-area { padding: 20px; overflow-y: auto; flex-grow: 1; }
+        
+        .sidebar { width: 400px; background: #111; border-right: 1px solid #222; display: flex; flex-direction: column; z-index: 10; box-shadow: 5px 0 30px rgba(0,0,0,0.9); }
+        .sidebar-tabs { display: flex; border-bottom: 1px solid #222; background: #0a0a0a; }
+        .tab-btn { flex: 1; padding: 12px; background: transparent; border: none; color: #666; cursor: pointer; font-weight: 600; border-bottom: 2px solid transparent; transition: 0.2s; }
+        .tab-btn.active { color: #d4af37; border-bottom-color: #d4af37; background: #161616; }
+        
+        .scroll-area { padding: 20px; overflow-y: auto; flex-grow: 1; display: none; }
+        .scroll-area.active { display: block; }
         .scroll-area::-webkit-scrollbar { width: 6px; }
         .scroll-area::-webkit-scrollbar-track { background: #111; }
         .scroll-area::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
-        
+
         h2 { color: #fff; margin: 0 0 5px 0; font-size: 18px; letter-spacing: 1px; }
         .subtitle { color: #d4af37; font-size: 11px; margin-bottom: 20px; text-transform: uppercase; font-weight: bold; letter-spacing: 2px; }
-        h3 { color: #666; font-size: 11px; margin: 15px 0 5px 0; text-transform: uppercase; border-bottom: 1px solid #222; padding-bottom: 4px; font-weight: 700;}
+        h3 { color: #888; font-size: 11px; margin: 20px 0 8px 0; text-transform: uppercase; border-bottom: 1px solid #222; padding-bottom: 4px; font-weight: 700; letter-spacing: 0.5px;}
 
         .control-group { background: #161616; padding: 10px; border-radius: 6px; border: 1px solid #2a2a2a; margin-bottom: 8px; }
-        label { font-size: 12px; color: #aaa; display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;}
-        span.val { color: #d4af37; font-family: monospace; font-size: 12px;}
+        label { font-size: 11px; color: #aaa; display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-weight: 500;}
+        span.val { color: #d4af37; font-family: monospace; font-size: 11px;}
         
         input[type=range] { width: 100%; accent-color: #d4af37; background: #333; height: 4px; border-radius: 2px; outline: none; cursor: pointer; }
         select { width: 100%; background: #222; color: #fff; border: 1px solid #444; padding: 8px; border-radius: 4px; font-size: 12px; outline: none; }
-        
+
+        .layer-list { display: flex; flex-direction: column; gap: 8px; }
+        .layer-item { background: #1a1a1a; border: 1px solid #333; padding: 10px; border-radius: 4px; display: flex; align-items: center; gap: 10px; cursor: pointer; transition: 0.2s; }
+        .layer-item:hover { background: #222; border-color: #555; }
+        .layer-item.selected { background: #2a2200; border-color: #d4af37; }
+        .layer-info { flex-grow: 1; }
+        .layer-title { font-size: 12px; color: #fff; font-weight: bold; }
+        .layer-sub { font-size: 10px; color: #888; }
+        .layer-actions { display: flex; gap: 4px; }
+        .icon-btn { background: #333; border: none; color: #aaa; width: 24px; height: 24px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;}
+        .icon-btn:hover { background: #444; color: #fff; }
+        .btn-del:hover { background: #522; color: #f88; }
+        .add-layer-btn { background: #222; border: 1px dashed #444; color: #888; width: 100%; padding: 10px; cursor: pointer; border-radius: 4px; font-size: 11px; margin-top: 10px; transition: 0.2s;}
+        .add-layer-btn:hover { border-color: #d4af37; color: #d4af37; background: #2a2200; }
+
+        .sector-wrapper { margin-top: 5px; }
+        .sector-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; aspect-ratio: 1; background: #111; border: 1px solid #333; padding: 2px; }
+        .sector-cell { background: #222; border: 1px solid #2a2a2a; cursor: pointer; transition: 0.1s; }
+        .sector-cell:hover { background: #333; }
+        .sector-cell.active { background: #d4af37; border-color: #fff; box-shadow: 0 0 5px #d4af37; }
+        .sector-toolbar { display: flex; gap: 5px; margin-top: 8px; }
+        .tool-btn { flex: 1; background: #222; border: 1px solid #333; color: #888; font-size: 9px; padding: 4px; cursor: pointer; text-transform: uppercase; }
+        .tool-btn:hover { color: #fff; border-color: #555; }
+
         .preset-row { display: flex; gap: 5px; margin-bottom: 15px; }
-        .preset-btn { flex: 1; background: #2a2a2a; border: 1px solid #444; color: #ccc; padding: 8px; font-size: 11px; cursor: pointer; border-radius: 3px; text-align: center; transition: all 0.2s; }
+        .preset-btn { flex: 1; background: #2a2a2a; border: 1px solid #444; color: #ccc; padding: 8px; font-size: 11px; cursor: pointer; border-radius: 3px; text-align: center; }
         .preset-btn:hover { background: #333; border-color: #d4af37; color: #fff; }
         input[type="file"] { display: none; }
 
-        .sector-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 5px; }
-        .sector-btn { background: #222; border: 1px solid #333; color: #555; padding: 8px 0; font-size: 10px; text-align: center; cursor: pointer; border-radius: 3px; user-select: none; }
-        .sector-btn.active { background: #d4af37; color: #000; font-weight: bold; border-color: #d4af37; }
-        
-        button.main-action { margin: 20px; padding: 16px; background: linear-gradient(135deg, #d4af37 0%, #8c702a 100%); border: none; color: white; font-weight: 800; cursor: pointer; border-radius: 4px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s; }
+        button.main-action { margin: 20px; padding: 16px; background: linear-gradient(135deg, #d4af37 0%, #8c702a 100%); border: none; color: white; font-weight: 800; cursor: pointer; border-radius: 4px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s; width: 100%; }
         button.main-action:hover { filter: brightness(1.15); }
         button.main-action:disabled { background: #333; color: #555; cursor: wait; }
 
         #canvas-wrapper { flex-grow: 1; position: relative; background: #080808; display: flex; justify-content: center; align-items: center; overflow: hidden; }
-        canvas { box-shadow: 0 0 40px #000; display: block; max-width: 95%; max-height: 95%; border: 1px solid #333; }
-        
-        .loading-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); color: #d4af37; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
+        canvas { box-shadow: 0 0 60px #000; display: block; max-width: 95%; max-height: 95%; border: 1px solid #333; }
+        .loading-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); color: #d4af37; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
         .spinner { border: 4px solid #222; border-top: 4px solid #d4af37; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
@@ -55,158 +79,213 @@
 <body>
 
 <div class="sidebar">
-    <div class="scroll-area">
-        <h2>Golden Studio</h2>
-        <div class="subtitle">Botanist Edition v8</div>
+    <div class="sidebar-tabs">
+        <button class="tab-btn active" onclick="switchTab('edit')">Designer</button>
+        <button class="tab-btn" onclick="switchTab('layers')">Layers</button>
+        <button class="tab-btn" onclick="switchTab('global')">Global</button>
+    </div>
 
-        <h3>Preset Manager</h3>
+    <div id="tab-edit" class="scroll-area active">
         <div class="preset-row">
             <button class="preset-btn" id="btn-csv-export">Export CSV</button>
             <label class="preset-btn" for="csv-upload">Import CSV</label>
             <input type="file" id="csv-upload" accept=".csv">
         </div>
 
-        <h3>1. Lighting & Camera</h3>
+        <div id="no-layer-msg" style="display:none; text-align:center; padding:20px; color:#666;">No layer selected</div>
+        <div id="layer-controls">
+            
+            <h3>Material (Layer)</h3>
+            <div class="control-group">
+                <label>Material</label>
+                <select id="l_material">
+                    <option value="gold">Pure Gold</option>
+                    <option value="rose">Rose Gold</option>
+                    <option value="silver">Silver</option>
+                    <option value="platinum">Platinum</option>
+                    <option value="obsidian">Obsidian</option>
+                    <option value="porcelain">Porcelain</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Roughness <span class="val" id="val-l_roughness"></span></label>
+                <input type="range" id="l_roughness" min="0" max="1" step="0.05">
+            </div>
+            <div class="control-group">
+                <label>Metalness <span class="val" id="val-l_metalness"></span></label>
+                <input type="range" id="l_metalness" min="0" max="1" step="0.05">
+            </div>
+
+            <h3>Layout</h3>
+            <div class="control-group">
+                <label>Mode</label>
+                <select id="l_mode">
+                    <option value="grid">Grid / Border</option>
+                    <option value="single">Single (Center)</option>
+                </select>
+            </div>
+            
+            <div id="sector-control-group">
+                <div class="control-group">
+                    <label>Placement Grid (6x6)</label>
+                    <div class="sector-wrapper">
+                        <div class="sector-grid" id="sector-grid-container"></div>
+                        <div class="sector-toolbar">
+                            <button class="tool-btn" onclick="gridAction('border')">Border</button>
+                            <button class="tool-btn" onclick="gridAction('corners')">Corners</button>
+                            <button class="tool-btn" onclick="gridAction('all')">Fill</button>
+                            <button class="tool-btn" onclick="gridAction('clear')">Clear</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="control-group">
+                    <label>Fill Type</label>
+                    <select id="l_fillMode">
+                        <option value="continuous">Continuous (Rail)</option>
+                        <option value="cell">Cell (Cluster)</option>
+                    </select>
+                </div>
+
+                <div id="cell-density-controls">
+                    <div class="control-group">
+                        <label>Cols (X) <span style="font-size:9px; color:#666;">0=Auto</span> <span class="val" id="val-l_cols"></span></label>
+                        <input type="range" id="l_cols" min="0" max="6" step="1" value="0">
+                    </div>
+                    <div class="control-group">
+                        <label>Rows (Y) <span style="font-size:9px; color:#666;">0=Auto</span> <span class="val" id="val-l_rows"></span></label>
+                        <input type="range" id="l_rows" min="0" max="6" step="1" value="0">
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Spacing (Gap) <span class="val" id="val-l_spacing"></span></label>
+                    <input type="range" id="l_spacing" min="1.0" max="15.0" step="0.5">
+                </div>
+                <div class="control-group">
+                    <label>Margin <span class="val" id="val-l_margin"></span></label>
+                    <input type="range" id="l_margin" min="0" max="45.0" step="0.5">
+                </div>
+            </div>
+
+            <h3>Geometry</h3>
+            <div class="control-group">
+                <label>Type</label>
+                <select id="l_type">
+                    <option value="flower">Flower (Radial)</option>
+                    <option value="leaf">Leaf (Botanic)</option>
+                </select>
+            </div>
+            <div class="control-group">
+                <label>Scale <span class="val" id="val-l_scale"></span></label>
+                <input type="range" id="l_scale" min="0.1" max="15.0" step="0.1">
+            </div>
+            
+            <div id="flower-controls">
+                <div class="control-group">
+                    <label>Petal Shape</label>
+                    <select id="l_petalShape">
+                        <option value="standard">Standard</option>
+                        <option value="convex">Convex</option>
+                        <option value="concave">Concave</option>
+                        <option value="squared">Squared</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Radial Count <span class="val" id="val-l_k1"></span></label>
+                    <input type="range" id="l_k1" min="2" max="16" step="1">
+                </div>
+                <div class="control-group">
+                    <label>Vertical Count <span class="val" id="val-l_k2"></span></label>
+                    <input type="range" id="l_k2" min="1" max="16" step="1">
+                </div>
+                <div class="control-group">
+                    <label>Center Radius <span class="val" id="val-l_centerRadius"></span></label>
+                    <input type="range" id="l_centerRadius" min="0.0" max="1.5" step="0.05">
+                </div>
+            </div>
+
+            <div id="leaf-controls" style="display:none;">
+                <div class="control-group">
+                    <label>Leaf Species</label>
+                    <select id="l_leafSpecies">
+                        <option value="standard">Standard</option>
+                        <option value="lanceolate">Lanceolate (Willow)</option>
+                        <option value="cordate">Cordate (Heart)</option>
+                        <option value="serrate">Serrate (Rose)</option>
+                        <option value="maple">Maple (Lobed)</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Leaf Width <span class="val" id="val-l_leafWidth"></span></label>
+                    <input type="range" id="l_leafWidth" min="0.2" max="3.0" step="0.1">
+                </div>
+                <div class="control-group">
+                    <label>Bend <span class="val" id="val-l_bend"></span></label>
+                    <input type="range" id="l_bend" min="-2.0" max="2.0" step="0.1">
+                </div>
+                <div class="control-group">
+                    <label>Vein Depth <span class="val" id="val-l_vein"></span></label>
+                    <input type="range" id="l_vein" min="0.0" max="2.0" step="0.1">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>Twist <span class="val" id="val-l_twist"></span></label>
+                <input type="range" id="l_twist" min="-3" max="3" step="0.1">
+            </div>
+            <div class="control-group">
+                <label>Sharpness <span class="val" id="val-l_sharp"></span></label>
+                <input type="range" id="l_sharp" min="0.2" max="5.0" step="0.1">
+            </div>
+
+            <h3>Transform</h3>
+            <div class="control-group">
+                <label>Rotation X/Y/Z</label>
+                <div style="display:flex; gap:5px;">
+                    <input type="range" id="l_rotX" min="0" max="360" step="5">
+                    <input type="range" id="l_rotY" min="0" max="360" step="5">
+                    <input type="range" id="l_rotZ" min="0" max="360" step="5">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-layers" class="scroll-area">
+        <h3>Layer Manager</h3>
+        <div id="layer-list-container" class="layer-list"></div>
+        <button class="add-layer-btn" onclick="addLayer()">+ Add New Layer</button>
+    </div>
+
+    <div id="tab-global" class="scroll-area">
+        <h3>Environment</h3>
         <div class="control-group">
-            <label>Exposure <span class="val" id="val-exposure">1.5</span></label>
-            <input type="range" id="exposure" min="0.1" max="4.0" step="0.1" value="1.5">
+            <label>Exposure <span class="val" id="val-g_exposure">1.5</span></label>
+            <input type="range" id="g_exposure" min="0.1" max="4.0" step="0.1" value="1.5">
         </div>
         <div class="control-group">
-            <label>Light Rotation <span class="val" id="val-lightRot">0</span>°</label>
-            <input type="range" id="lightRot" min="0" max="360" step="5" value="0">
+            <label>Light Rotation <span class="val" id="val-g_lightRot">0</span>°</label>
+            <input type="range" id="g_lightRot" min="0" max="360" step="5" value="0">
         </div>
         <div class="control-group">
             <label>Aspect Ratio</label>
-            <select id="canvasShape">
+            <select id="g_canvasShape">
                 <option value="square">Square (1:1)</option>
                 <option value="portrait">Portrait (4:5)</option>
                 <option value="landscape">Landscape (3:2)</option>
             </select>
         </div>
-
-        <h3>2. Material</h3>
-        <div class="control-group">
-            <label>Material Type</label>
-            <select id="material">
-                <option value="gold">Pure Gold</option>
-                <option value="rose">Rose Gold</option>
-                <option value="silver">Silver</option>
-                <option value="platinum">Platinum</option>
-                <option value="obsidian">Obsidian</option>
-                <option value="porcelain">Porcelain</option>
-            </select>
-        </div>
-        <div class="control-group">
-            <label>Metalness <span class="val" id="val-metalness">1.0</span></label>
-            <input type="range" id="metalness" min="0" max="1" step="0.05" value="1.0">
-        </div>
-        <div class="control-group">
-            <label>Roughness <span class="val" id="val-roughness">0.15</span></label>
-            <input type="range" id="roughness" min="0" max="1" step="0.05" value="0.15">
-        </div>
-
-        <h3>3. Transform (Restored)</h3>
-        <div class="control-group">
-            <label>Rotation X <span class="val" id="val-rotX">45</span>°</label>
-            <input type="range" id="rotX" min="0" max="360" step="5" value="45">
-        </div>
-        <div class="control-group">
-            <label>Rotation Y <span class="val" id="val-rotY">45</span>°</label>
-            <input type="range" id="rotY" min="0" max="360" step="5" value="45">
-        </div>
-        <div class="control-group">
-            <label>Rotation Z <span class="val" id="val-rotZ">0</span>°</label>
-            <input type="range" id="rotZ" min="0" max="360" step="5" value="0">
-        </div>
-        <div class="control-group">
-            <label>Scale <span class="val" id="val-scale">5.0</span></label>
-            <input type="range" id="scale" min="0.1" max="15.0" step="0.1" value="5.0">
-        </div>
-
-        <h3>4. Petal Genetics</h3>
-        <div class="control-group">
-            <label>Petal Shape</label>
-            <select id="petalType">
-                <option value="standard">Standard (Smooth)</option>
-                <option value="convex">Convex (Bulbous)</option>
-                <option value="concave">Concave (Star)</option>
-                <option value="squared">Squared (Tile)</option>
-                <option value="daisy">Daisy (Split)</option>
-            </select>
-        </div>
-        <div class="control-group">
-            <label>Petal Length <span class="val" id="val-petalLength">1.0</span></label>
-            <input type="range" id="petalLength" min="0.5" max="3.0" step="0.1" value="1.0">
-        </div>
-        <div class="control-group">
-            <label>Twist <span class="val" id="val-twist">0.5</span></label>
-            <input type="range" id="twist" min="-3" max="3" step="0.1" value="0.5">
-        </div>
-        <div class="control-group">
-            <label>Center Smoothness <span class="val" id="val-centerSmooth">2.5</span></label>
-            <input type="range" id="centerSmooth" min="1.0" max="5.0" step="0.1" value="2.5">
-        </div>
-
-        <h3>5. Geometry Detail</h3>
-        <div class="control-group">
-            <label>Petals (Around) <span class="val" id="val-k1">6</span></label>
-            <input type="range" id="k1" min="2" max="16" step="1" value="6">
-        </div>
-        <div class="control-group">
-            <label>Petals (Vertical) <span class="val" id="val-k2">5</span></label>
-            <input type="range" id="k2" min="1" max="16" step="1" value="5">
-        </div>
-        <div class="control-group">
-            <label>Bump Amp <span class="val" id="val-amp">1.5</span></label>
-            <input type="range" id="amp" min="0.5" max="4.0" step="0.1" value="1.5">
-        </div>
-        <div class="control-group">
-            <label>Sharpness <span class="val" id="val-sharp">2.0</span></label>
-            <input type="range" id="sharp" min="0.2" max="5.0" step="0.1" value="2.0">
-        </div>
-
-        <h3>6. Layout & Export</h3>
-        <div class="control-group">
-            <select id="mode">
-                <option value="single">Single Object (Center)</option>
-                <option value="border">Border Frame</option>
-            </select>
-        </div>
-        
-        <div id="border-sector-ui" style="display:none;">
-            <div class="control-group">
-                <div class="sector-grid">
-                    <div class="sector-btn active" data-sec="TL">TL</div>
-                    <div class="sector-btn active" data-sec="T">Top</div>
-                    <div class="sector-btn active" data-sec="TR">TR</div>
-                    <div class="sector-btn active" data-sec="L">Left</div>
-                    <div class="sector-center">+</div>
-                    <div class="sector-btn active" data-sec="R">Right</div>
-                    <div class="sector-btn active" data-sec="BL">BL</div>
-                    <div class="sector-btn active" data-sec="B">Btm</div>
-                    <div class="sector-btn active" data-sec="BR">BR</div>
-                </div>
-            </div>
-            <div class="control-group">
-                <label>Spacing <span class="val" id="val-spacing">6.0</span></label>
-                <input type="range" id="spacing" min="3.0" max="20.0" step="0.5" value="6.0">
-            </div>
-            <div class="control-group">
-                <label>Margin <span class="val" id="val-margin">5.0</span></label>
-                <input type="range" id="margin" min="0" max="45.0" step="0.5" value="5.0">
-            </div>
-        </div>
-        
+        <h3>Export</h3>
         <div class="control-group">
             <label>Resolution</label>
             <select id="exportRes">
-                <option value="1024">HD</option>
-                <option value="2048">2K</option>
-                <option value="4096" selected>4K</option>
+                <option value="1024">HD (1024px)</option>
+                <option value="2048">2K (2048px)</option>
+                <option value="4096" selected>4K (4096px)</option>
             </select>
         </div>
+        <button id="btn-export" class="main-action">Render Image</button>
     </div>
-    <button id="btn-export" class="main-action">Render Image</button>
 </div>
 
 <div id="canvas-wrapper">
@@ -219,77 +298,255 @@
 <script type="module">
     import * as THREE from 'three';
 
-    // --- CONFIGURATION STATE ---
-    const params = {
+    const globalParams = {
         exposure: 1.5, lightRot: 0,
-        material: 'gold', metalness: 1.0, roughness: 0.15,
-        mode: 'single', canvasShape: 'square', exportRes: 4096,
-        
-        // New Genetics
-        petalType: 'standard', 
-        petalLength: 1.0,
-        
-        k1: 6, k2: 5, twist: 0.5, amp: 1.5, sharp: 2.0, scale: 5.0, centerSmooth: 2.5,
-        rotX: 45, rotY: 45, rotZ: 0,
-        spacing: 6.0, margin: 5.0,
-        sectors: { TL:true, T:true, TR:true, L:true, R:true, BL:true, B:true, BR:true }
+        canvasShape: 'square', exportRes: 4096
     };
 
-    // --- THREE.JS SETUP ---
+    let layers = [
+        {
+            id: 1, name: 'Golden Flower', type: 'flower', mode: 'single',
+            spacing: 6.0, margin: 5.0, scale: 5.0, 
+            fillMode: 'cell', cols: 0, rows: 0,
+            grid: new Array(36).fill(false), 
+            rotX: 45, rotY: 45, rotZ: 0,
+            material: 'gold', roughness: 0.15, metalness: 1.0,
+            petalShape: 'standard', k1: 6, k2: 5, centerRadius: 0.2, twist: 0.5, sharp: 2.0,
+            leafSpecies: 'standard', leafWidth: 1.0, bend: 0.5, vein: 1.0
+        }
+    ];
+    let activeLayerId = 1;
+    let nextId = 2;
+
     const container = document.getElementById('canvas-wrapper');
     const scene = new THREE.Scene();
-    
     const viewHeight = 100; 
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 1000);
-    camera.position.set(0, 0, 100);
-    camera.lookAt(0,0,0);
+    camera.position.set(0, 0, 100); camera.lookAt(0,0,0);
 
-    const renderer = new THREE.WebGLRenderer({ 
-        antialias: true, 
-        preserveDrawingBuffer: true, 
-        alpha: true 
-    });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: true });
     renderer.setPixelRatio(window.devicePixelRatio || 2); 
     renderer.setSize(500, 500);
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = params.exposure;
     container.appendChild(renderer.domElement);
 
-    // --- LIGHTING RIG ---
-    const lightGroup = new THREE.Group();
-    scene.add(lightGroup);
-
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    lightGroup.add(ambientLight);
-
+    const lightGroup = new THREE.Group(); scene.add(lightGroup);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); lightGroup.add(ambientLight);
     const mainLight = new THREE.DirectionalLight(0xffffff, 2.0);
-    mainLight.position.set(20, 20, 20);
-    mainLight.castShadow = true;
+    mainLight.position.set(20, 20, 20); mainLight.castShadow = true;
     mainLight.shadow.mapSize.width = 2048; mainLight.shadow.mapSize.height = 2048;
     mainLight.shadow.camera.left = -60; mainLight.shadow.camera.right = 60;
     mainLight.shadow.camera.top = 60; mainLight.shadow.camera.bottom = -60;
     lightGroup.add(mainLight);
+    const rimLight = new THREE.DirectionalLight(0xffeedd, 1.5); rimLight.position.set(-20, 10, -20); lightGroup.add(rimLight);
+    const fillLight = new THREE.DirectionalLight(0xddddff, 0.8); fillLight.position.set(0, -20, 10); lightGroup.add(fillLight);
 
-    const rimLight = new THREE.DirectionalLight(0xffeedd, 1.5);
-    rimLight.position.set(-20, 10, -20);
-    lightGroup.add(rimLight);
+    const rootGroup = new THREE.Group(); scene.add(rootGroup);
 
-    const fillLight = new THREE.DirectionalLight(0xddddff, 0.8);
-    fillLight.position.set(0, -20, 10);
-    lightGroup.add(fillLight);
-
-    function updateLighting() {
-        renderer.toneMappingExposure = params.exposure;
-        lightGroup.rotation.y = params.lightRot * (Math.PI / 180);
+    function initGridUI() {
+        const container = document.getElementById('sector-grid-container');
+        container.innerHTML = '';
+        for(let i=0; i<36; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'sector-cell';
+            cell.dataset.idx = i;
+            cell.onclick = () => toggleGridCell(i);
+            container.appendChild(cell);
+        }
+    }
+    
+    function toggleGridCell(idx) {
+        const l = layers.find(x => x.id === activeLayerId);
+        if(!l) return;
+        l.grid[idx] = !l.grid[idx];
+        bindLayerToUI();
+        updateScene();
     }
 
-    // --- GEOMETRY GENERATOR ---
-    function createRoseGeometry() {
-        const stacks = 300; 
-        const slices = 300;
-        
+    window.gridAction = (action) => {
+        const l = layers.find(x => x.id === activeLayerId);
+        if(!l) return;
+        if(action === 'clear') l.grid.fill(false);
+        if(action === 'all') l.grid.fill(true);
+        if(action === 'border') {
+            l.grid.fill(false);
+            for(let i=0; i<36; i++) {
+                const row = Math.floor(i/6); const col = i%6;
+                if(row===0 || row===5 || col===0 || col===5) l.grid[i] = true;
+            }
+        }
+        if(action === 'corners') {
+            l.grid.fill(false); l.grid[0]=true; l.grid[5]=true; l.grid[30]=true; l.grid[35]=true;
+        }
+        bindLayerToUI(); updateScene();
+    };
+
+    window.switchTab = (tab) => {
+        document.querySelectorAll('.scroll-area').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById('tab-'+tab).classList.add('active');
+        if(tab==='edit') document.querySelector('button[onclick*="edit"]').classList.add('active');
+        if(tab==='layers') document.querySelector('button[onclick*="layers"]').classList.add('active');
+        if(tab==='global') document.querySelector('button[onclick*="global"]').classList.add('active');
+    };
+
+    window.addLayer = () => {
+        layers.push({
+            id: nextId, name: `Layer ${nextId}`, type: 'leaf', mode: 'grid',
+            spacing: 5.0, margin: 10.0, scale: 3.0, cols: 0, rows: 0, fillMode: 'cell',
+            grid: new Array(36).fill(false), 
+            rotX: 0, rotY: 0, rotZ: 45,
+            material: 'obsidian', roughness: 0.4, metalness: 0.0,
+            petalShape: 'standard', k1: 5, k2: 3, centerRadius: 0.1, twist: 0.2, sharp: 2.0,
+            leafSpecies: 'standard', leafWidth: 1.0, bend: 0.5, vein: 1.0
+        });
+        const l = layers[layers.length-1];
+        for(let i=0; i<36; i++) { const r=Math.floor(i/6), c=i%6; if(r===0||r===5||c===0||c===5) l.grid[i]=true; }
+        activeLayerId = nextId; nextId++;
+        renderLayerList(); bindLayerToUI(); updateScene(); switchTab('edit');
+    };
+
+    window.deleteLayer = (id, e) => {
+        e.stopPropagation();
+        if(layers.length <= 1) { alert("Cannot delete last layer"); return; }
+        layers = layers.filter(l => l.id !== id);
+        if(activeLayerId === id) activeLayerId = layers[0].id;
+        renderLayerList(); bindLayerToUI(); updateScene();
+    };
+
+    window.moveLayer = (id, dir, e) => {
+        e.stopPropagation();
+        const idx = layers.findIndex(l => l.id === id);
+        if(dir === -1 && idx > 0) { [layers[idx], layers[idx-1]] = [layers[idx-1], layers[idx]]; } 
+        else if(dir === 1 && idx < layers.length-1) { [layers[idx], layers[idx+1]] = [layers[idx+1], layers[idx]]; }
+        renderLayerList(); updateScene();
+    };
+
+    window.selectLayer = (id) => {
+        activeLayerId = id; renderLayerList(); bindLayerToUI(); switchTab('edit');
+    };
+
+    function renderLayerList() {
+        const list = document.getElementById('layer-list-container');
+        list.innerHTML = '';
+        layers.forEach((l, index) => {
+            const item = document.createElement('div');
+            item.className = `layer-item ${l.id === activeLayerId ? 'selected' : ''}`;
+            item.onclick = () => selectLayer(l.id);
+            item.innerHTML = `
+                <div class="layer-info">
+                    <div class="layer-title">${l.name} (Z: ${index*20})</div>
+                    <div class="layer-sub">${l.type.toUpperCase()} - ${l.material}</div>
+                </div>
+                <div class="layer-actions">
+                    <button class="icon-btn" onclick="moveLayer(${l.id}, -1, event)">▲</button>
+                    <button class="icon-btn" onclick="moveLayer(${l.id}, 1, event)">▼</button>
+                    <button class="icon-btn btn-del" onclick="deleteLayer(${l.id}, event)">×</button>
+                </div>
+            `;
+            list.appendChild(item);
+        });
+    }
+
+    function bindLayerToUI() {
+        const l = layers.find(x => x.id === activeLayerId);
+        if(!l) return;
+
+        setVal('l_mode', l.mode);
+        setVal('l_spacing', l.spacing); setVal('l_margin', l.margin);
+        setVal('l_type', l.type); setVal('l_scale', l.scale); 
+        setVal('l_fillMode', l.fillMode || 'cell');
+        setVal('l_cols', l.cols || 0); setVal('l_rows', l.rows || 0);
+
+        setVal('l_rotX', l.rotX); setVal('l_rotY', l.rotY); setVal('l_rotZ', l.rotZ);
+        setVal('l_material', l.material); setVal('l_roughness', l.roughness); setVal('l_metalness', l.metalness);
+        setVal('l_petalShape', l.petalShape); setVal('l_k1', l.k1); setVal('l_k2', l.k2);
+        setVal('l_centerRadius', l.centerRadius);
+        setVal('l_leafSpecies', l.leafSpecies); setVal('l_leafWidth', l.leafWidth);
+        setVal('l_bend', l.bend); setVal('l_vein', l.vein);
+        setVal('l_twist', l.twist); setVal('l_sharp', l.sharp);
+
+        document.getElementById('flower-controls').style.display = (l.type === 'flower') ? 'block' : 'none';
+        document.getElementById('leaf-controls').style.display = (l.type === 'leaf') ? 'block' : 'none';
+        document.getElementById('sector-control-group').style.display = (l.mode === 'grid') ? 'block' : 'none';
+        document.getElementById('cell-density-controls').style.display = (l.fillMode === 'cell') ? 'block' : 'none';
+
+        const cells = document.querySelectorAll('.sector-cell');
+        cells.forEach((cell, i) => {
+            if(l.grid[i]) cell.classList.add('active');
+            else cell.classList.remove('active');
+        });
+    }
+
+    function setVal(id, val) {
+        const el = document.getElementById(id);
+        if(el) {
+            el.value = val;
+            const lbl = document.getElementById('val-'+id);
+            if(lbl) lbl.innerText = val;
+        }
+    }
+
+    const inputs = document.querySelectorAll('#tab-edit input, #tab-edit select');
+    inputs.forEach(input => {
+        input.addEventListener('input', (e) => {
+            if(e.target.id === 'csv-upload') return;
+            const l = layers.find(x => x.id === activeLayerId);
+            if(!l) return;
+            let val = e.target.value;
+            if(e.target.type === 'range') val = parseFloat(val);
+            
+            const prop = e.target.id.replace('l_', '');
+            l[prop] = val;
+            
+            setVal(e.target.id, val);
+            if(prop === 'type') {
+                l.name = val === 'flower' ? 'Golden Flower' : 'Golden Leaf';
+                renderLayerList(); bindLayerToUI();
+            }
+            if(prop === 'mode' || prop === 'fillMode') bindLayerToUI();
+            if(prop === 'material') renderLayerList(); 
+            updateScene();
+        });
+    });
+
+    document.querySelectorAll('#tab-global input, #tab-global select').forEach(input => {
+        input.addEventListener('input', (e) => {
+            let val = e.target.value;
+            if(e.target.type === 'range') val = parseFloat(val);
+            const prop = e.target.id.replace('g_', '');
+            globalParams[prop] = val;
+            const lbl = document.getElementById('val-'+e.target.id);
+            if(lbl) lbl.innerText = val;
+            if(prop === 'canvasShape') handleResize();
+            else updateGlobalSettings();
+        });
+    });
+
+    function updateGlobalSettings() {
+        renderer.toneMappingExposure = globalParams.exposure;
+        lightGroup.rotation.y = globalParams.lightRot * (Math.PI / 180);
+    }
+
+    function createMaterial(l) {
+        let color = 0xffffff;
+        switch(l.material) {
+            case 'gold': color = 0xffd700; break;
+            case 'rose': color = 0xffb7a5; break;
+            case 'silver': color = 0xf0f0f0; break;
+            case 'platinum': color = 0xaaaaaa; break;
+            case 'obsidian': color = 0x111111; break;
+            case 'porcelain': color = 0xffffff; break;
+        }
+        return new THREE.MeshStandardMaterial({
+            color: color, roughness: l.roughness, metalness: l.metalness, side: THREE.DoubleSide
+        });
+    }
+
+    function createGeometry(l) {
+        const stacks = 200; const slices = 200;
         const geometry = new THREE.BufferGeometry();
         const positions = []; const indices = [];
 
@@ -297,40 +554,38 @@
             let v = i / stacks; let phi = Math.PI * v; 
             for (let j = 0; j <= slices; j++) {
                 let u = j / slices; let theta = 2 * Math.PI * u; 
-                
-                let effectiveTheta = theta + params.twist * phi;
-                let baseShape = Math.sin(params.k1 * effectiveTheta) * Math.cos(params.k2 * phi);
-                
-                // --- PETAL SHAPE LOGIC ---
-                let shape = 0;
-                let absShape = Math.abs(baseShape);
-                
-                if (params.petalType === 'convex') {
-                    // Rounder, fatter
-                    shape = Math.pow(absShape, params.sharp * 0.5);
-                } else if (params.petalType === 'concave') {
-                    // Spikier, sucked in
-                    shape = Math.pow(absShape, params.sharp * 1.5);
-                } else if (params.petalType === 'squared') {
-                    // Boxy
-                    shape = Math.pow(absShape, 0.1) * Math.pow(absShape, params.sharp);
-                } else if (params.petalType === 'daisy') {
-                    // Slight notch in middle
-                    shape = Math.pow(absShape, params.sharp) * (1.0 - 0.2 * Math.sin(params.k1 * effectiveTheta * 2));
+                let r = 0, x, y, z;
+
+                if (l.type === 'flower') {
+                    let effectiveTheta = theta + l.twist * phi;
+                    let baseShape = Math.sin(l.k1 * effectiveTheta) * Math.cos(l.k2 * phi);
+                    let shape = Math.pow(Math.abs(baseShape), l.sharp);
+                    if (l.petalShape === 'convex') shape = Math.pow(Math.abs(baseShape), l.sharp * 0.5);
+                    else if (l.petalShape === 'concave') shape = Math.pow(Math.abs(baseShape), l.sharp * 1.5);
+                    else if (l.petalShape === 'squared') shape = Math.pow(Math.abs(baseShape), 0.1) * Math.pow(Math.abs(baseShape), l.sharp);
+
+                    let dampener = Math.pow(Math.sin(phi), 2.5);
+                    r = l.centerRadius + 1.5 * shape * dampener; 
+                    x = r * Math.sin(phi) * Math.cos(theta); y = r * Math.cos(phi); z = r * Math.sin(phi) * Math.sin(theta);
+
                 } else {
-                    // Standard
-                    shape = Math.pow(absShape, params.sharp);
+                    let effectiveTheta = theta;
+                    let baseShape = Math.sin(effectiveTheta + Math.PI/2);
+                    if (l.leafSpecies === 'lanceolate') baseShape = Math.sin(effectiveTheta + Math.PI/2); 
+                    else if (l.leafSpecies === 'cordate') baseShape = Math.sin(effectiveTheta + Math.PI/2) + 0.3*Math.cos(2*effectiveTheta);
+                    else if (l.leafSpecies === 'serrate') baseShape += 0.1 * Math.sin(20 * effectiveTheta);
+                    else if (l.leafSpecies === 'maple') baseShape += 0.4 * Math.cos(3 * effectiveTheta);
+
+                    let shape = Math.pow(Math.abs(baseShape), l.sharp); 
+                    let vein = 1.0 - l.vein * 0.1 * Math.abs(Math.sin(10 * theta)); 
+                    let dampener = Math.pow(Math.sin(phi), 2.0);
+                    r = (0.05 + l.leafWidth * shape * dampener) * vein;
+
+                    x = r * Math.sin(phi) * Math.cos(theta) * (1/l.stretch); 
+                    y = r * Math.cos(phi) * 3.0; 
+                    z = r * Math.sin(phi) * Math.sin(theta);
+                    z += l.bend * Math.pow(y/3.0, 2);
                 }
-
-                let dampener = Math.pow(Math.sin(phi), params.centerSmooth); 
-                let finalAmp = params.amp * params.petalLength;
-                
-                // Tighter stem (0.15) for clean center
-                let r = 0.15 + finalAmp * shape * dampener;
-
-                let x = r * Math.sin(phi) * Math.cos(theta);
-                let y = r * Math.cos(phi);
-                let z = r * Math.sin(phi) * Math.sin(theta);
                 positions.push(x, y, z);
             }
         }
@@ -347,76 +602,141 @@
         return geometry;
     }
 
-    // --- SCENE ---
-    let geometry = createRoseGeometry();
-    let material = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.15, metalness: 1.0 });
-    const rootGroup = new THREE.Group();
-    scene.add(rootGroup);
-
-    function updateMaterial() {
-        let color = 0xffffff;
-        switch(params.material) {
-            case 'gold': color = 0xffd700; break;
-            case 'rose': color = 0xffb7a5; break;
-            case 'silver': color = 0xf0f0f0; break;
-            case 'platinum': color = 0xaaaaaa; break;
-            case 'obsidian': color = 0x111111; break;
-            case 'porcelain': color = 0xffffff; break;
-        }
-        material.color.setHex(color);
-        material.roughness = params.roughness;
-        material.metalness = params.metalness;
-        material.needsUpdate = true;
-    }
-
     function updateScene() {
-        geometry.dispose();
-        geometry = createRoseGeometry();
+        while(rootGroup.children.length > 0) rootGroup.remove(rootGroup.children[0]);
 
-        while(rootGroup.children.length > 0) rootGroup.remove(rootGroup.children[0]); 
+        layers.forEach((l, index) => {
+            const geom = createGeometry(l);
+            const mat = createMaterial(l);
+            const zLayerOffset = index * 20; 
+            const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+                l.rotX * (Math.PI/180), l.rotY * (Math.PI/180), l.rotZ * (Math.PI/180)
+            ));
 
-        const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(
-            params.rotX * (Math.PI/180), 
-            params.rotY * (Math.PI/180), 
-            params.rotZ * (Math.PI/180)
-        ));
-        
-        const aspect = camera.right / camera.top; 
-        const h = 100; const w = 100 * aspect;
-        
-        if(params.mode === 'single') {
-            const mesh = new THREE.Mesh(geometry, material);
-            mesh.scale.setScalar(params.scale * 5); 
-            mesh.setRotationFromQuaternion(q);
-            mesh.castShadow = true; mesh.receiveShadow = true;
-            rootGroup.add(mesh);
-        } else {
-            const margin = params.margin; const spacing = params.spacing; const scale = params.scale;
-            const addObj = (x, y) => {
-                const mesh = new THREE.Mesh(geometry, material);
-                mesh.position.set(x, y, 0);
-                mesh.scale.setScalar(scale);
+            const aspect = camera.right / camera.top; 
+            const h = 100; const w = 100 * aspect;
+
+            if(l.mode === 'single') {
+                const mesh = new THREE.Mesh(geom, mat);
+                mesh.scale.setScalar(l.scale * 5); 
+                mesh.position.z = zLayerOffset; 
                 mesh.setRotationFromQuaternion(q);
                 mesh.castShadow = true; mesh.receiveShadow = true;
                 rootGroup.add(mesh);
-            };
-            const xL = -(w/2) + margin; const xR = (w/2) - margin;
-            const yT = (h/2) - margin; const yB = -(h/2) + margin;
-            const widthSpan = xR - xL; const heightSpan = yT - yB;
-            const countX = Math.floor(widthSpan / spacing); const countY = Math.floor(heightSpan / spacing);
+            } else {
+                const margin = l.margin; const spacing = l.spacing; const scale = l.scale;
+                const startX = -(w/2) + margin; const startY = (h/2) - margin;
+                const usableW = w - (margin*2); const usableH = h - (margin*2);
+                const cellW = usableW / 6; const cellH = usableH / 6;
 
-            if(params.sectors.TL) addObj(xL, yT);
-            if(params.sectors.TR) addObj(xR, yT);
-            if(params.sectors.BL) addObj(xL, yB);
-            if(params.sectors.BR) addObj(xR, yB);
-            if(params.sectors.T && countX > 0) for(let i=1; i<countX; i++) addObj(xL + (i/countX)*widthSpan, yT);
-            if(params.sectors.B && countX > 0) for(let i=1; i<countX; i++) addObj(xL + (i/countX)*widthSpan, yB);
-            if(params.sectors.L && countY > 0) for(let i=1; i<countY; i++) addObj(xL, yB + (i/countY)*heightSpan);
-            if(params.sectors.R && countY > 0) for(let i=1; i<countY; i++) addObj(xR, yB + (i/countY)*heightSpan);
-        }
+                if (l.fillMode === 'continuous') {
+                    const drawnCorners = {};
+
+                    // Horizontal (Rows 0 and 5)
+                    [0, 5].forEach(row => {
+                        const rowIndices = [];
+                        for(let c=0; c<6; c++) rowIndices.push(row*6 + c);
+                        let segments = [], currentSeg = null;
+                        rowIndices.forEach((idx, colIndex) => {
+                            if(l.grid[idx]) {
+                                if(!currentSeg) currentSeg = { start: colIndex, end: colIndex, indices: [idx] };
+                                else { currentSeg.end = colIndex; currentSeg.indices.push(idx); }
+                            } else {
+                                if(currentSeg) { segments.push(currentSeg); currentSeg = null; }
+                            }
+                        });
+                        if(currentSeg) segments.push(currentSeg);
+
+                        segments.forEach(seg => {
+                            seg.indices.forEach(idx => { if([0,5,30,35].includes(idx)) drawnCorners[idx] = true; });
+                            const startX = -(w/2) + margin + (seg.start * cellW) + (cellW/2);
+                            const endX   = -(w/2) + margin + (seg.end * cellW) + (cellW/2);
+                            const y      = (h/2) - margin - (row * cellH) - (cellH/2);
+                            const dist = endX - startX;
+                            const count = dist === 0 ? 1 : Math.max(1, Math.round(dist / spacing));
+                            for(let i=0; i<=count; i++) {
+                                if (dist === 0 && i > 0) continue; 
+                                const t = count === 0 ? 0 : i/count;
+                                const x = startX + t * dist;
+                                const mesh = new THREE.Mesh(geom, mat);
+                                mesh.position.set(x, y, zLayerOffset);
+                                mesh.scale.setScalar(scale);
+                                mesh.setRotationFromQuaternion(q);
+                                mesh.castShadow = true; mesh.receiveShadow = true;
+                                rootGroup.add(mesh);
+                            }
+                        });
+                    });
+
+                    // Vertical (Cols 0 and 5)
+                    [0, 5].forEach(col => {
+                        const colIndices = [];
+                        for(let r=0; r<6; r++) colIndices.push(r*6 + col);
+                        let segments = [], currentSeg = null;
+                        colIndices.forEach((idx, rowIndex) => {
+                            if(l.grid[idx]) {
+                                if(!currentSeg) currentSeg = { start: rowIndex, end: rowIndex, indices: [idx] };
+                                else { currentSeg.end = rowIndex; currentSeg.indices.push(idx); }
+                            } else {
+                                if(currentSeg) { segments.push(currentSeg); currentSeg = null; }
+                            }
+                        });
+                        if(currentSeg) segments.push(currentSeg);
+
+                        segments.forEach(seg => {
+                            const startY = (h/2) - margin - (seg.start * cellH) - (cellH/2);
+                            const endY   = (h/2) - margin - (seg.end * cellH) - (cellH/2);
+                            const x      = -(w/2) + margin + (col * cellW) + (cellW/2);
+                            const dist = Math.abs(endY - startY);
+                            const count = dist === 0 ? 1 : Math.max(1, Math.round(dist / spacing));
+                            for(let i=0; i<=count; i++) {
+                                if (dist === 0 && i > 0) continue;
+                                const t = count === 0 ? 0 : i/count;
+                                const y = startY - t * dist;
+                                // Smart Skip
+                                let isStart = (i === 0);
+                                let isEnd = (i === count);
+                                if (isStart) { const cellIdx = colIndices[seg.start]; if (drawnCorners[cellIdx]) continue; }
+                                if (isEnd && count > 0) { const cellIdx = colIndices[seg.end]; if (drawnCorners[cellIdx]) continue; }
+
+                                const mesh = new THREE.Mesh(geom, mat);
+                                mesh.position.set(x, y, zLayerOffset);
+                                mesh.scale.setScalar(scale);
+                                mesh.setRotationFromQuaternion(q);
+                                mesh.castShadow = true; mesh.receiveShadow = true;
+                                rootGroup.add(mesh);
+                            }
+                        });
+                    });
+
+                } else {
+                    // CELL MODE
+                    for(let i=0; i<36; i++) {
+                        if(!l.grid[i]) continue; 
+                        const row = Math.floor(i/6); const col = i%6;
+                        const cellLeft = startX + (col * cellW);
+                        const cellTop = startY - (row * cellH);
+                        let fitX, fitY;
+                        if (l.cols > 0) fitX = l.cols; else fitX = Math.max(1, Math.floor(cellW / spacing));
+                        if (l.rows > 0) fitY = l.rows; else fitY = Math.max(1, Math.floor(cellH / spacing));
+                        for(let fy=0; fy<fitY; fy++) {
+                            for(let fx=0; fx<fitX; fx++) {
+                                const posX = cellLeft + (cellW - (fitX-1)*spacing)/2 + fx*spacing;
+                                const posY = cellTop - (cellH - (fitY-1)*spacing)/2 - fy*spacing;
+                                const mesh = new THREE.Mesh(geom, mat);
+                                mesh.position.set(posX, posY, zLayerOffset);
+                                mesh.scale.setScalar(scale);
+                                mesh.setRotationFromQuaternion(q);
+                                mesh.castShadow = true; mesh.receiveShadow = true;
+                                rootGroup.add(mesh);
+                            }
+                        }
+                    }
+                }
+            }
+        });
     }
 
-    // --- RESIZE & RENDER ---
     function updateCameraAspect(width, height) {
         const aspect = width / height;
         camera.left = -viewHeight * aspect / 2; camera.right = viewHeight * aspect / 2;
@@ -426,12 +746,11 @@
 
     function handleResize() {
         let targetAspect = 1.0;
-        if(params.canvasShape === 'portrait') targetAspect = 4/5;
-        if(params.canvasShape === 'landscape') targetAspect = 3/2;
+        if(globalParams.canvasShape === 'portrait') targetAspect = 4/5;
+        if(globalParams.canvasShape === 'landscape') targetAspect = 3/2;
 
         const wrapW = container.clientWidth; const wrapH = container.clientHeight;
         const screenAspect = wrapW / wrapH;
-
         let finalW, finalH;
         if(screenAspect > targetAspect) { finalH = wrapH - 40; finalW = finalH * targetAspect; } 
         else { finalW = wrapW - 40; finalH = finalW / targetAspect; }
@@ -441,77 +760,21 @@
         updateScene();
     }
     window.addEventListener('resize', handleResize);
-    
     function animate() {
         requestAnimationFrame(animate);
         renderer.render(scene, camera);
     }
-    animate();
-    updateMaterial();
-    updateLighting();
-    handleResize();
+    
+    initGridUI();
+    renderLayerList(); bindLayerToUI(); updateGlobalSettings(); handleResize(); animate();
 
-    // --- UI BINDING ---
-    function updateUI() {
-        for (const key in params) {
-            if(key === 'sectors') {
-                 document.querySelectorAll('.sector-btn').forEach(btn => {
-                    const sec = btn.dataset.sec;
-                    if(params.sectors[sec]) btn.classList.add('active');
-                    else btn.classList.remove('active');
-                });
-                continue;
-            }
-            const el = document.getElementById(key);
-            if(el) {
-                if(key === 'exportRes' || key === 'petalType') el.value = params[key];
-                else el.value = params[key];
-                const lbl = document.getElementById('val-'+key);
-                if(lbl) lbl.innerText = params[key];
-            }
-        }
-        document.getElementById('border-sector-ui').style.display = (params.mode === 'border') ? 'block' : 'none';
-    }
-
-    document.querySelectorAll('input, select').forEach(el => {
-        el.addEventListener('input', (e) => {
-            if(e.target.id === 'csv-upload') return;
-            let val = e.target.value;
-            if(e.target.type === 'range') val = parseFloat(val);
-            params[e.target.id] = val;
-            
-            if(e.target.id === 'canvasShape') handleResize();
-            if(e.target.id === 'material' || e.target.id === 'roughness' || e.target.id === 'metalness') updateMaterial();
-            if(e.target.id === 'exposure' || e.target.id === 'lightRot') updateLighting();
-            if(e.target.id === 'mode') updateUI();
-            
-            updateScene();
-            updateUI();
-        });
-    });
-
-    document.querySelectorAll('.sector-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const sec = btn.dataset.sec;
-            params.sectors[sec] = !params.sectors[sec];
-            updateUI();
-            updateScene();
-        });
-    });
-
-    // --- EXPORT / IMPORT ---
     document.getElementById('btn-csv-export').addEventListener('click', () => {
-        const rows = [];
-        rows.push(Object.keys(params).join(','));
-        const vals = Object.values(params).map(v => {
-            if(typeof v === 'object') return `"${JSON.stringify(v).replace(/"/g, '""')}"`;
-            return v;
-        });
-        rows.push(vals.join(','));
-        const blob = new Blob([rows.join('\n')], {type: 'text/csv'});
+        const exportData = { global: globalParams, layers: layers };
+        const json = JSON.stringify(exportData, null, 2);
+        const blob = new Blob([json], {type: 'application/json'});
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url; a.download = 'golden_botanist_v8.csv'; a.click();
+        a.href = url; a.download = 'golden_v15_project.json'; a.click();
     });
 
     document.getElementById('csv-upload').addEventListener('change', (e) => {
@@ -519,69 +782,50 @@
         if(!file) return;
         const reader = new FileReader();
         reader.onload = (evt) => {
-            const lines = evt.target.result.split('\n');
-            if(lines.length < 2) return;
-            const keys = lines[0].trim().split(',');
-            const vals = lines[1].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-            if(keys.length === vals.length) {
-                keys.forEach((k, i) => {
-                    let v = vals[i];
-                    if(v.startsWith('"')) v = JSON.parse(v.substring(1, v.length-1).replace(/""/g, '"'));
-                    else if(!isNaN(parseFloat(v)) && k !== 'material' && k !== 'mode' && k !== 'canvasShape' && k !== 'petalType') v = parseFloat(v);
-                    params[k] = v;
-                });
-                updateUI();
-                updateMaterial();
-                updateLighting();
-                handleResize(); 
-                updateScene();
-            }
+            try {
+                const data = JSON.parse(evt.target.result);
+                if(data.global && data.layers) {
+                    Object.assign(globalParams, data.global);
+                    layers = data.layers;
+                    layers.forEach(l => {
+                        if(!l.grid) l.grid = new Array(36).fill(false);
+                        if(l.cols === undefined) l.cols = 0;
+                        if(l.rows === undefined) l.rows = 0;
+                        if(l.fillMode === undefined) l.fillMode = 'cell';
+                    });
+                    nextId = layers.length > 0 ? Math.max(...layers.map(l=>l.id)) + 1 : 1;
+                    activeLayerId = layers[0].id;
+                    renderLayerList(); bindLayerToUI(); updateGlobalSettings(); handleResize(); updateScene();
+                }
+            } catch(e) { alert("Invalid File"); console.error(e); }
         };
         reader.readAsText(file);
+        e.target.value = ''; 
     });
 
-    // --- RENDER EXPORT ---
     document.getElementById('btn-export').addEventListener('click', () => {
         const btn = document.getElementById('btn-export');
         const overlay = document.getElementById('loading');
-        btn.disabled = true;
-        overlay.style.display = 'flex';
-
-        const res = parseInt(params.exportRes);
-        let w = res;
-        let h = res;
-        if(params.canvasShape === 'portrait') h = w * 1.25;
-        if(params.canvasShape === 'landscape') h = w * 0.666;
-
-        const prevSize = new THREE.Vector2();
-        renderer.getSize(prevSize);
+        btn.disabled = true; overlay.style.display = 'flex';
+        const res = parseInt(document.getElementById('exportRes').value);
+        let w = res; let h = res;
+        if(globalParams.canvasShape === 'portrait') h = w * 1.25;
+        if(globalParams.canvasShape === 'landscape') h = w * 0.666;
+        const prevSize = new THREE.Vector2(); renderer.getSize(prevSize);
         const prevPixelRatio = renderer.getPixelRatio();
-
-        updateCameraAspect(w, h);
-        renderer.setSize(w, h);
-        renderer.setPixelRatio(2); // Super Sampling
+        updateCameraAspect(w, h); renderer.setSize(w, h); renderer.setPixelRatio(2);
         updateScene(); 
-
         setTimeout(() => {
             renderer.render(scene, camera);
-            
             renderer.domElement.toBlob((blob) => {
                 const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = `Golden_Botanist_${w}px.png`;
-                a.click();
-
-                updateCameraAspect(prevSize.x, prevSize.y);
-                renderer.setSize(prevSize.x, prevSize.y);
-                renderer.setPixelRatio(prevPixelRatio);
+                a.href = URL.createObjectURL(blob); a.download = `Golden_Rail_${w}px.png`; a.click();
+                updateCameraAspect(prevSize.x, prevSize.y); renderer.setSize(prevSize.x, prevSize.y); renderer.setPixelRatio(prevPixelRatio);
                 updateScene(); 
-                
-                overlay.style.display = 'none';
-                btn.disabled = false;
+                overlay.style.display = 'none'; btn.disabled = false;
             });
         }, 500);
     });
-
 </script>
 </body>
 </html>
