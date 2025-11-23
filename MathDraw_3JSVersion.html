@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Golden Studio - v8 (Controls Restored)</title>
+    <style>
+        body { margin: 0; background: #050505; color: #ccc; font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: 360px; background: #111; border-right: 1px solid #222; display: flex; flex-direction: column; z-index: 10; box-shadow: 5px 0 30px rgba(0,0,0,0.9); }
+        .scroll-area { padding: 20px; overflow-y: auto; flex-grow: 1; }
+        .scroll-area::-webkit-scrollbar { width: 6px; }
+        .scroll-area::-webkit-scrollbar-track { background: #111; }
+        .scroll-area::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+        
+        h2 { color: #fff; margin: 0 0 5px 0; font-size: 18px; letter-spacing: 1px; }
+        .subtitle { color: #d4af37; font-size: 11px; margin-bottom: 20px; text-transform: uppercase; font-weight: bold; letter-spacing: 2px; }
+        h3 { color: #666; font-size: 11px; margin: 15px 0 5px 0; text-transform: uppercase; border-bottom: 1px solid #222; padding-bottom: 4px; font-weight: 700;}
+
+        .control-group { background: #161616; padding: 10px; border-radius: 6px; border: 1px solid #2a2a2a; margin-bottom: 8px; }
+        label { font-size: 12px; color: #aaa; display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;}
+        span.val { color: #d4af37; font-family: monospace; font-size: 12px;}
+        
+        input[type=range] { width: 100%; accent-color: #d4af37; background: #333; height: 4px; border-radius: 2px; outline: none; cursor: pointer; }
+        select { width: 100%; background: #222; color: #fff; border: 1px solid #444; padding: 8px; border-radius: 4px; font-size: 12px; outline: none; }
+        
+        .preset-row { display: flex; gap: 5px; margin-bottom: 15px; }
+        .preset-btn { flex: 1; background: #2a2a2a; border: 1px solid #444; color: #ccc; padding: 8px; font-size: 11px; cursor: pointer; border-radius: 3px; text-align: center; transition: all 0.2s; }
+        .preset-btn:hover { background: #333; border-color: #d4af37; color: #fff; }
+        input[type="file"] { display: none; }
+
+        .sector-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 5px; }
+        .sector-btn { background: #222; border: 1px solid #333; color: #555; padding: 8px 0; font-size: 10px; text-align: center; cursor: pointer; border-radius: 3px; user-select: none; }
+        .sector-btn.active { background: #d4af37; color: #000; font-weight: bold; border-color: #d4af37; }
+        
+        button.main-action { margin: 20px; padding: 16px; background: linear-gradient(135deg, #d4af37 0%, #8c702a 100%); border: none; color: white; font-weight: 800; cursor: pointer; border-radius: 4px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s; }
+        button.main-action:hover { filter: brightness(1.15); }
+        button.main-action:disabled { background: #333; color: #555; cursor: wait; }
+
+        #canvas-wrapper { flex-grow: 1; position: relative; background: #080808; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        canvas { box-shadow: 0 0 40px #000; display: block; max-width: 95%; max-height: 95%; border: 1px solid #333; }
+        
+        .loading-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); color: #d4af37; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
+        .spinner { border: 4px solid #222; border-top: 4px solid #d4af37; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+</head>
+<body>
+
+<div class="sidebar">
+    <div class="scroll-area">
+        <h2>Golden Studio</h2>
+        <div class="subtitle">Botanist Edition v8</div>
+
+        <h3>Preset Manager</h3>
+        <div class="preset-row">
+            <button class="preset-btn" id="btn-csv-export">Export CSV</button>
+            <label class="preset-btn" for="csv-upload">Import CSV</label>
+            <input type="file" id="csv-upload" accept=".csv">
+        </div>
+
+        <h3>1. Lighting & Camera</h3>
+        <div class="control-group">
+            <label>Exposure <span class="val" id="val-exposure">1.5</span></label>
+            <input type="range" id="exposure" min="0.1" max="4.0" step="0.1" value="1.5">
+        </div>
+        <div class="control-group">
+            <label>Light Rotation <span class="val" id="val-lightRot">0</span>°</label>
+            <input type="range" id="lightRot" min="0" max="360" step="5" value="0">
+        </div>
+        <div class="control-group">
+            <label>Aspect Ratio</label>
+            <select id="canvasShape">
+                <option value="square">Square (1:1)</option>
+                <option value="portrait">Portrait (4:5)</option>
+                <option value="landscape">Landscape (3:2)</option>
+            </select>
+        </div>
+
+        <h3>2. Material</h3>
+        <div class="control-group">
+            <label>Material Type</label>
+            <select id="material">
+                <option value="gold">Pure Gold</option>
+                <option value="rose">Rose Gold</option>
+                <option value="silver">Silver</option>
+                <option value="platinum">Platinum</option>
+                <option value="obsidian">Obsidian</option>
+                <option value="porcelain">Porcelain</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Metalness <span class="val" id="val-metalness">1.0</span></label>
+            <input type="range" id="metalness" min="0" max="1" step="0.05" value="1.0">
+        </div>
+        <div class="control-group">
+            <label>Roughness <span class="val" id="val-roughness">0.15</span></label>
+            <input type="range" id="roughness" min="0" max="1" step="0.05" value="0.15">
+        </div>
+
+        <h3>3. Transform (Restored)</h3>
+        <div class="control-group">
+            <label>Rotation X <span class="val" id="val-rotX">45</span>°</label>
+            <input type="range" id="rotX" min="0" max="360" step="5" value="45">
+        </div>
+        <div class="control-group">
+            <label>Rotation Y <span class="val" id="val-rotY">45</span>°</label>
+            <input type="range" id="rotY" min="0" max="360" step="5" value="45">
+        </div>
+        <div class="control-group">
+            <label>Rotation Z <span class="val" id="val-rotZ">0</span>°</label>
+            <input type="range" id="rotZ" min="0" max="360" step="5" value="0">
+        </div>
+        <div class="control-group">
+            <label>Scale <span class="val" id="val-scale">5.0</span></label>
+            <input type="range" id="scale" min="0.1" max="15.0" step="0.1" value="5.0">
+        </div>
+
+        <h3>4. Petal Genetics</h3>
+        <div class="control-group">
+            <label>Petal Shape</label>
+            <select id="petalType">
+                <option value="standard">Standard (Smooth)</option>
+                <option value="convex">Convex (Bulbous)</option>
+                <option value="concave">Concave (Star)</option>
+                <option value="squared">Squared (Tile)</option>
+                <option value="daisy">Daisy (Split)</option>
+            </select>
+        </div>
+        <div class="control-group">
+            <label>Petal Length <span class="val" id="val-petalLength">1.0</span></label>
+            <input type="range" id="petalLength" min="0.5" max="3.0" step="0.1" value="1.0">
+        </div>
+        <div class="control-group">
+            <label>Twist <span class="val" id="val-twist">0.5</span></label>
+            <input type="range" id="twist" min="-3" max="3" step="0.1" value="0.5">
+        </div>
+        <div class="control-group">
+            <label>Center Smoothness <span class="val" id="val-centerSmooth">2.5</span></label>
+            <input type="range" id="centerSmooth" min="1.0" max="5.0" step="0.1" value="2.5">
+        </div>
+
+        <h3>5. Geometry Detail</h3>
+        <div class="control-group">
+            <label>Petals (Around) <span class="val" id="val-k1">6</span></label>
+            <input type="range" id="k1" min="2" max="16" step="1" value="6">
+        </div>
+        <div class="control-group">
+            <label>Petals (Vertical) <span class="val" id="val-k2">5</span></label>
+            <input type="range" id="k2" min="1" max="16" step="1" value="5">
+        </div>
+        <div class="control-group">
+            <label>Bump Amp <span class="val" id="val-amp">1.5</span></label>
+            <input type="range" id="amp" min="0.5" max="4.0" step="0.1" value="1.5">
+        </div>
+        <div class="control-group">
+            <label>Sharpness <span class="val" id="val-sharp">2.0</span></label>
+            <input type="range" id="sharp" min="0.2" max="5.0" step="0.1" value="2.0">
+        </div>
+
+        <h3>6. Layout & Export</h3>
+        <div class="control-group">
+            <select id="mode">
+                <option value="single">Single Object (Center)</option>
+                <option value="border">Border Frame</option>
+            </select>
+        </div>
+        
+        <div id="border-sector-ui" style="display:none;">
+            <div class="control-group">
+                <div class="sector-grid">
+                    <div class="sector-btn active" data-sec="TL">TL</div>
+                    <div class="sector-btn active" data-sec="T">Top</div>
+                    <div class="sector-btn active" data-sec="TR">TR</div>
+                    <div class="sector-btn active" data-sec="L">Left</div>
+                    <div class="sector-center">+</div>
+                    <div class="sector-btn active" data-sec="R">Right</div>
+                    <div class="sector-btn active" data-sec="BL">BL</div>
+                    <div class="sector-btn active" data-sec="B">Btm</div>
+                    <div class="sector-btn active" data-sec="BR">BR</div>
+                </div>
+            </div>
+            <div class="control-group">
+                <label>Spacing <span class="val" id="val-spacing">6.0</span></label>
+                <input type="range" id="spacing" min="3.0" max="20.0" step="0.5" value="6.0">
+            </div>
+            <div class="control-group">
+                <label>Margin <span class="val" id="val-margin">5.0</span></label>
+                <input type="range" id="margin" min="0" max="45.0" step="0.5" value="5.0">
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <label>Resolution</label>
+            <select id="exportRes">
+                <option value="1024">HD</option>
+                <option value="2048">2K</option>
+                <option value="4096" selected>4K</option>
+            </select>
+        </div>
+    </div>
+    <button id="btn-export" class="main-action">Render Image</button>
+</div>
+
+<div id="canvas-wrapper">
+    <div class="loading-overlay" id="loading">
+        <div class="spinner"></div>
+        <div style="font-size: 18px; font-weight: bold;">Rendering...</div>
+    </div>
+</div>
+
+<script type="module">
+    import * as THREE from 'three';
+
+    // --- CONFIGURATION STATE ---
+    const params = {
+        exposure: 1.5, lightRot: 0,
+        material: 'gold', metalness: 1.0, roughness: 0.15,
+        mode: 'single', canvasShape: 'square', exportRes: 4096,
+        
+        // New Genetics
+        petalType: 'standard', 
+        petalLength: 1.0,
+        
+        k1: 6, k2: 5, twist: 0.5, amp: 1.5, sharp: 2.0, scale: 5.0, centerSmooth: 2.5,
+        rotX: 45, rotY: 45, rotZ: 0,
+        spacing: 6.0, margin: 5.0,
+        sectors: { TL:true, T:true, TR:true, L:true, R:true, BL:true, B:true, BR:true }
+    };
+
+    // --- THREE.JS SETUP ---
+    const container = document.getElementById('canvas-wrapper');
+    const scene = new THREE.Scene();
+    
+    const viewHeight = 100; 
+    const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 1000);
+    camera.position.set(0, 0, 100);
+    camera.lookAt(0,0,0);
+
+    const renderer = new THREE.WebGLRenderer({ 
+        antialias: true, 
+        preserveDrawingBuffer: true, 
+        alpha: true 
+    });
+    renderer.setPixelRatio(window.devicePixelRatio || 2); 
+    renderer.setSize(500, 500);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = params.exposure;
+    container.appendChild(renderer.domElement);
+
+    // --- LIGHTING RIG ---
+    const lightGroup = new THREE.Group();
+    scene.add(lightGroup);
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    lightGroup.add(ambientLight);
+
+    const mainLight = new THREE.DirectionalLight(0xffffff, 2.0);
+    mainLight.position.set(20, 20, 20);
+    mainLight.castShadow = true;
+    mainLight.shadow.mapSize.width = 2048; mainLight.shadow.mapSize.height = 2048;
+    mainLight.shadow.camera.left = -60; mainLight.shadow.camera.right = 60;
+    mainLight.shadow.camera.top = 60; mainLight.shadow.camera.bottom = -60;
+    lightGroup.add(mainLight);
+
+    const rimLight = new THREE.DirectionalLight(0xffeedd, 1.5);
+    rimLight.position.set(-20, 10, -20);
+    lightGroup.add(rimLight);
+
+    const fillLight = new THREE.DirectionalLight(0xddddff, 0.8);
+    fillLight.position.set(0, -20, 10);
+    lightGroup.add(fillLight);
+
+    function updateLighting() {
+        renderer.toneMappingExposure = params.exposure;
+        lightGroup.rotation.y = params.lightRot * (Math.PI / 180);
+    }
+
+    // --- GEOMETRY GENERATOR ---
+    function createRoseGeometry() {
+        const stacks = 300; 
+        const slices = 300;
+        
+        const geometry = new THREE.BufferGeometry();
+        const positions = []; const indices = [];
+
+        for (let i = 0; i <= stacks; i++) {
+            let v = i / stacks; let phi = Math.PI * v; 
+            for (let j = 0; j <= slices; j++) {
+                let u = j / slices; let theta = 2 * Math.PI * u; 
+                
+                let effectiveTheta = theta + params.twist * phi;
+                let baseShape = Math.sin(params.k1 * effectiveTheta) * Math.cos(params.k2 * phi);
+                
+                // --- PETAL SHAPE LOGIC ---
+                let shape = 0;
+                let absShape = Math.abs(baseShape);
+                
+                if (params.petalType === 'convex') {
+                    // Rounder, fatter
+                    shape = Math.pow(absShape, params.sharp * 0.5);
+                } else if (params.petalType === 'concave') {
+                    // Spikier, sucked in
+                    shape = Math.pow(absShape, params.sharp * 1.5);
+                } else if (params.petalType === 'squared') {
+                    // Boxy
+                    shape = Math.pow(absShape, 0.1) * Math.pow(absShape, params.sharp);
+                } else if (params.petalType === 'daisy') {
+                    // Slight notch in middle
+                    shape = Math.pow(absShape, params.sharp) * (1.0 - 0.2 * Math.sin(params.k1 * effectiveTheta * 2));
+                } else {
+                    // Standard
+                    shape = Math.pow(absShape, params.sharp);
+                }
+
+                let dampener = Math.pow(Math.sin(phi), params.centerSmooth); 
+                let finalAmp = params.amp * params.petalLength;
+                
+                // Tighter stem (0.15) for clean center
+                let r = 0.15 + finalAmp * shape * dampener;
+
+                let x = r * Math.sin(phi) * Math.cos(theta);
+                let y = r * Math.cos(phi);
+                let z = r * Math.sin(phi) * Math.sin(theta);
+                positions.push(x, y, z);
+            }
+        }
+        for (let i = 0; i < stacks; i++) {
+            for (let j = 0; j < slices; j++) {
+                let a = i * (slices + 1) + j; let b = i * (slices + 1) + j + 1;
+                let c = (i + 1) * (slices + 1) + j; let d = (i + 1) * (slices + 1) + j + 1;
+                indices.push(a, c, b); indices.push(b, c, d);
+            }
+        }
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+        geometry.setIndex(indices);
+        geometry.computeVertexNormals(); 
+        return geometry;
+    }
+
+    // --- SCENE ---
+    let geometry = createRoseGeometry();
+    let material = new THREE.MeshStandardMaterial({ color: 0xffd700, roughness: 0.15, metalness: 1.0 });
+    const rootGroup = new THREE.Group();
+    scene.add(rootGroup);
+
+    function updateMaterial() {
+        let color = 0xffffff;
+        switch(params.material) {
+            case 'gold': color = 0xffd700; break;
+            case 'rose': color = 0xffb7a5; break;
+            case 'silver': color = 0xf0f0f0; break;
+            case 'platinum': color = 0xaaaaaa; break;
+            case 'obsidian': color = 0x111111; break;
+            case 'porcelain': color = 0xffffff; break;
+        }
+        material.color.setHex(color);
+        material.roughness = params.roughness;
+        material.metalness = params.metalness;
+        material.needsUpdate = true;
+    }
+
+    function updateScene() {
+        geometry.dispose();
+        geometry = createRoseGeometry();
+
+        while(rootGroup.children.length > 0) rootGroup.remove(rootGroup.children[0]); 
+
+        const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(
+            params.rotX * (Math.PI/180), 
+            params.rotY * (Math.PI/180), 
+            params.rotZ * (Math.PI/180)
+        ));
+        
+        const aspect = camera.right / camera.top; 
+        const h = 100; const w = 100 * aspect;
+        
+        if(params.mode === 'single') {
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.scale.setScalar(params.scale * 5); 
+            mesh.setRotationFromQuaternion(q);
+            mesh.castShadow = true; mesh.receiveShadow = true;
+            rootGroup.add(mesh);
+        } else {
+            const margin = params.margin; const spacing = params.spacing; const scale = params.scale;
+            const addObj = (x, y) => {
+                const mesh = new THREE.Mesh(geometry, material);
+                mesh.position.set(x, y, 0);
+                mesh.scale.setScalar(scale);
+                mesh.setRotationFromQuaternion(q);
+                mesh.castShadow = true; mesh.receiveShadow = true;
+                rootGroup.add(mesh);
+            };
+            const xL = -(w/2) + margin; const xR = (w/2) - margin;
+            const yT = (h/2) - margin; const yB = -(h/2) + margin;
+            const widthSpan = xR - xL; const heightSpan = yT - yB;
+            const countX = Math.floor(widthSpan / spacing); const countY = Math.floor(heightSpan / spacing);
+
+            if(params.sectors.TL) addObj(xL, yT);
+            if(params.sectors.TR) addObj(xR, yT);
+            if(params.sectors.BL) addObj(xL, yB);
+            if(params.sectors.BR) addObj(xR, yB);
+            if(params.sectors.T && countX > 0) for(let i=1; i<countX; i++) addObj(xL + (i/countX)*widthSpan, yT);
+            if(params.sectors.B && countX > 0) for(let i=1; i<countX; i++) addObj(xL + (i/countX)*widthSpan, yB);
+            if(params.sectors.L && countY > 0) for(let i=1; i<countY; i++) addObj(xL, yB + (i/countY)*heightSpan);
+            if(params.sectors.R && countY > 0) for(let i=1; i<countY; i++) addObj(xR, yB + (i/countY)*heightSpan);
+        }
+    }
+
+    // --- RESIZE & RENDER ---
+    function updateCameraAspect(width, height) {
+        const aspect = width / height;
+        camera.left = -viewHeight * aspect / 2; camera.right = viewHeight * aspect / 2;
+        camera.top = viewHeight / 2; camera.bottom = -viewHeight / 2;
+        camera.updateProjectionMatrix();
+    }
+
+    function handleResize() {
+        let targetAspect = 1.0;
+        if(params.canvasShape === 'portrait') targetAspect = 4/5;
+        if(params.canvasShape === 'landscape') targetAspect = 3/2;
+
+        const wrapW = container.clientWidth; const wrapH = container.clientHeight;
+        const screenAspect = wrapW / wrapH;
+
+        let finalW, finalH;
+        if(screenAspect > targetAspect) { finalH = wrapH - 40; finalW = finalH * targetAspect; } 
+        else { finalW = wrapW - 40; finalH = finalW / targetAspect; }
+
+        renderer.setSize(finalW, finalH);
+        updateCameraAspect(finalW, finalH);
+        updateScene();
+    }
+    window.addEventListener('resize', handleResize);
+    
+    function animate() {
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+    }
+    animate();
+    updateMaterial();
+    updateLighting();
+    handleResize();
+
+    // --- UI BINDING ---
+    function updateUI() {
+        for (const key in params) {
+            if(key === 'sectors') {
+                 document.querySelectorAll('.sector-btn').forEach(btn => {
+                    const sec = btn.dataset.sec;
+                    if(params.sectors[sec]) btn.classList.add('active');
+                    else btn.classList.remove('active');
+                });
+                continue;
+            }
+            const el = document.getElementById(key);
+            if(el) {
+                if(key === 'exportRes' || key === 'petalType') el.value = params[key];
+                else el.value = params[key];
+                const lbl = document.getElementById('val-'+key);
+                if(lbl) lbl.innerText = params[key];
+            }
+        }
+        document.getElementById('border-sector-ui').style.display = (params.mode === 'border') ? 'block' : 'none';
+    }
+
+    document.querySelectorAll('input, select').forEach(el => {
+        el.addEventListener('input', (e) => {
+            if(e.target.id === 'csv-upload') return;
+            let val = e.target.value;
+            if(e.target.type === 'range') val = parseFloat(val);
+            params[e.target.id] = val;
+            
+            if(e.target.id === 'canvasShape') handleResize();
+            if(e.target.id === 'material' || e.target.id === 'roughness' || e.target.id === 'metalness') updateMaterial();
+            if(e.target.id === 'exposure' || e.target.id === 'lightRot') updateLighting();
+            if(e.target.id === 'mode') updateUI();
+            
+            updateScene();
+            updateUI();
+        });
+    });
+
+    document.querySelectorAll('.sector-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const sec = btn.dataset.sec;
+            params.sectors[sec] = !params.sectors[sec];
+            updateUI();
+            updateScene();
+        });
+    });
+
+    // --- EXPORT / IMPORT ---
+    document.getElementById('btn-csv-export').addEventListener('click', () => {
+        const rows = [];
+        rows.push(Object.keys(params).join(','));
+        const vals = Object.values(params).map(v => {
+            if(typeof v === 'object') return `"${JSON.stringify(v).replace(/"/g, '""')}"`;
+            return v;
+        });
+        rows.push(vals.join(','));
+        const blob = new Blob([rows.join('\n')], {type: 'text/csv'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'golden_botanist_v8.csv'; a.click();
+    });
+
+    document.getElementById('csv-upload').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+            const lines = evt.target.result.split('\n');
+            if(lines.length < 2) return;
+            const keys = lines[0].trim().split(',');
+            const vals = lines[1].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
+            if(keys.length === vals.length) {
+                keys.forEach((k, i) => {
+                    let v = vals[i];
+                    if(v.startsWith('"')) v = JSON.parse(v.substring(1, v.length-1).replace(/""/g, '"'));
+                    else if(!isNaN(parseFloat(v)) && k !== 'material' && k !== 'mode' && k !== 'canvasShape' && k !== 'petalType') v = parseFloat(v);
+                    params[k] = v;
+                });
+                updateUI();
+                updateMaterial();
+                updateLighting();
+                handleResize(); 
+                updateScene();
+            }
+        };
+        reader.readAsText(file);
+    });
+
+    // --- RENDER EXPORT ---
+    document.getElementById('btn-export').addEventListener('click', () => {
+        const btn = document.getElementById('btn-export');
+        const overlay = document.getElementById('loading');
+        btn.disabled = true;
+        overlay.style.display = 'flex';
+
+        const res = parseInt(params.exportRes);
+        let w = res;
+        let h = res;
+        if(params.canvasShape === 'portrait') h = w * 1.25;
+        if(params.canvasShape === 'landscape') h = w * 0.666;
+
+        const prevSize = new THREE.Vector2();
+        renderer.getSize(prevSize);
+        const prevPixelRatio = renderer.getPixelRatio();
+
+        updateCameraAspect(w, h);
+        renderer.setSize(w, h);
+        renderer.setPixelRatio(2); // Super Sampling
+        updateScene(); 
+
+        setTimeout(() => {
+            renderer.render(scene, camera);
+            
+            renderer.domElement.toBlob((blob) => {
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `Golden_Botanist_${w}px.png`;
+                a.click();
+
+                updateCameraAspect(prevSize.x, prevSize.y);
+                renderer.setSize(prevSize.x, prevSize.y);
+                renderer.setPixelRatio(prevPixelRatio);
+                updateScene(); 
+                
+                overlay.style.display = 'none';
+                btn.disabled = false;
+            });
+        }, 500);
+    });
+
+</script>
+</body>
+</html>

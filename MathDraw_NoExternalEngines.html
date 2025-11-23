@@ -3,197 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Golden Master Studio v2 (Presets)</title>
+    <title>Golden Studio v3 (Film Grain Edition)</title>
     <style>
-        body {
-            margin: 0;
-            background: #050505;
-            color: #ccc;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-        }
-
-        /* --- SIDEBAR --- */
-        .sidebar {
-            width: 360px;
-            background: #111;
-            border-right: 1px solid #222;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 5px 0 30px rgba(0,0,0,0.9);
-            z-index: 10;
-        }
-
-        .scroll-area {
-            padding: 20px;
-            overflow-y: auto;
-            flex-grow: 1;
-        }
+        body { margin: 0; background: #050505; color: #ccc; font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; }
+        .sidebar { width: 360px; background: #111; border-right: 1px solid #222; padding: 0; display: flex; flex-direction: column; box-shadow: 5px 0 30px rgba(0,0,0,0.9); z-index: 10; }
+        .scroll-area { padding: 20px; overflow-y: auto; flex-grow: 1; }
         .scroll-area::-webkit-scrollbar { width: 6px; }
         .scroll-area::-webkit-scrollbar-track { background: #111; }
         .scroll-area::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
-
         h2 { color: #fff; margin: 0 0 5px 0; font-size: 18px; letter-spacing: 1px; }
         .subtitle { color: #d4af37; font-size: 11px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 2px; font-weight: bold; }
-
         h3 { color: #666; font-size: 11px; margin: 15px 0 5px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 700; border-bottom: 1px solid #222; padding-bottom: 4px;}
-
-        .control-group {
-            background: #161616;
-            padding: 10px;
-            border-radius: 6px;
-            border: 1px solid #2a2a2a;
-            margin-bottom: 8px;
-        }
-
+        .control-group { background: #161616; padding: 10px; border-radius: 6px; border: 1px solid #2a2a2a; margin-bottom: 8px; }
         label { font-size: 12px; color: #aaa; display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;}
         span.val { color: #d4af37; font-family: monospace; font-size: 12px;}
-        
-        input[type=range] {
-            width: 100%;
-            accent-color: #d4af37;
-            background: #333;
-            height: 4px;
-            border-radius: 2px;
-            outline: none;
-            cursor: pointer;
-        }
-
-        select {
-            width: 100%;
-            background: #222;
-            color: #fff;
-            border: 1px solid #444;
-            padding: 8px;
-            border-radius: 4px;
-            font-size: 12px;
-            outline: none;
-        }
-        select:focus { border-color: #d4af37; }
-
-        /* --- PRESET BUTTONS --- */
-        .preset-row {
-            display: flex;
-            gap: 5px;
-            margin-bottom: 15px;
-        }
-        .preset-btn {
-            flex: 1;
-            background: #2a2a2a;
-            border: 1px solid #444;
-            color: #ccc;
-            padding: 8px;
-            font-size: 11px;
-            cursor: pointer;
-            border-radius: 3px;
-            text-align: center;
-        }
+        input[type=range] { width: 100%; accent-color: #d4af37; background: #333; height: 4px; border-radius: 2px; outline: none; cursor: pointer; }
+        select { width: 100%; background: #222; color: #fff; border: 1px solid #444; padding: 8px; border-radius: 4px; font-size: 12px; outline: none; }
+        .preset-row { display: flex; gap: 5px; margin-bottom: 15px; }
+        .preset-btn { flex: 1; background: #2a2a2a; border: 1px solid #444; color: #ccc; padding: 8px; font-size: 11px; cursor: pointer; border-radius: 3px; text-align: center; }
         .preset-btn:hover { background: #333; border-color: #d4af37; color: #fff; }
         input[type="file"] { display: none; }
-
-        /* --- SECTOR GRID --- */
-        .sector-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 4px;
-            margin-top: 5px;
-        }
-        .sector-btn {
-            background: #222;
-            border: 1px solid #333;
-            color: #555;
-            padding: 8px 0;
-            font-size: 10px;
-            text-align: center;
-            cursor: pointer;
-            border-radius: 3px;
-            user-select: none;
-        }
-        .sector-btn.active {
-            background: #d4af37;
-            color: #000;
-            font-weight: bold;
-            border-color: #d4af37;
-        }
-        .sector-center {
-            background: transparent;
-            border: none;
-            color: #444;
-            font-size: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-
-        button.main-action {
-            margin: 20px;
-            padding: 16px;
-            background: linear-gradient(135deg, #d4af37 0%, #8c702a 100%);
-            border: none;
-            color: white;
-            font-weight: 800;
-            cursor: pointer;
-            border-radius: 4px;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.2s;
-        }
+        .sector-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 5px; }
+        .sector-btn { background: #222; border: 1px solid #333; color: #555; padding: 8px 0; font-size: 10px; text-align: center; cursor: pointer; border-radius: 3px; user-select: none; }
+        .sector-btn.active { background: #d4af37; color: #000; font-weight: bold; border-color: #d4af37; }
+        .sector-center { background: transparent; border: none; color: #444; font-size: 20px; display: flex; justify-content: center; align-items: center; }
+        button.main-action { margin: 20px; padding: 16px; background: linear-gradient(135deg, #d4af37 0%, #8c702a 100%); border: none; color: white; font-weight: 800; cursor: pointer; border-radius: 4px; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; transition: all 0.2s; }
         button.main-action:hover { filter: brightness(1.15); }
         button.main-action:disabled { background: #333; color: #555; cursor: wait; }
-
-        /* --- CANVAS AREA --- */
-        .canvas-container {
-            flex-grow: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            background-color: #050505;
-            background-image: 
-                linear-gradient(45deg, #111 25%, transparent 25%), 
-                linear-gradient(-45deg, #111 25%, transparent 25%), 
-                linear-gradient(45deg, transparent 75%, #111 75%), 
-                linear-gradient(-45deg, transparent 75%, #111 75%);
-            background-size: 20px 20px;
-            position: relative;
-            padding: 40px;
-            overflow: auto;
-        }
-        
-        canvas {
-            box-shadow: 0 0 50px #000;
-            border: 1px solid #333;
-            max-width: 90%;
-            max-height: 90%;
-        }
-        
-        .loading-overlay {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95);
-            color: #d4af37;
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-        }
-        .spinner {
-            border: 4px solid #222;
-            border-top: 4px solid #d4af37;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-            margin-bottom: 20px;
-        }
+        .canvas-container { flex-grow: 1; display: flex; justify-content: center; align-items: center; background-color: #050505; background-image: linear-gradient(45deg, #111 25%, transparent 25%), linear-gradient(-45deg, #111 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #111 75%), linear-gradient(-45deg, transparent 75%, #111 75%); background-size: 20px 20px; position: relative; padding: 40px; overflow: auto; }
+        canvas { box-shadow: 0 0 50px #000; border: 1px solid #333; max-width: 90%; max-height: 90%; }
+        .loading-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); color: #d4af37; display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
+        .spinner { border: 4px solid #222; border-top: 4px solid #d4af37; border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
         .loading-text { font-size: 20px; font-weight: bold; }
         .loading-detail { font-size: 14px; color: #666; margin-top: 10px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
     </style>
 </head>
 <body>
@@ -201,7 +44,7 @@
     <div class="sidebar">
         <div class="scroll-area">
             <h2>Golden Studio</h2>
-            <div class="subtitle">Master Edition v2</div>
+            <div class="subtitle">Film Grain Edition v3</div>
 
             <h3>Preset Manager</h3>
             <div class="preset-row">
@@ -223,7 +66,7 @@
                 </select>
             </div>
             <div class="control-group">
-                <label>Dithering <span class="val" id="val-dither">15</span></label>
+                <label>Surface Dithering (Face Noise) <span class="val" id="val-dither">15</span></label>
                 <input type="range" id="dither" min="0" max="50" step="1" value="15">
             </div>
 
@@ -238,27 +81,25 @@
             <div id="border-sector-ui" style="display:none;">
                 <h3>Border Sectors</h3>
                 <div class="control-group">
-                    <div style="font-size:10px; color:#666; margin-bottom:5px; text-align:center;">Click segments to toggle drawing</div>
+                    <div style="font-size:10px; color:#666; margin-bottom:5px; text-align:center;">Click segments to toggle</div>
                     <div class="sector-grid">
                         <div class="sector-btn active" data-sec="TL">Corner</div>
                         <div class="sector-btn active" data-sec="T">Top</div>
                         <div class="sector-btn active" data-sec="TR">Corner</div>
-                        
                         <div class="sector-btn active" data-sec="L">Left</div>
                         <div class="sector-center">+</div>
                         <div class="sector-btn active" data-sec="R">Right</div>
-
                         <div class="sector-btn active" data-sec="BL">Corner</div>
                         <div class="sector-btn active" data-sec="B">Bottom</div>
                         <div class="sector-btn active" data-sec="BR">Corner</div>
                     </div>
                 </div>
                 <div class="control-group">
-                    <label>Border Spacing <span class="val" id="val-spacing">70</span></label>
+                    <label>Spacing <span class="val" id="val-spacing">70</span></label>
                     <input type="range" id="spacing" min="30" max="150" step="5" value="70">
                 </div>
                  <div class="control-group">
-                    <label>Inset Margin <span class="val" id="val-margin">80</span></label>
+                    <label>Margin <span class="val" id="val-margin">80</span></label>
                     <input type="range" id="margin" min="0" max="250" step="10" value="80">
                 </div>
             </div>
@@ -273,11 +114,11 @@
                 <input type="range" id="k2" min="1" max="16" step="1" value="5">
             </div>
             <div class="control-group">
-                <label>Twist/Spiral <span class="val" id="val-twist">0.5</span></label>
+                <label>Twist <span class="val" id="val-twist">0.5</span></label>
                 <input type="range" id="twist" min="-4" max="4" step="0.1" value="0.5">
             </div>
             <div class="control-group">
-                <label>Depth/Bump <span class="val" id="val-amp">0.35</span></label>
+                <label>Depth <span class="val" id="val-amp">0.35</span></label>
                 <input type="range" id="amp" min="0" max="1.0" step="0.05" value="0.35">
             </div>
             <div class="control-group">
@@ -300,6 +141,10 @@
             </div>
             
             <h3>5. Export Settings</h3>
+            <div class="control-group">
+                <label>Film Grain Strength <span class="val" id="val-filmGrain">30</span>%</label>
+                <input type="range" id="filmGrain" min="0" max="100" step="5" value="30">
+            </div>
             <div class="control-group">
                 <label>Resolution</label>
                 <select id="exportRes">
@@ -325,7 +170,7 @@
         <canvas id="previewCanvas"></canvas>
         <div class="loading-overlay" id="loading">
             <div class="spinner"></div>
-            <div class="loading-text">Rendering Master Image</div>
+            <div class="loading-text">Rendering</div>
             <div class="loading-detail" id="loading-msg">Please wait...</div>
         </div>
     </div>
@@ -336,7 +181,6 @@
     const loadingOverlay = document.getElementById('loading');
     const loadingMsg = document.getElementById('loading-msg');
 
-    // --- PALETTES ---
     const PALETTES = {
         gold: [ { pos: 0.0, color: [40, 25, 5] }, { pos: 0.4, color: [184, 134, 11] }, { pos: 0.7, color: [255, 215, 0] }, { pos: 0.95, color: [255, 250, 220] }, { pos: 1.0, color: [255, 255, 255] } ],
         rose: [ { pos: 0.0, color: [50, 20, 20] }, { pos: 0.4, color: [184, 100, 100] }, { pos: 0.7, color: [255, 180, 160] }, { pos: 0.95, color: [255, 235, 230] }, { pos: 1.0, color: [255, 255, 255] } ],
@@ -345,31 +189,25 @@
         porcelain: [ { pos: 0.0, color: [140, 140, 145] }, { pos: 0.5, color: [235, 235, 235] }, { pos: 0.8, color: [255, 255, 255] }, { pos: 0.95, color: [255, 255, 255] }, { pos: 1.0, color: [255, 255, 255] } ],
         obsidian: [ { pos: 0.0, color: [0, 0, 0] }, { pos: 0.5, color: [20, 20, 20] }, { pos: 0.8, color: [50, 50, 50] }, { pos: 0.98, color: [220, 220, 220] }, { pos: 1.0, color: [255, 255, 255] } ]
     };
-
     const LIGHT_DIR = {x: 0.6, y: -0.8, z: -1.0};
     const LIGHT_MAG = Math.sqrt(LIGHT_DIR.x**2 + LIGHT_DIR.y**2 + LIGHT_DIR.z**2);
 
-    // --- PARAMETERS ---
-    // We define the default params object. This is what will be exported/imported.
+    // --- DEFAULTS (Based on your CSV + Film Grain) ---
     let params = {
         material: 'gold', mode: 'single', canvasShape: 'square', exportRes: '4096',
-        dither: 15,
+        dither: 15, filmGrain: 30, // Added Film Grain Default
         k1: 6, k2: 5, twist: 0.5, amp: 0.35, sharp: 2.0,
         scale: 45,
         rotX: 45 * (Math.PI/180), rotY: 45 * (Math.PI/180), rotZ: 0,
         spacing: 70, margin: 80,
-        // Sector States
         sectors: { TL:true, T:true, TR:true, L:true, R:true, BL:true, B:true, BR:true }
     };
 
-    // --- UI HANDLERS ---
     const inputs = document.querySelectorAll('input, select');
     
-    // Helper function to update UI from Params (used during Import)
     function updateUIFromParams() {
         for (const key in params) {
             if (key === 'sectors') {
-                // Update buttons
                 document.querySelectorAll('.sector-btn').forEach(btn => {
                     const sec = btn.dataset.sec;
                     if(params.sectors[sec]) btn.classList.add('active');
@@ -377,51 +215,33 @@
                 });
                 continue;
             }
-
-            // Standard inputs
             const input = document.getElementById(key);
-            if (!input) continue; // rotX/Y/Z logic needs specific handling or IDs match params
-
-            if (key.startsWith('rot')) {
-                // Convert Rads back to Degrees for UI
-                input.value = Math.round(params[key] * (180/Math.PI));
-            } else {
-                input.value = params[key];
-            }
-
-            // Update text labels
+            if (!input) continue; 
+            if (key.startsWith('rot')) input.value = Math.round(params[key] * (180/Math.PI));
+            else input.value = params[key];
             const labelSpan = document.getElementById(`val-${key}`);
             if(labelSpan) labelSpan.innerText = input.value;
         }
-
-        // Mode visibility
         document.getElementById('border-sector-ui').style.display = (params.mode === 'border') ? 'block' : 'none';
-        
         requestAnimationFrame(renderPreview);
     }
+    
+    window.addEventListener('DOMContentLoaded', () => { updateUIFromParams(); });
 
-    // Input Listener
     inputs.forEach(input => {
         input.addEventListener('input', (e) => {
             const id = e.target.id;
-            if (id === 'csv-upload') return; // Handled separately
-
+            if (id === 'csv-upload') return; 
             let val = e.target.value;
             if(input.type === 'range') val = parseFloat(val);
-            
             if (id.startsWith('rot')) params[id] = val * (Math.PI / 180);
             else params[id] = val;
-
             const labelSpan = document.getElementById(`val-${id}`);
             if(labelSpan) labelSpan.innerText = e.target.value;
-
             if (id === 'mode') document.getElementById('border-sector-ui').style.display = (val === 'border') ? 'block' : 'none';
-            
             requestAnimationFrame(renderPreview);
         });
     });
-
-    // SECTOR BUTTON LOGIC
     document.querySelectorAll('.sector-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             const sec = btn.dataset.sec;
@@ -431,106 +251,95 @@
             requestAnimationFrame(renderPreview);
         });
     });
-
-    // --- PRESET EXPORT/IMPORT ---
-
-    // Export CSV
     document.getElementById('btn-csv-export').addEventListener('click', () => {
-        // Flatten params for CSV. Rotations stored as radians.
-        // We need to serialize the 'sectors' object into a string or separate columns
-        // Simplest: JSON stringify the sectors column
         const csvRows = [];
         const headers = Object.keys(params);
         csvRows.push(headers.join(','));
-
         const values = headers.map(header => {
-            if (header === 'sectors') {
-                // Escape quotes for CSV safety
-                return `"${JSON.stringify(params[header]).replace(/"/g, '""')}"`;
-            }
+            if (header === 'sectors') return `"${JSON.stringify(params[header]).replace(/"/g, '""')}"`;
             return params[header];
         });
         csvRows.push(values.join(','));
-
-        const csvString = csvRows.join('\n');
-        const blob = new Blob([csvString], { type: 'text/csv' });
+        const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.href = url;
-        link.download = 'golden_preset.csv';
-        link.click();
+        link.href = url; link.download = 'golden_preset.csv'; link.click();
     });
-
-    // Import CSV
     document.getElementById('csv-upload').addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
-
         const reader = new FileReader();
         reader.onload = (event) => {
             const text = event.target.result;
             const rows = text.split('\n');
-            if (rows.length < 2) return; // Invalid
-
+            if (rows.length < 2) return; 
             const headers = rows[0].trim().split(',');
-            // Need robust CSV parsing for the quoted JSON sector column
-            // Quick regex hack for this specific use case:
-            // Split by comma only if not inside quotes
             const values = rows[1].match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-
             if(values && values.length === headers.length) {
                 headers.forEach((header, index) => {
                     let val = values[index];
-                    // Remove CSV quotes
-                    if (val.startsWith('"') && val.endsWith('"')) {
-                        val = val.substring(1, val.length - 1).replace(/""/g, '"');
-                    }
-
-                    if (header === 'sectors') {
-                        try {
-                            params[header] = JSON.parse(val);
-                        } catch(e) { console.error("Sector parse error", e); }
-                    } else if (header === 'material' || header === 'mode' || header === 'canvasShape') {
-                        params[header] = val;
-                    } else {
-                        params[header] = parseFloat(val);
-                    }
+                    if (val.startsWith('"') && val.endsWith('"')) val = val.substring(1, val.length - 1).replace(/""/g, '"');
+                    if (header === 'sectors') try { params[header] = JSON.parse(val); } catch(e) {}
+                    else if (header === 'material' || header === 'mode' || header === 'canvasShape') params[header] = val;
+                    else params[header] = parseFloat(val);
                 });
                 updateUIFromParams();
             }
         };
         reader.readAsText(file);
-        // Reset input so same file can be loaded again if modified externally
         e.target.value = ''; 
     });
 
-
-    // --- MATH ---
     function lerpColor(a, b, t) { return Math.floor(a + (b - a) * t); }
-
+    
+    // Per-Face Dithering (Surface Noise)
     function getMaterialColor(intensity, matName) {
         let t;
         if(matName === 'porcelain') t = Math.pow(intensity, 2.5);
         else if (matName === 'obsidian') t = Math.pow(intensity, 5.0);
         else t = Math.pow(intensity, 0.65);
-
         if (params.dither > 0) {
              const noise = (Math.random() - 0.5) * (params.dither / 300); 
-             t += noise;
-             t = Math.max(0, Math.min(1, t));
+             t += noise; t = Math.max(0, Math.min(1, t));
         }
-
         const stops = PALETTES[matName];
         let c1, c2, localT;
         for (let i = 0; i < stops.length - 1; i++) {
-            if (t >= stops[i].pos && t <= stops[i+1].pos) {
-                c1 = stops[i]; c2 = stops[i+1];
-                localT = (t - c1.pos) / (c2.pos - c1.pos);
-                break;
-            }
+            if (t >= stops[i].pos && t <= stops[i+1].pos) { c1 = stops[i]; c2 = stops[i+1]; localT = (t - c1.pos) / (c2.pos - c1.pos); break; }
         }
         if(!c1) { c1 = stops[stops.length-1]; c2 = stops[stops.length-1]; localT = 0;}
         return `rgb(${lerpColor(c1.color[0], c2.color[0], localT)},${lerpColor(c1.color[1], c2.color[1], localT)},${lerpColor(c1.color[2], c2.color[2], localT)})`;
+    }
+
+    // Post-Process Film Grain (Overlay)
+    function applyFilmGrain(ctx, w, h) {
+        if (params.filmGrain <= 0) return;
+        
+        // Create small noise pattern (256x256 is enough to tile)
+        const noiseCanvas = document.createElement('canvas');
+        noiseCanvas.width = 256; noiseCanvas.height = 256;
+        const noiseCtx = noiseCanvas.getContext('2d');
+        const imgData = noiseCtx.createImageData(256, 256);
+        const data = imgData.data;
+        
+        for (let i = 0; i < data.length; i += 4) {
+            // Grayscale noise centered around 128
+            const v = (Math.random() - 0.5) * 255; 
+            data[i] = v; 
+            data[i+1] = v; 
+            data[i+2] = v; 
+            data[i+3] = 255; // Opaque noise, we use globalAlpha for blend
+        }
+        noiseCtx.putImageData(imgData, 0, 0);
+
+        ctx.save();
+        // 'overlay' blends well for grain without washing out colors
+        ctx.globalCompositeOperation = 'overlay'; 
+        ctx.globalAlpha = params.filmGrain / 200; // Scale 0-100 to reasonable alpha (0.0 - 0.5)
+        const pattern = ctx.createPattern(noiseCanvas, 'repeat');
+        ctx.fillStyle = pattern;
+        ctx.fillRect(0, 0, w, h);
+        ctx.restore();
     }
 
     function getRadius(theta, phi) {
@@ -540,7 +349,6 @@
         let dampener = Math.pow(Math.sin(phi), 1.5); 
         return 1.0 + params.amp * shape * dampener;
     }
-
     function rotatePoint(p) {
         let x = p.x, y = p.y, z = p.z;
         let rx = x * Math.cos(params.rotY) - z * Math.sin(params.rotY);
@@ -554,13 +362,9 @@
         x = rx; y = ry;
         return {x, y, z};
     }
-
-    // --- DRAWING ---
     function drawObject(context, posX, posY, resolutionSteps, objectScale) {
-        const latSteps = resolutionSteps[0];
-        const lonSteps = resolutionSteps[1];
+        const latSteps = resolutionSteps[0]; const lonSteps = resolutionSteps[1];
         let vertices = [];
-
         for (let i = 0; i <= latSteps; i++) {
             let phi = Math.PI * i / latSteps;
             for (let j = 0; j <= lonSteps; j++) {
@@ -572,190 +376,97 @@
                 vertices.push(rotatePoint({x,y,z}));
             }
         }
-
         const perspective = 1000;
-        context.lineJoin = 'round';
-        context.lineCap = 'round';
+        context.lineJoin = 'round'; context.lineCap = 'round';
         context.lineWidth = Math.max(0.5, objectScale / 100); 
-
         for (let i = 0; i < latSteps; i++) {
             for (let j = 0; j < lonSteps; j++) {
                 let p1Idx = i * (lonSteps + 1) + j;
                 let p2Idx = p1Idx + 1;
                 let p3Idx = (i + 1) * (lonSteps + 1) + j + 1;
                 let p4Idx = p3Idx - 1;
-
-                let v1 = vertices[p1Idx];
-                if (v1.z > 0.6) continue; 
-
-                let v2 = vertices[p2Idx];
-                let v4 = vertices[p4Idx];
-                
+                let v1 = vertices[p1Idx]; if (v1.z > 0.6) continue; 
+                let v2 = vertices[p2Idx]; let v4 = vertices[p4Idx];
                 let ax = v2.x - v1.x, ay = v2.y - v1.y, az = v2.z - v1.z;
                 let bx = v4.x - v1.x, by = v4.y - v1.y, bz = v4.z - v1.z;
-                let nx = ay * bz - az * by;
-                let ny = az * bx - ax * bz;
-                let nz = ax * by - ay * bx;
+                let nx = ay * bz - az * by; let ny = az * bx - ax * bz; let nz = ax * by - ay * bx;
                 let dot = nx*LIGHT_DIR.x + ny*LIGHT_DIR.y + nz*LIGHT_DIR.z;
                 let normMag = Math.sqrt(nx*nx + ny*ny + nz*nz);
                 let intensity = Math.abs(dot / (normMag * LIGHT_MAG));
-                
                 let color = getMaterialColor(intensity, params.material);
-                
-                const proj = (v) => {
-                    const s = perspective / (perspective + v.z + objectScale*3);
-                    return { x: posX + v.x * objectScale * s, y: posY + v.y * objectScale * s };
-                }
-
-                let pp1 = proj(v1); let pp2 = proj(v2);
-                let pp3 = proj(vertices[p3Idx]); let pp4 = proj(vertices[p4Idx]);
-
-                context.fillStyle = color;
-                context.strokeStyle = color;
-                context.beginPath();
-                context.moveTo(pp1.x, pp1.y);
-                context.lineTo(pp2.x, pp2.y);
-                context.lineTo(pp3.x, pp3.y);
-                context.lineTo(pp4.x, pp4.y);
-                context.closePath();
-                context.fill();
-                context.stroke();
+                const proj = (v) => { const s = perspective / (perspective + v.z + objectScale*3); return { x: posX + v.x * objectScale * s, y: posY + v.y * objectScale * s }; }
+                let pp1 = proj(v1); let pp2 = proj(v2); let pp3 = proj(vertices[p3Idx]); let pp4 = proj(vertices[p4Idx]);
+                context.fillStyle = color; context.strokeStyle = color;
+                context.beginPath(); context.moveTo(pp1.x, pp1.y); context.lineTo(pp2.x, pp2.y); context.lineTo(pp3.x, pp3.y); context.lineTo(pp4.x, pp4.y);
+                context.closePath(); context.fill(); context.stroke();
             }
         }
     }
-
     function renderScene(targetCtx, w, h, isPreview) {
         targetCtx.clearRect(0, 0, w, h);
-
         const resolutionFactor = w / 1000;
         let polyLat = isPreview ? 35 : Math.min(400, 80 * resolutionFactor);
         let polyLon = isPreview ? 45 : Math.min(500, 100 * resolutionFactor);
         const res = [polyLat, polyLon];
-
-        // SINGLE MODE
         if (params.mode === 'single') {
             let baseScale = params.scale * resolutionFactor * 4;
             drawObject(targetCtx, w/2, h/2, res, baseScale);
-            return;
+        } else {
+            const margin = params.margin * resolutionFactor;
+            const spacing = params.spacing * resolutionFactor;
+            const baseScale = params.scale * resolutionFactor;
+            const s = params.sectors;
+            const innerW = w - margin*2; const innerH = h - margin*2;
+            const topCount = Math.floor(innerW / spacing); const sideCount = Math.floor(innerH / spacing);
+            if(s.TL) drawObject(targetCtx, margin, margin, res, baseScale);
+            if(s.TR) drawObject(targetCtx, w - margin, margin, res, baseScale);
+            if(s.BL) drawObject(targetCtx, margin, h - margin, res, baseScale);
+            if(s.BR) drawObject(targetCtx, w - margin, h - margin, res, baseScale);
+            if(s.T) for(let i=1; i<topCount; i++) drawObject(targetCtx, margin + (i/topCount)*innerW, margin, res, baseScale);
+            if(s.B) for(let i=1; i<topCount; i++) drawObject(targetCtx, margin + (i/topCount)*innerW, h-margin, res, baseScale);
+            if(s.L) for(let i=1; i<sideCount; i++) drawObject(targetCtx, margin, margin + (i/sideCount)*innerH, res, baseScale);
+            if(s.R) for(let i=1; i<sideCount; i++) drawObject(targetCtx, w-margin, margin + (i/sideCount)*innerH, res, baseScale);
         }
-
-        // BORDER MODE
-        const margin = params.margin * resolutionFactor;
-        const spacing = params.spacing * resolutionFactor;
-        const baseScale = params.scale * resolutionFactor;
-        const s = params.sectors;
-
-        const innerW = w - margin*2;
-        const innerH = h - margin*2;
-        const topCount = Math.floor(innerW / spacing);
-        const sideCount = Math.floor(innerH / spacing);
-
-        // Corners
-        if(s.TL) drawObject(targetCtx, margin, margin, res, baseScale);
-        if(s.TR) drawObject(targetCtx, w - margin, margin, res, baseScale);
-        if(s.BL) drawObject(targetCtx, margin, h - margin, res, baseScale);
-        if(s.BR) drawObject(targetCtx, w - margin, h - margin, res, baseScale);
-
-        // Top Side
-        if(s.T) {
-            for(let i=1; i<topCount; i++) {
-                let px = margin + (i/topCount)*innerW;
-                drawObject(targetCtx, px, margin, res, baseScale);
-            }
-        }
-        // Bottom Side
-        if(s.B) {
-            for(let i=1; i<topCount; i++) {
-                let px = margin + (i/topCount)*innerW;
-                drawObject(targetCtx, px, h-margin, res, baseScale);
-            }
-        }
-        // Left Side
-        if(s.L) {
-            for(let i=1; i<sideCount; i++) {
-                let py = margin + (i/sideCount)*innerH;
-                drawObject(targetCtx, margin, py, res, baseScale);
-            }
-        }
-        // Right Side
-        if(s.R) {
-            for(let i=1; i<sideCount; i++) {
-                let py = margin + (i/sideCount)*innerH;
-                drawObject(targetCtx, w-margin, py, res, baseScale);
-            }
-        }
+        
+        // Apply Film Grain LAST (Post-Process)
+        if (!isPreview) applyFilmGrain(targetCtx, w, h);
     }
-
     function renderPreview() { 
         let w = 500, h = 500;
-        if (params.canvasShape === 'portrait') { w=400; h=500; }
-        else if (params.canvasShape === 'landscape') { w=600; h=400; }
-        
-        previewCanvas.width = w;
-        previewCanvas.height = h;
+        if (params.canvasShape === 'portrait') { w=400; h=500; } else if (params.canvasShape === 'landscape') { w=600; h=400; }
+        previewCanvas.width = w; previewCanvas.height = h;
         renderScene(ctx, w, h, true);
     }
-
-    // --- RENDER BUTTON ---
-    const btnExport = document.getElementById('btn-export');
-    
-    btnExport.addEventListener('click', () => {
-        btnExport.disabled = true;
+    document.getElementById('btn-export').addEventListener('click', () => {
+        const btn = document.getElementById('btn-export');
+        btn.disabled = true;
         loadingOverlay.style.display = 'flex';
-        
         const widthStr = document.getElementById('exportRes').value;
-        let targetW = parseInt(widthStr);
-        let targetH = targetW;
-
+        let targetW = parseInt(widthStr); let targetH = targetW;
         if (params.canvasShape === 'portrait') targetH = targetW * 1.25;
         else if (params.canvasShape === 'landscape') targetH = targetW * 0.66;
-
         loadingMsg.innerText = `Initializing ${targetW}x${targetH} canvas...`;
-
         setTimeout(() => {
             try {
                 const offCanvas = document.createElement('canvas');
-                offCanvas.width = targetW;
-                offCanvas.height = targetH;
+                offCanvas.width = targetW; offCanvas.height = targetH;
                 const offCtx = offCanvas.getContext('2d');
-
                 loadingMsg.innerText = "Calculating Geometry...";
-                
                 setTimeout(() => {
                     renderScene(offCtx, targetW, targetH, false);
-                    
                     loadingMsg.innerText = "Compressing PNG...";
-
                     offCanvas.toBlob((blob) => {
-                        if (!blob) {
-                            alert("Browser memory error. Try smaller resolution.");
-                            return;
-                        }
+                        if (!blob) { alert("Browser memory error."); return; }
                         const url = URL.createObjectURL(blob);
                         const link = document.createElement("a");
                         link.download = `Golden_Master_${targetW}px.png`;
-                        link.href = url;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        URL.revokeObjectURL(url);
-
-                        loadingOverlay.style.display = 'none';
-                        btnExport.disabled = false;
+                        link.href = url; document.body.appendChild(link); link.click(); document.body.removeChild(link); URL.revokeObjectURL(url);
+                        loadingOverlay.style.display = 'none'; btn.disabled = false;
                     }, 'image/png');
-
                 }, 100);
-            } catch (e) {
-                alert("Error: Browser out of memory.");
-                loadingOverlay.style.display = 'none';
-                btnExport.disabled = false;
-            }
+            } catch (e) { alert("Error: Browser out of memory."); loadingOverlay.style.display = 'none'; btn.disabled = false; }
         }, 100);
     });
-
-    // Init
-    renderPreview();
-
 </script>
 </body>
 </html>
