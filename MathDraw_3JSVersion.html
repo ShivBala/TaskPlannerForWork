@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Golden Studio v15 - Perfect Rail</title>
+    <title>Golden Studio v20 - Stability Fix</title>
     <style>
         body { margin: 0; background: #050505; color: #ccc; font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; }
         
@@ -40,8 +40,12 @@
         .icon-btn { background: #333; border: none; color: #aaa; width: 24px; height: 24px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px;}
         .icon-btn:hover { background: #444; color: #fff; }
         .btn-del:hover { background: #522; color: #f88; }
-        .add-layer-btn { background: #222; border: 1px dashed #444; color: #888; width: 100%; padding: 10px; cursor: pointer; border-radius: 4px; font-size: 11px; margin-top: 10px; transition: 0.2s;}
+        
+        .layer-btn-row { display: flex; gap: 5px; margin-top: 10px; }
+        .add-layer-btn { background: #222; border: 1px dashed #444; color: #888; flex: 1; padding: 10px; cursor: pointer; border-radius: 4px; font-size: 11px; transition: 0.2s;}
         .add-layer-btn:hover { border-color: #d4af37; color: #d4af37; background: #2a2200; }
+        .dup-layer-btn { background: #222; border: 1px solid #444; color: #ccc; flex: 1; padding: 10px; cursor: pointer; border-radius: 4px; font-size: 11px; transition: 0.2s;}
+        .dup-layer-btn:hover { border-color: #fff; background: #333; }
 
         .sector-wrapper { margin-top: 5px; }
         .sector-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; aspect-ratio: 1; background: #111; border: 1px solid #333; padding: 2px; }
@@ -87,15 +91,15 @@
 
     <div id="tab-edit" class="scroll-area active">
         <div class="preset-row">
-            <button class="preset-btn" id="btn-csv-export">Export CSV</button>
-            <label class="preset-btn" for="csv-upload">Import CSV</label>
-            <input type="file" id="csv-upload" accept=".csv">
+            <button class="preset-btn" id="btn-project-export">Export Project</button>
+            <label class="preset-btn" for="project-upload">Import Project</label>
+            <input type="file" id="project-upload" accept=".json">
         </div>
 
         <div id="no-layer-msg" style="display:none; text-align:center; padding:20px; color:#666;">No layer selected</div>
         <div id="layer-controls">
             
-            <h3>Material (Layer)</h3>
+            <h3>Material</h3>
             <div class="control-group">
                 <label>Material</label>
                 <select id="l_material">
@@ -254,11 +258,27 @@
     <div id="tab-layers" class="scroll-area">
         <h3>Layer Manager</h3>
         <div id="layer-list-container" class="layer-list"></div>
-        <button class="add-layer-btn" onclick="addLayer()">+ Add New Layer</button>
+        <div class="layer-btn-row">
+            <button class="add-layer-btn" onclick="addLayer()">+ Add New</button>
+            <button class="dup-layer-btn" onclick="duplicateLayer()">Duplicate Selected</button>
+        </div>
     </div>
 
     <div id="tab-global" class="scroll-area">
-        <h3>Environment</h3>
+        <h3>Frame Control</h3>
+        <div class="control-group">
+            <label>Camera Zoom (Fit) <span class="val" id="val-g_camZoom">1.0</span></label>
+            <input type="range" id="g_camZoom" min="0.2" max="2.0" step="0.05" value="1.0">
+        </div>
+        <div class="control-group">
+            <label>Pan X <span class="val" id="val-g_panX">0</span></label>
+            <input type="range" id="g_panX" min="-50" max="50" step="1" value="0">
+        </div>
+        <div class="control-group">
+            <label>Pan Y <span class="val" id="val-g_panY">0</span></label>
+            <input type="range" id="g_panY" min="-50" max="50" step="1" value="0">
+        </div>
+
         <div class="control-group">
             <label>Exposure <span class="val" id="val-g_exposure">1.5</span></label>
             <input type="range" id="g_exposure" min="0.1" max="4.0" step="0.1" value="1.5">
@@ -300,7 +320,8 @@
 
     const globalParams = {
         exposure: 1.5, lightRot: 0,
-        canvasShape: 'square', exportRes: 4096
+        canvasShape: 'square', exportRes: 4096,
+        camZoom: 1.0, panX: 0, panY: 0
     };
 
     let layers = [
@@ -320,7 +341,8 @@
 
     const container = document.getElementById('canvas-wrapper');
     const scene = new THREE.Scene();
-    const viewHeight = 100; 
+    
+    const WORLD_HEIGHT = 100;
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 1, 1000);
     camera.position.set(0, 0, 100); camera.lookAt(0,0,0);
 
@@ -331,6 +353,12 @@
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     container.appendChild(renderer.domElement);
+
+    // FRAME GUIDE (Red Box)
+    const frameGeometry = new THREE.BufferGeometry();
+    const frameMat = new THREE.LineBasicMaterial({ color: 0xff0000, opacity: 0.3, transparent: true });
+    const frameLine = new THREE.LineLoop(frameGeometry, frameMat);
+    scene.add(frameLine);
 
     const lightGroup = new THREE.Group(); scene.add(lightGroup);
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); lightGroup.add(ambientLight);
@@ -344,6 +372,23 @@
     const fillLight = new THREE.DirectionalLight(0xddddff, 0.8); fillLight.position.set(0, -20, 10); lightGroup.add(fillLight);
 
     const rootGroup = new THREE.Group(); scene.add(rootGroup);
+
+    function updateFrameGuide() {
+        let targetAspect = 1.0;
+        if(globalParams.canvasShape === 'portrait') targetAspect = 4/5;
+        if(globalParams.canvasShape === 'landscape') targetAspect = 3/2;
+        
+        const halfH = WORLD_HEIGHT / 2;
+        const halfW = (WORLD_HEIGHT * targetAspect) / 2;
+        
+        const pts = [
+            new THREE.Vector3(-halfW, halfH, 0),
+            new THREE.Vector3(halfW, halfH, 0),
+            new THREE.Vector3(halfW, -halfH, 0),
+            new THREE.Vector3(-halfW, -halfH, 0)
+        ];
+        frameGeometry.setFromPoints(pts);
+    }
 
     function initGridUI() {
         const container = document.getElementById('sector-grid-container');
@@ -405,6 +450,17 @@
         const l = layers[layers.length-1];
         for(let i=0; i<36; i++) { const r=Math.floor(i/6), c=i%6; if(r===0||r===5||c===0||c===5) l.grid[i]=true; }
         activeLayerId = nextId; nextId++;
+        renderLayerList(); bindLayerToUI(); updateScene(); switchTab('edit');
+    };
+
+    window.duplicateLayer = () => {
+        const original = layers.find(l => l.id === activeLayerId);
+        if(!original) return;
+        const copy = JSON.parse(JSON.stringify(original));
+        copy.id = nextId++;
+        copy.name = original.name + " (Copy)";
+        layers.push(copy);
+        activeLayerId = copy.id;
         renderLayerList(); bindLayerToUI(); updateScene(); switchTab('edit');
     };
 
@@ -492,7 +548,7 @@
     const inputs = document.querySelectorAll('#tab-edit input, #tab-edit select');
     inputs.forEach(input => {
         input.addEventListener('input', (e) => {
-            if(e.target.id === 'csv-upload') return;
+            if(e.target.id === 'csv-upload' || e.target.id === 'project-upload') return;
             const l = layers.find(x => x.id === activeLayerId);
             if(!l) return;
             let val = e.target.value;
@@ -520,7 +576,7 @@
             globalParams[prop] = val;
             const lbl = document.getElementById('val-'+e.target.id);
             if(lbl) lbl.innerText = val;
-            if(prop === 'canvasShape') handleResize();
+            if(prop === 'canvasShape' || prop === 'camZoom' || prop === 'panX' || prop === 'panY') handleResize();
             else updateGlobalSettings();
         });
     });
@@ -546,6 +602,12 @@
     }
 
     function createGeometry(l) {
+        // MATH FIX: Ensure defaults exist to prevent NaN
+        const stretch = l.stretch || 1.0;
+        const bend = l.bend || 0.0;
+        const veinStrength = l.vein || 0.0;
+        const leafWidth = l.leafWidth || 1.0;
+        
         const stacks = 200; const slices = 200;
         const geometry = new THREE.BufferGeometry();
         const positions = []; const indices = [];
@@ -554,7 +616,7 @@
             let v = i / stacks; let phi = Math.PI * v; 
             for (let j = 0; j <= slices; j++) {
                 let u = j / slices; let theta = 2 * Math.PI * u; 
-                let r = 0, x, y, z;
+                let r = 0, x=0, y=0, z=0;
 
                 if (l.type === 'flower') {
                     let effectiveTheta = theta + l.twist * phi;
@@ -569,6 +631,7 @@
                     x = r * Math.sin(phi) * Math.cos(theta); y = r * Math.cos(phi); z = r * Math.sin(phi) * Math.sin(theta);
 
                 } else {
+                    // LEAF LOGIC
                     let effectiveTheta = theta;
                     let baseShape = Math.sin(effectiveTheta + Math.PI/2);
                     if (l.leafSpecies === 'lanceolate') baseShape = Math.sin(effectiveTheta + Math.PI/2); 
@@ -577,15 +640,19 @@
                     else if (l.leafSpecies === 'maple') baseShape += 0.4 * Math.cos(3 * effectiveTheta);
 
                     let shape = Math.pow(Math.abs(baseShape), l.sharp); 
-                    let vein = 1.0 - l.vein * 0.1 * Math.abs(Math.sin(10 * theta)); 
+                    let vein = 1.0 - veinStrength * 0.1 * Math.abs(Math.sin(10 * theta)); 
                     let dampener = Math.pow(Math.sin(phi), 2.0);
-                    r = (0.05 + l.leafWidth * shape * dampener) * vein;
+                    r = (0.05 + leafWidth * shape * dampener) * vein;
 
-                    x = r * Math.sin(phi) * Math.cos(theta) * (1/l.stretch); 
+                    x = r * Math.sin(phi) * Math.cos(theta) * (1/stretch); 
                     y = r * Math.cos(phi) * 3.0; 
                     z = r * Math.sin(phi) * Math.sin(theta);
-                    z += l.bend * Math.pow(y/3.0, 2);
+                    z += bend * Math.pow(y/3.0, 2);
                 }
+                
+                // NaN GUARD
+                if(isNaN(x) || isNaN(y) || isNaN(z)) { x=0; y=0; z=0; }
+                
                 positions.push(x, y, z);
             }
         }
@@ -605,6 +672,15 @@
     function updateScene() {
         while(rootGroup.children.length > 0) rootGroup.remove(rootGroup.children[0]);
 
+        let targetAspect = 1.0;
+        if(globalParams.canvasShape === 'portrait') targetAspect = 4/5;
+        if(globalParams.canvasShape === 'landscape') targetAspect = 3/2;
+        
+        const h = WORLD_HEIGHT;
+        const w = WORLD_HEIGHT * targetAspect;
+        
+        updateFrameGuide(); 
+
         layers.forEach((l, index) => {
             const geom = createGeometry(l);
             const mat = createMaterial(l);
@@ -612,9 +688,6 @@
             const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(
                 l.rotX * (Math.PI/180), l.rotY * (Math.PI/180), l.rotZ * (Math.PI/180)
             ));
-
-            const aspect = camera.right / camera.top; 
-            const h = 100; const w = 100 * aspect;
 
             if(l.mode === 'single') {
                 const mesh = new THREE.Mesh(geom, mat);
@@ -632,7 +705,6 @@
                 if (l.fillMode === 'continuous') {
                     const drawnCorners = {};
 
-                    // Horizontal (Rows 0 and 5)
                     [0, 5].forEach(row => {
                         const rowIndices = [];
                         for(let c=0; c<6; c++) rowIndices.push(row*6 + c);
@@ -648,16 +720,21 @@
                         if(currentSeg) segments.push(currentSeg);
 
                         segments.forEach(seg => {
-                            seg.indices.forEach(idx => { if([0,5,30,35].includes(idx)) drawnCorners[idx] = true; });
-                            const startX = -(w/2) + margin + (seg.start * cellW) + (cellW/2);
-                            const endX   = -(w/2) + margin + (seg.end * cellW) + (cellW/2);
-                            const y      = (h/2) - margin - (row * cellH) - (cellH/2);
-                            const dist = endX - startX;
+                            const railStartX = startX + (seg.start * cellW) + (cellW/2);
+                            const railEndX = startX + (seg.end * cellW) + (cellW/2);
+                            const y = startY - (row * cellH) - (cellH/2);
+                            
+                            const dist = railEndX - railStartX;
                             const count = dist === 0 ? 1 : Math.max(1, Math.round(dist / spacing));
+                            
+                            seg.indices.forEach(idx => {
+                                if([0,5,30,35].includes(idx)) drawnCorners[idx] = true;
+                            });
+
                             for(let i=0; i<=count; i++) {
-                                if (dist === 0 && i > 0) continue; 
+                                if(dist===0 && i>0) continue;
                                 const t = count === 0 ? 0 : i/count;
-                                const x = startX + t * dist;
+                                const x = railStartX + t * dist;
                                 const mesh = new THREE.Mesh(geom, mat);
                                 mesh.position.set(x, y, zLayerOffset);
                                 mesh.scale.setScalar(scale);
@@ -668,7 +745,6 @@
                         });
                     });
 
-                    // Vertical (Cols 0 and 5)
                     [0, 5].forEach(col => {
                         const colIndices = [];
                         for(let r=0; r<6; r++) colIndices.push(r*6 + col);
@@ -684,21 +760,20 @@
                         if(currentSeg) segments.push(currentSeg);
 
                         segments.forEach(seg => {
-                            const startY = (h/2) - margin - (seg.start * cellH) - (cellH/2);
-                            const endY   = (h/2) - margin - (seg.end * cellH) - (cellH/2);
-                            const x      = -(w/2) + margin + (col * cellW) + (cellW/2);
-                            const dist = Math.abs(endY - startY);
+                            const railStartY = startY - (seg.start * cellH) - (cellH/2);
+                            const railEndY = startY - (seg.end * cellH) - (cellH/2);
+                            const x = startX + (col * cellW) + (cellW/2);
+                            const dist = Math.abs(railEndY - railStartY);
                             const count = dist === 0 ? 1 : Math.max(1, Math.round(dist / spacing));
+
                             for(let i=0; i<=count; i++) {
-                                if (dist === 0 && i > 0) continue;
-                                const t = count === 0 ? 0 : i/count;
-                                const y = startY - t * dist;
-                                // Smart Skip
-                                let isStart = (i === 0);
-                                let isEnd = (i === count);
+                                if(dist===0 && i>0) continue;
+                                let isStart = (i===0); let isEnd = (i===count);
                                 if (isStart) { const cellIdx = colIndices[seg.start]; if (drawnCorners[cellIdx]) continue; }
                                 if (isEnd && count > 0) { const cellIdx = colIndices[seg.end]; if (drawnCorners[cellIdx]) continue; }
 
+                                const t = count === 0 ? 0 : i/count;
+                                const y = railStartY - t * dist;
                                 const mesh = new THREE.Mesh(geom, mat);
                                 mesh.position.set(x, y, zLayerOffset);
                                 mesh.scale.setScalar(scale);
@@ -710,7 +785,6 @@
                     });
 
                 } else {
-                    // CELL MODE
                     for(let i=0; i<36; i++) {
                         if(!l.grid[i]) continue; 
                         const row = Math.floor(i/6); const col = i%6;
@@ -737,10 +811,17 @@
         });
     }
 
-    function updateCameraAspect(width, height) {
+    function updateCamera(width, height) {
         const aspect = width / height;
-        camera.left = -viewHeight * aspect / 2; camera.right = viewHeight * aspect / 2;
-        camera.top = viewHeight / 2; camera.bottom = -viewHeight / 2;
+        const zoomSize = WORLD_HEIGHT / globalParams.camZoom;
+        
+        const cx = globalParams.panX;
+        const cy = globalParams.panY;
+
+        camera.left = cx - (zoomSize * aspect / 2); 
+        camera.right = cx + (zoomSize * aspect / 2);
+        camera.top = cy + (zoomSize / 2); 
+        camera.bottom = cy - (zoomSize / 2);
         camera.updateProjectionMatrix();
     }
 
@@ -756,7 +837,7 @@
         else { finalW = wrapW - 40; finalH = finalW / targetAspect; }
 
         renderer.setSize(finalW, finalH);
-        updateCameraAspect(finalW, finalH);
+        updateCamera(finalW, finalH);
         updateScene();
     }
     window.addEventListener('resize', handleResize);
@@ -768,16 +849,16 @@
     initGridUI();
     renderLayerList(); bindLayerToUI(); updateGlobalSettings(); handleResize(); animate();
 
-    document.getElementById('btn-csv-export').addEventListener('click', () => {
+    document.getElementById('btn-project-export').addEventListener('click', () => {
         const exportData = { global: globalParams, layers: layers };
         const json = JSON.stringify(exportData, null, 2);
         const blob = new Blob([json], {type: 'application/json'});
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url; a.download = 'golden_v15_project.json'; a.click();
+        a.href = url; a.download = 'golden_v20_project.json'; a.click();
     });
 
-    document.getElementById('csv-upload').addEventListener('change', (e) => {
+    document.getElementById('project-upload').addEventListener('change', (e) => {
         const file = e.target.files[0];
         if(!file) return;
         const reader = new FileReader();
@@ -786,18 +867,22 @@
                 const data = JSON.parse(evt.target.result);
                 if(data.global && data.layers) {
                     Object.assign(globalParams, data.global);
-                    layers = data.layers;
-                    layers.forEach(l => {
-                        if(!l.grid) l.grid = new Array(36).fill(false);
-                        if(l.cols === undefined) l.cols = 0;
-                        if(l.rows === undefined) l.rows = 0;
-                        if(l.fillMode === undefined) l.fillMode = 'cell';
-                    });
+                    // Layer Sanitization: ensure all fields exist to prevent NaN
+                    layers = data.layers.map(l => ({
+                        ...l,
+                        stretch: l.stretch || 1.0, bend: l.bend || 0.0, vein: l.vein || 0.0,
+                        leafWidth: l.leafWidth || 1.0,
+                        grid: l.grid || new Array(36).fill(false),
+                        cols: l.cols || 0, rows: l.rows || 0, fillMode: l.fillMode || 'cell'
+                    }));
                     nextId = layers.length > 0 ? Math.max(...layers.map(l=>l.id)) + 1 : 1;
                     activeLayerId = layers[0].id;
+                    if(globalParams.camZoom === undefined) globalParams.camZoom = 1.0;
+                    if(globalParams.panX === undefined) globalParams.panX = 0;
+                    if(globalParams.panY === undefined) globalParams.panY = 0;
                     renderLayerList(); bindLayerToUI(); updateGlobalSettings(); handleResize(); updateScene();
                 }
-            } catch(e) { alert("Invalid File"); console.error(e); }
+            } catch(e) { alert("Invalid Project File"); console.error(e); }
         };
         reader.readAsText(file);
         e.target.value = ''; 
@@ -813,14 +898,22 @@
         if(globalParams.canvasShape === 'landscape') h = w * 0.666;
         const prevSize = new THREE.Vector2(); renderer.getSize(prevSize);
         const prevPixelRatio = renderer.getPixelRatio();
-        updateCameraAspect(w, h); renderer.setSize(w, h); renderer.setPixelRatio(2);
+        
+        frameLine.visible = false; // Hide red box
+        updateCamera(w, h); 
+        renderer.setSize(w, h); 
+        renderer.setPixelRatio(2);
         updateScene(); 
+        
         setTimeout(() => {
             renderer.render(scene, camera);
             renderer.domElement.toBlob((blob) => {
                 const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob); a.download = `Golden_Rail_${w}px.png`; a.click();
-                updateCameraAspect(prevSize.x, prevSize.y); renderer.setSize(prevSize.x, prevSize.y); renderer.setPixelRatio(prevPixelRatio);
+                a.href = URL.createObjectURL(blob); a.download = `Golden_Stable_${w}px.png`; a.click();
+                frameLine.visible = true;
+                updateCamera(prevSize.x, prevSize.y); 
+                renderer.setSize(prevSize.x, prevSize.y); 
+                renderer.setPixelRatio(prevPixelRatio);
                 updateScene(); 
                 overlay.style.display = 'none'; btn.disabled = false;
             });
