@@ -243,6 +243,17 @@
                             <option value="side-brackets">Side Brackets</option>
                             <option value="floating-corners">Floating Corners</option>
                         </optgroup>
+                        <optgroup label="Curved & Rounded">
+                            <option value="soft-modern">Soft Modern (Rounded)</option>
+                            <option value="retro-rounded">Retro Rounded</option>
+                            <option value="bubble-frame">Bubble Frame</option>
+                        </optgroup>
+                        <optgroup label="Shapes (Oval/Circle)">
+                            <option value="cameo-oval">Cameo Oval</option>
+                            <option value="coin-circle">Coin Circle</option>
+                            <option value="mirror-oval">Mirror Oval</option>
+                            <option value="badge-circle">Badge Circle</option>
+                        </optgroup>
                         <optgroup label="Decorative">
                             <option value="hearts-love">Love & Hearts</option>
                             <option value="stars-night">Starry Night</option>
@@ -393,6 +404,7 @@
 
         // --- PRESETS CONFIGURATION ---
         const PRESETS = {
+            // --- CLOSED BORDERS ---
             'classic-gold': {
                 material: 'gold',
                 layers: [
@@ -438,6 +450,8 @@
                     { pattern: 'solid', inset: 35, size: 2, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' }
                 ]
             },
+            
+            // --- OPEN BORDERS ---
             'open-corners': {
                 material: 'gold',
                 layers: [
@@ -464,6 +478,8 @@
                     { pattern: 'diamond', inset: 20, size: 10, spacing: 15, lines: 1, lineSep: 10, gridType: 'corners' }
                 ]
             },
+            
+            // --- DECORATIVE ---
             'hearts-love': {
                 material: 'rose',
                 layers: [
@@ -484,6 +500,64 @@
                     { pattern: 'circle', inset: 20, size: 6, spacing: 10, lines: 1, lineSep: 10, gridType: 'all' },
                     { pattern: 'solid', inset: 35, size: 1, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' }
                 ]
+            },
+            
+            // --- CURVED CORNERS ---
+            'soft-modern': {
+                material: 'steel',
+                layers: [
+                    { pattern: 'solid', inset: 20, size: 2, spacing: 0, lines: 1, lineSep: 10, gridType: 'all', radius: 30 },
+                    { pattern: 'solid', inset: 30, size: 1, spacing: 0, lines: 1, lineSep: 10, gridType: 'all', radius: 20 }
+                ]
+            },
+            'retro-rounded': {
+                material: 'copper',
+                layers: [
+                    { pattern: 'solid', inset: 15, size: 8, spacing: 0, lines: 1, lineSep: 10, gridType: 'all', radius: 40 },
+                    { pattern: 'wavy', inset: 28, size: 4, spacing: 0, lines: 1, lineSep: 10, gridType: 'all', radius: 27 }
+                ]
+            },
+            'bubble-frame': {
+                material: 'silver',
+                layers: [
+                    { pattern: 'solid', inset: 10, size: 20, spacing: 0, lines: 1, lineSep: 10, gridType: 'all', radius: 50 },
+                    { pattern: 'circle', inset: 10, size: 10, spacing: 15, lines: 1, lineSep: 10, gridType: 'all', radius: 50 }
+                ]
+            },
+            
+            // --- SHAPES (OVAL/CIRCLE) ---
+            'cameo-oval': {
+                material: 'gold',
+                shape: 'oval',
+                layers: [
+                    { pattern: 'solid', inset: 10, size: 15, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'baroque', inset: 10, size: 8, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
+            },
+            'coin-circle': {
+                material: 'copper',
+                shape: 'circle',
+                layers: [
+                    { pattern: 'solid', inset: 5, size: 4, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'star', inset: 15, size: 8, spacing: 12, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'solid', inset: 25, size: 2, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
+            },
+            'mirror-oval': {
+                material: 'silver',
+                shape: 'oval',
+                layers: [
+                    { pattern: 'curvy', inset: 15, size: 10, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'solid', inset: 30, size: 2, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
+            },
+            'badge-circle': {
+                material: 'gold',
+                shape: 'circle',
+                layers: [
+                    { pattern: 'wavy', inset: 10, size: 10, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'solid', inset: 25, size: 5, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
             }
         };
 
@@ -503,6 +577,16 @@
             // Set Material
             if(p.material) setMaterial(p.material);
             
+            // Set Shape (if defined)
+            if(p.shape) {
+                appState.shape = p.shape;
+                // Update shape UI buttons
+                document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
+                const shapeBtn = document.getElementById('shape-' + p.shape);
+                if(shapeBtn) shapeBtn.classList.add('active');
+                resizeCanvas(); // Important to resize if shape changes
+            }
+            
             // Clear Layers
             appState.layers = [];
             
@@ -514,7 +598,7 @@
                     size: l.size,
                     spacing: l.spacing,
                     rot: 0,
-                    radius: 0,
+                    radius: l.radius || 0,
                     lines: l.lines || 1,
                     lineSep: l.lineSep || 10,
                     material: p.material,
@@ -543,6 +627,7 @@
                 setVal('size', l0.size);
                 setVal('spacing', l0.spacing);
                 setVal('lineSep', l0.lineSep);
+                setVal('radius', l0.radius || 0); // Sync Radius
                 
                 // Sync Pattern
                 if(typeof setPattern === 'function') setPattern(l0.pattern);
