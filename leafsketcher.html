@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Realistic Leaf Generator</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            text-align: center;
+            color: #2d3748;
+            margin-bottom: 30px;
+        }
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #4a5568;
+        }
+        select, input {
+            padding: 8px;
+            border: 2px solid #e2e8f0;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        button {
+            padding: 12px 24px;
+            background: #48bb78;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #38a169;
+        }
+        #canvas {
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            display: block;
+            margin: 0 auto;
+            background: #f7fafc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍃 Realistic Leaf Generator</h1>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label for="leafType">Leaf Type:</label>
+                <select id="leafType">
+                    <option value="rose">Rose Leaf (Serrated)</option>
+                    <option value="oak">Oak Leaf (Wavy)</option>
+                    <option value="maple">Maple Leaf (Lobed)</option>
+                    <option value="willow">Willow Leaf (Plain)</option>
+                    <option value="holly">Holly Leaf (Spiky)</option>
+                </select>
+            </div>
+            
+            <div class="control-group">
+                <label for="leafColor">Leaf Color:</label>
+                <input type="color" id="leafColor" value="#2d5016">
+            </div>
+            
+            <div class="control-group">
+                <label for="veinColor">Vein Color:</label>
+                <input type="color" id="veinColor" value="#1a3009">
+            </div>
+            
+            <div class="control-group">
+                <button onclick="drawLeaf()">Generate Leaf</button>
+            </div>
+        </div>
+        
+        <canvas id="canvas" width="800" height="600"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        function drawLeaf() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            const leafType = document.getElementById('leafType').value;
+            const leafColor = document.getElementById('leafColor').value;
+            const veinColor = document.getElementById('veinColor').value;
+            
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            
+            switch(leafType) {
+                case 'rose':
+                    drawRoseLeaf(centerX, centerY, leafColor, veinColor);
+                    break;
+                case 'oak':
+                    drawOakLeaf(centerX, centerY, leafColor, veinColor);
+                    break;
+                case 'maple':
+                    drawMapleLeaf(centerX, centerY, leafColor, veinColor);
+                    break;
+                case 'willow':
+                    drawWillowLeaf(centerX, centerY, leafColor, veinColor);
+                    break;
+                case 'holly':
+                    drawHollyLeaf(centerX, centerY, leafColor, veinColor);
+                    break;
+            }
+        }
+
+        function drawRoseLeaf(x, y, color, veinColor) {
+            const length = 180;
+            const width = 100;
+            
+            ctx.save();
+            ctx.translate(x, y);
+            
+            ctx.beginPath();
+            
+            // Define the leaf outline points with natural serrations
+            const serrateDepth = 6;
+            const serrateFrequency = 24; // Number of serrations along each side
+            
+            const rightPoints = [];
+            const leftPoints = [];
+            
+            // Generate serrations along the natural curve
+            for(let i = 0; i <= serrateFrequency; i++) {
+                const t = i / serrateFrequency;
+                const leafY = -length/2 + length * t;
+                
+                // Natural leaf width curve - wider in middle, narrow at ends
+                let widthMultiplier;
+                if(t < 0.15) {
+                    widthMultiplier = Math.pow(t / 0.15, 0.8) * 0.75;
+                } else if(t > 0.88) {
+                    widthMultiplier = Math.pow((1 - t) / 0.12, 0.7) * 0.4;
+                } else {
+                    widthMultiplier = 0.75 + 0.25 * Math.sin((t - 0.15) / 0.73 * Math.PI);
+                }
+                
+                const baseWidth = width * widthMultiplier * 0.5;
+                
+                // Create in-out pattern for serrations
+                if(i === 0) {
+                    // Special case: the tip - merge into one point
+                    rightPoints.push({x: 0, y: leafY - serrateDepth * 1.5});
+                } else if(i % 2 === 1 && i < serrateFrequency - 1) {
+                    // Outer tooth points
+                    rightPoints.push({x: baseWidth + serrateDepth, y: leafY});
+                    leftPoints.push({x: -baseWidth - serrateDepth, y: leafY});
+                } else if(i < serrateFrequency - 1) {
+                    // Inner valley points
+                    rightPoints.push({x: baseWidth, y: leafY});
+                    leftPoints.push({x: -baseWidth, y: leafY});
+                } else {
+                    // Stem end
+                    rightPoints.push({x: 0, y: leafY});
+                    leftPoints.push({x: 0, y: leafY});
+                }
+            }
+            
+            // Draw the path
+            ctx.moveTo(rightPoints[0].x, rightPoints[0].y);
+            
+            // Right side
+            for(let i = 1; i < rightPoints.length; i++) {
+                ctx.lineTo(rightPoints[i].x, rightPoints[i].y);
+            }
+            
+            // Left side (reverse order)
+            for(let i = leftPoints.length - 1; i >= 0; i--) {
+                if(leftPoints[i].x !== 0 || i > 0) { // Skip duplicate stem point
+                    ctx.lineTo(leftPoints[i].x, leftPoints[i].y);
+                }
+            }
+            
+            ctx.closePath();
+            
+            // Fill with gradient
+            const gradient = ctx.createLinearGradient(0, -length/2, 0, length/2);
+            gradient.addColorStop(0, lightenColor(color, 20));
+            gradient.addColorStop(0.5, color);
+            gradient.addColorStop(1, darkenColor(color, 20));
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            ctx.strokeStyle = darkenColor(color, 30);
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Draw veins
+            drawPinnateVeins(0, -length/2, 0, length/2, width * 0.4, veinColor);
+            
+            ctx.restore();
+        }
+
+        function drawOakLeaf(x, y, color, veinColor) {
+            const length = 200;
+            const width = 120;
+            
+            ctx.save();
+            ctx.translate(x, y);
+            
+            ctx.beginPath();
+            ctx.moveTo(0, -length/2);
+            
+            const lobes = 5;
+            const steps = 60;
+            
+            // Right side with wavy lobes
+            for(let i = 0; i <= steps; i++) {
+                const t = i / steps;
+                const angle = t * Math.PI;
+                const wave = Math.sin(t * Math.PI * lobes) * 20;
+                const r = width * Math.sin(angle) * 0.5 + wave;
+                const leafY = -length/2 + length * t;
+                ctx.lineTo(r, leafY);
+            }
+            
+            // Left side
+            for(let i = steps; i >= 0; i--) {
+                const t = i / steps;
+                const angle = t * Math.PI;
+                const wave = Math.sin(t * Math.PI * lobes) * 20;
+                const r = width * Math.sin(angle) * 0.5 + wave;
+                const leafY = -length/2 + length * t;
+                ctx.lineTo(-r, leafY);
+            }
+            
+            ctx.closePath();
+            
+            const gradient = ctx.createLinearGradient(0, -length/2, 0, length/2);
+            gradient.addColorStop(0, lightenColor(color, 15));
+            gradient.addColorStop(1, darkenColor(color, 15));
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            ctx.strokeStyle = darkenColor(color, 30);
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            drawPinnateVeins(0, -length/2, 0, length/2, width * 0.3, veinColor);
+            
+            ctx.restore();
+        }
+
+        function drawMapleLeaf(x, y, color, veinColor) {
+            const size = 150;
+            
+            ctx.save();
+            ctx.translate(x, y);
+            
+            ctx.beginPath();
+            
+            // Center lobe
+            ctx.moveTo(0, -size);
+            ctx.lineTo(30, -size * 0.6);
+            ctx.lineTo(size * 0.6, -size * 0.3);
+            ctx.lineTo(size * 0.4, 0);
+            ctx.lineTo(size * 0.5, size * 0.3);
+            ctx.lineTo(15, size * 0.2);
+            ctx.lineTo(0, size * 0.5);
+            ctx.lineTo(-15, size * 0.2);
+            ctx.lineTo(-size * 0.5, size * 0.3);
+            ctx.lineTo(-size * 0.4, 0);
+            ctx.lineTo(-size * 0.6, -size * 0.3);
+            ctx.lineTo(-30, -size * 0.6);
+            ctx.closePath();
+            
+            const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, size);
+            gradient.addColorStop(0, lightenColor(color, 25));
+            gradient.addColorStop(1, darkenColor(color, 10));
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            ctx.strokeStyle = darkenColor(color, 30);
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            // Palmate veins
+            ctx.strokeStyle = veinColor;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, size * 0.5);
+            ctx.lineTo(0, 0);
+            ctx.stroke();
+            
+            // Main veins extending to each lobe - shorter to stay inside
+            const veinData = [
+                { angle: -60, length: size * 0.5 },
+                { angle: -30, length: size * 0.45 },
+                { angle: 0, length: size * 0.7 },
+                { angle: 30, length: size * 0.45 },
+                { angle: 60, length: size * 0.5 }
+            ];
+            
+            ctx.lineWidth = 2;
+            veinData.forEach(vein => {
+                ctx.save();
+                ctx.rotate(vein.angle * Math.PI / 180);
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.lineTo(0, -vein.length);
+                ctx.stroke();
+                ctx.restore();
+            });
+            
+            ctx.restore();
+        }
+
+        function drawWillowLeaf(x, y, color, veinColor) {
+            const length = 220;
+            const width = 45;
+            
+            ctx.save();
+            ctx.translate(x, y);
+            
+            // Smooth elliptical shape
+            ctx.beginPath();
+            ctx.moveTo(0, -length/2);
+            
+            const steps = 40;
+            for(let i = 0; i <= steps; i++) {
+                const t = i / steps;
+                const angle = t * Math.PI;
+                const r = width * Math.sin(angle) * 0.5;
+                const leafY = -length/2 + length * t;
+                ctx.lineTo(r, leafY);
+            }
+            
+            for(let i = steps; i >= 0; i--) {
+                const t = i / steps;
+                const angle = t * Math.PI;
+                const r = width * Math.sin(angle) * 0.5;
+                const leafY = -length/2 + length * t;
+                ctx.lineTo(-r, leafY);
+            }
+            
+            ctx.closePath();
+            
+            const gradient = ctx.createLinearGradient(0, -length/2, 0, length/2);
+            gradient.addColorStop(0, lightenColor(color, 30));
+            gradient.addColorStop(0.5, color);
+            gradient.addColorStop(1, darkenColor(color, 15));
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            ctx.strokeStyle = darkenColor(color, 25);
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+            
+            drawPinnateVeins(0, -length/2, 0, length/2, width * 0.35, veinColor);
+            
+            ctx.restore();
+        }
+
+        function drawHollyLeaf(x, y, color, veinColor) {
+            const length = 170;
+            const width = 90;
+            
+            ctx.save();
+            ctx.translate(x, y);
+            
+            ctx.beginPath();
+            ctx.moveTo(0, -length/2);
+            
+            const spikes = 6;
+            const steps = spikes * 4;
+            
+            // Right side with sharp spikes
+            for(let i = 0; i <= steps; i++) {
+                const t = i / steps;
+                const leafY = -length/2 + length * t;
+                const baseWidth = width * Math.sin(t * Math.PI) * 0.5;
+                
+                if(i % 4 === 2) {
+                    ctx.lineTo(baseWidth + 25, leafY);
+                } else {
+                    ctx.lineTo(baseWidth, leafY);
+                }
+            }
+            
+            // Left side with sharp spikes
+            for(let i = steps; i >= 0; i--) {
+                const t = i / steps;
+                const leafY = -length/2 + length * t;
+                const baseWidth = width * Math.sin(t * Math.PI) * 0.5;
+                
+                if(i % 4 === 2) {
+                    ctx.lineTo(-baseWidth - 25, leafY);
+                } else {
+                    ctx.lineTo(-baseWidth, leafY);
+                }
+            }
+            
+            ctx.closePath();
+            
+            const gradient = ctx.createLinearGradient(0, -length/2, 0, length/2);
+            gradient.addColorStop(0, lightenColor(color, 20));
+            gradient.addColorStop(1, darkenColor(color, 10));
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            
+            ctx.strokeStyle = darkenColor(color, 30);
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            
+            drawPinnateVeins(0, -length/2, 0, length/2, width * 0.3, veinColor);
+            
+            ctx.restore();
+        }
+
+        function drawPinnateVeins(x1, y1, x2, y2, width, color) {
+            ctx.strokeStyle = color;
+            
+            // Main central vein
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+            ctx.lineTo(x2, y2);
+            ctx.stroke();
+            
+            // Secondary veins
+            ctx.lineWidth = 1.5;
+            const veinCount = 8;
+            for(let i = 1; i < veinCount; i++) {
+                const t = i / veinCount;
+                const veinY = y1 + (y2 - y1) * t;
+                const veinWidth = width * Math.sin(t * Math.PI) * 0.4;
+                
+                ctx.beginPath();
+                ctx.moveTo(0, veinY);
+                ctx.lineTo(veinWidth, veinY + 15);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(0, veinY);
+                ctx.lineTo(-veinWidth, veinY + 15);
+                ctx.stroke();
+            }
+            
+            // Tertiary veins
+            ctx.lineWidth = 0.8;
+            ctx.globalAlpha = 0.5;
+            for(let i = 1; i < veinCount; i++) {
+                const t = i / veinCount;
+                const veinY = y1 + (y2 - y1) * t;
+                const veinWidth = width * Math.sin(t * Math.PI) * 0.4;
+                
+                for(let j = 0; j < 3; j++) {
+                    const subT = (j + 1) / 4;
+                    ctx.beginPath();
+                    ctx.moveTo(veinWidth * subT, veinY + 15 * subT);
+                    ctx.lineTo(veinWidth * subT + 8, veinY + 15 * subT + 8);
+                    ctx.stroke();
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(-veinWidth * subT, veinY + 15 * subT);
+                    ctx.lineTo(-veinWidth * subT - 8, veinY + 15 * subT + 8);
+                    ctx.stroke();
+                }
+            }
+            ctx.globalAlpha = 1.0;
+        }
+
+        function lightenColor(color, percent) {
+            const num = parseInt(color.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = Math.min(255, (num >> 16) + amt);
+            const G = Math.min(255, (num >> 8 & 0x00FF) + amt);
+            const B = Math.min(255, (num & 0x0000FF) + amt);
+            return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+        }
+
+        function darkenColor(color, percent) {
+            const num = parseInt(color.replace('#', ''), 16);
+            const amt = Math.round(2.55 * percent);
+            const R = Math.max(0, (num >> 16) - amt);
+            const G = Math.max(0, (num >> 8 & 0x00FF) - amt);
+            const B = Math.max(0, (num & 0x0000FF) - amt);
+            return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+        }
+
+        // Draw initial leaf
+        drawLeaf();
+    </script>
+</body>
+</html>
