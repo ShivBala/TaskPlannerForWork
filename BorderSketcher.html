@@ -841,8 +841,43 @@
 
         function resizeCanvas() { const containerH = window.innerHeight - 96; let w, h; const s = appState.shape; if(s === 'rect-portrait') { h=containerH; w=h*0.707; } else if(s === 'rect-landscape') { w=containerH; h=w*0.707; } else if(s === 'square') { h=containerH; w=containerH; } else if(s === 'circle') { h=containerH; w=containerH; } else if(s === 'oval') { h=containerH; w=h*0.7; } canvas.height = h; canvas.width = w; const isRound = (s === 'circle' || s === 'oval'); canvas.style.borderRadius = isRound ? '50%' : '0'; redraw(); renderMiniMap(); }
 
-        function updateVal(id, val) { const el = document.getElementById(`val-${id}`); if(el) el.innerText = val + (id==='rot'?'°':'px'); }
-        function setPattern(type) { currentPattern = type; document.querySelectorAll('.pattern-btn').forEach(b => b.classList.remove('active')); document.getElementById('pat-' + type).classList.add('active'); }
+        function updateVal(id, val) { 
+            const el = document.getElementById(`val-${id}`); 
+            if(el) el.innerText = val + (id==='rot'?'°':'px'); 
+            
+            // Live update selected layer
+            if (selectedLayerIndex >= 0 && selectedLayerIndex < appState.layers.length) {
+                const prop = id; // id matches property name (inset, size, spacing, radius, lineSep)
+                // Handle special cases if any, otherwise direct assignment
+                appState.layers[selectedLayerIndex][prop] = parseInt(val);
+                redraw();
+                saveState();
+            }
+        }
+
+        function setPattern(type) { 
+            currentPattern = type; 
+            document.querySelectorAll('.pattern-btn').forEach(b => b.classList.remove('active')); 
+            document.getElementById('pat-' + type).classList.add('active'); 
+            
+            // Live update selected layer
+            if (selectedLayerIndex >= 0 && selectedLayerIndex < appState.layers.length) {
+                appState.layers[selectedLayerIndex].pattern = type;
+                renderLayerList(); // Update list text
+                redraw();
+                saveState();
+            }
+        }
+        
+        function updateBorderEnding(val) {
+            currentBorderEnding = val;
+            // Live update selected layer
+            if (selectedLayerIndex >= 0 && selectedLayerIndex < appState.layers.length) {
+                appState.layers[selectedLayerIndex].ending = val;
+                redraw();
+                saveState();
+            }
+        }
         
         // --- SVG MINI-MAP LOGIC ---
         function renderMiniMap() {
@@ -912,7 +947,73 @@
         }
 
         function addLayer() { appState.layers.push({ pattern: currentPattern, inset: parseInt(document.getElementById('inset').value), size: parseInt(document.getElementById('size').value), spacing: parseInt(document.getElementById('spacing').value), rot: 0, radius: parseInt(document.getElementById('radius').value), lines: tempLineCount, lineSep: parseInt(document.getElementById('lineSep').value), material: currentMaterial, brightness: currentBrightness, grid: JSON.parse(JSON.stringify(gridState)), ending: currentBorderEnding }); saveState(); renderLayerList(); redraw(); }
-        function renderLayerList() { document.getElementById('layerList').innerHTML = appState.layers.map((l,i)=>`<div class="flex justify-between bg-slate-800 p-1 px-2 rounded border border-slate-700"><span>L${i+1}: ${l.pattern} (${l.lines}x)</span><button onclick="deleteLayer(${i})" class="text-red-400">x</button></div>`).join(''); }
+        function renderLayerList() { 
+            document.getElementById('layerList').innerHTML = appState.layers.map((l,i) => {
+                const isSelected = (i === selectedLayerIndex);
+                const bgClass = isSelected ? 'bg-slate-700 border-yellow-600' : 'bg-slate-800 border-slate-700';
+                const textClass = isSelected ? 'text-yellow-500 font-bold' : 'text-slate-300';
+                return `
+                <div class="flex justify-between items-center p-1 px-2 rounded border ${bgClass} cursor-pointer hover:bg-slate-700 transition-colors" onclick="selectLayer(${i})">
+                    <span class="${textClass}">L${i+1}: ${l.pattern} (${l.lines}x)</span>
+                    <button onclick="event.stopPropagation(); deleteLayer(${i})" class="text-red-400 hover:text-red-300 px-2">x</button>
+                </div>`;
+            }).join(''); 
+        }
+
+        function selectLayer(index) {
+            if (index < 0 || index >= appState.layers.length) return;
+            selectedLayerIndex = index;
+            const l = appState.layers[index];
+            
+            // Update UI controls to match selected layer
+            const setVal = (id, v) => {
+                const el = document.getElementById(id);
+                if(el) { el.value = v; updateVal(id, v); }
+            };
+            
+            setVal('inset', l.inset);
+            setVal('size', l.size);
+            setVal('spacing', l.spacing);
+            setVal('lineSep', l.lineSep || 10);
+            setVal('radius', l.radius || 0);
+            
+            // Update Pattern Selection
+            setPattern(l.pattern);
+            
+            // Update Border Ending
+            const endSel = document.getElementById('borderEnding');
+            if(endSel) {
+                endSel.value = l.ending || 'none';
+                currentBorderEnding = l.ending || 'none';
+            }
+            
+            // Update Grid State
+            if(l.grid) {
+                gridState = JSON.parse(JSON.stringify(l.grid));
+                renderMiniMap();
+            }
+            
+            renderLayerList();
+            redraw(); // Redraw to show selection highlight if we add one later
+        }
+
+        // Update layer property when UI changes
+        function updateLayerProperty(prop, value) {
+            if (selectedLayerIndex >= 0 && selectedLayerIndex < appState.layers.length) {
+                appState.layers[selectedLayerIndex][prop] = value;
+                
+                // If updating grid related props, sync grid
+                if (prop === 'grid') {
+                    // Grid is updated directly via gridState reference usually, 
+                    // but if we had a setter for it.
+                }
+                
+                renderLayerList(); // Update list text if needed
+                redraw();
+                saveState();
+            }
+        }
+
         function deleteLayer(i) { appState.layers.splice(i,1); saveState(); renderLayerList(); redraw(); }
         function clearLayers() { appState.layers=[]; appState.stamps=[]; saveState(); renderLayerList(); redraw(); }
 
@@ -1498,16 +1599,29 @@
         
         function applyBorderEndings(ctx, pts, l) {
             // Draw border endings if not a complete loop
-            if(l.ending && l.ending !== 'none' && pts.length > 2) {
-                const isLoop = Math.hypot(pts[0].x - pts[pts.length-1].x, pts[0].y - pts[pts.length-1].y) < l.size * 2;
+            if(l.ending && l.ending !== 'none' && pts.length >= 2) {
+                // Check if it's a loop (start and end points are close)
+                const isLoop = Math.hypot(pts[0].x - pts[pts.length-1].x, pts[0].y - pts[pts.length-1].y) < 5;
+                
                 if(!isLoop) {
-                    // Start ending
+                    const size = Math.max(l.size * 2, 10); // Ensure visible size
+                    
+                    // Start ending (at pts[0], pointing away from pts[1])
                     const ang1 = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
-                    ctx.save(); ctx.translate(pts[0].x, pts[0].y); ctx.rotate(ang1 + Math.PI); drawBorderEnding(ctx, l.ending, l.size * 2); ctx.restore();
-                    // End ending
+                    ctx.save(); 
+                    ctx.translate(pts[0].x, pts[0].y); 
+                    ctx.rotate(ang1 + Math.PI); 
+                    drawBorderEnding(ctx, l.ending, size); 
+                    ctx.restore();
+                    
+                    // End ending (at pts[last], pointing away from pts[last-1])
                     const n = pts.length - 1;
                     const ang2 = Math.atan2(pts[n].y - pts[n-1].y, pts[n].x - pts[n-1].x);
-                    ctx.save(); ctx.translate(pts[n].x, pts[n].y); ctx.rotate(ang2); drawBorderEnding(ctx, l.ending, l.size * 2); ctx.restore();
+                    ctx.save(); 
+                    ctx.translate(pts[n].x, pts[n].y); 
+                    ctx.rotate(ang2); 
+                    drawBorderEnding(ctx, l.ending, size); 
+                    ctx.restore();
                 }
             }
         }
