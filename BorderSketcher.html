@@ -985,6 +985,48 @@
                  }
              }
              
+             // --- NEW LOGIC: Shift Start Point for Closed Loops ---
+             // If we have a single closed loop (allPaths.length === 1 and it's closed),
+             // shift the start point to the middle of the top edge to avoid corner seams.
+             if (allPaths.length === 1) {
+                 const p = allPaths[0];
+                 const isClosed = Math.hypot(p[0].x - p[p.length-1].x, p[0].y - p[p.length-1].y) < 5;
+                 
+                 // Only shift if it's a closed loop and has enough points
+                 if (isClosed && p.length > 4) {
+                     // Find the index corresponding to the middle of the top edge (approx index 2 in the 0-16 grid logic)
+                     // The original points are generated in order 0..16. 
+                     // Index 0 is TL corner. Index 2 is Top-Mid.
+                     // We want to rotate the array so it starts at index 2.
+                     
+                     // Find the point that is closest to Top-Mid (w/2, inset)
+                     let bestIdx = -1;
+                     let minD = Infinity;
+                     const targetX = w/2;
+                     const targetY = inset;
+                     
+                     for(let i=0; i<p.length-1; i++) {
+                         const d = Math.hypot(p[i].x - targetX, p[i].y - targetY);
+                         if(d < minD) { minD = d; bestIdx = i; }
+                     }
+                     
+                     if(bestIdx > 0) {
+                         // Rotate the array: [0...bestIdx-1] moves to end
+                         // New order: [bestIdx ... end-1, 0 ... bestIdx]
+                         // Note: p[0] and p[end] are the same point in a closed loop.
+                         // We remove the last point (duplicate), rotate, then add the new start as end.
+                         
+                         p.pop(); // Remove duplicate end
+                         const part1 = p.slice(bestIdx);
+                         const part2 = p.slice(0, bestIdx);
+                         const newPath = part1.concat(part2);
+                         newPath.push({ ...newPath[0] }); // Close the loop again
+                         
+                         allPaths[0] = newPath;
+                     }
+                 }
+             }
+             
              for(const p of allPaths) {
                  flushPath(ctx, p, l);
              }
