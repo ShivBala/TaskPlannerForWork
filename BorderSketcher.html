@@ -229,6 +229,18 @@
                     <label class="text-[10px] text-yellow-500 uppercase font-bold mb-1 block"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Quick Themes</label>
                     <select id="presetSelector" onchange="applyPreset(this.value)" class="w-full p-2 bg-slate-900 border border-slate-600 rounded text-white text-xs outline-none focus:border-yellow-500">
                         <option value="">Select a Professional Theme...</option>
+                        <optgroup label="Happy Occasions">
+                            <option value="wedding-classic">Wedding Classic (Pearl & Roses)</option>
+                            <option value="birthday-fun">Birthday Fun (Stars & Balloons)</option>
+                            <option value="royal-gala">Royal Gala (Amethyst & Crowns)</option>
+                            <option value="golden-anniversary">Golden Anniversary</option>
+                        </optgroup>
+                        <optgroup label="Artistic Themes">
+                            <option value="rose-garden">Rose Garden</option>
+                            <option value="forest-fern">Forest Ferns</option>
+                            <option value="autumn-leaves">Autumn Leaves</option>
+                            <option value="ocean-breeze">Ocean Breeze</option>
+                        </optgroup>
                         <optgroup label="Closed Borders (Classic)">
                             <option value="classic-gold">Classic Gold Double</option>
                             <option value="baroque-frame">Ornate Baroque</option>
@@ -286,6 +298,16 @@
                         <button id="pat-cross" onclick="setPattern('cross')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center" title="Crosses"><i class="fa-solid fa-plus text-xs"></i></button>
                         <button id="pat-star" onclick="setPattern('star')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center" title="Stars"><i class="fa-solid fa-star text-xs"></i></button>
                         <button id="pat-heart" onclick="setPattern('heart')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center" title="Hearts"><i class="fa-solid fa-heart text-xs"></i></button>
+                    </div>
+                    <label class="text-[10px] text-slate-400 uppercase font-bold mb-1 block mt-2">Floral & Nature</label>
+                    <div class="grid grid-cols-7 gap-1">
+                        <button id="pat-rose-real" onclick="setPattern('rose-real')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center" title="Rose"><i class="fa-solid fa-spa text-xs"></i></button>
+                        <button id="pat-flower-daisy" onclick="setPattern('flower-daisy')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center" title="Daisy"><i class="fa-solid fa-sun text-xs"></i></button>
+                        <button id="pat-flower-tulip" onclick="setPattern('flower-tulip')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center" title="Tulip"><i class="fa-solid fa-seedling text-xs"></i></button>
+                        <button id="pat-flower-hibiscus" onclick="setPattern('flower-hibiscus')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center" title="Hibiscus"><i class="fa-solid fa-fan text-xs"></i></button>
+                        <button id="pat-leaf-pro" onclick="setPattern('leaf-pro')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center" title="Leaf"><i class="fa-solid fa-leaf text-xs"></i></button>
+                        <button id="pat-leaf-maple" onclick="setPattern('leaf-maple')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center" title="Maple"><i class="fa-brands fa-canadian-maple-leaf text-xs"></i></button>
+                        <button id="pat-leaf-fern" onclick="setPattern('leaf-fern')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center" title="Fern"><i class="fa-solid fa-feather text-xs"></i></button>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3 mb-4">
@@ -359,6 +381,11 @@
                     <button id="btn-copy-image" onclick="copyImageToClipboard()" class="py-2 bg-yellow-800 hover:bg-yellow-700 text-white font-bold rounded text-xs flex items-center justify-center gap-1 border border-yellow-600/50"><i class="fa-regular fa-images"></i> Copy</button>
                     <button id="btn-save-image" onclick="downloadCanvas()" class="py-2 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded text-xs flex items-center justify-center gap-1 border border-slate-500"><i class="fa-solid fa-download"></i> Save</button>
                 </div>
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                    <button onclick="exportJSON()" class="py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded text-xs border border-slate-600 flex items-center justify-center gap-1"><i class="fa-solid fa-file-export"></i> Export JSON</button>
+                    <button onclick="importJSON()" class="py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded text-xs border border-slate-600 flex items-center justify-center gap-1"><i class="fa-solid fa-file-import"></i> Import JSON</button>
+                    <input type="file" id="jsonInput" accept=".json" style="display:none" onchange="handleJsonUpload(this)">
+                </div>
              </div>
         </div>
     </div>
@@ -382,6 +409,7 @@
         let customStampCount = 0;
 
         let appState = { shape: 'rect-portrait', layers: [], stamps: [] };
+        let selectedLayerIndex = -1;
         let currentMaterial = 'gold', currentBrightness = 0, currentFloralColor = 'material'; 
         let floralState = { petalIn: '#aa771c', petalOut: '#fcf6ba', count: 8, shadow: true, shadowCol: '#000000', shadowOff: 2, leaf: '#bf953f', vein: '#5c4010', veinW: 1, leafShape: 'simple' };
         let stampConfig = { active: 'leaf-pro', rot: 0, size: 80, flipH: false, flipV: false };
@@ -399,7 +427,14 @@
             'silver': ['#C0C0C0', '#E8E8E8', '#A9A9A9', '#D3D3D3', '#808080'],
             'rose': ['#B76E79', '#F4C2C2', '#CB8D96', '#E6B8B7', '#9E5B6D'],
             'copper': ['#cd7f32', '#ffcba4', '#b87333', '#ffcc99', '#8b4513'],
-            'steel': ['#434343', '#9a9a9a', '#2b2b2b', '#b3b3b3', '#000000']
+            'steel': ['#434343', '#9a9a9a', '#2b2b2b', '#b3b3b3', '#000000'],
+            'emerald': ['#2ecc71', '#58d68d', '#27ae60', '#82e0aa', '#1e8449'],
+            'ruby': ['#e74c3c', '#ec7063', '#c0392b', '#f1948a', '#922b21'],
+            'sapphire': ['#3498db', '#5dade2', '#2980b9', '#85c1e9', '#1f618d'],
+            'amethyst': ['#9b59b6', '#af7ac5', '#8e44ad', '#bb8fce', '#6c3483'],
+            'pearl': ['#fdfefe', '#f4f6f7', '#d0d3d4', '#ecf0f1', '#bdc3c7'],
+            'obsidian': ['#2c3e50', '#566573', '#17202a', '#808b96', '#1c2833'],
+            'bronze': ['#d35400', '#e59866', '#a04000', '#edbb99', '#6e2c00']
         };
 
         // --- PRESETS CONFIGURATION ---
@@ -558,6 +593,73 @@
                     { pattern: 'wavy', inset: 10, size: 10, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' },
                     { pattern: 'solid', inset: 25, size: 5, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' }
                 ]
+            },
+
+            // --- HAPPY OCCASIONS ---
+            'wedding-classic': {
+                material: 'pearl',
+                floralState: { petalIn: '#ffffff', petalOut: '#f0f0f0', leaf: '#aaccbb', vein: '#88aa99' },
+                layers: [
+                    { pattern: 'solid', inset: 15, size: 2, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'rose-real', inset: 25, size: 20, spacing: 25, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'solid', inset: 45, size: 1, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
+            },
+            'birthday-fun': {
+                material: 'sapphire',
+                layers: [
+                    { pattern: 'circle', inset: 15, size: 10, spacing: 12, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'star', inset: 30, size: 8, spacing: 15, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'wavy', inset: 45, size: 4, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
+            },
+            'royal-gala': {
+                material: 'amethyst',
+                layers: [
+                    { pattern: 'top-crown', inset: 15, size: 20, spacing: 25, lines: 1, lineSep: 10, gridType: 'top-bottom' },
+                    { pattern: 'diamond', inset: 15, size: 10, spacing: 15, lines: 1, lineSep: 10, gridType: 'sides' },
+                    { pattern: 'solid', inset: 40, size: 3, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
+            },
+            'golden-anniversary': {
+                material: 'gold',
+                layers: [
+                    { pattern: 'corner-ornate', inset: 20, size: 40, spacing: 0, lines: 1, lineSep: 10, gridType: 'corners' },
+                    { pattern: 'solid', inset: 20, size: 2, spacing: 0, lines: 2, lineSep: 5, gridType: 'all' }
+                ]
+            },
+
+            // --- ARTISTIC THEMES ---
+            'rose-garden': {
+                material: 'rose',
+                floralState: { petalIn: '#d32f2f', petalOut: '#ffcdd2', leaf: '#388e3c', vein: '#1b5e20' },
+                layers: [
+                    { pattern: 'rose-real', inset: 20, size: 25, spacing: 30, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'leaf-ivy', inset: 35, size: 15, spacing: 20, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
+            },
+            'forest-fern': {
+                material: 'emerald',
+                floralState: { leaf: '#2e7d32', vein: '#1b5e20' },
+                layers: [
+                    { pattern: 'leaf-fern', inset: 20, size: 20, spacing: 15, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'solid', inset: 40, size: 2, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
+            },
+            'autumn-leaves': {
+                material: 'bronze',
+                floralState: { leaf: '#e65100', vein: '#bf360c' },
+                layers: [
+                    { pattern: 'leaf-maple', inset: 20, size: 20, spacing: 25, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'solid', inset: 40, size: 1, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
+            },
+            'ocean-breeze': {
+                material: 'sapphire',
+                layers: [
+                    { pattern: 'corner-shell', inset: 20, size: 30, spacing: 0, lines: 1, lineSep: 10, gridType: 'corners' },
+                    { pattern: 'wavy', inset: 20, size: 5, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
             }
         };
 
@@ -576,6 +678,17 @@
             
             // Set Material
             if(p.material) setMaterial(p.material);
+
+            // Set Floral State (if defined)
+            if(p.floralState) {
+                floralState = { ...floralState, ...p.floralState };
+                // Update UI inputs
+                const setCol = (id, v) => { const el = document.getElementById(id); if(el) el.value = v; };
+                setCol('col-petal-in', floralState.petalIn);
+                setCol('col-petal-out', floralState.petalOut);
+                setCol('col-leaf', floralState.leaf);
+                setCol('col-vein', floralState.vein);
+            }
             
             // Set Shape (if defined)
             if(p.shape) {
@@ -604,7 +717,8 @@
                     material: p.material,
                     brightness: 0,
                     grid: getPresetGrid(l.gridType),
-                    ending: l.ending || 'none'
+                    ending: l.ending || 'none',
+                    floralState: JSON.parse(JSON.stringify(floralState)) // Capture current floral state for this layer
                 });
             });
             
@@ -837,7 +951,14 @@
         function saveState() { const s = JSON.stringify(appState); if(historyIndex < history.length-1) history = history.slice(0, historyIndex+1); history.push(s); historyIndex++; if(history.length>20) { history.shift(); historyIndex--; } }
         function undo() { if(historyIndex>0){ historyIndex--; loadState(history[historyIndex]); }}
         function redo() { if(historyIndex<history.length-1){ historyIndex++; loadState(history[historyIndex]); }}
-        function loadState(json) { appState = JSON.parse(json); document.getElementById('canvasShape').value=appState.shape; resizeCanvas(); renderLayerList(); updateMaterialUI(); }
+        function loadState(json) { 
+            appState = JSON.parse(json); 
+            selectedLayerIndex = -1; // Reset selection on load
+            document.getElementById('canvasShape').value=appState.shape; 
+            resizeCanvas(); 
+            renderLayerList(); 
+            updateMaterialUI(); 
+        }
 
         function resizeCanvas() { const containerH = window.innerHeight - 96; let w, h; const s = appState.shape; if(s === 'rect-portrait') { h=containerH; w=h*0.707; } else if(s === 'rect-landscape') { w=containerH; h=w*0.707; } else if(s === 'square') { h=containerH; w=containerH; } else if(s === 'circle') { h=containerH; w=containerH; } else if(s === 'oval') { h=containerH; w=h*0.7; } canvas.height = h; canvas.width = w; const isRound = (s === 'circle' || s === 'oval'); canvas.style.borderRadius = isRound ? '50%' : '0'; redraw(); renderMiniMap(); }
 
@@ -860,6 +981,12 @@
             document.querySelectorAll('.pattern-btn').forEach(b => b.classList.remove('active')); 
             document.getElementById('pat-' + type).classList.add('active'); 
             
+            // Toggle Visibility of Leaf Shape Control
+            const shapeCtrl = document.getElementById('leafShapeControl');
+            if(shapeCtrl) {
+                if(type === 'leaf-pro') shapeCtrl.classList.remove('hidden'); else shapeCtrl.classList.add('hidden');
+            }
+
             // Live update selected layer
             if (selectedLayerIndex >= 0 && selectedLayerIndex < appState.layers.length) {
                 appState.layers[selectedLayerIndex].pattern = type;
@@ -921,10 +1048,23 @@
         function setMaterial(mat) { currentMaterial = mat; const elIn = document.getElementById('col-petal-in'); if(elIn) elIn.value = floralState.petalIn; const elOut = document.getElementById('col-petal-out'); if(elOut) elOut.value = floralState.petalOut; const elLeaf = document.getElementById('col-leaf'); if(elLeaf) elLeaf.value = floralState.leaf; const elVein = document.getElementById('col-vein'); if(elVein) elVein.value = floralState.vein; updateMaterialUI(); if (document.getElementById('applyGlobal') && document.getElementById('applyGlobal').checked) { appState.layers.forEach(l => l.material = mat); appState.stamps.forEach(s => s.material = mat); saveState(); redraw(); } renderPreview(); }
         function setStampColor(color) { currentFloralColor = color; document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active')); if(color==='material') document.getElementById('btn-color-material').classList.add('active'); else if(color==='red') document.getElementById('btn-color-red').classList.add('active'); else if(color==='pink') document.getElementById('btn-color-pink').classList.add('active'); else if(color==='white') document.getElementById('btn-color-white').classList.add('active'); else if(color==='purple') document.getElementById('btn-color-purple').classList.add('active'); if (color !== 'material') { floralState.petalIn = FLORAL_COLORS[color].dark; floralState.petalOut = FLORAL_COLORS[color].light; document.getElementById('col-petal-in').value = floralState.petalIn; document.getElementById('col-petal-out').value = floralState.petalOut; } renderPreview(); }
         function updateBrightness(val) { currentBrightness = parseInt(val); document.getElementById('val-bright').innerText = val + '%'; if (document.getElementById('applyGlobal').checked) { appState.layers.forEach(l => l.brightness = currentBrightness); appState.stamps.forEach(s => s.brightness = currentBrightness); saveState(); redraw(); } renderPreview(); }
-        function updateFloralConfig(key, val) { if(key==='shadow') floralState[key] = val; else floralState[key] = val; if(key === 'count') document.getElementById('val-pCount').innerText = val; if(key === 'veinW') document.getElementById('val-vein').innerText = val + 'px'; 
+        function updateFloralConfig(key, val) { 
+            if(key==='shadow') floralState[key] = val; else floralState[key] = val; 
+            if(key === 'count') document.getElementById('val-pCount').innerText = val; 
+            if(key === 'veinW') document.getElementById('val-vein').innerText = val + 'px'; 
+            
             // Toggle Visibility of Leaf Shape Control
             const shapeCtrl = document.getElementById('leafShapeControl');
-            if(stampConfig.active === 'leaf-pro') shapeCtrl.classList.remove('hidden'); else shapeCtrl.classList.add('hidden');
+            const isProLeaf = (stampConfig.active === 'leaf-pro') || (currentPattern === 'leaf-pro');
+            if(isProLeaf) shapeCtrl.classList.remove('hidden'); else shapeCtrl.classList.add('hidden');
+            
+            // Live update selected layer
+            if (selectedLayerIndex >= 0 && selectedLayerIndex < appState.layers.length) {
+                appState.layers[selectedLayerIndex].floralState = JSON.parse(JSON.stringify(floralState));
+                redraw();
+                saveState();
+            }
+            
             renderPreview(); 
         }
         function updateMaterialUI() { const btns = document.querySelectorAll('.material-btn'); btns.forEach(b=>b.classList.remove('active')); const m = currentMaterial; if(m==='gold')document.getElementById('btn-mat-gold').classList.add('active'); if(m==='silver')document.getElementById('btn-mat-silver').classList.add('active'); if(m==='rose')document.getElementById('btn-mat-rose').classList.add('active'); if(m==='copper')document.getElementById('btn-mat-copper').classList.add('active'); if(m==='steel')document.getElementById('btn-mat-steel').classList.add('active'); }
@@ -946,7 +1086,7 @@
             pc.restore();
         }
 
-        function addLayer() { appState.layers.push({ pattern: currentPattern, inset: parseInt(document.getElementById('inset').value), size: parseInt(document.getElementById('size').value), spacing: parseInt(document.getElementById('spacing').value), rot: 0, radius: parseInt(document.getElementById('radius').value), lines: tempLineCount, lineSep: parseInt(document.getElementById('lineSep').value), material: currentMaterial, brightness: currentBrightness, grid: JSON.parse(JSON.stringify(gridState)), ending: currentBorderEnding }); saveState(); renderLayerList(); redraw(); }
+        function addLayer() { appState.layers.push({ pattern: currentPattern, inset: parseInt(document.getElementById('inset').value), size: parseInt(document.getElementById('size').value), spacing: parseInt(document.getElementById('spacing').value), rot: 0, radius: parseInt(document.getElementById('radius').value), lines: tempLineCount, lineSep: parseInt(document.getElementById('lineSep').value), material: currentMaterial, brightness: currentBrightness, grid: JSON.parse(JSON.stringify(gridState)), ending: currentBorderEnding, floralState: JSON.parse(JSON.stringify(floralState)) }); saveState(); renderLayerList(); redraw(); }
         function renderLayerList() { 
             document.getElementById('layerList').innerHTML = appState.layers.map((l,i) => {
                 const isSelected = (i === selectedLayerIndex);
@@ -991,6 +1131,34 @@
             if(l.grid) {
                 gridState = JSON.parse(JSON.stringify(l.grid));
                 renderMiniMap();
+            }
+
+            // Update Floral State (if exists)
+            if(l.floralState) {
+                floralState = JSON.parse(JSON.stringify(l.floralState));
+                
+                // Update UI Inputs
+                const setVal = (id, v) => { const el = document.getElementById(id); if(el) el.value = v; };
+                const setCheck = (id, v) => { const el = document.getElementById(id); if(el) el.checked = v; };
+                const setText = (id, v) => { const el = document.getElementById(id); if(el) el.innerText = v; };
+                
+                setVal('col-petal-in', floralState.petalIn);
+                setVal('col-petal-out', floralState.petalOut);
+                setVal('col-leaf', floralState.leaf);
+                setVal('col-vein', floralState.vein);
+                setVal('col-shadow', floralState.shadowCol);
+                
+                setVal('petalCount', floralState.count);
+                setText('val-pCount', floralState.count);
+                
+                setCheck('petalShadow', floralState.shadow);
+                
+                setVal('veinThick', floralState.veinW);
+                setText('val-vein', floralState.veinW + 'px');
+                
+                if(floralState.leafShape) setVal('proLeafShape', floralState.leafShape);
+                
+                renderPreview();
             }
             
             renderLayerList();
@@ -1509,7 +1677,7 @@
                     ctx.save(); 
                     ctx.translate(pt.x, pt.y); 
                     ctx.rotate(ang); 
-                    drawShape(ctx, l.pattern, l.size); 
+                    drawShape(ctx, l.pattern, l.size, l.floralState); 
                     ctx.restore();
                 }
             }
@@ -1543,7 +1711,7 @@
                         ctx.save(); 
                         ctx.translate(x,y); 
                         ctx.rotate(ang); 
-                        drawShape(ctx,l.pattern,l.size); 
+                        drawShape(ctx,l.pattern,l.size,l.floralState); 
                         ctx.restore();
                     }
                 }
@@ -1591,7 +1759,7 @@
                     ctx.save(); 
                     ctx.translate(x,y); 
                     ctx.rotate(ang); 
-                    drawShape(ctx,l.pattern,l.size); 
+                    drawShape(ctx,l.pattern,l.size,l.floralState); 
                     ctx.restore(); 
                 }
             }
@@ -1625,7 +1793,16 @@
                 }
             }
         }
-        function drawShape(ctx, t, s) {
+        function drawShape(ctx, t, s, layerOpts) {
+            // Check if it's a complex asset (stamp)
+            if (ASSETS[t]) {
+                // Use layer state or current global floral state or default
+                const opts = layerOpts || floralState || { petalIn: '#aa771c', petalOut: '#fcf6ba', count: 8, shadow: true, shadowCol: '#000000', shadowOff: 2, leaf: '#bf953f', vein: '#5c4010', veinW: 1 };
+                // Pass current fillStyle as style
+                ASSETS[t](ctx, s, ctx.fillStyle, opts);
+                return;
+            }
+
             const h=s/2; ctx.beginPath();
             if(t==='circle') ctx.arc(0,0,h,0,Math.PI*2);
             else if(t==='diamond'){ctx.moveTo(0,-h);ctx.lineTo(h,0);ctx.lineTo(0,h);ctx.lineTo(-h,0);ctx.closePath();}
@@ -1661,6 +1838,37 @@
         }
 
         function copyToClipboard() { const s = JSON.stringify(appState); const t = document.createElement("textarea"); t.value = s; document.body.appendChild(t); t.select(); try { document.execCommand('copy'); alert("Data copied!"); } catch(e) { alert("Copy failed"); } document.body.removeChild(t); }
+        
+        function exportJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", "border_sketcher_data.json");
+            document.body.appendChild(downloadAnchorNode);
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
+
+        function importJSON() {
+            document.getElementById('jsonInput').click();
+        }
+
+        function handleJsonUpload(input) {
+            const file = input.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    loadState(e.target.result);
+                    alert("State loaded successfully!");
+                } catch (err) {
+                    alert("Error loading JSON: " + err.message);
+                }
+            };
+            reader.readAsText(file);
+            input.value = ''; 
+        }
+
         function copyImageToClipboard() { const scale = parseInt(document.getElementById('exportScale').value) || 1; const w = canvas.width * scale; const h = canvas.height * scale; const hiResCanvas = document.createElement('canvas'); hiResCanvas.width = w; hiResCanvas.height = h; renderScene(hiResCanvas, hiResCanvas.getContext('2d'), scale, false); hiResCanvas.toBlob(blob => { try { const item = new ClipboardItem({ 'image/png': blob }); navigator.clipboard.write([item]).then(() => alert("Image copied!")).catch(err => handleCopyError(err, hiResCanvas)); } catch (err) { handleCopyError(err, hiResCanvas); } }); }
         function handleCopyError(err, sourceCanvas) { const modal = document.createElement('div'); modal.className = 'fixed inset-0 bg-slate-900/90 z-50 flex flex-col items-center justify-center p-4 backdrop-blur-sm'; modal.onclick = (e) => { if(e.target === modal) document.body.removeChild(modal); }; const container = document.createElement('div'); container.className = 'bg-slate-800 p-4 rounded-lg border border-slate-600 shadow-2xl max-w-full max-h-full flex flex-col items-center'; const title = document.createElement('h3'); title.className = 'text-yellow-500 font-bold mb-2 text-lg'; title.innerText = 'Right-Click to Copy'; const img = document.createElement('img'); img.src = sourceCanvas.toDataURL(); img.className = 'max-w-full max-h-[70vh] border border-slate-600 mb-4'; const msg = document.createElement('p'); msg.className = 'text-slate-400 text-sm text-center mb-4'; msg.innerHTML = 'Browser blocked auto-copy.<br>Right-click image > <strong>Copy Image</strong>.'; const closeBtn = document.createElement('button'); closeBtn.className = 'px-6 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded border border-slate-500'; closeBtn.innerText = 'Close'; closeBtn.onclick = () => document.body.removeChild(modal); container.append(title, img, msg, closeBtn); modal.appendChild(container); document.body.appendChild(modal); }
         function downloadCanvas(){ const scale = parseInt(document.getElementById('exportScale').value); const w = canvas.width * scale; const h = canvas.height * scale; const hiResCanvas = document.createElement('canvas'); hiResCanvas.width = w; hiResCanvas.height = h; const hiResCtx = hiResCanvas.getContext('2d'); renderScene(hiResCanvas, hiResCtx, scale, false); const l=document.createElement('a'); l.download=`frame_x${scale}.png`; l.href=hiResCanvas.toDataURL(); l.click(); }
