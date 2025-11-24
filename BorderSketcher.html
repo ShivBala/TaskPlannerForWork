@@ -44,6 +44,7 @@
         .toggle-checkbox:checked + .toggle-label { background-color: #68D391; }
         .section-header { text-transform: uppercase; font-weight: bold; font-size: 0.65rem; color: #94a3b8; letter-spacing: 0.05em; margin-bottom: 0.5rem; border-bottom: 1px solid #334155; padding-bottom: 0.25rem; margin-top: 0.5rem; }
         
+        /* SVG Segment Styles */
         .seg-path { fill: #1e293b; stroke: #475569; stroke-width: 1; cursor: pointer; transition: all 0.15s; }
         .seg-path:hover { fill: #334155; }
         .seg-path.active { fill: #b38728; stroke: #fcf6ba; }
@@ -99,126 +100,124 @@
 
             <!-- Stamps & Floral Designer -->
             <div class="panel rounded-lg p-4 border-l-4 border-l-yellow-600">
-                 <div class="flex justify-between items-center cursor-pointer" onclick="document.getElementById('stampBody').classList.toggle('hidden')">
-                    <h3 class="text-yellow-500 text-sm font-bold uppercase tracking-widest pb-1">Stamps & Florals</h3>
-                    <i class="fa-solid fa-chevron-down text-slate-400 text-xs"></i>
-                 </div>
-                 
-                 <div id="stampBody" class="block mt-2">
-                     <!-- Preview & Basic Transform -->
-                     <div class="flex gap-4 mb-4">
-                        <div class="w-16 h-16 bg-slate-800 border border-slate-600 rounded flex items-center justify-center relative overflow-hidden shrink-0">
-                            <div class="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTAgMTBMMTAgMEgwVjEweiIgZmlsbD0iI2ZmZiIgZmlsbC1vcGFjaXR5PSIwLjEiLz48L3N2Zz4=')]"></div>
-                            <canvas id="previewCanvas" width="300" height="300" class="w-full h-full object-contain"></canvas>
+                <h3 class="text-yellow-500 text-sm font-bold uppercase tracking-widest mb-3 border-b border-slate-700 pb-2">Floral Designer</h3>
+                
+                <!-- Preview & Basic Transform -->
+                <div class="flex gap-4 mb-4">
+                    <div class="w-24 h-24 bg-slate-800 border border-slate-600 rounded flex items-center justify-center relative overflow-hidden shrink-0">
+                        <div class="absolute inset-0 opacity-10 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAiIGhlaWdodD0iMTAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTAgMTBMMTAgMEgwVjEweiIgZmlsbD0iI2ZmZiIgZmlsbC1vcGFjaXR5PSIwLjEiLz48L3N2Zz4=')]"></div>
+                        <canvas id="previewCanvas" width="300" height="300" class="w-full h-full object-contain"></canvas>
+                    </div>
+                    <div class="flex-1 space-y-2">
+                        <div class="flex gap-2">
+                            <button id="btn-flip-h" onclick="toggleFlip('h')" class="flex-1 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-[10px] text-slate-300">Flip H</button>
+                            <button id="btn-flip-v" onclick="toggleFlip('v')" class="flex-1 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-[10px] text-slate-300">Flip V</button>
                         </div>
-                        <div class="flex-1 space-y-2">
-                            <div class="flex gap-2">
-                                <button id="btn-flip-h" onclick="toggleFlip('h')" class="flex-1 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-[9px] text-slate-300">Flip H</button>
-                                <button id="btn-flip-v" onclick="toggleFlip('v')" class="flex-1 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-[9px] text-slate-300">Flip V</button>
-                            </div>
-                            <div><div class="flex justify-between text-[10px] text-slate-400"><span>Rot</span><span id="stampRotVal">0°</span></div><input type="range" id="stampRot" min="0" max="360" value="0" oninput="updateStampConfig('rot', this.value)"></div>
-                            <div><div class="flex justify-between text-[10px] text-slate-400"><span>Size</span><span id="stampSizeVal">60px</span></div><input type="range" id="stampSize" min="20" max="200" value="60" oninput="updateStampConfig('size', this.value)"></div>
-                        </div>
+                        <div><div class="flex justify-between text-[10px] text-slate-400"><span>Rot</span><span id="stampRotVal">0°</span></div><input type="range" id="stampRot" min="0" max="360" value="0" oninput="updateStampConfig('rot', this.value)"></div>
+                        <div><div class="flex justify-between text-[10px] text-slate-400"><span>Size</span><span id="stampSizeVal">60px</span></div><input type="range" id="stampSize" min="20" max="200" value="60" oninput="updateStampConfig('size', this.value)"></div>
+                    </div>
+                </div>
+
+                <!-- Wreath / Cluster Control -->
+                <div class="bg-slate-800/50 p-2 rounded border border-yellow-900/50 mb-3">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-[10px] text-yellow-500 font-bold uppercase"><i class="fa-solid fa-spinner mr-1"></i>Cluster Mode</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="clusterToggle" class="sr-only peer" onchange="document.getElementById('clusterControls').classList.toggle('hidden')">
+                            <div class="w-7 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-yellow-600"></div>
+                        </label>
+                    </div>
+                    <div id="clusterControls" class="hidden space-y-2 border-t border-slate-700 pt-2">
+                        <div><div class="flex justify-between text-[10px] text-slate-400"><span>Count</span><span id="val-clusterCount">5</span></div><input type="range" id="clusterCount" min="2" max="20" value="5" oninput="document.getElementById('val-clusterCount').innerText=this.value"></div>
+                        <div><div class="flex justify-between text-[10px] text-slate-400"><span>Radius</span><span id="val-clusterRadius">40px</span></div><input type="range" id="clusterRadius" min="10" max="150" value="40" oninput="document.getElementById('val-clusterRadius').innerText=this.value+'px'"></div>
+                        <p class="text-[9px] text-slate-500 italic text-center">Click canvas to place cluster center</p>
+                    </div>
+                </div>
+
+                <!-- Floral Advanced Controls -->
+                <div class="bg-slate-800/50 p-3 rounded border border-slate-600 mb-4 text-xs space-y-3">
+                    <!-- New Leaf Shape Selector -->
+                    <div id="leafShapeControl" class="hidden">
+                        <h4 class="section-header text-green-300">Pro Leaf Shape</h4>
+                        <select id="proLeafShape" onchange="updateFloralConfig('leafShape', this.value)" class="w-full bg-slate-700 border border-slate-500 rounded px-2 py-1 text-xs text-slate-300 outline-none focus:border-yellow-500">
+                            <option value="simple">Simple</option>
+                            <option value="oak">Oak</option>
+                            <option value="maple">Maple</option>
+                            <option value="fern">Fern</option>
+                            <option value="ivy">Ivy</option>
+                        </select>
                     </div>
 
-                    <!-- Wreath / Cluster Control -->
-                    <div class="bg-slate-800/50 p-2 rounded border border-yellow-900/50 mb-3">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-[10px] text-yellow-500 font-bold uppercase"><i class="fa-solid fa-spinner mr-1"></i>Cluster Mode</span>
-                            <label class="relative inline-flex items-center cursor-pointer">
-                                <input type="checkbox" id="clusterToggle" class="sr-only peer" onchange="document.getElementById('clusterControls').classList.toggle('hidden')">
-                                <div class="w-7 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-yellow-600"></div>
-                            </label>
-                        </div>
-                        <div id="clusterControls" class="hidden space-y-2 border-t border-slate-700 pt-2">
-                            <div><div class="flex justify-between text-[10px] text-slate-400"><span>Count</span><span id="val-clusterCount">5</span></div><input type="range" id="clusterCount" min="2" max="20" value="5" oninput="document.getElementById('val-clusterCount').innerText=this.value"></div>
-                            <div><div class="flex justify-between text-[10px] text-slate-400"><span>Radius</span><span id="val-clusterRadius">40px</span></div><input type="range" id="clusterRadius" min="10" max="150" value="40" oninput="document.getElementById('val-clusterRadius').innerText=this.value+'px'"></div>
-                            <p class="text-[9px] text-slate-500 italic text-center">Click canvas to place cluster center</p>
+                    <div>
+                        <h4 class="section-header text-rose-300">Colors</h4>
+                        <div class="flex justify-between items-center"><span class="text-slate-400">Inner</span><input type="color" id="col-petal-in" value="#bf953f" oninput="updateFloralConfig('petalIn', this.value)"></div>
+                        <div class="flex justify-between items-center mt-1"><span class="text-slate-400">Outer</span><input type="color" id="col-petal-out" value="#fcf6ba" oninput="updateFloralConfig('petalOut', this.value)"></div>
+                    </div>
+                    <div>
+                        <h4 class="section-header text-rose-300">Structure</h4>
+                        <div class="flex justify-between mb-1"><span class="text-slate-400">Petals</span><span id="val-pCount">8</span></div>
+                        <input type="range" id="petalCount" min="3" max="20" value="8" oninput="updateFloralConfig('count', this.value)">
+                        <div class="flex items-center justify-between mt-2">
+                            <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="petalShadow" checked onchange="updateFloralConfig('shadow', this.checked)" class="rounded border-slate-600 bg-slate-700 text-rose-500"><span class="text-slate-400">Shadows</span></label>
+                            <input type="color" id="col-shadow" value="#000000" oninput="updateFloralConfig('shadowCol', this.value)">
                         </div>
                     </div>
+                    <div>
+                        <h4 class="section-header text-green-300">Leaves & Veins</h4>
+                        <div class="flex justify-between items-center mb-1"><span class="text-slate-400">Leaf Fill</span><input type="color" id="col-leaf" value="#bf953f" oninput="updateFloralConfig('leaf', this.value)"></div>
+                        <div class="flex justify-between items-center"><span class="text-slate-400">Vein Color</span><input type="color" id="col-vein" value="#5c4010" oninput="updateFloralConfig('vein', this.value)"></div>
+                        <div class="mt-1"><div class="flex justify-between text-[10px] text-slate-400"><span>Vein Thick</span><span id="val-vein">1px</span></div><input type="range" id="veinThick" min="0.5" max="5" step="0.5" value="1" oninput="updateFloralConfig('veinW', this.value)"></div>
+                    </div>
+                </div>
 
-                    <!-- Floral Advanced Controls -->
-                    <div class="bg-slate-800/50 p-3 rounded border border-slate-600 mb-4 text-xs space-y-3">
-                        <!-- New Leaf Shape Selector -->
-                        <div id="leafShapeControl" class="hidden">
-                            <h4 class="section-header text-green-300">Pro Leaf Shape</h4>
-                            <select id="proLeafShape" onchange="updateFloralConfig('leafShape', this.value)" class="w-full bg-slate-700 border border-slate-500 rounded px-2 py-1 text-xs text-slate-300 outline-none focus:border-yellow-500">
-                                <option value="simple">Simple</option>
-                                <option value="oak">Oak</option>
-                                <option value="maple">Maple</option>
-                                <option value="fern">Fern</option>
-                                <option value="ivy">Ivy</option>
-                            </select>
-                        </div>
+                <!-- Floral Color Picker -->
+                <div class="mb-3 p-2 bg-slate-800/50 rounded border border-slate-600">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-[10px] text-slate-300 uppercase font-bold">Quick Color</span>
+                    </div>
+                    <div class="flex gap-2 justify-between">
+                        <div id="btn-color-material" onclick="setStampColor('material')" class="color-dot active bg-gradient-to-br from-yellow-600 to-yellow-200" title="Use Frame Material"></div>
+                        <div id="btn-color-red" onclick="setStampColor('red')" class="color-dot bg-gradient-to-br from-red-900 to-red-500" title="Red"></div>
+                        <div id="btn-color-pink" onclick="setStampColor('pink')" class="color-dot bg-gradient-to-br from-pink-700 to-pink-300" title="Pink"></div>
+                        <div id="btn-color-white" onclick="setStampColor('white')" class="color-dot bg-gradient-to-br from-slate-400 to-white" title="White"></div>
+                        <div id="btn-color-purple" onclick="setStampColor('purple')" class="color-dot bg-gradient-to-br from-purple-900 to-purple-400" title="Purple"></div>
+                    </div>
+                </div>
 
-                        <div>
-                            <h4 class="section-header text-rose-300">Colors</h4>
-                            <div class="flex justify-between items-center"><span class="text-slate-400">Inner</span><input type="color" id="col-petal-in" value="#bf953f" oninput="updateFloralConfig('petalIn', this.value)"></div>
-                            <div class="flex justify-between items-center mt-1"><span class="text-slate-400">Outer</span><input type="color" id="col-petal-out" value="#fcf6ba" oninput="updateFloralConfig('petalOut', this.value)"></div>
-                        </div>
-                        <div>
-                            <h4 class="section-header text-rose-300">Structure</h4>
-                            <div class="flex justify-between mb-1"><span class="text-slate-400">Petals</span><span id="val-pCount">8</span></div>
-                            <input type="range" id="petalCount" min="3" max="20" value="8" oninput="updateFloralConfig('count', this.value)">
-                            <div class="flex items-center justify-between mt-2">
-                                <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="petalShadow" checked onchange="updateFloralConfig('shadow', this.checked)" class="rounded border-slate-600 bg-slate-700 text-rose-500"><span class="text-slate-400">Shadows</span></label>
-                                <input type="color" id="col-shadow" value="#000000" oninput="updateFloralConfig('shadowCol', this.value)">
-                            </div>
-                        </div>
-                        <div>
-                            <h4 class="section-header text-green-300">Leaves & Veins</h4>
-                            <div class="flex justify-between items-center mb-1"><span class="text-slate-400">Leaf Fill</span><input type="color" id="col-leaf" value="#bf953f" oninput="updateFloralConfig('leaf', this.value)"></div>
-                            <div class="flex justify-between items-center"><span class="text-slate-400">Vein Color</span><input type="color" id="col-vein" value="#5c4010" oninput="updateFloralConfig('vein', this.value)"></div>
-                            <div class="mt-1"><div class="flex justify-between text-[10px] text-slate-400"><span>Vein Thick</span><span id="val-vein">1px</span></div><input type="range" id="veinThick" min="0.5" max="5" step="0.5" value="1" oninput="updateFloralConfig('veinW', this.value)"></div>
-                        </div>
+                <div class="space-y-2 max-h-60 overflow-y-auto pr-1" id="stampList">
+                    <!-- Import Button -->
+                    <div class="mb-3 border-b border-slate-700 pb-2">
+                         <input type="file" id="stampUpload" accept="image/png" class="hidden" onchange="handleStampUpload(this)">
+                         <button id="btn-import-png" onclick="document.getElementById('stampUpload').click()" class="w-full py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold rounded border border-slate-500 flex items-center justify-center gap-2">
+                             <i class="fa-solid fa-upload"></i> Import PNG
+                         </button>
                     </div>
 
-                    <!-- Floral Color Picker -->
-                    <div class="mb-3 p-2 bg-slate-800/50 rounded border border-slate-600">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-[10px] text-slate-300 uppercase font-bold">Quick Color</span>
-                        </div>
-                        <div class="flex gap-2 justify-between">
-                            <div id="btn-color-material" onclick="setStampColor('material')" class="color-dot active bg-gradient-to-br from-yellow-600 to-yellow-200" title="Use Frame Material"></div>
-                            <div id="btn-color-red" onclick="setStampColor('red')" class="color-dot bg-gradient-to-br from-red-900 to-red-500" title="Red"></div>
-                            <div id="btn-color-pink" onclick="setStampColor('pink')" class="color-dot bg-gradient-to-br from-pink-700 to-pink-300" title="Pink"></div>
-                            <div id="btn-color-white" onclick="setStampColor('white')" class="color-dot bg-gradient-to-br from-slate-400 to-white" title="White"></div>
-                            <div id="btn-color-purple" onclick="setStampColor('purple')" class="color-dot bg-gradient-to-br from-purple-900 to-purple-400" title="Purple"></div>
-                        </div>
-                    </div>
+                    <div class="text-[10px] text-slate-500 uppercase font-bold mt-2 mb-1">Pro Leaves</div>
+                    <button onclick="selectStamp('leaf-pro')" id="btn-leaf-pro" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-leaf text-green-400"></i> Procedural Leaf</button>
 
-                    <div class="space-y-2 max-h-60 overflow-y-auto pr-1" id="stampList">
-                        <!-- Import Button -->
-                        <div class="mb-3 border-b border-slate-700 pb-2">
-                            <input type="file" id="stampUpload" accept="image/png" class="hidden" onchange="handleStampUpload(this)">
-                            <button id="btn-import-png" onclick="document.getElementById('stampUpload').click()" class="w-full py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold rounded border border-slate-500 flex items-center justify-center gap-2">
-                                <i class="fa-solid fa-upload"></i> Import PNG
-                            </button>
-                        </div>
+                    <div class="text-[10px] text-slate-500 uppercase font-bold mt-2 mb-1">New Flowers</div>
+                    <button onclick="selectStamp('flower-lily')" id="btn-flower-lily" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-spa text-pink-300"></i> Lily</button>
+                    <button onclick="selectStamp('flower-daisy')" id="btn-flower-daisy" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-sun text-yellow-300"></i> Daisy</button>
+                    <button onclick="selectStamp('flower-tulip')" id="btn-flower-tulip" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-brands fa-pagelines text-red-300"></i> Tulip</button>
+                    <button onclick="selectStamp('flower-lotus')" id="btn-flower-lotus" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-water text-pink-200"></i> Lotus</button>
+                    <button onclick="selectStamp('flower-hibiscus')" id="btn-flower-hibiscus" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-fan text-red-400"></i> Hibiscus</button>
 
-                        <div class="text-[10px] text-slate-500 uppercase font-bold mt-2 mb-1">Pro Leaves</div>
-                        <button onclick="selectStampPro('simple')" id="btn-leaf-pro-simple" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-leaf text-green-400"></i> Pro Simple</button>
-                        <button onclick="selectStampPro('oak')" id="btn-leaf-pro-oak" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-tree text-green-600"></i> Pro Oak</button>
-                        <button onclick="selectStampPro('maple')" id="btn-leaf-pro-maple" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-brands fa-canadian-maple-leaf text-orange-400"></i> Pro Maple</button>
-                        <button onclick="selectStampPro('fern')" id="btn-leaf-pro-fern" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-feather text-green-300"></i> Pro Fern</button>
-                        <button onclick="selectStampPro('ivy')" id="btn-leaf-pro-ivy" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-leaf text-emerald-500"></i> Pro Ivy</button>
+                    <div class="text-[10px] text-slate-500 uppercase font-bold mt-3 mb-1">New Leaves</div>
+                    <button onclick="selectStamp('leaf-maple')" id="btn-leaf-maple" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-brands fa-canadian-maple-leaf text-orange-400"></i> Maple</button>
+                    <button onclick="selectStamp('leaf-oak')" id="btn-leaf-oak" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-tree text-green-700"></i> Oak</button>
+                    <button onclick="selectStamp('leaf-palm')" id="btn-leaf-palm" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-fan text-green-500"></i> Palm</button>
+                    <button onclick="selectStamp('leaf-ivy')" id="btn-leaf-ivy" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-leaf text-green-600"></i> Ivy</button>
+                    <button onclick="selectStamp('leaf-willow')" id="btn-leaf-willow" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-feather text-green-400"></i> Willow</button>
 
-                        <div class="text-[10px] text-slate-500 uppercase font-bold mt-2 mb-1">New Flowers</div>
-                        <button onclick="selectStamp('flower-lily')" id="btn-flower-lily" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-spa text-pink-300"></i> Lily</button>
-                        <button onclick="selectStamp('flower-daisy')" id="btn-flower-daisy" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-sun text-yellow-300"></i> Daisy</button>
-                        <button onclick="selectStamp('flower-tulip')" id="btn-flower-tulip" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-brands fa-pagelines text-red-300"></i> Tulip</button>
-                        <button onclick="selectStamp('flower-lotus')" id="btn-flower-lotus" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-water text-pink-200"></i> Lotus</button>
-                        <button onclick="selectStamp('flower-hibiscus')" id="btn-flower-hibiscus" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-fan text-red-400"></i> Hibiscus</button>
-
-                        <div class="text-[10px] text-slate-500 uppercase font-bold mt-3 mb-1">Classic & Previous</div>
-                        <button onclick="selectStamp('rose-real')" id="btn-rose-real" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-fan text-rose-400"></i> 3D Rose</button>
-                        <button onclick="selectStamp('rose-bud')" id="btn-rose-bud" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-brands fa-pagelines text-rose-300"></i> Rose Bud</button>
-                        <button onclick="selectStamp('leaf-cluster')" id="btn-leaf-cluster" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-leaf text-green-600"></i> Acanthus Leaf</button>
-                        <button onclick="selectStamp('leaf-fern')" id="btn-leaf-fern" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-feather text-green-600"></i> Fern Frond</button>
-                        <button onclick="selectStamp('corner-classic')" id="btn-corner-classic" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-brands fa-canadian-maple-leaf text-yellow-600"></i> Classic Corner</button>
-                        <button onclick="selectStamp('side-vine')" id="btn-side-vine" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-spa text-yellow-600"></i> Side Vine</button>
-                    </div>
-                 </div>
+                    <div class="text-[10px] text-slate-500 uppercase font-bold mt-3 mb-1">Classic & Previous</div>
+                    <button onclick="selectStamp('rose-real')" id="btn-rose-real" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-fan text-rose-400"></i> 3D Rose</button>
+                    <button onclick="selectStamp('rose-bud')" id="btn-rose-bud" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-brands fa-pagelines text-rose-300"></i> Rose Bud</button>
+                    <button onclick="selectStamp('leaf-cluster')" id="btn-leaf-cluster" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-leaf text-green-600"></i> Acanthus Leaf</button>
+                    <button onclick="selectStamp('leaf-fern')" id="btn-leaf-fern" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-feather text-green-600"></i> Fern Frond</button>
+                    <button onclick="selectStamp('corner-classic')" id="btn-corner-classic" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-brands fa-canadian-maple-leaf text-yellow-600"></i> Classic Corner</button>
+                    <button onclick="selectStamp('side-vine')" id="btn-side-vine" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-spa text-yellow-600"></i> Side Vine</button>
+                </div>
             </div>
 
             <!-- Border Designer -->
@@ -228,7 +227,7 @@
                     <span class="text-[10px] text-slate-400">Show Guide</span>
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" id="showGuide" checked class="sr-only peer" onchange="redraw()">
-                        <div class="w-7 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white peer-checked:bg-yellow-600"></div>
+                        <div class="w-7 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-yellow-600"></div>
                     </label>
                 </div>
                 <div class="mb-4">
@@ -242,20 +241,10 @@
                         <button id="pat-heart" onclick="setPattern('heart')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center"><i class="fa-solid fa-heart text-xs"></i></button>
                     </div>
                 </div>
-                
-                <!-- Advanced Patterns -->
-                <div class="mb-2"><span class="text-[10px] text-slate-500 font-bold uppercase">Advanced</span></div>
-                <div class="mb-4 grid grid-cols-4 gap-1">
-                    <button id="pat-wavy" onclick="setPattern('wavy')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center text-[10px] flex flex-col items-center"><i class="fa-solid fa-water"></i> Wavy</button>
-                    <button id="pat-sawtooth" onclick="setPattern('sawtooth')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center text-[10px] flex flex-col items-center"><i class="fa-solid fa-tooth"></i> Saw</button>
-                    <button id="pat-stitch" onclick="setPattern('stitch')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center text-[10px] flex flex-col items-center"><i class="fa-solid fa-xmarks-lines"></i> Stitch</button>
-                    <button id="pat-baroque" onclick="setPattern('baroque')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center text-[10px] flex flex-col items-center"><i class="fa-brands fa-pagelines"></i> Baroque</button>
-                </div>
-
                 <div class="grid grid-cols-2 gap-3 mb-4">
                     <div class="col-span-2"><div class="flex justify-between text-[10px] text-slate-300"><span>Inset</span><span id="val-inset">40px</span></div><input type="range" id="inset" min="0" max="150" value="40" oninput="updateVal('inset', this.value); redraw();"></div>
                     
-                    <!-- Multi-Line Controls -->
+                    <!-- Multi-Line Controls (RESTORED) -->
                     <div class="col-span-2 bg-slate-800/50 p-2 rounded border border-slate-600">
                         <div class="flex justify-between text-[10px] text-slate-300 mb-2">
                             <span>Lines: <span id="val-lineCount" class="text-yellow-500">1</span></span>
@@ -270,30 +259,22 @@
                             <input type="range" id="lineSep" min="2" max="50" value="10" oninput="updateVal('lineSep', this.value); redraw();" class="flex-1">
                         </div>
                     </div>
-                    
-                    <!-- New Endings Control -->
-                    <div class="col-span-2 bg-slate-800/50 p-2 rounded border border-slate-600">
-                         <div class="flex justify-between text-[10px] text-slate-300 mb-1"><span>Line Endings</span></div>
-                         <select id="borderCap" onchange="updateTempLayer('cap', this.value)" class="w-full bg-slate-700 border border-slate-500 rounded px-2 py-1 text-xs text-slate-300 outline-none">
-                             <option value="butt">Flat / None</option>
-                             <option value="round">Round</option>
-                             <option value="point">Point (Spear)</option>
-                             <option value="arrow">Arrow</option>
-                             <option value="diamond">Diamond</option>
-                         </select>
-                    </div>
 
-                    <div><div class="flex justify-between text-[10px] text-slate-300"><span>Size / Amp</span><span id="val-size">2px</span></div><input type="range" id="size" min="1" max="40" value="2" oninput="updateVal('size', this.value); redraw();"></div>
-                    <div><div class="flex justify-between text-[10px] text-slate-300"><span>Gap / Freq</span><span id="val-spacing">10px</span></div><input type="range" id="spacing" min="5" max="100" value="15" oninput="updateVal('spacing', this.value); redraw();"></div>
+                    <div><div class="flex justify-between text-[10px] text-slate-300"><span>Size</span><span id="val-size">2px</span></div><input type="range" id="size" min="1" max="40" value="2" oninput="updateVal('size', this.value); redraw();"></div>
+                    <div><div class="flex justify-between text-[10px] text-slate-300"><span>Gap</span><span id="val-spacing">10px</span></div><input type="range" id="spacing" min="5" max="100" value="15" oninput="updateVal('spacing', this.value); redraw();"></div>
                     <div class="col-span-2"><div class="flex justify-between text-[10px] text-slate-300"><span>Corner Radius</span><span id="val-radius">0px</span></div><input type="range" id="radius" min="0" max="100" value="0" oninput="updateVal('radius', this.value); redraw();"></div>
                 </div>
                 
                 <!-- NEW SVG MINI-MAP -->
                 <div class="mb-4" id="segmentMapContainer">
                     <div class="flex justify-between items-end mb-1"><label class="text-[10px] text-slate-400 uppercase font-bold">Segments</label><button id="btn-grid-reset" onclick="resetGrid()" class="text-[10px] text-yellow-600 hover:text-yellow-500">Reset</button></div>
-                    <div class="bg-slate-800 border border-slate-600 p-2 rounded flex justify-center"><svg id="segmentMap" width="160" height="120" viewBox="0 0 160 120"></svg></div>
+                    <!-- Replaced grid buttons with SVG -->
+                    <div class="bg-slate-800 border border-slate-600 p-2 rounded flex justify-center">
+                         <svg id="segmentMap" width="160" height="120" viewBox="0 0 160 120"></svg>
+                    </div>
                     <p class="text-[9px] text-slate-500 mt-1 text-center italic">Click segments to toggle</p>
                 </div>
+                
                 <button id="btn-add-layer" onclick="addLayer()" class="w-full py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold rounded border border-slate-500"><i class="fa-solid fa-plus mr-1"></i> Add Layer</button>
                 <div id="layerList" class="mt-3 space-y-1 max-h-24 overflow-y-auto text-xs"></div>
                 <button id="btn-clear-layers" onclick="clearLayers()" class="w-full mt-2 text-[10px] text-red-400 hover:text-red-300">Clear All</button>
@@ -340,7 +321,8 @@
         const mapSvg = document.getElementById('segmentMap');
         
         // Custom Stamp Cache
-        let customStamps = {}; let customStampCount = 0;
+        let customStamps = {};
+        let customStampCount = 0;
 
         let appState = { shape: 'rect-portrait', layers: [], stamps: [] };
         let currentMaterial = 'gold', currentBrightness = 0, currentFloralColor = 'material'; 
@@ -348,12 +330,11 @@
         let stampConfig = { active: 'leaf-pro', rot: 0, size: 80, flipH: false, flipV: false };
         let history = [], historyIndex = -1;
         let mouseX = 0, mouseY = 0;
-        
-        // Pending Border State
         let currentPattern = 'solid';
+        
+        // 4x4 Logic Grid (Maintained)
         let gridState = [[true,true,true,true],[true,false,false,true],[true,false,false,true],[true,true,true,true]];
         let tempLineCount = 1;
-        let currentCap = 'butt'; // Default cap
         
         const MATERIALS = {
             'gold': ['#DBAC34', '#F9E496', '#C6930A', '#F9E496', '#A8741A'],
@@ -363,33 +344,143 @@
             'steel': ['#434343', '#9a9a9a', '#2b2b2b', '#b3b3b3', '#000000']
         };
         
-        const FLORAL_COLORS = { 'red': { dark: '#550000', light: '#ff4d4d' }, 'pink': { dark: '#880044', light: '#ffccdd' }, 'white': { dark: '#888888', light: '#ffffff' }, 'purple': { dark: '#330044', light: '#cc66ff' }, 'blue': { dark: '#001144', light: '#66aaff' } };
+        const FLORAL_COLORS = {
+            'red': { dark: '#550000', light: '#ff4d4d' }, 'pink': { dark: '#880044', light: '#ffccdd' }, 'white': { dark: '#888888', light: '#ffffff' }, 'purple': { dark: '#330044', light: '#cc66ff' }, 'blue': { dark: '#001144', light: '#66aaff' }
+        };
+
+        // Procedural Leaf Helper
+        function generateProceduralLeafPath(ctx, type, width, length) {
+            ctx.beginPath();
+            const steps = 100;
+            // Draw right side then left side
+            // Right side: t from 0 to PI
+            for(let i=0; i<=steps; i++) {
+                const t = (i/steps) * Math.PI;
+                const x = getLeafX(t, type, width);
+                const y = -length/2 + (t/Math.PI) * length; // top to bottom
+                if(i===0) ctx.moveTo(0, -length/2);
+                else ctx.lineTo(x, y);
+            }
+            // Left side: t from PI to 0
+            for(let i=steps; i>=0; i--) {
+                const t = (i/steps) * Math.PI;
+                const x = -getLeafX(t, type, width);
+                const y = -length/2 + (t/Math.PI) * length;
+                ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+        }
+
+        function getLeafX(t, type, width) {
+            // t is 0 (tip) to PI (base)
+            // We map 0..PI to shape
+            // Standard leaf: sine wave
+            // t normalized 0..1 for math convenience
+            const tn = t / Math.PI; 
+            let shape = Math.sin(t); // Base shape
+            
+            if (type === 'oak') {
+                // Lobes: add sine waves to width
+                shape *= (0.8 + 0.2 * Math.sin(t * 7));
+                // Oak roughly wider near top
+                shape *= (1 - 0.2*tn); 
+            } else if (type === 'maple') {
+                // Sharp lobes
+                // Maple is wide, multi-pointed
+                // approximated by additive sines
+                shape = Math.sin(t) * (1 + 0.4 * Math.sin(t * 5));
+                if(tn > 0.8) shape *= 0.5; // narrow stem
+            } else if (type === 'fern') {
+                // Many small lobes
+                // Use saw-tooth or high freq sine
+                shape = Math.sin(t) * (0.5 + 0.5 * Math.abs(Math.sin(t * 15)));
+                // Fern is tapered
+                shape *= (1 - tn*0.3);
+            } else if (type === 'ivy') {
+                // Broad base, sharp tip (heart/triangular)
+                // t=0 tip. t=1 base.
+                // Heart shape approximation
+                if (tn < 0.5) shape = tn * 2; // Linear tip
+                else shape = Math.sin(t) + 0.2; // Bulge
+            }
+            
+            // Add randomness ("Jaggedness")
+            // Use pseudo-random based on t to be deterministic per draw call if needed, 
+            // but here we want slight noise. 
+            // The user requested "random variation". We can add a small noise factor.
+            const noise = (Math.random() - 0.5) * 0.1;
+            
+            return (width/2) * (shape + noise);
+        }
+
+        function drawProceduralVeins(ctx, type, width, length, style) {
+            const steps = (type === 'fern') ? 12 : 6;
+            ctx.beginPath();
+            ctx.moveTo(0, -length/2); ctx.lineTo(0, length/2); // Spine
+            
+            for(let i=1; i<steps; i++) {
+                const y = -length/2 + (length/(steps+1))*i;
+                // Angle depends on type
+                const angle = (type === 'maple') ? -0.5 : -0.8; // radians up
+                const len = width * 0.4 * (1 - Math.abs(i - steps/2)/(steps/2));
+                
+                // Right vein
+                ctx.moveTo(0, y); 
+                ctx.lineTo(Math.cos(angle)*len, y + Math.sin(angle)*len);
+                
+                // Left vein
+                ctx.moveTo(0, y); 
+                ctx.lineTo(-Math.cos(angle)*len, y + Math.sin(angle)*len);
+            }
+            ctx.stroke();
+        }
+
         const ASSETS = {
+            // ... (Previous Assets) ...
             'corner-classic': (ctx, s, style) => { ctx.beginPath(); ctx.moveTo(0,0); ctx.bezierCurveTo(s*0.5,0,s,s*0.2,s,s); ctx.bezierCurveTo(s*0.5,s*0.8,s*0.2,s*0.5,0,s*0.5); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(s*0.1,s*0.1); ctx.quadraticCurveTo(s*0.6,s*0.1,s*0.8,s*0.8); ctx.stroke(); },
-            // ... [Previous Assets Omitted for brevity, assume present] ...
-            // Simplified here for length constraints, assume all floral/leaf/rose code exists here exactly as before
+            'corner-ornate': (ctx, s, style) => { ctx.beginPath(); ctx.moveTo(0,0); ctx.quadraticCurveTo(s,0,s,s*0.5); ctx.quadraticCurveTo(s*0.8,s*0.8,s*0.5,s); ctx.quadraticCurveTo(0,s,0,0); ctx.fill(); ctx.beginPath(); ctx.arc(s*0.3,s*0.3,s*0.1,0,Math.PI*2); ctx.stroke(); },
+            'corner-shell': (ctx, s, style) => { ctx.beginPath(); ctx.moveTo(0,0); for(let i=0;i<=5;i++){const a=(Math.PI/2)*(i/5);ctx.lineTo(Math.cos(a)*s,Math.sin(a)*s);} ctx.closePath(); ctx.fill(); for(let i=1;i<5;i++){ctx.beginPath(); ctx.moveTo(0,0); const a=(Math.PI/2)*(i/5); ctx.lineTo(Math.cos(a)*s,Math.sin(a)*s); ctx.stroke(); } },
+            'side-center': (ctx, s, style) => { ctx.beginPath(); ctx.moveTo(-s/2,0); ctx.quadraticCurveTo(-s/4,-s/4,0,-s/2); ctx.quadraticCurveTo(s/4,-s/4,s/2,0); ctx.quadraticCurveTo(s/4,s/4,0,s/2); ctx.quadraticCurveTo(-s/4,s/4,-s/2,0); ctx.fill(); },
+            'side-vine': (ctx, s, style) => { ctx.save(); ctx.strokeStyle = style || ctx.fillStyle; ctx.beginPath(); ctx.moveTo(-s/2,0); ctx.bezierCurveTo(-s/4,-s/4,s/4,s/4,s/2,0); ctx.stroke(); ctx.restore(); ctx.beginPath(); ctx.arc(-s/4,-s/8,s/8,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(s/4,s/8,s/8,0,Math.PI*2); ctx.fill(); },
+            'top-crown': (ctx, s, style) => { ctx.beginPath(); ctx.moveTo(-s/2,s/2); ctx.lineTo(s/2,s/2); ctx.lineTo(s/2,0); ctx.lineTo(s/4,s/4); ctx.lineTo(0,-s/2); ctx.lineTo(-s/4,s/4); ctx.lineTo(-s/2,0); ctx.closePath(); ctx.fill(); },
+            'rose-real': (ctx, s, style, opts) => { const r=s/2; const pCount=parseInt(opts.count)||8; const getPetalFill=(c,ir,o=0)=>{const g=c.createRadialGradient(o,o,0,0,0,ir);g.addColorStop(0,opts.petalIn);g.addColorStop(1,opts.petalOut);return g;}; for(let i=pCount-1;i>=0;i--){ctx.beginPath(); const a=i*(Math.PI*2/(pCount/2.5)); const sc=0.4+(i/pCount)*0.6; ctx.save(); ctx.rotate(a); ctx.translate(0,r*sc*0.4); if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=4;ctx.shadowOffsetX=parseInt(opts.shadowOff);ctx.shadowOffsetY=parseInt(opts.shadowOff);} ctx.fillStyle=getPetalFill(ctx,r*sc,r*0.1); ctx.moveTo(0,0); ctx.bezierCurveTo(r*sc,-r*sc*0.5,r*sc,r*sc*0.5,0,r*sc); ctx.bezierCurveTo(-r*sc,r*sc*0.5,-r*sc,-r*sc*0.5,0,0); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=0.5; ctx.stroke(); ctx.restore();} ctx.fillStyle=getPetalFill(ctx,r*0.3); ctx.beginPath(); ctx.arc(0,0,r*0.2,0,Math.PI*2); ctx.fill(); },
+            'rose-bud': (ctx, s, style, opts) => { const h=s; const w=s*0.6; const g=ctx.createRadialGradient(-w*0.2,0,0,0,0,h); g.addColorStop(0,opts.petalOut); g.addColorStop(1,opts.petalIn); ctx.fillStyle=g; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=5;ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} ctx.beginPath(); ctx.moveTo(0,h/2); ctx.bezierCurveTo(w,h/2,w,-h/2,0,-h/2); ctx.bezierCurveTo(-w,-h/2,-w,h/2,0,h/2); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.petalIn; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,h/2); ctx.quadraticCurveTo(w*0.5,0,0,-h/4); ctx.stroke(); ctx.strokeStyle=opts.vein; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(0,h/2); ctx.lineTo(0,h/2+s*0.2); ctx.stroke(); },
+            'leaf-cluster': (ctx, s, style, opts) => { const dl=(ox,oy,r,sc)=>{ctx.save(); ctx.translate(ox,oy); ctx.rotate(r); ctx.scale(sc,sc); ctx.beginPath(); ctx.moveTo(0,0); ctx.bezierCurveTo(s*0.5,-s*0.2,s*0.8,-s*0.1,s,0); ctx.bezierCurveTo(s*0.8,s*0.1,s*0.5,s*0.2,0,0); ctx.fillStyle=opts.leaf; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=3;ctx.shadowOffsetX=opts.shadowOff;} ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.vein; ctx.lineWidth=parseFloat(opts.veinW); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(s*0.9,0); ctx.stroke(); for(let j=1;j<4;j++){ctx.beginPath();ctx.moveTo(s*0.2*j,0);ctx.lineTo(s*0.25*j+s*0.1,-s*0.1);ctx.stroke();ctx.beginPath();ctx.moveTo(s*0.2*j,0);ctx.lineTo(s*0.25*j+s*0.1,s*0.1);ctx.stroke();} ctx.restore();}; dl(0,0,-0.5,0.8); dl(0,0,0.5,0.8); dl(0,0,0,1); },
+            'leaf-fern': (ctx, s, style, opts) => { ctx.beginPath(); ctx.moveTo(0,s/2); ctx.quadraticCurveTo(s*0.2,0,0,-s/2); for(let i=0;i<parseInt(opts.count);i++){const y=(s/2)-(i*(s/parseInt(opts.count))); const w=(s/3)*Math.sin((i/parseInt(opts.count))*Math.PI); ctx.moveTo(0,y); ctx.quadraticCurveTo(w,y-5,0,y-10); ctx.moveTo(0,y); ctx.quadraticCurveTo(-w,y-5,0,y-10);} ctx.fillStyle=opts.leaf; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=2;} ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.vein; ctx.lineWidth=parseFloat(opts.veinW); ctx.beginPath(); ctx.moveTo(0,s/2); ctx.quadraticCurveTo(s*0.2,0,0,-s/2); ctx.stroke(); },
+            'flower-lily': (ctx, s, style, opts) => { const r = s/2; const getFill = () => { const g=ctx.createRadialGradient(0,0,0,0,0,r); g.addColorStop(0,opts.petalIn); g.addColorStop(1,opts.petalOut); return g; }; ctx.fillStyle = getFill(); for(let i=0; i<6; i++){ ctx.save(); ctx.rotate((i*Math.PI)/3); if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=3;ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} ctx.beginPath(); ctx.moveTo(0,0); ctx.bezierCurveTo(r*0.3, r*0.5, r*0.1, r*0.8, 0, r); ctx.bezierCurveTo(-r*0.1, r*0.8, -r*0.3, r*0.5, 0, 0); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.vein; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(0, r*0.6); ctx.stroke(); ctx.restore(); } },
+            'flower-daisy': (ctx, s, style, opts) => { const r = s/2; const cr = r*0.3; const petals = 12; for(let i=0; i<petals; i++){ ctx.save(); ctx.rotate((i*Math.PI*2)/petals); ctx.fillStyle = opts.petalOut; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=2;ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} ctx.beginPath(); ctx.ellipse(0, r*0.6, r*0.15, r*0.4, 0, 0, Math.PI*2); ctx.fill(); ctx.restore(); } if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=2;ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} const g = ctx.createRadialGradient(0,0,0,0,0,cr); g.addColorStop(0,opts.vein); g.addColorStop(1,opts.petalIn); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0,0,cr,0,Math.PI*2); ctx.fill(); },
+            'flower-tulip': (ctx, s, style, opts) => { const h = s; const w = s*0.6; const g = ctx.createLinearGradient(0, h/2, 0, -h/2); g.addColorStop(0, opts.petalIn); g.addColorStop(1, opts.petalOut); ctx.fillStyle = g; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=4;ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} ctx.beginPath(); ctx.moveTo(0, h/2); ctx.bezierCurveTo(w, h/2, w, -h/4, 0, -h/2); ctx.bezierCurveTo(-w, -h/4, -w, h/2, 0, h/2); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.vein; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0, h/2); ctx.quadraticCurveTo(w*0.3, 0, 0, -h/2); ctx.stroke(); },
+            'flower-lotus': (ctx, s, style, opts) => { const r = s/2; const getFill = (sc) => { const g=ctx.createRadialGradient(0,r*sc,0,0,0,r*sc); g.addColorStop(0,opts.petalIn); g.addColorStop(1,opts.petalOut); return g; }; for(let i=0; i<5; i++){ ctx.save(); ctx.rotate(((i*Math.PI*2)/5)); if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=3;ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} ctx.fillStyle = getFill(1); ctx.beginPath(); ctx.moveTo(0,0); ctx.quadraticCurveTo(r*0.5, r*0.5, 0, r); ctx.quadraticCurveTo(-r*0.5, r*0.5, 0, 0); ctx.fill(); ctx.restore(); } for(let i=0; i<5; i++){ ctx.save(); ctx.rotate(((i*Math.PI*2)/5) + Math.PI/5); if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=3;ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} ctx.fillStyle = getFill(0.7); ctx.beginPath(); ctx.moveTo(0,0); ctx.quadraticCurveTo(r*0.3, r*0.4, 0, r*0.7); ctx.quadraticCurveTo(-r*0.3, r*0.4, 0, 0); ctx.fill(); ctx.restore(); } },
+            'flower-hibiscus': (ctx, s, style, opts) => { const r = s/2; const g = ctx.createRadialGradient(0,0,0,0,0,r); g.addColorStop(0,opts.petalIn); g.addColorStop(1,opts.petalOut); ctx.fillStyle = g; for(let i=0; i<5; i++){ ctx.save(); ctx.rotate((i*Math.PI*2)/5); if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=4;ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} ctx.beginPath(); ctx.moveTo(0,0); ctx.bezierCurveTo(r, -r*0.5, r, r*0.5, 0, 0); ctx.fill(); ctx.restore(); } ctx.shadowColor='transparent'; ctx.strokeStyle='yellow'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(r*0.8, 0); ctx.stroke(); ctx.fillStyle='red'; ctx.beginPath(); ctx.arc(r*0.8, 0, 3, 0, Math.PI*2); ctx.fill(); },
+            'leaf-maple': (ctx, s, style, opts) => { const r = s/2; ctx.fillStyle = opts.leaf; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=3;} ctx.beginPath(); for(let i=0; i<5; i++){ const ang = (Math.PI/4) * (i-2) - Math.PI/2; const len = (i%2===0) ? r : r*0.6; const x = Math.cos(ang)*len; const y = Math.sin(ang)*len; ctx.lineTo(x, y); ctx.lineTo(x*0.5, y*0.5); } ctx.lineTo(0, r*0.5); ctx.closePath(); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.vein; ctx.lineWidth=parseFloat(opts.veinW); ctx.stroke(); },
+            'leaf-oak': (ctx, s, style, opts) => { const h = s; const w = s*0.4; ctx.fillStyle = opts.leaf; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=3;} ctx.beginPath(); ctx.moveTo(0, h/2); for(let i=0; i<=4; i++) { const y = h/2 - (i*(h/4)); const x = (i%2===0) ? w : w*0.5; ctx.quadraticCurveTo(x, y+(h/8), (i===4?0:w*0.2), y); } for(let i=0; i<=4; i++) { ctx.quadraticCurveTo(-w, -h/2+(i*(h/4)), 0, h/2); } ctx.fill(); },
+            'leaf-palm': (ctx, s, style, opts) => { const r = s/2; ctx.fillStyle = opts.leaf; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=3;} ctx.beginPath(); ctx.moveTo(0, r); const segs = 7; for(let i=0; i<segs; i++){ const ang = -Math.PI + (i*Math.PI)/(segs-1); ctx.lineTo(Math.cos(ang)*r, Math.sin(ang)*r); ctx.lineTo(0, r*0.8); } ctx.fill(); },
+            'leaf-ivy': (ctx, s, style, opts) => { const r = s/2; ctx.fillStyle = opts.leaf; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=3;} ctx.beginPath(); ctx.moveTo(0, r*0.5); ctx.lineTo(r*0.8, r*0.2); ctx.lineTo(r*0.5, -r*0.2); ctx.lineTo(0, -r); ctx.lineTo(-r*0.5, -r*0.2); ctx.lineTo(-r*0.8, r*0.2); ctx.closePath(); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.vein; ctx.stroke(); },
+            'leaf-willow': (ctx, s, style, opts) => { const h = s; const w = s*0.15; ctx.fillStyle = opts.leaf; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=2;} ctx.beginPath(); ctx.moveTo(0, h/2); ctx.quadraticCurveTo(w, 0, 0, -h/2); ctx.quadraticCurveTo(-w, 0, 0, h/2); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.vein; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0, h/2); ctx.lineTo(0, -h/2); ctx.stroke(); },
+            
+            // --- PRO PROCEDURAL LEAF (UPDATED) ---
             'leaf-pro': (ctx, s, style, opts) => {
-                const type = opts.leafShape || 'simple'; const length = s * 0.8; const width = s * 0.5;
+                const type = opts.leafShape || 'simple';
+                const length = s * 0.8; 
+                const width = s * 0.5;
+                
+                // Draw Shape
                 ctx.fillStyle = opts.leaf;
                 if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=4;ctx.shadowOffsetX=opts.shadowOff;}
-                generateProceduralLeafPath(ctx, type, width, length); ctx.fill();
-                ctx.shadowColor='transparent'; ctx.strokeStyle = opts.vein; ctx.lineWidth = parseFloat(opts.veinW); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+                
+                generateProceduralLeafPath(ctx, type, width, length);
+                ctx.fill();
+                
+                // Draw Veins
+                ctx.shadowColor='transparent';
+                ctx.strokeStyle = opts.vein;
+                ctx.lineWidth = parseFloat(opts.veinW);
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
                 drawProceduralVeins(ctx, type, width, length, style);
             }
         };
-        // [Previous Floral/Rose/Leaf Assets from History are implicitly here. I will include full set in final render if needed, but for fix focus: Leaf Pro is key]
-        // Re-injecting key missing assets for context if user needs them functional immediately:
-        Object.assign(ASSETS, {
-            'flower-lily': (ctx, s, style, opts) => { const r = s/2; ctx.fillStyle = getPetalFill(ctx, r, opts); for(let i=0;i<6;i++){ ctx.save(); ctx.rotate(i*Math.PI/3); ctx.beginPath(); ctx.moveTo(0,0); ctx.bezierCurveTo(r*0.3,r*0.5,r*0.1,r*0.8,0,r); ctx.bezierCurveTo(-r*0.1,r*0.8,-r*0.3,r*0.5,0,0); ctx.fill(); ctx.restore(); } },
-            'rose-real': (ctx, s, style, opts) => { const r=s/2; const pCount=parseInt(opts.count)||8; for(let i=pCount-1;i>=0;i--){ctx.beginPath(); const a=i*(Math.PI*2/(pCount/2.5)); const sc=0.4+(i/pCount)*0.6; ctx.save(); ctx.rotate(a); ctx.translate(0,r*sc*0.4); ctx.fillStyle=getPetalFill(ctx, r*sc, opts); ctx.moveTo(0,0); ctx.bezierCurveTo(r*sc,-r*sc*0.5,r*sc,r*sc*0.5,0,r*sc); ctx.bezierCurveTo(-r*sc,r*sc*0.5,-r*sc,-r*sc*0.5,0,0); ctx.fill(); ctx.restore();} }
-        });
-        function getPetalFill(c,ir,opts){const g=c.createRadialGradient(0,0,0,0,0,ir);g.addColorStop(0,opts.petalIn);g.addColorStop(1,opts.petalOut);return g;}
 
-        // Procedural Helpers
-        function generateProceduralLeafPath(ctx, type, width, length) { ctx.beginPath(); const steps = 50; for(let i=0; i<=steps; i++) { const t = (i/steps) * Math.PI; const x = getLeafX(t, type, width); const y = -length/2 + (t/Math.PI) * length; if(i===0) ctx.moveTo(0, -length/2); else ctx.lineTo(x, y); } for(let i=steps; i>=0; i--) { const t = (i/steps) * Math.PI; const x = -getLeafX(t, type, width); const y = -length/2 + (t/Math.PI) * length; ctx.lineTo(x, y); } ctx.closePath(); }
-        function getLeafX(t, type, width) { const tn = t / Math.PI; let shape = Math.sin(t); if (type === 'oak') shape *= (0.8 + 0.2 * Math.sin(t * 7)) * (1 - 0.2*tn); else if (type === 'maple') { shape = Math.sin(t) * (1 + 0.4 * Math.sin(t * 5)); if(tn > 0.8) shape *= 0.5; } else if (type === 'fern') shape = Math.sin(t) * (0.5 + 0.5 * Math.abs(Math.sin(t * 15))) * (1 - tn*0.3); else if (type === 'ivy') { if (tn < 0.5) shape = tn * 2; else shape = Math.sin(t) + 0.2; } const noise = (Math.random() - 0.5) * 0.1; return (width/2) * (shape + noise); }
-        function drawProceduralVeins(ctx, type, width, length, style) { const steps = (type === 'fern') ? 12 : 6; ctx.beginPath(); ctx.moveTo(0, -length/2); ctx.lineTo(0, length/2); for(let i=1; i<steps; i++) { const y = -length/2 + (length/(steps+1))*i; const angle = (type === 'maple') ? -0.5 : -0.8; const len = width * 0.4 * (1 - Math.abs(i - steps/2)/(steps/2)); ctx.moveTo(0, y); ctx.lineTo(Math.cos(angle)*len, y + Math.sin(angle)*len); ctx.moveTo(0, y); ctx.lineTo(-Math.cos(angle)*len, y + Math.sin(angle)*len); } ctx.stroke(); }
-        
         function handleStampUpload(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
@@ -398,12 +489,28 @@
                     img.onload = function() {
                         customStampCount++;
                         const id = 'custom-stamp-' + customStampCount;
+                        
                         ASSETS[id] = (ctx, s, style, opts) => {
-                            if(opts && opts.shadow) { ctx.shadowColor = opts.shadowCol || 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 4; ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2; } else { ctx.shadowColor = 'transparent'; }
-                            ctx.drawImage(img, -s/2, -s/2, s, s); ctx.shadowColor = 'transparent';
+                            if(opts && opts.shadow) {
+                                ctx.shadowColor = opts.shadowCol || 'rgba(0,0,0,0.5)';
+                                ctx.shadowBlur = 4;
+                                ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2;
+                            } else {
+                                ctx.shadowColor = 'transparent';
+                            }
+                            ctx.drawImage(img, -s/2, -s/2, s, s);
+                            ctx.shadowColor = 'transparent';
                         };
-                        const btn = document.createElement('button'); btn.onclick = () => selectStamp(id); btn.id = 'btn-' + id; btn.className = "tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"; btn.innerHTML = `<div class="w-4 h-4 rounded bg-cover bg-center" style="background-image: url(${e.target.result})"></div> Custom ${customStampCount}`;
-                        const list = document.getElementById('stampList'); list.insertBefore(btn, list.children[1]); selectStamp(id);
+                        
+                        const btn = document.createElement('button');
+                        btn.onclick = () => selectStamp(id);
+                        btn.id = 'btn-' + id;
+                        btn.className = "tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent";
+                        btn.innerHTML = `<div class="w-4 h-4 rounded bg-cover bg-center" style="background-image: url(${e.target.result})"></div> Custom ${customStampCount}`;
+                        
+                        const list = document.getElementById('stampList');
+                        list.insertBefore(btn, list.children[1]);
+                        selectStamp(id);
                     }
                     img.src = e.target.result;
                 }
@@ -411,15 +518,25 @@
             }
         }
 
-        function init() { window.addEventListener('resize', () => resizeCanvas()); setMaterial('gold'); appState.layers.push({ pattern: 'solid', inset: 20, size: 4, spacing: 0, rot: 0, radius: 0, lines: 1, lineSep: 10, cap: 'butt', material: 'gold', brightness: 0, grid: JSON.parse(JSON.stringify(gridState)) }); resizeCanvas(); renderMiniMap(); saveState(); }
+        function init() {
+            window.addEventListener('resize', () => resizeCanvas());
+            setMaterial('gold'); 
+            appState.layers.push({ pattern: 'solid', inset: 20, size: 4, spacing: 0, rot: 0, radius: 0, lines: 1, lineSep: 10, material: 'gold', brightness: 0, grid: JSON.parse(JSON.stringify(gridState)) });
+            resizeCanvas();
+            selectStamp('leaf-pro'); // Select new pro leaf by default to show it off
+            renderMiniMap();
+            saveState();
+        }
+
         function saveState() { const s = JSON.stringify(appState); if(historyIndex < history.length-1) history = history.slice(0, historyIndex+1); history.push(s); historyIndex++; if(history.length>20) { history.shift(); historyIndex--; } }
         function undo() { if(historyIndex>0){ historyIndex--; loadState(history[historyIndex]); }}
         function redo() { if(historyIndex<history.length-1){ historyIndex++; loadState(history[historyIndex]); }}
         function loadState(json) { appState = JSON.parse(json); document.getElementById('canvasShape').value=appState.shape; resizeCanvas(); renderLayerList(); updateMaterialUI(); }
+
         function resizeCanvas() { const containerH = window.innerHeight - 96; let w, h; const s = appState.shape; if(s === 'rect-portrait') { h=containerH; w=h*0.707; } else if(s === 'rect-landscape') { w=containerH; h=w*0.707; } else if(s === 'square') { h=containerH; w=containerH; } else if(s === 'circle') { h=containerH; w=containerH; } else if(s === 'oval') { h=containerH; w=h*0.7; } canvas.height = h; canvas.width = w; const isRound = (s === 'circle' || s === 'oval'); canvas.style.borderRadius = isRound ? '50%' : '0'; redraw(); renderMiniMap(); }
+
         function updateVal(id, val) { const el = document.getElementById(`val-${id}`); if(el) el.innerText = val + (id==='rot'?'°':'px'); }
-        function setPattern(type) { currentPattern = type; document.querySelectorAll('.pattern-btn').forEach(b => b.classList.remove('active')); document.getElementById('pat-' + type).classList.add('active'); redraw(); }
-        function updateTempLayer(k, v) { if(k==='cap') currentCap = v; redraw(); }
+        function setPattern(type) { currentPattern = type; document.querySelectorAll('.pattern-btn').forEach(b => b.classList.remove('active')); document.getElementById('pat-' + type).classList.add('active'); }
         
         // --- SVG MINI-MAP LOGIC ---
         function renderMiniMap() {
@@ -432,7 +549,7 @@
             const createPath = (d, r, c) => {
                 const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
                 p.setAttribute("d", d); p.setAttribute("class", `seg-path ${gridState[r][c] ? 'active' : ''}`); p.setAttribute("id", `seg-${r}-${c}`);
-                p.onclick = () => { gridState[r][c] = !gridState[r][c]; renderMiniMap(); redraw(); };
+                p.onclick = () => { gridState[r][c] = !gridState[r][c]; renderMiniMap(); redraw(); }; // Added redraw() here!
                 mapSvg.appendChild(p);
             };
             if (isRound) {
@@ -455,41 +572,39 @@
                 for(let r=1; r<3; r++) createPath(`M ${sx+rw-cellW} ${sy+r*cellH} h ${cellW} v ${cellH} h ${-cellW} Z`, r, 3);
             }
         }
+
         function resetGrid() { for(let r=0; r<4; r++) for(let c=0; c<4; c++) { if(r>0 && r<3 && c>0 && c<3) continue; gridState[r][c] = true; } renderMiniMap(); redraw(); }
-        function updateLineCount(n) { tempLineCount = n; document.querySelectorAll('.line-btn').forEach(b=>b.classList.remove('active', 'bg-slate-600')); document.getElementById('btn-l'+n).classList.add('active', 'bg-slate-600'); document.getElementById('val-lineCount').innerText = n; redraw(); }
+        function updateLineCount(n) { tempLineCount = n; document.querySelectorAll('.line-btn').forEach(b=>b.classList.remove('active', 'bg-slate-600')); document.getElementById('btn-l'+n).classList.add('active', 'bg-slate-600'); document.getElementById('val-lineCount').innerText = n; }
         
-        function setMaterial(mat) { currentMaterial = mat; updateMaterialUI(); if (document.getElementById('applyGlobal').checked) { appState.layers.forEach(l => l.material = mat); appState.stamps.forEach(s => s.material = mat); saveState(); redraw(); } renderPreview(); }
-        function setStampColor(color) { currentFloralColor = color; document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active')); if(color !== 'material') { floralState.petalIn = FLORAL_COLORS[color].dark; floralState.petalOut = FLORAL_COLORS[color].light; document.getElementById('col-petal-in').value = floralState.petalIn; document.getElementById('col-petal-out').value = floralState.petalOut; } renderPreview(); }
+        function setMaterial(mat) { currentMaterial = mat; const elIn = document.getElementById('col-petal-in'); if(elIn) elIn.value = floralState.petalIn; const elOut = document.getElementById('col-petal-out'); if(elOut) elOut.value = floralState.petalOut; const elLeaf = document.getElementById('col-leaf'); if(elLeaf) elLeaf.value = floralState.leaf; const elVein = document.getElementById('col-vein'); if(elVein) elVein.value = floralState.vein; updateMaterialUI(); if (document.getElementById('applyGlobal') && document.getElementById('applyGlobal').checked) { appState.layers.forEach(l => l.material = mat); appState.stamps.forEach(s => s.material = mat); saveState(); redraw(); } renderPreview(); }
+        function setStampColor(color) { currentFloralColor = color; document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active')); if(color==='material') document.getElementById('btn-color-material').classList.add('active'); else if(color==='red') document.getElementById('btn-color-red').classList.add('active'); else if(color==='pink') document.getElementById('btn-color-pink').classList.add('active'); else if(color==='white') document.getElementById('btn-color-white').classList.add('active'); else if(color==='purple') document.getElementById('btn-color-purple').classList.add('active'); if (color !== 'material') { floralState.petalIn = FLORAL_COLORS[color].dark; floralState.petalOut = FLORAL_COLORS[color].light; document.getElementById('col-petal-in').value = floralState.petalIn; document.getElementById('col-petal-out').value = floralState.petalOut; } renderPreview(); }
         function updateBrightness(val) { currentBrightness = parseInt(val); document.getElementById('val-bright').innerText = val + '%'; if (document.getElementById('applyGlobal').checked) { appState.layers.forEach(l => l.brightness = currentBrightness); appState.stamps.forEach(s => s.brightness = currentBrightness); saveState(); redraw(); } renderPreview(); }
-        function updateFloralConfig(key, val) { if(key==='shadow') floralState[key] = val; else floralState[key] = val; if(key === 'count') document.getElementById('val-pCount').innerText = val; if(key === 'veinW') document.getElementById('val-vein').innerText = val + 'px'; renderPreview(); }
+        function updateFloralConfig(key, val) { if(key==='shadow') floralState[key] = val; else floralState[key] = val; if(key === 'count') document.getElementById('val-pCount').innerText = val; if(key === 'veinW') document.getElementById('val-vein').innerText = val + 'px'; 
+            // Toggle Visibility of Leaf Shape Control
+            const shapeCtrl = document.getElementById('leafShapeControl');
+            if(stampConfig.active === 'leaf-pro') shapeCtrl.classList.remove('hidden'); else shapeCtrl.classList.add('hidden');
+            renderPreview(); 
+        }
         function updateMaterialUI() { const btns = document.querySelectorAll('.material-btn'); btns.forEach(b=>b.classList.remove('active')); const m = currentMaterial; if(m==='gold')document.getElementById('btn-mat-gold').classList.add('active'); if(m==='silver')document.getElementById('btn-mat-silver').classList.add('active'); if(m==='rose')document.getElementById('btn-mat-rose').classList.add('active'); if(m==='copper')document.getElementById('btn-mat-copper').classList.add('active'); if(m==='steel')document.getElementById('btn-mat-steel').classList.add('active'); }
         function changeCanvasShape(v) { appState.shape = v; resizeCanvas(); saveState(); }
-        
-        // Updated: Leaf Presets call updateFloralConfig to set shape and preview
-        function selectStampPro(shape) {
-            stampConfig.active = 'leaf-pro';
-            floralState.leafShape = shape; // Set shape directly
-            // Update Dropdown UI to match
-            document.getElementById('proLeafShape').value = shape;
-            document.getElementById('leafShapeControl').classList.remove('hidden');
-            
-            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active', 'border-yellow-500')); 
-            document.getElementById('btn-leaf-pro-'+shape).classList.add('active', 'border-yellow-500'); 
-            renderPreview();
-        }
-
-        function selectStamp(name) { 
-            stampConfig.active = name; 
-            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active', 'border-yellow-500')); 
-            const b=document.getElementById('btn-'+name); if(b)b.classList.add('active', 'border-yellow-500'); 
+        function selectStamp(name) { stampConfig.active = name; document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active', 'border-yellow-500')); const b=document.getElementById('btn-'+name); if(b)b.classList.add('active', 'border-yellow-500'); 
+            // Show/Hide Leaf Shape Control based on selection
             const shapeCtrl = document.getElementById('leafShapeControl');
             if(name === 'leaf-pro') shapeCtrl.classList.remove('hidden'); else shapeCtrl.classList.add('hidden');
             renderPreview(); 
         }
         function updateStampConfig(k, v) { stampConfig[k] = parseInt(v); if(k==='rot')document.getElementById('stampRotVal').innerText=v+'°'; if(k==='size')document.getElementById('stampSizeVal').innerText=v+'px'; renderPreview(); }
         function toggleFlip(axis) { if(axis==='h')stampConfig.flipH=!stampConfig.flipH; if(axis==='v')stampConfig.flipV=!stampConfig.flipV; renderPreview(); }
-        function renderPreview() { const w = previewCanvas.width, h = previewCanvas.height; const pc = previewCtx; pc.clearRect(0,0,w,h); pc.save(); pc.translate(w/2,h/2); pc.rotate((stampConfig.rot*Math.PI)/180); pc.scale(stampConfig.flipH?-1:1, stampConfig.flipV?-1:1); const fillStyle = getMaterialGradient(pc, currentMaterial, currentBrightness, w, h); const opts = (currentFloralColor !== 'material') ? floralState : { floralColor: 'material' }; if(ASSETS[stampConfig.active]) ASSETS[stampConfig.active](pc, stampConfig.size, fillStyle, opts); pc.restore(); }
-        function addLayer() { appState.layers.push({ pattern: currentPattern, inset: parseInt(document.getElementById('inset').value), size: parseInt(document.getElementById('size').value), spacing: parseInt(document.getElementById('spacing').value), rot: 0, radius: parseInt(document.getElementById('radius').value), lines: tempLineCount, lineSep: parseInt(document.getElementById('lineSep').value), cap: currentCap, material: currentMaterial, brightness: currentBrightness, grid: JSON.parse(JSON.stringify(gridState)) }); saveState(); renderLayerList(); redraw(); }
+
+        function renderPreview() {
+            const w = previewCanvas.width, h = previewCanvas.height; const pc = previewCtx; pc.clearRect(0,0,w,h); pc.save(); pc.translate(w/2,h/2); pc.rotate((stampConfig.rot*Math.PI)/180); pc.scale(stampConfig.flipH?-1:1, stampConfig.flipV?-1:1);
+            const fillStyle = getMaterialGradient(pc, currentMaterial, currentBrightness, w, h);
+            const opts = (currentFloralColor !== 'material' || stampConfig.active.includes('flower') || stampConfig.active.includes('rose') || stampConfig.active.includes('leaf')) ? floralState : { floralColor: 'material' };
+            if(ASSETS[stampConfig.active]) ASSETS[stampConfig.active](pc, stampConfig.size, fillStyle, opts);
+            pc.restore();
+        }
+
+        function addLayer() { appState.layers.push({ pattern: currentPattern, inset: parseInt(document.getElementById('inset').value), size: parseInt(document.getElementById('size').value), spacing: parseInt(document.getElementById('spacing').value), rot: 0, radius: parseInt(document.getElementById('radius').value), lines: tempLineCount, lineSep: parseInt(document.getElementById('lineSep').value), material: currentMaterial, brightness: currentBrightness, grid: JSON.parse(JSON.stringify(gridState)) }); saveState(); renderLayerList(); redraw(); }
         function renderLayerList() { document.getElementById('layerList').innerHTML = appState.layers.map((l,i)=>`<div class="flex justify-between bg-slate-800 p-1 px-2 rounded border border-slate-700"><span>L${i+1}: ${l.pattern} (${l.lines}x)</span><button onclick="deleteLayer(${i})" class="text-red-400">x</button></div>`).join(''); }
         function deleteLayer(i) { appState.layers.splice(i,1); saveState(); renderLayerList(); redraw(); }
         function clearLayers() { appState.layers=[]; appState.stamps=[]; saveState(); renderLayerList(); redraw(); }
@@ -503,10 +618,21 @@
 
         function renderScene(targetCanvas, targetCtx, scale, showGhost) {
             const w = targetCanvas.width; const h = targetCanvas.height;
+            
+            // Transparent Check Logic
             const isTransparent = document.getElementById('transparentBg') ? document.getElementById('transparentBg').checked : false;
-            if (!isTransparent) { targetCtx.fillStyle = '#031818'; targetCtx.fillRect(0, 0, w, h); } else { targetCtx.clearRect(0,0,w,h); }
+            
+            if (!isTransparent) {
+                targetCtx.fillStyle = '#031818'; targetCtx.fillRect(0, 0, w, h);
+            } else {
+                targetCtx.clearRect(0,0,w,h); 
+            }
+
             const isRound = (appState.shape === 'circle' || appState.shape === 'oval');
-            if (isRound && !isTransparent) { targetCtx.save(); targetCtx.beginPath(); targetCtx.ellipse(w/2, h/2, w/2, h/2, 0, 0, Math.PI*2); targetCtx.clip(); targetCtx.fillStyle = '#051a1a'; targetCtx.fill(); targetCtx.restore(); }
+            
+            if (isRound && !isTransparent) { 
+                targetCtx.save(); targetCtx.beginPath(); targetCtx.ellipse(w/2, h/2, w/2, h/2, 0, 0, Math.PI*2); targetCtx.clip(); targetCtx.fillStyle = '#051a1a'; targetCtx.fill(); targetCtx.restore(); 
+            }
 
             offscreenCanvas.width = w; offscreenCanvas.height = h;
             appState.layers.forEach(l => {
@@ -525,18 +651,29 @@
                 targetCtx.shadowColor = 'rgba(0,0,0,0.5)'; targetCtx.shadowBlur = 3 * scale; targetCtx.shadowOffsetX = 1 * scale; targetCtx.shadowOffsetY = 1 * scale;
                 targetCtx.drawImage(offscreenCanvas, 0, 0); targetCtx.shadowColor = 'transparent'; 
             });
-            
-            // Stamps... (Same)
+
             appState.stamps.forEach(s => {
-               targetCtx.save(); targetCtx.translate(s.x * scale, s.y * scale); targetCtx.rotate(s.rot); targetCtx.scale(s.flipH?-1:1, s.flipV?-1:1);
+               targetCtx.save(); targetCtx.translate(s.x * scale, s.y * scale);
+               targetCtx.rotate(s.rot); targetCtx.scale(s.flipH?-1:1, s.flipV?-1:1);
                const mat = s.material || 'gold'; const bri = s.brightness || 0;
                const fillStyle = getMaterialGradient(targetCtx, mat, bri, w, h);
                targetCtx.fillStyle = fillStyle; targetCtx.strokeStyle = getEtchColor(mat); targetCtx.lineWidth = 2 * scale;
-               if(ASSETS[s.asset]) ASSETS[s.asset](targetCtx, s.size * scale, fillStyle, s.floralState || floralState);
+               ASSETS[s.asset](targetCtx, s.size * scale, fillStyle, s.floralState || floralState);
                targetCtx.restore();
             });
+
+            // Ghost Stamp
+            if(showGhost && stampConfig.active && mouseX > 0 && !document.getElementById('clusterToggle').checked) {
+                targetCtx.save(); targetCtx.globalAlpha = 0.5; targetCtx.translate(mouseX, mouseY);
+                targetCtx.rotate((stampConfig.rot*Math.PI)/180); targetCtx.scale(stampConfig.flipH?-1:1, stampConfig.flipV?-1:1);
+                const mat = currentMaterial; const bri = currentBrightness;
+                const fillStyle = getMaterialGradient(targetCtx, mat, bri, w, h);
+                targetCtx.fillStyle = fillStyle; targetCtx.strokeStyle = getEtchColor(mat);
+                ASSETS[stampConfig.active](targetCtx, stampConfig.size, fillStyle, floralState);
+                targetCtx.restore();
+            }
             
-            // Ghost (Guide)
+            // Border Ghost (Preview)
             if (showGhost && document.getElementById('showGuide').checked) {
                const pendingL = { 
                    pattern: currentPattern, 
@@ -545,23 +682,33 @@
                    spacing: parseInt(document.getElementById('spacing').value), 
                    rot: 0, radius: parseInt(document.getElementById('radius').value),
                    lines: tempLineCount, lineSep: parseInt(document.getElementById('lineSep').value),
-                   cap: currentCap,
                    grid: gridState 
                };
                
                offCtx.globalCompositeOperation = 'source-over'; offCtx.clearRect(0,0,w,h);
+               
                const count = pendingL.lines || 1; const sep = (pendingL.lineSep || 10) * scale; const baseInset = pendingL.inset * scale;
                let startOffset = -((count - 1) * sep) / 2;
                for(let i = 0; i < count; i++) {
                     const currentInset = baseInset + startOffset + (i * sep);
                     const scaledL = { ...pendingL, inset: currentInset, size: pendingL.size*scale, spacing: pendingL.spacing*scale, radius: (pendingL.radius||0)*scale };
-                    offCtx.strokeStyle = 'rgba(255, 255, 255, 0.6)'; offCtx.fillStyle = 'rgba(255, 255, 255, 0.1)'; 
-                    offCtx.lineWidth = Math.max(1, scaledL.size * 0.5); offCtx.lineJoin = 'round'; offCtx.miterLimit = 10;
-                    offCtx.setLineDash([4, 4]);
+                    
+                    // Use White Dashed Line for Preview
+                    offCtx.strokeStyle = 'rgba(255, 255, 255, 0.6)'; 
+                    offCtx.fillStyle = 'rgba(255, 255, 255, 0.1)'; 
+                    offCtx.lineWidth = Math.max(1, scaledL.size * 0.5); 
+                    offCtx.lineJoin = 'round'; offCtx.miterLimit = 10;
+                    offCtx.setLineDash([4, 4]); // Dashed line
+                    
                     if(isRound) drawLayerCircular(offCtx, scaledL, w, h); else drawLayerRect(offCtx, scaledL, w, h);
-                    offCtx.setLineDash([]);
+                    offCtx.setLineDash([]); // Reset
                }
-               targetCtx.save(); targetCtx.globalAlpha = 1; targetCtx.shadowColor = 'none'; targetCtx.drawImage(offscreenCanvas, 0, 0); targetCtx.restore();
+               
+               targetCtx.save();
+               targetCtx.globalAlpha = 1;
+               targetCtx.shadowColor = 'none';
+               targetCtx.drawImage(offscreenCanvas, 0, 0);
+               targetCtx.restore();
             }
         }
 
@@ -607,55 +754,39 @@
             else { let polyPoints = []; polyPoints.push({x: pts[0].x, y: pts[0].y}); for (let i=1; i<pts.length; i++) { const p = pts[i]; if (p.isArc) { const steps = Math.max(4, l.radius/2); for (let j=1; j<=steps; j++) { const ang = p.sa + (p.ea - p.sa) * (j/steps); polyPoints.push({x: p.cx + Math.cos(ang)*l.radius, y: p.cy + Math.sin(ang)*l.radius}); } } else polyPoints.push({x: p.x, y: p.y}); } drawBufferedPattern(ctx, polyPoints, l); }
         }
 
-        // --- UPDATED: CIRCULAR SEGMENT LOGIC ---
         function drawLayerCircular(ctx, l, w, h) {
             const inset=l.inset, rx=w/2-inset, ry=h/2-inset, cx=w/2, cy=h/2;
             if(rx<=0)return;
             
-            const mapIdxToGrid = (i) => { 
-                // Visual indices 0-11 map to our grid logic
-                // 0 = Top (12 o'clock is standard, here we map carefully)
-                // MiniMap loops 0..11 starting top -90deg.
-                const ring = [
-                    {r:0,c:0}, {r:0,c:1}, {r:0,c:2}, {r:0,c:3}, // Top
-                    {r:1,c:3}, {r:2,c:3}, // Right
-                    {r:3,c:3}, {r:3,c:2}, {r:3,c:1}, {r:3,c:0}, // Bottom
-                    {r:2,c:0}, {r:1,c:0}  // Left
-                ]; 
-                return ring[i]; 
-            };
+            const mapIdxToGrid = (i) => { const ring = [{r:0,c:0}, {r:0,c:1}, {r:0,c:2}, {r:0,c:3}, {r:1,c:3}, {r:2,c:3}, {r:3,c:3}, {r:3,c:2}, {r:3,c:1}, {r:3,c:0}, {r:2,c:0}, {r:1,c:0}]; return ring[i]; };
             
             if(l.pattern==='solid'){ 
-                // We must draw individual arcs for gaps to work
+                ctx.beginPath(); 
+                let penDown = false;
                 for(let i=0; i<12; i++) {
                      const cell = mapIdxToGrid(i);
                      if(l.grid[cell.r][cell.c]) {
-                         ctx.beginPath(); // Isolates strokes so they don't connect with lines
                          const startAng = (i * Math.PI * 2) / 12 - Math.PI/2;
                          const endAng = ((i+1) * Math.PI * 2) / 12 - Math.PI/2;
+                         if(!penDown) { ctx.beginPath(); penDown = true; }
                          ctx.ellipse(cx, cy, rx, ry, 0, startAng, endAng);
-                         
-                         if (l.spacing > 5) ctx.setLineDash([l.size * 3, l.spacing]); 
-                         else ctx.setLineDash([]);
-                         
-                         ctx.stroke();
-                     }
+                     } else { if(penDown) { 
+                        if (l.spacing > 5) ctx.setLineDash([l.size * 3, l.spacing]); else ctx.setLineDash([]);
+                        ctx.stroke(); ctx.setLineDash([]);
+                        penDown = false; 
+                     }}
                 }
-                ctx.setLineDash([]);
+                if(penDown) {
+                    if (l.spacing > 5) ctx.setLineDash([l.size * 3, l.spacing]); else ctx.setLineDash([]);
+                    ctx.stroke(); ctx.setLineDash([]);
+                }
             }
             else { 
-                // Pattern Logic for Circle
                 let pts=[]; const totalSteps = 240; 
                 const isWedgeActive = (wIdx) => { const cell = mapIdxToGrid(wIdx); return l.grid[cell.r][cell.c]; };
-                
                 for(let i=0; i<totalSteps; i++){ 
-                    const t = (i/totalSteps) * Math.PI * 2 - Math.PI/2; 
-                    const wedgeIdx = Math.floor((i / totalSteps) * 12);
-                    
-                    if(isWedgeActive(wedgeIdx % 12)) { 
-                        const px = cx+rx*Math.cos(t); const py = cy+ry*Math.sin(t); 
-                        if(pts.length===0) pts.push({x:px, y:py}); pts.push({x:px, y:py}); 
-                    } 
+                    const t = (i/totalSteps) * Math.PI * 2 - Math.PI/2; const wedgeIdx = Math.floor(i / (totalSteps/12));
+                    if(isWedgeActive(wedgeIdx)) { const px = cx+rx*Math.cos(t); const py = cy+ry*Math.sin(t); if(pts.length===0) pts.push({x:px, y:py}); pts.push({x:px, y:py}); } 
                     else { if(pts.length > 1) { drawBufferedPattern(ctx, pts, l); pts = []; } }
                 }
                 if(pts.length > 1) drawBufferedPattern(ctx, pts, l);
@@ -668,8 +799,6 @@
         }
         function drawShape(ctx, t, s) {
             const h=s/2; ctx.beginPath();
-            if(t==='stitch') { ctx.moveTo(-h,-h); ctx.lineTo(h,h); ctx.moveTo(h,-h); ctx.lineTo(-h,h); ctx.stroke(); return; }
-            if(t==='baroque') { ctx.moveTo(-h, h); ctx.bezierCurveTo(-h, -h, h, h, h, -h); ctx.stroke(); return; }
             if(t==='circle') ctx.arc(0,0,h,0,Math.PI*2);
             else if(t==='diamond'){ctx.moveTo(0,-h);ctx.lineTo(h,0);ctx.lineTo(0,h);ctx.lineTo(-h,0);ctx.closePath();}
             else if(t==='line'){ctx.moveTo(-h,0);ctx.lineTo(h,0);ctx.stroke();return;}
