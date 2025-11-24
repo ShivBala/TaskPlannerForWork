@@ -524,6 +524,37 @@
                 });
             });
             
+            // Reset Selection
+            selectedLayerIndex = 0;
+            
+            // Sync Grid State for MiniMap & UI Controls
+            if(appState.layers.length > 0) {
+                const l0 = appState.layers[0];
+                
+                // Sync Grid
+                gridState = JSON.parse(JSON.stringify(l0.grid));
+                
+                // Sync Sliders
+                const setVal = (id, v) => {
+                    const el = document.getElementById(id);
+                    if(el) { el.value = v; updateVal(id, v); }
+                };
+                setVal('inset', l0.inset);
+                setVal('size', l0.size);
+                setVal('spacing', l0.spacing);
+                setVal('lineSep', l0.lineSep);
+                
+                // Sync Pattern
+                if(typeof setPattern === 'function') setPattern(l0.pattern);
+                
+                // Sync Ending
+                const endSel = document.getElementById('borderEnding');
+                if(endSel) {
+                    endSel.value = l0.ending;
+                    if(typeof updateBorderEnding === 'function') updateBorderEnding(l0.ending);
+                }
+            }
+            
             // Update UI
             renderLayerList();
             renderMiniMap(); // Updates the grid view
@@ -1178,7 +1209,15 @@
                 if(isClosed) {
                     // For closed paths, check the starting corner (wraps from end to start to next)
                     if(pts.length > 2) {
-                        const prevAng = Math.atan2(pts[0].y - pts[pts.length-1].y, pts[0].x - pts[pts.length-1].x);
+                        let pLast = pts[pts.length-1];
+                        let lastIdx = pts.length-1;
+                        // If last point is same as first (closed loop), find the first distinct previous point
+                        while(lastIdx > 0 && Math.hypot(pts[0].x - pLast.x, pts[0].y - pLast.y) < 0.1) {
+                             lastIdx--;
+                             pLast = pts[lastIdx];
+                        }
+
+                        const prevAng = Math.atan2(pts[0].y - pLast.y, pts[0].x - pLast.x);
                         const nextAng = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
                         let angleDiff = Math.abs(nextAng - prevAng);
                         
@@ -1191,8 +1230,8 @@
                         }
                     }
                     
-                    // For closed paths, check all points including last
-                    for(let k=1; k<pts.length; k++) {
+                    // For closed paths, check all points EXCEPT the last (duplicate of first)
+                    for(let k=1; k<pts.length-1; k++) {
                         const prevIdx = k-1;
                         const nextIdx = k === pts.length-1 ? 1 : k+1; // Wrap around
                         
