@@ -718,7 +718,8 @@
                     brightness: 0,
                     grid: getPresetGrid(l.gridType),
                     ending: l.ending || 'none',
-                    floralState: JSON.parse(JSON.stringify(floralState)) // Capture current floral state for this layer
+                    floralState: JSON.parse(JSON.stringify(floralState)), // Capture current floral state for this layer
+                    stamps: []
                 });
             });
             
@@ -1086,7 +1087,7 @@
             pc.restore();
         }
 
-        function addLayer() { appState.layers.push({ pattern: currentPattern, inset: parseInt(document.getElementById('inset').value), size: parseInt(document.getElementById('size').value), spacing: parseInt(document.getElementById('spacing').value), rot: 0, radius: parseInt(document.getElementById('radius').value), lines: tempLineCount, lineSep: parseInt(document.getElementById('lineSep').value), material: currentMaterial, brightness: currentBrightness, grid: JSON.parse(JSON.stringify(gridState)), ending: currentBorderEnding, floralState: JSON.parse(JSON.stringify(floralState)) }); saveState(); renderLayerList(); redraw(); }
+        function addLayer() { appState.layers.push({ pattern: currentPattern, inset: parseInt(document.getElementById('inset').value), size: parseInt(document.getElementById('size').value), spacing: parseInt(document.getElementById('spacing').value), rot: 0, radius: parseInt(document.getElementById('radius').value), lines: tempLineCount, lineSep: parseInt(document.getElementById('lineSep').value), material: currentMaterial, brightness: currentBrightness, grid: JSON.parse(JSON.stringify(gridState)), ending: currentBorderEnding, floralState: JSON.parse(JSON.stringify(floralState)), stamps: [] }); saveState(); renderLayerList(); redraw(); }
         function renderLayerList() { 
             document.getElementById('layerList').innerHTML = appState.layers.map((l,i) => {
                 const isSelected = (i === selectedLayerIndex);
@@ -1226,6 +1227,19 @@
                 offCtx.fillStyle = getMaterialGradient(offCtx, mat, bri, w, h); offCtx.fillRect(0,0,w,h);
                 targetCtx.shadowColor = 'rgba(0,0,0,0.5)'; targetCtx.shadowBlur = 3 * scale; targetCtx.shadowOffsetX = 1 * scale; targetCtx.shadowOffsetY = 1 * scale;
                 targetCtx.drawImage(offscreenCanvas, 0, 0); targetCtx.shadowColor = 'transparent'; 
+
+                // Draw Layer Stamps
+                if (l.stamps && l.stamps.length > 0) {
+                    l.stamps.forEach(s => {
+                        targetCtx.save(); targetCtx.translate(s.x * scale, s.y * scale);
+                        targetCtx.rotate(s.rot); targetCtx.scale(s.flipH?-1:1, s.flipV?-1:1);
+                        const mat = s.material || 'gold'; const bri = s.brightness || 0;
+                        const fillStyle = getMaterialGradient(targetCtx, mat, bri, w, h);
+                        targetCtx.fillStyle = fillStyle; targetCtx.strokeStyle = getEtchColor(mat); targetCtx.lineWidth = 2 * scale;
+                        ASSETS[s.asset](targetCtx, s.size * scale, fillStyle, s.floralState || floralState);
+                        targetCtx.restore();
+                    });
+                }
             });
 
             appState.stamps.forEach(s => {
@@ -1890,24 +1904,38 @@
                     const cy = mouseY + Math.sin(ang) * radius;
                     const rot = ang + (Math.PI/2); // Orient outwards
                     
-                    appState.stamps.push({
+                    const newStamp = {
                         asset: stampConfig.active, x: cx, y: cy,
                         rot: rot + ((stampConfig.rot*Math.PI)/180), // Add base rotation
                         size: stampConfig.size,
                         flipH: stampConfig.flipH, flipV: stampConfig.flipV,
                         floralState: JSON.parse(JSON.stringify(floralState)),
                         material: currentMaterial, brightness: currentBrightness
-                    });
+                    };
+
+                    if (selectedLayerIndex >= 0 && selectedLayerIndex < appState.layers.length) {
+                        if (!appState.layers[selectedLayerIndex].stamps) appState.layers[selectedLayerIndex].stamps = [];
+                        appState.layers[selectedLayerIndex].stamps.push(newStamp);
+                    } else {
+                        appState.stamps.push(newStamp);
+                    }
                 }
             } else {
                 // Single Stamp
-                appState.stamps.push({
+                const newStamp = {
                     asset: stampConfig.active, x: mouseX, y: mouseY,
                     rot: (stampConfig.rot*Math.PI)/180, size: stampConfig.size,
                     flipH: stampConfig.flipH, flipV: stampConfig.flipV,
                     floralState: JSON.parse(JSON.stringify(floralState)), 
                     material: currentMaterial, brightness: currentBrightness
-                });
+                };
+
+                if (selectedLayerIndex >= 0 && selectedLayerIndex < appState.layers.length) {
+                    if (!appState.layers[selectedLayerIndex].stamps) appState.layers[selectedLayerIndex].stamps = [];
+                    appState.layers[selectedLayerIndex].stamps.push(newStamp);
+                } else {
+                    appState.stamps.push(newStamp);
+                }
             }
             saveState(); redraw();
         });
