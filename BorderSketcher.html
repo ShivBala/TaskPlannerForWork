@@ -223,6 +223,34 @@
             <!-- Border Designer -->
             <div class="panel rounded-lg p-4">
                 <h3 class="text-slate-400 text-sm font-bold uppercase tracking-widest mb-4 border-b border-slate-700 pb-2">Border Designer</h3>
+                
+                <!-- PRESETS -->
+                <div class="mb-4 bg-slate-800/50 p-2 rounded border border-slate-600">
+                    <label class="text-[10px] text-yellow-500 uppercase font-bold mb-1 block"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Quick Themes</label>
+                    <select id="presetSelector" onchange="applyPreset(this.value)" class="w-full p-2 bg-slate-900 border border-slate-600 rounded text-white text-xs outline-none focus:border-yellow-500">
+                        <option value="">Select a Professional Theme...</option>
+                        <optgroup label="Closed Borders (Classic)">
+                            <option value="classic-gold">Classic Gold Double</option>
+                            <option value="baroque-frame">Ornate Baroque</option>
+                            <option value="stitched-leather">Stitched Rose</option>
+                            <option value="modern-steel">Modern Steel Minimal</option>
+                            <option value="art-deco">Art Deco Diamonds</option>
+                            <option value="royal-wavy">Royal Wavy</option>
+                        </optgroup>
+                        <optgroup label="Open Borders (Creative)">
+                            <option value="open-corners">Corner Accents (L-Shape)</option>
+                            <option value="top-bottom">Cinema (Top & Bottom)</option>
+                            <option value="side-brackets">Side Brackets</option>
+                            <option value="floating-corners">Floating Corners</option>
+                        </optgroup>
+                        <optgroup label="Decorative">
+                            <option value="hearts-love">Love & Hearts</option>
+                            <option value="stars-night">Starry Night</option>
+                            <option value="dotted-line">Dotted Elegance</option>
+                        </optgroup>
+                    </select>
+                </div>
+
                 <div class="flex justify-between items-center mb-3">
                     <span class="text-[10px] text-slate-400">Show Guide</span>
                     <label class="relative inline-flex items-center cursor-pointer">
@@ -231,14 +259,22 @@
                     </label>
                 </div>
                 <div class="mb-4">
+                    <label class="text-[10px] text-slate-400 uppercase font-bold mb-1 block">Line Styles</label>
+                    <div class="grid grid-cols-7 gap-1 mb-2">
+                        <button id="pat-solid" onclick="setPattern('solid')" class="pattern-btn active p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center" title="Solid Line"><i class="fa-solid fa-minus"></i></button>
+                        <button id="pat-wavy" onclick="setPattern('wavy')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center text-[14px]" title="Wavy">~</button>
+                        <button id="pat-curvy" onclick="setPattern('curvy')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center" title="Curvy"><i class="fa-solid fa-wave-square text-xs"></i></button>
+                        <button id="pat-baroque" onclick="setPattern('baroque')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center" title="Baroque"><i class="fa-solid fa-certificate text-xs"></i></button>
+                        <button id="pat-stitch" onclick="setPattern('stitch')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center text-[9px]" title="Stitch">|||</button>
+                    </div>
+                    <label class="text-[10px] text-slate-400 uppercase font-bold mb-1 block">Shape Repeaters</label>
                     <div class="grid grid-cols-7 gap-1">
-                        <button id="pat-solid" onclick="setPattern('solid')" class="pattern-btn active p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center"><i class="fa-solid fa-minus"></i></button>
-                        <button id="pat-line" onclick="setPattern('line')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center"><i class="fa-solid fa-ruler-horizontal"></i></button>
-                        <button id="pat-circle" onclick="setPattern('circle')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center"><i class="fa-solid fa-circle text-xs"></i></button>
-                        <button id="pat-diamond" onclick="setPattern('diamond')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center"><i class="fa-solid fa-diamond text-xs"></i></button>
-                        <button id="pat-cross" onclick="setPattern('cross')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center"><i class="fa-solid fa-plus text-xs"></i></button>
-                        <button id="pat-star" onclick="setPattern('star')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center"><i class="fa-solid fa-star text-xs"></i></button>
-                        <button id="pat-heart" onclick="setPattern('heart')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center"><i class="fa-solid fa-heart text-xs"></i></button>
+                        <button id="pat-line" onclick="setPattern('line')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center" title="Line Dash"><i class="fa-solid fa-ruler-horizontal"></i></button>
+                        <button id="pat-circle" onclick="setPattern('circle')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center" title="Circles"><i class="fa-solid fa-circle text-xs"></i></button>
+                        <button id="pat-diamond" onclick="setPattern('diamond')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center" title="Diamonds"><i class="fa-solid fa-diamond text-xs"></i></button>
+                        <button id="pat-cross" onclick="setPattern('cross')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center" title="Crosses"><i class="fa-solid fa-plus text-xs"></i></button>
+                        <button id="pat-star" onclick="setPattern('star')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center" title="Stars"><i class="fa-solid fa-star text-xs"></i></button>
+                        <button id="pat-heart" onclick="setPattern('heart')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center" title="Hearts"><i class="fa-solid fa-heart text-xs"></i></button>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3 mb-4">
@@ -263,6 +299,16 @@
                     <div><div class="flex justify-between text-[10px] text-slate-300"><span>Size</span><span id="val-size">2px</span></div><input type="range" id="size" min="1" max="40" value="2" oninput="updateVal('size', this.value); redraw();"></div>
                     <div><div class="flex justify-between text-[10px] text-slate-300"><span>Gap</span><span id="val-spacing">10px</span></div><input type="range" id="spacing" min="5" max="100" value="15" oninput="updateVal('spacing', this.value); redraw();"></div>
                     <div class="col-span-2"><div class="flex justify-between text-[10px] text-slate-300"><span>Corner Radius</span><span id="val-radius">0px</span></div><input type="range" id="radius" min="0" max="100" value="0" oninput="updateVal('radius', this.value); redraw();"></div>
+                    <div class="col-span-2">
+                        <label class="text-[10px] text-slate-300 block mb-1">Border Ending</label>
+                        <select id="borderEnding" onchange="updateBorderEnding(this.value)" class="w-full p-2 bg-slate-800 border border-slate-600 rounded text-white text-xs">
+                            <option value="none">None</option>
+                            <option value="arrow">Arrow →</option>
+                            <option value="heart">Heart ♥</option>
+                            <option value="curve">Gentle Curve ⌒</option>
+                            <option value="loop">Loop ○</option>
+                        </select>
+                    </div>
                 </div>
                 
                 <!-- NEW SVG MINI-MAP -->
@@ -331,6 +377,7 @@
         let history = [], historyIndex = -1;
         let mouseX = 0, mouseY = 0;
         let currentPattern = 'solid';
+        let currentBorderEnding = 'none';
         
         // 4x4 Logic Grid (Maintained)
         let gridState = [[true,true,true,true],[true,false,false,true],[true,false,false,true],[true,true,true,true]];
@@ -343,6 +390,149 @@
             'copper': ['#cd7f32', '#ffcba4', '#b87333', '#ffcc99', '#8b4513'],
             'steel': ['#434343', '#9a9a9a', '#2b2b2b', '#b3b3b3', '#000000']
         };
+
+        // --- PRESETS CONFIGURATION ---
+        const PRESETS = {
+            'classic-gold': {
+                material: 'gold',
+                layers: [
+                    { pattern: 'solid', inset: 20, size: 12, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'solid', inset: 35, size: 2, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
+            },
+            'baroque-frame': {
+                material: 'gold',
+                layers: [
+                    { pattern: 'baroque', inset: 15, size: 20, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'solid', inset: 40, size: 4, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'solid', inset: 48, size: 1, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
+            },
+            'stitched-leather': {
+                material: 'rose',
+                layers: [
+                    { pattern: 'solid', inset: 20, size: 30, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' }, // Base "leather"
+                    { pattern: 'stitch', inset: 25, size: 2, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' }, // Outer stitch
+                    { pattern: 'stitch', inset: 45, size: 2, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' }  // Inner stitch
+                ]
+            },
+            'modern-steel': {
+                material: 'steel',
+                layers: [
+                    { pattern: 'solid', inset: 10, size: 1, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'solid', inset: 20, size: 4, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'solid', inset: 60, size: 1, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
+            },
+            'art-deco': {
+                material: 'silver',
+                layers: [
+                    { pattern: 'solid', inset: 15, size: 6, spacing: 0, lines: 3, lineSep: 8, gridType: 'all' },
+                    { pattern: 'diamond', inset: 45, size: 12, spacing: 12, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
+            },
+            'royal-wavy': {
+                material: 'gold',
+                layers: [
+                    { pattern: 'wavy', inset: 20, size: 8, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'solid', inset: 35, size: 2, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
+            },
+            'open-corners': {
+                material: 'gold',
+                layers: [
+                    { pattern: 'baroque', inset: 20, size: 15, spacing: 0, lines: 1, lineSep: 10, gridType: 'corners', ending: 'arrow' }
+                ]
+            },
+            'top-bottom': {
+                material: 'steel',
+                layers: [
+                    { pattern: 'solid', inset: 10, size: 20, spacing: 0, lines: 1, lineSep: 10, gridType: 'top-bottom' },
+                    { pattern: 'solid', inset: 35, size: 2, spacing: 0, lines: 1, lineSep: 10, gridType: 'top-bottom' }
+                ]
+            },
+            'side-brackets': {
+                material: 'rose',
+                layers: [
+                    { pattern: 'curvy', inset: 20, size: 10, spacing: 0, lines: 1, lineSep: 10, gridType: 'sides', ending: 'curve' }
+                ]
+            },
+            'floating-corners': {
+                material: 'gold',
+                layers: [
+                    { pattern: 'solid', inset: 20, size: 4, spacing: 0, lines: 2, lineSep: 6, gridType: 'corners' },
+                    { pattern: 'diamond', inset: 20, size: 10, spacing: 15, lines: 1, lineSep: 10, gridType: 'corners' }
+                ]
+            },
+            'hearts-love': {
+                material: 'rose',
+                layers: [
+                    { pattern: 'solid', inset: 25, size: 2, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'heart', inset: 25, size: 12, spacing: 15, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
+            },
+            'stars-night': {
+                material: 'silver',
+                layers: [
+                    { pattern: 'solid', inset: 10, size: 1, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'star', inset: 30, size: 10, spacing: 20, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
+            },
+            'dotted-line': {
+                material: 'gold',
+                layers: [
+                    { pattern: 'circle', inset: 20, size: 6, spacing: 10, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'solid', inset: 35, size: 1, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
+            }
+        };
+
+        function getPresetGrid(type) {
+            let g = [[false,false,false,false],[false,false,false,false],[false,false,false,false],[false,false,false,false]];
+            if(type === 'all') { g = [[true,true,true,true],[true,true,true,true],[true,true,true,true],[true,true,true,true]]; }
+            else if(type === 'corners') { g[0][0]=true; g[0][3]=true; g[3][0]=true; g[3][3]=true; }
+            else if(type === 'top-bottom') { g[0]=[true,true,true,true]; g[3]=[true,true,true,true]; }
+            else if(type === 'sides') { for(let r=0;r<4;r++) { g[r][0]=true; g[r][3]=true; } }
+            return g;
+        }
+
+        function applyPreset(name) {
+            if(!name || !PRESETS[name]) return;
+            const p = PRESETS[name];
+            
+            // Set Material
+            if(p.material) setMaterial(p.material);
+            
+            // Clear Layers
+            appState.layers = [];
+            
+            // Add Layers
+            p.layers.forEach(l => {
+                appState.layers.push({
+                    pattern: l.pattern,
+                    inset: l.inset,
+                    size: l.size,
+                    spacing: l.spacing,
+                    rot: 0,
+                    radius: 0,
+                    lines: l.lines || 1,
+                    lineSep: l.lineSep || 10,
+                    material: p.material,
+                    brightness: 0,
+                    grid: getPresetGrid(l.gridType),
+                    ending: l.ending || 'none'
+                });
+            });
+            
+            // Update UI
+            renderLayerList();
+            renderMiniMap(); // Updates the grid view
+            redraw();
+            saveState();
+            
+            // Reset selector
+            setTimeout(() => document.getElementById('presetSelector').value = "", 500);
+        }
         
         const FLORAL_COLORS = {
             'red': { dark: '#550000', light: '#ff4d4d' }, 'pink': { dark: '#880044', light: '#ffccdd' }, 'white': { dark: '#888888', light: '#ffffff' }, 'purple': { dark: '#330044', light: '#cc66ff' }, 'blue': { dark: '#001144', light: '#66aaff' }
@@ -575,6 +765,7 @@
 
         function resetGrid() { for(let r=0; r<4; r++) for(let c=0; c<4; c++) { if(r>0 && r<3 && c>0 && c<3) continue; gridState[r][c] = true; } renderMiniMap(); redraw(); }
         function updateLineCount(n) { tempLineCount = n; document.querySelectorAll('.line-btn').forEach(b=>b.classList.remove('active', 'bg-slate-600')); document.getElementById('btn-l'+n).classList.add('active', 'bg-slate-600'); document.getElementById('val-lineCount').innerText = n; }
+        function updateBorderEnding(v) { currentBorderEnding = v; }
         
         function setMaterial(mat) { currentMaterial = mat; const elIn = document.getElementById('col-petal-in'); if(elIn) elIn.value = floralState.petalIn; const elOut = document.getElementById('col-petal-out'); if(elOut) elOut.value = floralState.petalOut; const elLeaf = document.getElementById('col-leaf'); if(elLeaf) elLeaf.value = floralState.leaf; const elVein = document.getElementById('col-vein'); if(elVein) elVein.value = floralState.vein; updateMaterialUI(); if (document.getElementById('applyGlobal') && document.getElementById('applyGlobal').checked) { appState.layers.forEach(l => l.material = mat); appState.stamps.forEach(s => s.material = mat); saveState(); redraw(); } renderPreview(); }
         function setStampColor(color) { currentFloralColor = color; document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active')); if(color==='material') document.getElementById('btn-color-material').classList.add('active'); else if(color==='red') document.getElementById('btn-color-red').classList.add('active'); else if(color==='pink') document.getElementById('btn-color-pink').classList.add('active'); else if(color==='white') document.getElementById('btn-color-white').classList.add('active'); else if(color==='purple') document.getElementById('btn-color-purple').classList.add('active'); if (color !== 'material') { floralState.petalIn = FLORAL_COLORS[color].dark; floralState.petalOut = FLORAL_COLORS[color].light; document.getElementById('col-petal-in').value = floralState.petalIn; document.getElementById('col-petal-out').value = floralState.petalOut; } renderPreview(); }
@@ -604,7 +795,7 @@
             pc.restore();
         }
 
-        function addLayer() { appState.layers.push({ pattern: currentPattern, inset: parseInt(document.getElementById('inset').value), size: parseInt(document.getElementById('size').value), spacing: parseInt(document.getElementById('spacing').value), rot: 0, radius: parseInt(document.getElementById('radius').value), lines: tempLineCount, lineSep: parseInt(document.getElementById('lineSep').value), material: currentMaterial, brightness: currentBrightness, grid: JSON.parse(JSON.stringify(gridState)) }); saveState(); renderLayerList(); redraw(); }
+        function addLayer() { appState.layers.push({ pattern: currentPattern, inset: parseInt(document.getElementById('inset').value), size: parseInt(document.getElementById('size').value), spacing: parseInt(document.getElementById('spacing').value), rot: 0, radius: parseInt(document.getElementById('radius').value), lines: tempLineCount, lineSep: parseInt(document.getElementById('lineSep').value), material: currentMaterial, brightness: currentBrightness, grid: JSON.parse(JSON.stringify(gridState)), ending: currentBorderEnding }); saveState(); renderLayerList(); redraw(); }
         function renderLayerList() { document.getElementById('layerList').innerHTML = appState.layers.map((l,i)=>`<div class="flex justify-between bg-slate-800 p-1 px-2 rounded border border-slate-700"><span>L${i+1}: ${l.pattern} (${l.lines}x)</span><button onclick="deleteLayer(${i})" class="text-red-400">x</button></div>`).join(''); }
         function deleteLayer(i) { appState.layers.splice(i,1); saveState(); renderLayerList(); redraw(); }
         function clearLayers() { appState.layers=[]; appState.stamps=[]; saveState(); renderLayerList(); redraw(); }
@@ -612,7 +803,7 @@
         function adjustColor(hex, amt) { let usePound = false; if(hex[0]=="#"){ hex=hex.slice(1); usePound=true; } let num = parseInt(hex,16); let r=(num>>16)+amt; let b=((num>>8)&0x00FF)+amt; let g=(num&0x0000FF)+amt; if(r>255)r=255;else if(r<0)r=0; if(b>255)b=255;else if(b<0)b=0; if(g>255)g=255;else if(g<0)g=0; return (usePound?"#":"") + (g | (b<<8) | (r<<16)).toString(16).padStart(6,"0"); }
         function getMaterialGradient(ctx, mat, bright, w, h) { const base = MATERIALS[mat] || MATERIALS['gold']; const colors = base.map(c => adjustColor(c, bright)); const g = ctx.createLinearGradient(0, 0, w, h); g.addColorStop(0, colors[0]); g.addColorStop(0.25, colors[1]); g.addColorStop(0.5, colors[2]); g.addColorStop(0.75, colors[3]); g.addColorStop(1, colors[4]); return g; }
         function getEtchColor(mat) { if(mat === 'gold') return 'rgba(60, 40, 10, 0.5)'; if(mat === 'silver') return 'rgba(30, 30, 30, 0.5)'; if(mat === 'rose') return 'rgba(60, 20, 20, 0.5)'; if(mat === 'copper') return 'rgba(50, 20, 0, 0.5)'; return 'rgba(0,0,0,0.6)'; }
-        function setBaseContext(ctx, width) { ctx.strokeStyle = '#FFFFFF'; ctx.fillStyle = '#FFFFFF'; ctx.lineWidth = width; ctx.lineJoin = 'round'; ctx.miterLimit = 10; }
+        function setBaseContext(ctx, width) { ctx.strokeStyle = '#FFFFFF'; ctx.fillStyle = '#FFFFFF'; ctx.lineWidth = width; ctx.lineJoin = 'round'; ctx.miterLimit = 10; ctx.setLineDash([]); }
 
         function redraw() { renderScene(canvas, ctx, 1, true); }
 
@@ -682,7 +873,8 @@
                    spacing: parseInt(document.getElementById('spacing').value), 
                    rot: 0, radius: parseInt(document.getElementById('radius').value),
                    lines: tempLineCount, lineSep: parseInt(document.getElementById('lineSep').value),
-                   grid: gridState 
+                   grid: gridState,
+                   ending: currentBorderEnding
                };
                
                offCtx.globalCompositeOperation = 'source-over'; offCtx.clearRect(0,0,w,h);
@@ -702,6 +894,13 @@
                     
                     if(isRound) drawLayerCircular(offCtx, scaledL, w, h); else drawLayerRect(offCtx, scaledL, w, h);
                     offCtx.setLineDash([]); // Reset
+                    
+                    // Show ending type in preview
+                    if(pendingL.ending && pendingL.ending !== 'none') {
+                        offCtx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+                        offCtx.font = '10px sans-serif';
+                        offCtx.fillText('Ending: ' + pendingL.ending, 10, 20);
+                    }
                }
                
                targetCtx.save();
@@ -716,42 +915,190 @@
              const inset = l.inset; const r = l.radius || 0; const sw = (w - inset*2) / 4; const sh = (h - inset*2) / 4;
              const getPt = (idx) => { if (idx===0) return {x: inset, y: inset}; if (idx<4) return {x: inset + idx*sw, y: inset}; if (idx===4) return {x: w-inset, y: inset}; if (idx<8) return {x: w-inset, y: inset + (idx-4)*sh}; if (idx===8) return {x: w-inset, y: h-inset}; if (idx<12) return {x: w-inset - (idx-8)*sw, y: h-inset}; if (idx===12) return {x: inset, y: h-inset}; if (idx<16) return {x: inset, y: h-inset - (idx-12)*sh}; return {x: inset, y: inset}; };
              const isSegActive = (i) => { if (i<4) return l.grid[0][i]; if (i<8) return l.grid[i-4][3]; if (i<12) return l.grid[3][3-(i-8)]; return l.grid[3-(i-12)][0]; };
-             let pts = []; let penDown = false;
+             
+             let allPaths = [];
+             let currentPath = [];
+             let penDown = false;
+             
              for (let i=0; i<16; i++) {
                  if (isSegActive(i)) {
                      const pStart = getPt(i); const pEnd = getPt(i+1);
                      let eStart = { ...pStart }; let eEnd = { ...pEnd };
                      if (r > 0) { if (i===0) eStart.x += r; if (i===15) eEnd.y += r; if (i===3) eEnd.x -= r; if (i===4) eStart.y += r; if (i===7) eEnd.y -= r; if (i===8) eStart.x -= r; if (i===11) eEnd.x += r; if (i===12) eStart.y -= r; }
-                     if (!penDown) { pts.push(eStart); penDown = true; }
-                     pts.push(eEnd);
-                     if (r > 0 && isSegActive((i+1)%16)) { if (i===3) pts.push({isArc:true, cx: w-inset-r, cy: inset+r, sa: Math.PI*1.5, ea: Math.PI*2}); else if (i===7) pts.push({isArc:true, cx: w-inset-r, cy: h-inset-r, sa: 0, ea: Math.PI*0.5}); else if (i===11) pts.push({isArc:true, cx: inset+r, cy: h-inset-r, sa: Math.PI*0.5, ea: Math.PI}); else if (i===15) pts.push({isArc:true, cx: inset+r, cy: inset+r, sa: Math.PI, ea: Math.PI*1.5}); }
-                 } else if (penDown) { flushPath(ctx, pts, l); pts = []; penDown = false; }
+                     
+                     if (!penDown) { currentPath.push(eStart); penDown = true; }
+                     currentPath.push(eEnd);
+                     
+                     if (r > 0 && isSegActive((i+1)%16)) { if (i===3) currentPath.push({isArc:true, cx: w-inset-r, cy: inset+r, sa: Math.PI*1.5, ea: Math.PI*2}); else if (i===7) currentPath.push({isArc:true, cx: w-inset-r, cy: h-inset-r, sa: 0, ea: Math.PI*0.5}); else if (i===11) currentPath.push({isArc:true, cx: inset+r, cy: h-inset-r, sa: Math.PI*0.5, ea: Math.PI}); else if (i===15) currentPath.push({isArc:true, cx: inset+r, cy: inset+r, sa: Math.PI, ea: Math.PI*1.5}); }
+                 } else if (penDown) { 
+                     allPaths.push(currentPath); 
+                     currentPath = []; 
+                     penDown = false; 
+                 }
              }
-             if (penDown) flushPath(ctx, pts, l);
+             if (penDown) allPaths.push(currentPath);
+             
+             // Check for wrap-around merge (Left connecting to Top)
+             if (allPaths.length > 1 && isSegActive(15) && isSegActive(0)) {
+                 const firstPath = allPaths[0];
+                 const lastPath = allPaths[allPaths.length - 1];
+                 const pLast = lastPath[lastPath.length-1];
+                 const pFirst = firstPath[0];
+                 
+                 // If last point of last path is close to first point of first path, merge them
+                 if (Math.hypot(pLast.x - pFirst.x, pLast.y - pFirst.y) < 5) {
+                     firstPath.shift(); // Remove duplicate point
+                     const mergedPath = lastPath.concat(firstPath);
+                     allPaths[allPaths.length - 1] = mergedPath;
+                     allPaths.shift(); // Remove the first path as it's now merged
+                 }
+             }
+             
+             for(const p of allPaths) {
+                 flushPath(ctx, p, l);
+             }
         }
 
         function flushPath(ctx, pts, l) {
             if(pts.length < 2) return;
-            if (l.pattern === 'solid') {
-                ctx.beginPath(); 
-                ctx.moveTo(pts[0].x, pts[0].y); 
-                
-                // Gap Logic
-                if (l.spacing > 5) {
-                    ctx.setLineDash([l.size * 3, l.spacing]);
-                } else {
-                    ctx.setLineDash([]);
+            
+            const isContinuousLine = (l.pattern === 'solid' || l.pattern === 'wavy' || l.pattern === 'curvy' || l.pattern === 'baroque' || l.pattern === 'stitch');
+            
+            if (isContinuousLine) {
+                // Convert points to polyline for custom stroke styles
+                let polyPoints = [];
+                polyPoints.push({x: pts[0].x, y: pts[0].y});
+                for (let i=1; i<pts.length; i++) {
+                    const p = pts[i];
+                    if (p.isArc) {
+                        const steps = Math.max(4, l.radius/2);
+                        for (let j=1; j<=steps; j++) {
+                            const ang = p.sa + (p.ea - p.sa) * (j/steps);
+                            polyPoints.push({x: p.cx + Math.cos(ang)*l.radius, y: p.cy + Math.sin(ang)*l.radius});
+                        }
+                    } else {
+                        polyPoints.push({x: p.x, y: p.y});
+                    }
                 }
+                
+                // Draw continuous line with pattern-specific style
+                if (l.pattern === 'solid') {
+                    ctx.beginPath();
+                    ctx.moveTo(polyPoints[0].x, polyPoints[0].y);
+                    
+                    // Gap Logic
+                    if (l.spacing > 5) {
+                        ctx.setLineDash([l.size * 3, l.spacing]);
+                    } else {
+                        ctx.setLineDash([]);
+                    }
+                    
+                    for (let i=1; i<polyPoints.length; i++) {
+                        ctx.lineTo(polyPoints[i].x, polyPoints[i].y);
+                    }
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                } else {
+                    // For styled patterns (wavy, curvy, baroque, stitch), draw along path
+                    drawStyledLine(ctx, polyPoints, l);
+                }
+                
+                // Apply border endings to continuous lines
+                applyBorderEndings(ctx, polyPoints, l);
+            } else {
+                // Buffered patterns (repeating shapes: circle, diamond, heart, star, cross, line)
+                let polyPoints = [];
+                polyPoints.push({x: pts[0].x, y: pts[0].y});
+                for (let i=1; i<pts.length; i++) {
+                    const p = pts[i];
+                    if (p.isArc) {
+                        const steps = Math.max(4, l.radius/2);
+                        for (let j=1; j<=steps; j++) {
+                            const ang = p.sa + (p.ea - p.sa) * (j/steps);
+                            polyPoints.push({x: p.cx + Math.cos(ang)*l.radius, y: p.cy + Math.sin(ang)*l.radius});
+                        }
+                    } else {
+                        polyPoints.push({x: p.x, y: p.y});
+                    }
+                }
+                drawBufferedPattern(ctx, polyPoints, l);
+                
+                // Apply border endings to buffered patterns
+                applyBorderEndings(ctx, polyPoints, l);
+            }
+        }
 
-                for (let i=1; i<pts.length; i++) { 
-                    const p = pts[i]; 
-                    if (p.isArc) ctx.arc(p.cx, p.cy, l.radius, p.sa, p.ea); 
-                    else ctx.lineTo(p.x, p.y); 
-                } 
-                ctx.stroke(); 
-                ctx.setLineDash([]); // Reset
-            } 
-            else { let polyPoints = []; polyPoints.push({x: pts[0].x, y: pts[0].y}); for (let i=1; i<pts.length; i++) { const p = pts[i]; if (p.isArc) { const steps = Math.max(4, l.radius/2); for (let j=1; j<=steps; j++) { const ang = p.sa + (p.ea - p.sa) * (j/steps); polyPoints.push({x: p.cx + Math.cos(ang)*l.radius, y: p.cy + Math.sin(ang)*l.radius}); } } else polyPoints.push({x: p.x, y: p.y}); } drawBufferedPattern(ctx, polyPoints, l); }
+        function drawStyledLine(ctx, pts, l) {
+            if(pts.length < 2) return;
+            
+            // Calculate total path length and distances
+            let tl = 0, ds = [0];
+            for(let k=0; k<pts.length-1; k++) {
+                tl += Math.hypot(pts[k+1].x - pts[k].x, pts[k+1].y - pts[k].y);
+                ds.push(tl);
+            }
+            
+            const patternSize = l.size * 8; // Size of one pattern repeat
+            const numPatterns = Math.max(1, Math.floor(tl / patternSize));
+            
+            ctx.beginPath();
+            
+            for(let p=0; p<=numPatterns; p++) {
+                const startDist = (p / numPatterns) * tl;
+                const endDist = Math.min(((p + 1) / numPatterns) * tl, tl);
+                
+                // Find point at startDist
+                let idx = 0;
+                while(idx < ds.length-1 && startDist > ds[idx+1]) idx++;
+                const t1 = (startDist - ds[idx]) / (ds[idx+1] - ds[idx]);
+                const pa = pts[idx], pb = pts[idx+1];
+                const sx = pa.x + (pb.x - pa.x) * t1;
+                const sy = pa.y + (pb.y - pa.y) * t1;
+                
+                // Draw pattern segment
+                if(p === 0) ctx.moveTo(sx, sy);
+                
+                // Sample points along this pattern segment
+                const steps = 8;
+                for(let s=1; s<=steps; s++) {
+                    const d = startDist + (endDist - startDist) * (s / steps);
+                    let idx2 = 0;
+                    while(idx2 < ds.length-1 && d > ds[idx2+1]) idx2++;
+                    if(idx2 >= pts.length - 1) break;
+                    
+                    const pa2 = pts[idx2], pb2 = pts[idx2+1];
+                    const t2 = (d - ds[idx2]) / (ds[idx2+1] - ds[idx2]);
+                    const baseX = pa2.x + (pb2.x - pa2.x) * t2;
+                    const baseY = pa2.y + (pb2.y - pa2.y) * t2;
+                    
+                    // Get perpendicular direction
+                    const ang = Math.atan2(pb2.y - pa2.y, pb2.x - pa2.x);
+                    const perpAng = ang + Math.PI/2;
+                    
+                    // Apply pattern offset
+                    let offset = 0;
+                    const phase = (s / steps);
+                    
+                    if(l.pattern === 'wavy') {
+                        offset = Math.sin(phase * Math.PI * 2) * l.size * 2;
+                    } else if(l.pattern === 'curvy') {
+                        offset = Math.sin(phase * Math.PI) * l.size * 2;
+                    } else if(l.pattern === 'baroque') {
+                        // Complex wave with multiple frequencies
+                        offset = (Math.sin(phase * Math.PI * 4) * 0.5 + Math.sin(phase * Math.PI * 2) * 0.5) * l.size * 2;
+                    } else if(l.pattern === 'stitch') {
+                        // Alternating perpendicular marks
+                        offset = ((s % 2) * 2 - 1) * l.size;
+                    }
+                    
+                    const x = baseX + Math.cos(perpAng) * offset;
+                    const y = baseY + Math.sin(perpAng) * offset;
+                    
+                    ctx.lineTo(x, y);
+                }
+            }
+            
+            ctx.stroke();
         }
 
         function drawLayerCircular(ctx, l, w, h) {
@@ -760,7 +1107,9 @@
             
             const mapIdxToGrid = (i) => { const ring = [{r:0,c:0}, {r:0,c:1}, {r:0,c:2}, {r:0,c:3}, {r:1,c:3}, {r:2,c:3}, {r:3,c:3}, {r:3,c:2}, {r:3,c:1}, {r:3,c:0}, {r:2,c:0}, {r:1,c:0}]; return ring[i]; };
             
-            if(l.pattern==='solid'){ 
+            const isContinuousLine = (l.pattern === 'solid' || l.pattern === 'wavy' || l.pattern === 'curvy' || l.pattern === 'baroque' || l.pattern === 'stitch');
+            
+            if(isContinuousLine) { 
                 ctx.beginPath(); 
                 let penDown = false;
                 for(let i=0; i<12; i++) {
@@ -771,13 +1120,13 @@
                          if(!penDown) { ctx.beginPath(); penDown = true; }
                          ctx.ellipse(cx, cy, rx, ry, 0, startAng, endAng);
                      } else { if(penDown) { 
-                        if (l.spacing > 5) ctx.setLineDash([l.size * 3, l.spacing]); else ctx.setLineDash([]);
+                        if (l.spacing > 5 && l.pattern === 'solid') ctx.setLineDash([l.size * 3, l.spacing]); else ctx.setLineDash([]);
                         ctx.stroke(); ctx.setLineDash([]);
                         penDown = false; 
                      }}
                 }
                 if(penDown) {
-                    if (l.spacing > 5) ctx.setLineDash([l.size * 3, l.spacing]); else ctx.setLineDash([]);
+                    if (l.spacing > 5 && l.pattern === 'solid') ctx.setLineDash([l.size * 3, l.spacing]); else ctx.setLineDash([]);
                     ctx.stroke(); ctx.setLineDash([]);
                 }
             }
@@ -793,9 +1142,208 @@
             }
         }
         function drawBufferedPattern(ctx, pts, l) {
-            let tl=0, ds=[0]; for(let k=0;k<pts.length-1;k++){ tl+=Math.hypot(pts[k+1].x-pts[k].x, pts[k+1].y-pts[k].y); ds.push(tl); }
-            const step=l.size+l.spacing; if(step<=0)return; const cnt=Math.floor(tl/step);
-            for(let i=0;i<=cnt;i++){ const d=i*step; let idx=0; while(idx<ds.length-1 && d>ds[idx+1])idx++; const pa=pts[idx], pb=pts[idx+1]; if(!pb)break; const t=(d-ds[idx])/(ds[idx+1]-ds[idx]); const x=pa.x+(pb.x-pa.x)*t, y=pa.y+(pb.y-pa.y)*t, ang=Math.atan2(pb.y-pa.y, pb.x-pa.x); ctx.save(); ctx.translate(x,y); ctx.rotate(ang); drawShape(ctx,l.pattern,l.size); ctx.restore(); }
+            const step = l.size + l.spacing;
+            if(step <= 0) return;
+            
+            // Close the path ONLY if start and end are very close (nearly closed loop)
+            const distToClose = Math.hypot(pts[0].x - pts[pts.length-1].x, pts[0].y - pts[pts.length-1].y);
+            if(distToClose > 0.1 && distToClose < step * 2) {
+                // Path is nearly closed (like a complete rectangle) - close it
+                pts = [...pts, {x: pts[0].x, y: pts[0].y}];
+            }
+            
+            let tl=0, ds=[0]; 
+            for(let k=0;k<pts.length-1;k++){ 
+                tl+=Math.hypot(pts[k+1].x-pts[k].x, pts[k+1].y-pts[k].y); 
+                ds.push(tl); 
+            }
+            
+            // Identify corner points (significant direction changes for sharp corners only)
+            const corners = [];
+            let hasRoundedCorners = false;
+            
+            for(let k=0; k<pts.length; k++) {
+                if(pts[k].isArc) {
+                    hasRoundedCorners = true;
+                    break;
+                }
+            }
+            
+            // Check if path is closed (loop)
+            const isClosed = Math.hypot(pts[0].x - pts[pts.length-1].x, pts[0].y - pts[pts.length-1].y) < step;
+            
+            if(!hasRoundedCorners) {
+                // Detect corners for both open and closed paths
+                
+                if(isClosed) {
+                    // For closed paths, check the starting corner (wraps from end to start to next)
+                    if(pts.length > 2) {
+                        const prevAng = Math.atan2(pts[0].y - pts[pts.length-1].y, pts[0].x - pts[pts.length-1].x);
+                        const nextAng = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
+                        let angleDiff = Math.abs(nextAng - prevAng);
+                        
+                        // Normalize angle difference to 0-PI range
+                        if(angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
+                        
+                        // If angle changes significantly, it's a corner
+                        if(angleDiff > 0.3 && angleDiff < Math.PI - 0.3) {
+                            corners.push({idx: 0, prevAng, nextAng});
+                        }
+                    }
+                    
+                    // For closed paths, check all points including last
+                    for(let k=1; k<pts.length; k++) {
+                        const prevIdx = k-1;
+                        const nextIdx = k === pts.length-1 ? 1 : k+1; // Wrap around
+                        
+                        // Check for direction change (corner)
+                        const prevAng = Math.atan2(pts[k].y - pts[prevIdx].y, pts[k].x - pts[prevIdx].x);
+                        const nextAng = Math.atan2(pts[nextIdx].y - pts[k].y, pts[nextIdx].x - pts[k].x);
+                        let angleDiff = Math.abs(nextAng - prevAng);
+                        
+                        // Normalize angle difference to 0-PI range
+                        if(angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
+                        
+                        // If angle changes significantly, it's a corner
+                        if(angleDiff > 0.3 && angleDiff < Math.PI - 0.3) {
+                            corners.push({idx: k, prevAng, nextAng});
+                        }
+                    }
+                } else {
+                    // For open paths, only check INTERIOR points (not endpoints)
+                    for(let k=1; k<pts.length-1; k++) {
+                        // Check for direction change (corner)
+                        const prevAng = Math.atan2(pts[k].y - pts[k-1].y, pts[k].x - pts[k-1].x);
+                        const nextAng = Math.atan2(pts[k+1].y - pts[k].y, pts[k+1].x - pts[k].x);
+                        let angleDiff = Math.abs(nextAng - prevAng);
+                        
+                        // Normalize angle difference to 0-PI range
+                        if(angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
+                        
+                        // If angle changes significantly, it's a corner
+                        if(angleDiff > 0.3 && angleDiff < Math.PI - 0.3) {
+                            corners.push({idx: k, prevAng, nextAng});
+                        }
+                    }
+                }
+                
+                // Draw shapes anchored at sharp corners with 45-degree rotation
+                for(let corner of corners) {
+                    const pt = pts[corner.idx];
+                    
+                    // Calculate bisector angle for 45-degree rotation at corner
+                    let ang = (corner.prevAng + corner.nextAng) / 2;
+                    
+                    // Adjust if angles wrap around (e.g., -170° to 170°)
+                    if(Math.abs(corner.nextAng - corner.prevAng) > Math.PI) {
+                        ang += Math.PI;
+                    }
+                    
+                    ctx.save(); 
+                    ctx.translate(pt.x, pt.y); 
+                    ctx.rotate(ang); 
+                    drawShape(ctx, l.pattern, l.size); 
+                    ctx.restore();
+                }
+            }
+            
+            // Distribute shapes evenly along path (excluding drawn corners for sharp corners)
+            const segments = [];
+            let segmentStart = 0;
+            let startIsCorner = (corners.length > 0 && corners[0].idx === 0);
+            
+            for(let corner of corners) {
+                if(corner.idx === 0) continue; // Skip start corner as segment end
+                
+                segments.push({start: segmentStart, end: ds[corner.idx], startIsCorner: startIsCorner});
+                segmentStart = ds[corner.idx];
+                startIsCorner = true; // The start of the next segment is this corner
+            }
+            segments.push({start: segmentStart, end: tl, startIsCorner: startIsCorner}); // Final segment to end
+            
+            // Draw shapes in each segment
+            for(let seg of segments) {
+                const segLength = seg.end - seg.start;
+                
+                // If start is NOT a corner, draw a shape there (start of open path)
+                if(!seg.startIsCorner) {
+                    let idx=0; 
+                    while(idx<ds.length-1 && seg.start>ds[idx+1])idx++; 
+                    const pa=pts[idx], pb=pts[idx+1]; 
+                    if(pb) {
+                        const t=(seg.start-ds[idx])/(ds[idx+1]-ds[idx]); 
+                        const x=pa.x+(pb.x-pa.x)*t, y=pa.y+(pb.y-pa.y)*t, ang=Math.atan2(pb.y-pa.y, pb.x-pa.x); 
+                        ctx.save(); 
+                        ctx.translate(x,y); 
+                        ctx.rotate(ang); 
+                        drawShape(ctx,l.pattern,l.size); 
+                        ctx.restore();
+                    }
+                }
+
+                if(segLength < step * 1.5) continue; // Skip if segment too short
+                
+                // Calculate number of shapes that fit with equal spacing
+                const numShapes = Math.floor(segLength / step);
+                if(numShapes < 1) continue;
+                
+                // Check if last shape would be too close to end
+                const remainder = segLength - (numShapes * step);
+                const effectiveNum = (remainder < step * 0.4) ? numShapes - 1 : numShapes;
+                
+                if(effectiveNum < 1) continue;
+                
+                // Distribute shapes evenly
+                const actualStep = segLength / (effectiveNum + 1);
+                
+                for(let i=1; i<=effectiveNum; i++) {
+                    const d = seg.start + (i * actualStep);
+                    
+                    // Skip if too close to any drawn corner
+                    let tooCloseToCorner = false;
+                    for(let corner of corners) {
+                        const cornerDist = ds[corner.idx];
+                        if(Math.abs(d - cornerDist) < step * 0.5) {
+                            tooCloseToCorner = true;
+                            break;
+                        }
+                        // Check wrap-around for closed loops (check distance to total length if corner is at 0)
+                        if(isClosed && corner.idx === 0 && Math.abs(d - tl) < step * 0.5) {
+                             tooCloseToCorner = true;
+                             break;
+                        }
+                    }
+                    if(tooCloseToCorner) continue;
+                    
+                    let idx=0; 
+                    while(idx<ds.length-1 && d>ds[idx+1])idx++; 
+                    const pa=pts[idx], pb=pts[idx+1]; 
+                    if(!pb)break; 
+                    const t=(d-ds[idx])/(ds[idx+1]-ds[idx]); 
+                    const x=pa.x+(pb.x-pa.x)*t, y=pa.y+(pb.y-pa.y)*t, ang=Math.atan2(pb.y-pa.y, pb.x-pa.x); 
+                    ctx.save(); 
+                    ctx.translate(x,y); 
+                    ctx.rotate(ang); 
+                    drawShape(ctx,l.pattern,l.size); 
+                    ctx.restore(); 
+                }
+            }
+        }
+        
+        function applyBorderEndings(ctx, pts, l) {
+            // Draw border endings if not a complete loop
+            if(l.ending && l.ending !== 'none' && pts.length > 2) {
+                const isLoop = Math.hypot(pts[0].x - pts[pts.length-1].x, pts[0].y - pts[pts.length-1].y) < l.size * 2;
+                if(!isLoop) {
+                    // Start ending
+                    const ang1 = Math.atan2(pts[1].y - pts[0].y, pts[1].x - pts[0].x);
+                    ctx.save(); ctx.translate(pts[0].x, pts[0].y); ctx.rotate(ang1 + Math.PI); drawBorderEnding(ctx, l.ending, l.size * 2); ctx.restore();
+                    // End ending
+                    const n = pts.length - 1;
+                    const ang2 = Math.atan2(pts[n].y - pts[n-1].y, pts[n].x - pts[n-1].x);
+                    ctx.save(); ctx.translate(pts[n].x, pts[n].y); ctx.rotate(ang2); drawBorderEnding(ctx, l.ending, l.size * 2); ctx.restore();
+                }
+            }
         }
         function drawShape(ctx, t, s) {
             const h=s/2; ctx.beginPath();
@@ -805,6 +1353,30 @@
             else if(t==='cross'){ctx.moveTo(0,-h);ctx.lineTo(0,h);ctx.moveTo(-h,0);ctx.lineTo(h,0);ctx.stroke();return;}
             else if(t==='heart'){ctx.moveTo(0,-h/2);ctx.bezierCurveTo(h/2,-h,h,-h/2,0,h);ctx.bezierCurveTo(-h,-h/2,-h/2,-h,0,-h/2);}
             else if(t==='star'){for(let i=0;i<5;i++){ctx.lineTo(Math.cos((18+i*72)*0.017)*h, -Math.sin((18+i*72)*0.017)*h); ctx.lineTo(Math.cos((54+i*72)*0.017)*(h/2), -Math.sin((54+i*72)*0.017)*(h/2));}ctx.closePath();}
+            ctx.fill();
+        }
+        
+        function drawBorderEnding(ctx, type, s) {
+            const h = s/2;
+            ctx.beginPath();
+            if(type === 'arrow') {
+                ctx.moveTo(h, 0);
+                ctx.lineTo(-h/2, -h/2);
+                ctx.lineTo(-h/4, 0);
+                ctx.lineTo(-h/2, h/2);
+                ctx.closePath();
+            } else if(type === 'heart') {
+                ctx.moveTo(0, h/2);
+                ctx.bezierCurveTo(-h/2, -h/4, -h, -h/4, -h/2, h/4);
+                ctx.bezierCurveTo(-h/4, h, 0, h);
+                ctx.bezierCurveTo(h/4, h, h/2, h/4);
+                ctx.bezierCurveTo(h, -h/4, h/2, -h/4, 0, h/2);
+                ctx.closePath();
+            } else if(type === 'curve') {
+                ctx.arc(0, 0, h/2, -Math.PI/2, Math.PI/2);
+            } else if(type === 'loop') {
+                ctx.arc(0, 0, h/2, 0, Math.PI*2);
+            }
             ctx.fill();
         }
 
