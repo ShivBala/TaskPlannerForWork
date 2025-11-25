@@ -3478,16 +3478,29 @@
                 const id = `shadow_${this.filterCount++}`;
                 this.shadowCache[key] = id;
                 
+                // Parse rgba to separate color and opacity for better compatibility
+                let color = s.shadowColor;
+                let opacity = 1;
+                if (color && color.startsWith('rgba')) {
+                    const parts = color.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+                    if (parts) {
+                        color = `rgb(${parts[1]},${parts[2]},${parts[3]})`;
+                        opacity = parseFloat(parts[4]);
+                    }
+                }
+                
+                // Use the robust filter chain (Blur -> Offset -> Flood -> Composite -> Merge)
+                // This avoids compatibility issues with feDropShadow and ensures correct masking
                 const filterDef = {
                     id: id,
                     type: 'filter',
                     content: `<filter id="${id}" x="-50%" y="-50%" width="200%" height="200%">
-                        <feGaussianBlur in="SourceAlpha" stdDeviation="${s.shadowBlur / 2}"/>
-                        <feOffset dx="${s.shadowOffsetX}" dy="${s.shadowOffsetY}" result="offsetblur"/>
-                        <feFlood flood-color="${s.shadowColor}"/>
-                        <feComposite in2="offsetblur" operator="in"/>
+                        <feGaussianBlur in="SourceAlpha" stdDeviation="${s.shadowBlur / 2}" result="blur"/>
+                        <feOffset in="blur" dx="${s.shadowOffsetX}" dy="${s.shadowOffsetY}" result="offsetBlur"/>
+                        <feFlood flood-color="${color}" flood-opacity="${opacity}" result="flood"/>
+                        <feComposite in="flood" in2="offsetBlur" operator="in" result="shadow"/>
                         <feMerge>
-                            <feMergeNode/>
+                            <feMergeNode in="shadow"/>
                             <feMergeNode in="SourceGraphic"/>
                         </feMerge>
                     </filter>`
