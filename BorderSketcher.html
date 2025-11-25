@@ -383,6 +383,17 @@
                         <input type="range" id="globalShadowBlur" min="0" max="20" value="4" oninput="updateGlobalShadow(this.value)" class="w-16">
                     </div>
                 </div>
+                <div class="flex items-center justify-between bg-slate-800 rounded px-2 py-1 border border-slate-600">
+                    <span class="text-[10px] text-slate-400">Shadow Color</span>
+                    <input type="color" id="globalShadowColor" value="#000000" oninput="updateGlobalShadowColor(this.value)" class="w-6 h-4 bg-transparent border-none p-0 cursor-pointer">
+                </div>
+                <div class="flex items-center justify-between bg-slate-800 rounded px-2 py-1 border border-slate-600">
+                    <span class="text-[10px] text-slate-400">Shadow Intensity</span>
+                    <div class="flex items-center gap-2">
+                        <span id="val-shadowOpacity" class="text-[9px] text-slate-500">50%</span>
+                        <input type="range" id="globalShadowOpacity" min="0" max="100" value="50" oninput="updateGlobalShadowOpacity(this.value)" class="w-16">
+                    </div>
+                </div>
                 <div class="grid grid-cols-3 gap-2">
                     <button id="btn-copy-data" onclick="copyToClipboard()" class="py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded text-xs border border-slate-600 flex items-center justify-center gap-1"><i class="fa-solid fa-code"></i> Data</button>
                     <button id="btn-copy-image" onclick="copyImageToClipboard()" class="py-2 bg-yellow-800 hover:bg-yellow-700 text-white font-bold rounded text-xs flex items-center justify-center gap-1 border border-yellow-600/50"><i class="fa-regular fa-images"></i> Copy</button>
@@ -1148,6 +1159,16 @@
                 shadowEl.value = appState.shadowBlur;
                 document.getElementById('val-shadowBlur').innerText = appState.shadowBlur + 'px';
             }
+            const shadowColEl = document.getElementById('globalShadowColor');
+            if(shadowColEl && appState.shadowColor) {
+                shadowColEl.value = appState.shadowColor;
+            }
+            const shadowOpEl = document.getElementById('globalShadowOpacity');
+            if(shadowOpEl) {
+                const op = appState.shadowOpacity !== undefined ? Math.round(appState.shadowOpacity * 100) : 50;
+                shadowOpEl.value = op;
+                document.getElementById('val-shadowOpacity').innerText = op + '%';
+            }
 
             resizeCanvas(); 
             renderLayerList(); 
@@ -1194,6 +1215,21 @@
         function updateGlobalShadow(val) {
             appState.shadowBlur = parseInt(val);
             document.getElementById('val-shadowBlur').innerText = val + 'px';
+            requestRedraw();
+            if(this.shadowSaveTimeout) clearTimeout(this.shadowSaveTimeout);
+            this.shadowSaveTimeout = setTimeout(saveState, 500);
+        }
+
+        function updateGlobalShadowColor(val) {
+            appState.shadowColor = val;
+            requestRedraw();
+            if(this.shadowSaveTimeout) clearTimeout(this.shadowSaveTimeout);
+            this.shadowSaveTimeout = setTimeout(saveState, 500);
+        }
+
+        function updateGlobalShadowOpacity(val) {
+            appState.shadowOpacity = parseInt(val) / 100;
+            document.getElementById('val-shadowOpacity').innerText = val + '%';
             requestRedraw();
             if(this.shadowSaveTimeout) clearTimeout(this.shadowSaveTimeout);
             this.shadowSaveTimeout = setTimeout(saveState, 500);
@@ -1773,6 +1809,12 @@
         function clearLayers() { appState.layers=[]; appState.stamps=[]; saveState(); renderLayerList(); redraw(); }
 
         function adjustColor(hex, amt) { let usePound = false; if(hex[0]=="#"){ hex=hex.slice(1); usePound=true; } let num = parseInt(hex,16); let r=(num>>16)+amt; let b=((num>>8)&0x00FF)+amt; let g=(num&0x0000FF)+amt; if(r>255)r=255;else if(r<0)r=0; if(b>255)b=255;else if(b<0)b=0; if(g>255)g=255;else if(g<0)g=0; return (usePound?"#":"") + (g | (b<<8) | (r<<16)).toString(16).padStart(6,"0"); }
+        function hexToRgba(hex, alpha) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+        }
         function getMaterialGradient(ctx, mat, bright, w, h) { const base = MATERIALS[mat] || MATERIALS['gold']; const colors = base.map(c => adjustColor(c, bright)); const g = ctx.createLinearGradient(0, 0, w, h); g.addColorStop(0, colors[0]); g.addColorStop(0.25, colors[1]); g.addColorStop(0.5, colors[2]); g.addColorStop(0.75, colors[3]); g.addColorStop(1, colors[4]); return g; }
         function getEtchColor(mat) { if(mat === 'gold') return 'rgba(60, 40, 10, 0.5)'; if(mat === 'silver') return 'rgba(30, 30, 30, 0.5)'; if(mat === 'rose') return 'rgba(60, 20, 20, 0.5)'; if(mat === 'copper') return 'rgba(50, 20, 0, 0.5)'; return 'rgba(0,0,0,0.6)'; }
         function setBaseContext(ctx, width) { ctx.strokeStyle = '#FFFFFF'; ctx.fillStyle = '#FFFFFF'; ctx.lineWidth = width; ctx.lineJoin = 'round'; ctx.miterLimit = 10; ctx.setLineDash([]); }
@@ -1828,7 +1870,11 @@
                 const mat = l.material || 'gold'; const bri = l.brightness || 0;
                 offCtx.fillStyle = getMaterialGradient(offCtx, mat, bri, w, h); offCtx.fillRect(0,0,w,h);
                 const sBlur = (appState.shadowBlur !== undefined ? appState.shadowBlur : 4);
-                targetCtx.shadowColor = 'rgba(0,0,0,0.5)'; targetCtx.shadowBlur = sBlur * scale; targetCtx.shadowOffsetX = 1 * scale; targetCtx.shadowOffsetY = 1 * scale;
+                const sColor = appState.shadowColor || '#000000';
+                const sOpacity = appState.shadowOpacity !== undefined ? appState.shadowOpacity : 0.5;
+                
+                targetCtx.shadowColor = hexToRgba(sColor, sOpacity); 
+                targetCtx.shadowBlur = sBlur * scale; targetCtx.shadowOffsetX = 1 * scale; targetCtx.shadowOffsetY = 1 * scale;
                 targetCtx.drawImage(offscreenCanvas, 0, 0); targetCtx.shadowColor = 'transparent'; 
 
                 // Draw Layer Stamps
@@ -1841,7 +1887,8 @@
                         targetCtx.fillStyle = fillStyle; targetCtx.strokeStyle = getEtchColor(mat); targetCtx.lineWidth = 2 * scale;
                         
                         // Add shadow for depth
-                        targetCtx.shadowColor = 'rgba(0,0,0,0.3)'; targetCtx.shadowBlur = sBlur * scale; targetCtx.shadowOffsetX = 2 * scale; targetCtx.shadowOffsetY = 2 * scale;
+                        targetCtx.shadowColor = hexToRgba(sColor, sOpacity); 
+                        targetCtx.shadowBlur = sBlur * scale; targetCtx.shadowOffsetX = 2 * scale; targetCtx.shadowOffsetY = 2 * scale;
                         
                         if(ASSETS[s.asset]) ASSETS[s.asset](targetCtx, s.size * scale, fillStyle, s.floralState || floralState);
                         targetCtx.restore();
@@ -1861,7 +1908,10 @@
                
                // Ensure we clear shadow before drawing stamp to avoid double shadow on self
                const sBlur = (appState.shadowBlur !== undefined ? appState.shadowBlur : 4);
-               targetCtx.shadowColor = 'rgba(0,0,0,0.3)'; targetCtx.shadowBlur = sBlur * scale; targetCtx.shadowOffsetX = 2 * scale; targetCtx.shadowOffsetY = 2 * scale;
+               const sColor = appState.shadowColor || '#000000';
+               const sOpacity = appState.shadowOpacity !== undefined ? appState.shadowOpacity : 0.5;
+               targetCtx.shadowColor = hexToRgba(sColor, sOpacity); 
+               targetCtx.shadowBlur = sBlur * scale; targetCtx.shadowOffsetX = 2 * scale; targetCtx.shadowOffsetY = 2 * scale;
                
                if(ASSETS[s.asset]) ASSETS[s.asset](targetCtx, s.size * scale, fillStyle, s.floralState || floralState);
                targetCtx.restore();
