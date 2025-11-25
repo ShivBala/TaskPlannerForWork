@@ -136,6 +136,12 @@
                     <div class="text-[10px] text-slate-400">Steel material, Lotus, Purple/Gold tones</div>
                 </div>
             </button>
+
+            <!-- Scene Palette -->
+            <div id="scenePalette" class="mt-6 pt-4 border-t border-slate-700">
+                <h3 class="text-yellow-500 text-xs font-bold uppercase tracking-widest mb-3">Scene Colors</h3>
+                <div id="scenePaletteContent" class="space-y-3"></div>
+            </div>
         </div>
 
         <div id="editorPanel" class="flex-1 overflow-y-auto p-4 space-y-6 pb-20">
@@ -2257,7 +2263,38 @@
             const b = parseInt(hex.slice(5, 7), 16);
             return `rgba(${r}, ${g}, ${b}, ${alpha})`;
         }
-        function getMaterialGradient(ctx, mat, bright, w, h) { const base = MATERIALS[mat] || MATERIALS['gold']; const colors = base.map(c => adjustColor(c, bright)); const g = ctx.createLinearGradient(0, 0, w, h); g.addColorStop(0, colors[0]); g.addColorStop(0.25, colors[1]); g.addColorStop(0.5, colors[2]); g.addColorStop(0.75, colors[3]); g.addColorStop(1, colors[4]); return g; }
+        function getMaterialGradient(ctx, mat, bright, w, h) { 
+            let base;
+            if (mat && mat.startsWith('#')) {
+                // Generate gradient from single hex color
+                // Pattern: Darker, Base, Lighter, Base, Darker
+                base = [
+                    adjustColor(mat, -40),
+                    mat,
+                    adjustColor(mat, 40),
+                    mat,
+                    adjustColor(mat, -20)
+                ];
+            } else {
+                base = MATERIALS[mat] || MATERIALS['gold']; 
+            }
+            const colors = base.map(c => adjustColor(c, bright)); 
+            const g = ctx.createLinearGradient(0, 0, w, h); 
+            g.addColorStop(0, colors[0]); 
+            g.addColorStop(0.25, colors[1]); 
+            g.addColorStop(0.5, colors[2]); 
+            g.addColorStop(0.75, colors[3]); 
+            g.addColorStop(1, colors[4]); 
+            return g; 
+        }
+        
+        function getEtchColor(mat) {
+            if (mat && mat.startsWith('#')) {
+                return adjustColor(mat, -60);
+            }
+            const map = { 'gold': '#b38728', 'silver': '#718096', 'rose': '#9f1239', 'copper': '#7c2d12', 'steel': '#1e293b' };
+            return map[mat] || '#b38728';
+        }
         function getEtchColor(mat) { if(mat === 'gold') return 'rgba(60, 40, 10, 0.5)'; if(mat === 'silver') return 'rgba(30, 30, 30, 0.5)'; if(mat === 'rose') return 'rgba(60, 20, 20, 0.5)'; if(mat === 'copper') return 'rgba(50, 20, 0, 0.5)'; return 'rgba(0,0,0,0.6)'; }
         function setBaseContext(ctx, width) { ctx.strokeStyle = '#FFFFFF'; ctx.fillStyle = '#FFFFFF'; ctx.lineWidth = width; ctx.lineJoin = 'round'; ctx.miterLimit = 10; ctx.setLineDash([]); }
 
@@ -3499,7 +3536,161 @@
                 
                 presetsPanel.classList.remove('hidden');
                 editorPanel.classList.add('hidden');
+                renderScenePalette();
             }
+        }
+
+        function renderScenePalette() {
+            const container = document.getElementById('scenePaletteContent');
+            if(!container) return;
+            container.innerHTML = '';
+            
+            // 1. Layers
+            const layersDiv = document.createElement('div');
+            layersDiv.className = 'space-y-2 mb-4';
+            layersDiv.innerHTML = '<div class="text-[10px] text-slate-400 uppercase font-bold mb-2">Layers</div>';
+            
+            appState.layers.forEach((l, idx) => {
+                const row = document.createElement('div');
+                row.className = 'flex justify-between items-center bg-slate-800 p-2 rounded border border-slate-700';
+                
+                const label = document.createElement('span');
+                label.className = 'text-xs text-slate-300';
+                label.innerText = `Layer ${idx + 1} (${l.pattern})`;
+                
+                const picker = document.createElement('input');
+                picker.type = 'color';
+                picker.className = 'w-6 h-6 rounded cursor-pointer bg-transparent';
+                // Get current color
+                let currentColor = '#b38728'; // Default gold
+                if (l.material && l.material.startsWith('#')) currentColor = l.material;
+                else if (l.material) currentColor = getEtchColor(l.material);
+                
+                picker.value = currentColor;
+                picker.oninput = (e) => {
+                    l.material = e.target.value;
+                    redraw();
+                };
+                
+                row.appendChild(label);
+                row.appendChild(picker);
+                layersDiv.appendChild(row);
+            });
+            container.appendChild(layersDiv);
+            
+            // 2. Stamps / Assets
+            const assetsDiv = document.createElement('div');
+            assetsDiv.className = 'space-y-2';
+            assetsDiv.innerHTML = '<div class="text-[10px] text-slate-400 uppercase font-bold mb-2">Assets</div>';
+            
+            // Collect unique assets
+            const assetMap = {};
+            const processStamp = (s) => {
+                if (!assetMap[s.asset]) {
+                    assetMap[s.asset] = {
+                        type: s.asset,
+                        isFloral: !!s.floralState,
+                        sample: s
+                    };
+                }
+            };
+            
+            appState.layers.forEach(l => {
+                if (l.stamps) l.stamps.forEach(processStamp);
+            });
+            appState.stamps.forEach(processStamp);
+            
+            Object.values(assetMap).forEach(asset => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'bg-slate-800 p-2 rounded border border-slate-700 space-y-2';
+                
+                const header = document.createElement('div');
+                header.className = 'text-xs text-yellow-500 font-bold border-b border-slate-700 pb-1 mb-1';
+                header.innerText = asset.type;
+                wrapper.appendChild(header);
+                
+                if (asset.isFloral) {
+                    // Floral Controls: Petal In, Petal Out, Leaf
+                    const props = [
+                        { label: 'Petal In', key: 'petalIn' },
+                        { label: 'Petal Out', key: 'petalOut' },
+                        { label: 'Leaf', key: 'leaf' }
+                    ];
+                    
+                    props.forEach(p => {
+                        const row = document.createElement('div');
+                        row.className = 'flex justify-between items-center';
+                        
+                        const lbl = document.createElement('span');
+                        lbl.className = 'text-[10px] text-slate-400';
+                        lbl.innerText = p.label;
+                        
+                        const pk = document.createElement('input');
+                        pk.type = 'color';
+                        pk.className = 'w-5 h-5 rounded cursor-pointer bg-transparent';
+                        pk.value = asset.sample.floralState[p.key] || '#ffffff';
+                        
+                        pk.oninput = (e) => {
+                            const val = e.target.value;
+                            // Update all stamps of this asset type
+                            const updateS = (s) => {
+                                if (s.asset === asset.type && s.floralState) {
+                                    s.floralState[p.key] = val;
+                                }
+                            };
+                            appState.layers.forEach(l => {
+                                if (l.stamps) l.stamps.forEach(updateS);
+                            });
+                            appState.stamps.forEach(updateS);
+                            redraw();
+                        };
+                        
+                        row.appendChild(lbl);
+                        row.appendChild(pk);
+                        wrapper.appendChild(row);
+                    });
+                    
+                } else {
+                    // Standard Material Control
+                    const row = document.createElement('div');
+                    row.className = 'flex justify-between items-center';
+                    
+                    const lbl = document.createElement('span');
+                    lbl.className = 'text-[10px] text-slate-400';
+                    lbl.innerText = 'Material';
+                    
+                    const pk = document.createElement('input');
+                    pk.type = 'color';
+                    pk.className = 'w-5 h-5 rounded cursor-pointer bg-transparent';
+                    
+                    let cur = '#b38728';
+                    if (asset.sample.material && asset.sample.material.startsWith('#')) cur = asset.sample.material;
+                    else if (asset.sample.material) cur = getEtchColor(asset.sample.material);
+                    pk.value = cur;
+                    
+                    pk.oninput = (e) => {
+                        const val = e.target.value;
+                        const updateS = (s) => {
+                            if (s.asset === asset.type) {
+                                s.material = val;
+                            }
+                        };
+                        appState.layers.forEach(l => {
+                            if (l.stamps) l.stamps.forEach(updateS);
+                        });
+                        appState.stamps.forEach(updateS);
+                        redraw();
+                    };
+                    
+                    row.appendChild(lbl);
+                    row.appendChild(pk);
+                    wrapper.appendChild(row);
+                }
+                
+                assetsDiv.appendChild(wrapper);
+            });
+            
+            container.appendChild(assetsDiv);
         }
 
         const BASE_PRESET_JSON = `{"shape":"oval","layers":[{"pattern":"solid","inset":20,"size":2,"spacing":5,"rot":0,"radius":0,"lines":3,"lineSep":6,"material":"steel","brightness":50,"grid":[[false,false,true,true],[false,false,false,true],[true,false,false,true],[true,true,true,true]],"ending":"none","floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"stamps":[{"asset":"leaf-pro","x":350.5,"y":123,"rot":0,"size":80,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":0},{"asset":"leaf-pro","x":345.5,"y":188,"rot":3.176499238629678,"size":80,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":0},{"asset":"leaf-pro","x":317.5,"y":148,"rot":1.5533430342749535,"size":80,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":0},{"asset":"leaf-pro","x":383.5,"y":153,"rot":1.5533430342749535,"size":80,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":0},{"asset":"leaf-pro","x":321.5,"y":171,"rot":4.188790204786385,"size":80,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":0},{"asset":"leaf-pro","x":375.5,"y":133,"rot":0.8552113334772214,"size":80,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":0},{"asset":"leaf-pro","x":374.5,"y":178,"rot":2.234021442552742,"size":80,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":0},{"asset":"leaf-pro","x":326.5,"y":127,"rot":2.3911010752322315,"size":80,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":0},{"asset":"rose-real","x":349.5,"y":159,"rot":2.3911010752322315,"size":56,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":"12","shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":0}]},{"pattern":"solid","inset":20,"size":2,"spacing":5,"rot":0,"radius":0,"lines":3,"lineSep":6,"material":"steel","brightness":50,"grid":[[false,false,true,true],[false,false,false,true],[true,false,false,true],[true,true,true,true]],"ending":"none","floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"simple"},"stamps":[]}],"stamps":[{"asset":"side-vine","x":413.5,"y":132,"rot":2.8623399732707,"size":46,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":50},{"asset":"side-vine","x":304.5,"y":200,"rot":2.4783675378319483,"size":64,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":50},{"asset":"side-vine","x":356.5,"y":99,"rot":1.8500490071139892,"size":58,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":50},{"asset":"leaf-pro","x":276.5,"y":107,"rot":1.9198621771937747,"size":121,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":50,"clusterId":1764046253677.3223},{"asset":"leaf-pro","x":263.8606797749979,"y":141.04226065180615,"rot":2.3736477827123057,"size":121,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":50,"clusterId":1764046253677.3223},{"asset":"leaf-pro","x":199.1393202250021,"y":122.51141009169893,"rot":3.979350694547099,"size":121,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":50,"clusterId":1764046253677.3223},{"asset":"leaf-pro","x":204.1393202250021,"y":83.48858990830108,"rot":5.235987755983025,"size":121,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":50,"clusterId":1764046253677.3223},{"asset":"leaf-pro","x":237.8606797749979,"y":66.95773934819385,"rot":6.352998477259367,"size":121,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":50,"clusterId":1764046253677.3223},{"asset":"leaf-pro","x":274.4889978279809,"y":78.18371335993513,"rot":19.739673840055836,"size":121,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":50,"clusterId":1764046707808.7417},{"asset":"leaf-pro","x":232.0302291937787,"y":142.25683490858685,"rot":22.25294796292774,"size":121,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":50,"clusterId":1764046707808.7417},{"asset":"rose-real","x":236.5,"y":105,"rot":3.0543261909900794,"size":96,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":50},{"asset":"leaf-palm","x":388.42006481427296,"y":81.28287328889895,"rot":1.5707963267948966,"size":96,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":50,"clusterId":1764051122893.2976},{"asset":"leaf-palm","x":360.8144150186446,"y":125.43992988485988,"rot":2.8274333882308142,"size":96,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":50,"clusterId":1764051122893.2976},{"asset":"leaf-palm","x":302.24153930062704,"y":117.02768780052871,"rot":4.084070449666731,"size":96,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":50,"clusterId":1764051122893.2976},{"asset":"leaf-palm","x":298.04801609759176,"y":47.71476989386465,"rot":5.340707511102648,"size":96,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":50,"clusterId":1764051122893.2976},{"asset":"leaf-palm","x":337.64603981207784,"y":29.115659010651775,"rot":6.5973445725385655,"size":96,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":50,"clusterId":1764051122893.2976},{"asset":"leaf-pro","x":373.07084357282406,"y":72.17769593509654,"rot":1.5358897417550148,"size":44,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":50,"clusterId":1764051657534.9949},{"asset":"leaf-pro","x":358.2936234314835,"y":97.544144705008,"rot":2.792526803190937,"size":44,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":50,"clusterId":1764051657534.9949},{"asset":"leaf-pro","x":324.0626462683165,"y":98.80011319389669,"rot":4.049163864626858,"size":44,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":50,"clusterId":1764051657534.9949},{"asset":"leaf-pro","x":314.93239515366486,"y":48.69078982079665,"rot":5.305800926062775,"size":44,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":50,"clusterId":1764051657534.9949},{"asset":"leaf-pro","x":332.9447220023702,"y":37.77839059670407,"rot":6.562437987498686,"size":44,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":50,"clusterId":1764051657534.9949},{"asset":"rose-real","x":335.5,"y":72,"rot":4.049163864626845,"size":44,"flipH":false,"flipV":false,"floralState":{"petalIn":"#4b0082","petalOut":"#9370db","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#ffd700","vein":"#daa520","veinW":1,"leafShape":"fern"},"material":"steel","brightness":50}],"selectedStamp":null,"selectedStamps":[],"shadowOpacity":1,"shadowBlur":20}`;
