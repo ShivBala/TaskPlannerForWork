@@ -1134,7 +1134,25 @@
             'corner-ornate': (ctx, s, style) => { ctx.beginPath(); ctx.moveTo(0,0); ctx.quadraticCurveTo(s,0,s,s*0.5); ctx.quadraticCurveTo(s*0.8,s*0.8,s*0.5,s); ctx.quadraticCurveTo(0,s,0,0); ctx.fill(); ctx.beginPath(); ctx.arc(s*0.3,s*0.3,s*0.1,0,Math.PI*2); ctx.stroke(); },
             'corner-shell': (ctx, s, style) => { ctx.beginPath(); ctx.moveTo(0,0); for(let i=0;i<=5;i++){const a=(Math.PI/2)*(i/5);ctx.lineTo(Math.cos(a)*s,Math.sin(a)*s);} ctx.closePath(); ctx.fill(); for(let i=1;i<5;i++){ctx.beginPath(); ctx.moveTo(0,0); const a=(Math.PI/2)*(i/5); ctx.lineTo(Math.cos(a)*s,Math.sin(a)*s); ctx.stroke(); } },
             'side-center': (ctx, s, style) => { ctx.beginPath(); ctx.moveTo(-s/2,0); ctx.quadraticCurveTo(-s/4,-s/4,0,-s/2); ctx.quadraticCurveTo(s/4,-s/4,s/2,0); ctx.quadraticCurveTo(s/4,s/4,0,s/2); ctx.quadraticCurveTo(-s/4,s/4,-s/2,0); ctx.fill(); },
-            'side-vine': (ctx, s, style) => { ctx.save(); ctx.strokeStyle = style || ctx.fillStyle; ctx.beginPath(); ctx.moveTo(-s/2,0); ctx.bezierCurveTo(-s/4,-s/4,s/4,s/4,s/2,0); ctx.stroke(); ctx.restore(); ctx.beginPath(); ctx.arc(-s/4,-s/8,s/8,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(s/4,s/8,s/8,0,Math.PI*2); ctx.fill(); },
+            'side-vine': (ctx, s, style, f) => { 
+                ctx.save(); 
+                // Use leaf color for the vine if available, else style
+                ctx.strokeStyle = (f && f.leaf) ? f.leaf : (style || ctx.fillStyle); 
+                ctx.beginPath(); 
+                ctx.moveTo(-s/2,0); 
+                ctx.bezierCurveTo(-s/4,-s/4,s/4,s/4,s/2,0); 
+                ctx.stroke(); 
+                ctx.restore(); 
+                
+                // Use petal/berry color
+                ctx.fillStyle = (f && f.petalIn) ? f.petalIn : (style || ctx.fillStyle);
+                ctx.beginPath(); 
+                ctx.arc(-s/4,-s/8,s/8,0,Math.PI*2); 
+                ctx.fill(); 
+                ctx.beginPath(); 
+                ctx.arc(s/4,s/8,s/8,0,Math.PI*2); 
+                ctx.fill(); 
+            },
             'top-crown': (ctx, s, style) => { ctx.beginPath(); ctx.moveTo(-s/2,s/2); ctx.lineTo(s/2,s/2); ctx.lineTo(s/2,0); ctx.lineTo(s/4,s/4); ctx.lineTo(0,-s/2); ctx.lineTo(-s/4,s/4); ctx.lineTo(-s/2,0); ctx.closePath(); ctx.fill(); },
             'rose-real': (ctx, s, style, opts) => { const r=s/2; const pCount=parseInt(opts.count)||8; const getPetalFill=(c,ir,o=0)=>{const g=c.createRadialGradient(o,o,0,0,0,ir);g.addColorStop(0,opts.petalIn);g.addColorStop(1,opts.petalOut);return g;}; for(let i=pCount-1;i>=0;i--){ctx.beginPath(); const a=i*(Math.PI*2/(pCount/2.5)); const sc=0.4+(i/pCount)*0.6; ctx.save(); ctx.rotate(a); ctx.translate(0,r*sc*0.4); if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=4;ctx.shadowOffsetX=parseInt(opts.shadowOff);ctx.shadowOffsetY=parseInt(opts.shadowOff);} ctx.fillStyle=getPetalFill(ctx,r*sc,r*0.1); ctx.moveTo(0,0); ctx.bezierCurveTo(r*sc,-r*sc*0.5,r*sc,r*sc*0.5,0,r*sc); ctx.bezierCurveTo(-r*sc,r*sc*0.5,-r*sc,-r*sc*0.5,0,0); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=0.5; ctx.stroke(); ctx.restore();} ctx.fillStyle=getPetalFill(ctx,r*0.3); ctx.beginPath(); ctx.arc(0,0,r*0.2,0,Math.PI*2); ctx.fill(); },
             'rose-bud': (ctx, s, style, opts) => { const h=s; const w=s*0.6; const g=ctx.createRadialGradient(-w*0.2,0,0,0,0,h); g.addColorStop(0,opts.petalOut); g.addColorStop(1,opts.petalIn); ctx.fillStyle=g; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=5;ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} ctx.beginPath(); ctx.moveTo(0,h/2); ctx.bezierCurveTo(w,h/2,w,-h/2,0,-h/2); ctx.bezierCurveTo(-w,-h/2,-w,h/2,0,h/2); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.petalIn; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,h/2); ctx.quadraticCurveTo(w*0.5,0,0,-h/4); ctx.stroke(); ctx.strokeStyle=opts.vein; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(0,h/2); ctx.lineTo(0,h/2+s*0.2); ctx.stroke(); },
@@ -3513,6 +3531,60 @@
             saveState(); redraw();
         });
 
+        // --- COLOR THEMES ---
+        const COLOR_THEMES = [
+            { name: "Sunset Glow", colors: { petalIn: "#ff4500", petalOut: "#ff8c00", leaf: "#228b22", material: "#ffd700", vein: "#8b0000" } },
+            { name: "Ocean Breeze", colors: { petalIn: "#00bfff", petalOut: "#e0ffff", leaf: "#2e8b57", material: "#c0c0c0", vein: "#00008b" } },
+            { name: "Lavender Dream", colors: { petalIn: "#9370db", petalOut: "#e6e6fa", leaf: "#556b2f", material: "#d8bfd8", vein: "#4b0082" } },
+            { name: "Rose Gold Luxury", colors: { petalIn: "#b76e79", petalOut: "#f4c2c2", leaf: "#8fbc8f", material: "#b76e79", vein: "#800000" } },
+            { name: "Forest Deep", colors: { petalIn: "#228b22", petalOut: "#90ee90", leaf: "#006400", material: "#8b4513", vein: "#000000" } },
+            { name: "Cherry Blossom", colors: { petalIn: "#ff69b4", petalOut: "#ffb6c1", leaf: "#98fb98", material: "#ffc0cb", vein: "#c71585" } },
+            { name: "Golden Hour", colors: { petalIn: "#daa520", petalOut: "#f0e68c", leaf: "#bdb76b", material: "#ffd700", vein: "#b8860b" } },
+            { name: "Midnight Mystery", colors: { petalIn: "#191970", petalOut: "#483d8b", leaf: "#2f4f4f", material: "#708090", vein: "#000000" } },
+            { name: "Autumn Spice", colors: { petalIn: "#d2691e", petalOut: "#ff7f50", leaf: "#8b4513", material: "#cd853f", vein: "#a0522d" } },
+            { name: "Winter Frost", colors: { petalIn: "#f0f8ff", petalOut: "#ffffff", leaf: "#b0c4de", material: "#e0ffff", vein: "#4682b4" } },
+            { name: "Spring Meadow", colors: { petalIn: "#ffff00", petalOut: "#ffffe0", leaf: "#32cd32", material: "#98fb98", vein: "#006400" } },
+            { name: "Royal Velvet", colors: { petalIn: "#800080", petalOut: "#da70d6", leaf: "#008080", material: "#ffd700", vein: "#4b0082" } },
+            { name: "Coral Reef", colors: { petalIn: "#ff7f50", petalOut: "#ffa07a", leaf: "#20b2aa", material: "#f08080", vein: "#cd5c5c" } },
+            { name: "Desert Sand", colors: { petalIn: "#f4a460", petalOut: "#ffe4c4", leaf: "#6b8e23", material: "#d2b48c", vein: "#8b4513" } },
+            { name: "Berry Smoothie", colors: { petalIn: "#c71585", petalOut: "#db7093", leaf: "#00fa9a", material: "#ff1493", vein: "#800080" } },
+            { name: "Tropical Punch", colors: { petalIn: "#ff00ff", petalOut: "#00ffff", leaf: "#7cfc00", material: "#ffff00", vein: "#ff4500" } },
+            { name: "Vintage Sepia", colors: { petalIn: "#8b4513", petalOut: "#d2b48c", leaf: "#556b2f", material: "#cd853f", vein: "#3e2723" } },
+            { name: "Neon Lights", colors: { petalIn: "#00ff00", petalOut: "#ff00ff", leaf: "#00ffff", material: "#ffff00", vein: "#ffffff" } },
+            { name: "Pastel Party", colors: { petalIn: "#ffb3ba", petalOut: "#ffdfba", leaf: "#baffc9", material: "#bae1ff", vein: "#ffb3ba" } },
+            { name: "Gothic Noir", colors: { petalIn: "#2c2c2c", petalOut: "#4a4a4a", leaf: "#1a1a1a", material: "#696969", vein: "#000000" } },
+            { name: "Sunflower Field", colors: { petalIn: "#8b4500", petalOut: "#ffd700", leaf: "#228b22", material: "#daa520", vein: "#8b4513" } },
+            { name: "Arctic Ice", colors: { petalIn: "#e0ffff", petalOut: "#f0ffff", leaf: "#add8e6", material: "#b0e0e6", vein: "#5f9ea0" } },
+            { name: "Candy Cane", colors: { petalIn: "#ff0000", petalOut: "#ffffff", leaf: "#008000", material: "#ff0000", vein: "#8b0000" } },
+            { name: "Deep Space", colors: { petalIn: "#4b0082", petalOut: "#8a2be2", leaf: "#000080", material: "#191970", vein: "#ffffff" } },
+            { name: "Earth Tones", colors: { petalIn: "#8b4513", petalOut: "#a0522d", leaf: "#556b2f", material: "#d2b48c", vein: "#3e2723" } },
+            { name: "Fire & Ice", colors: { petalIn: "#ff4500", petalOut: "#00bfff", leaf: "#ff8c00", material: "#1e90ff", vein: "#ffffff" } },
+            { name: "Grapevine", colors: { petalIn: "#800080", petalOut: "#9370db", leaf: "#006400", material: "#dda0dd", vein: "#4b0082" } },
+            { name: "Honey Bee", colors: { petalIn: "#ffd700", petalOut: "#fffacd", leaf: "#000000", material: "#daa520", vein: "#b8860b" } },
+            { name: "Island Paradise", colors: { petalIn: "#ff6347", petalOut: "#ffa07a", leaf: "#32cd32", material: "#40e0d0", vein: "#008080" } },
+            { name: "Jade Garden", colors: { petalIn: "#00a86b", petalOut: "#98fb98", leaf: "#2e8b57", material: "#f0fff0", vein: "#006400" } },
+            { name: "Lemon Lime", colors: { petalIn: "#ffff00", petalOut: "#adff2f", leaf: "#32cd32", material: "#9acd32", vein: "#006400" } },
+            { name: "Magenta Magic", colors: { petalIn: "#8b008b", petalOut: "#ff00ff", leaf: "#008080", material: "#da70d6", vein: "#4b0082" } },
+            { name: "Night Sky", colors: { petalIn: "#191970", petalOut: "#4169e1", leaf: "#2f4f4f", material: "#c0c0c0", vein: "#ffffff" } },
+            { name: "Olive Grove", colors: { petalIn: "#808000", petalOut: "#bdb76b", leaf: "#556b2f", material: "#6b8e23", vein: "#006400" } },
+            { name: "Peachy Keen", colors: { petalIn: "#ffdab9", petalOut: "#ffe4b5", leaf: "#98fb98", material: "#ffefd5", vein: "#cd853f" } },
+            { name: "Quartz Crystal", colors: { petalIn: "#ffc0cb", petalOut: "#ffe4e1", leaf: "#e6e6fa", material: "#fff0f5", vein: "#db7093" } },
+            { name: "Ruby Red", colors: { petalIn: "#8b0000", petalOut: "#ff0000", leaf: "#006400", material: "#cd5c5c", vein: "#800000" } },
+            { name: "Sapphire Blue", colors: { petalIn: "#00008b", petalOut: "#4169e1", leaf: "#4682b4", material: "#b0c4de", vein: "#000080" } },
+            { name: "Teal Twilight", colors: { petalIn: "#008080", petalOut: "#40e0d0", leaf: "#2f4f4f", material: "#afeeee", vein: "#008b8b" } },
+            { name: "Ultraviolet", colors: { petalIn: "#9400d3", petalOut: "#ba55d3", leaf: "#4b0082", material: "#dda0dd", vein: "#8b008b" } },
+            { name: "Violet Haze", colors: { petalIn: "#ee82ee", petalOut: "#dda0dd", leaf: "#9370db", material: "#e6e6fa", vein: "#8a2be2" } },
+            { name: "Watermelon", colors: { petalIn: "#ff6347", petalOut: "#ffb6c1", leaf: "#32cd32", material: "#90ee90", vein: "#006400" } },
+            { name: "Xanthic Gold", colors: { petalIn: "#ffd700", petalOut: "#ffff00", leaf: "#daa520", material: "#f0e68c", vein: "#b8860b" } },
+            { name: "Yellow Submarine", colors: { petalIn: "#ffff00", petalOut: "#ffd700", leaf: "#0000ff", material: "#ffa500", vein: "#00008b" } },
+            { name: "Zen Garden", colors: { petalIn: "#f5f5dc", petalOut: "#fffaf0", leaf: "#556b2f", material: "#d2b48c", vein: "#8b4513" } },
+            { name: "Amber Glow", colors: { petalIn: "#ffbf00", petalOut: "#ffcc33", leaf: "#8b4500", material: "#cd853f", vein: "#a0522d" } },
+            { name: "Bronze Age", colors: { petalIn: "#cd7f32", petalOut: "#d2691e", leaf: "#8b4513", material: "#a0522d", vein: "#3e2723" } },
+            { name: "Copper Tone", colors: { petalIn: "#b87333", petalOut: "#cd853f", leaf: "#8b4513", material: "#d2691e", vein: "#a0522d" } },
+            { name: "Dusty Rose", colors: { petalIn: "#cd5c5c", petalOut: "#f08080", leaf: "#bc8f8f", material: "#e9967a", vein: "#8b0000" } },
+            { name: "Emerald City", colors: { petalIn: "#50c878", petalOut: "#90ee90", leaf: "#006400", material: "#2e8b57", vein: "#004d00" } }
+        ];
+
         // --- TAB & PRESET LOGIC ---
         function switchTab(tab) {
             const editorBtn = document.getElementById('tab-btn-editor');
@@ -3605,8 +3677,52 @@
                 wrapper.className = 'bg-slate-800 p-2 rounded border border-slate-700 space-y-2';
                 
                 const header = document.createElement('div');
-                header.className = 'text-xs text-yellow-500 font-bold border-b border-slate-700 pb-1 mb-1';
-                header.innerText = asset.type;
+                header.className = 'flex justify-between items-center border-b border-slate-700 pb-1 mb-1';
+                
+                const title = document.createElement('span');
+                title.className = 'text-xs text-yellow-500 font-bold';
+                title.innerText = asset.type;
+                
+                // Theme Selector
+                const themeSelect = document.createElement('select');
+                themeSelect.className = 'bg-slate-700 text-[10px] text-slate-300 border border-slate-600 rounded px-1 py-0.5 outline-none';
+                themeSelect.innerHTML = '<option value="">Quick Theme...</option>';
+                COLOR_THEMES.forEach((t, i) => {
+                    const opt = document.createElement('option');
+                    opt.value = i;
+                    opt.innerText = t.name;
+                    themeSelect.appendChild(opt);
+                });
+                
+                themeSelect.onchange = (e) => {
+                    const themeIdx = e.target.value;
+                    if (themeIdx === "") return;
+                    const theme = COLOR_THEMES[themeIdx];
+                    
+                    const updateS = (s) => {
+                        if (s.asset === asset.type) {
+                            if (s.floralState) {
+                                s.floralState.petalIn = theme.colors.petalIn;
+                                s.floralState.petalOut = theme.colors.petalOut;
+                                s.floralState.leaf = theme.colors.leaf;
+                                s.floralState.vein = theme.colors.vein;
+                                s.floralState.shadowCol = '#000000'; // Reset shadow to black usually
+                            }
+                            // Also update material just in case
+                            s.material = theme.colors.material;
+                        }
+                    };
+                    
+                    appState.layers.forEach(l => {
+                        if (l.stamps) l.stamps.forEach(updateS);
+                    });
+                    appState.stamps.forEach(updateS);
+                    redraw();
+                    renderScenePalette(); // Re-render to update color pickers
+                };
+                
+                header.appendChild(title);
+                header.appendChild(themeSelect);
                 wrapper.appendChild(header);
                 
                 if (asset.isFloral) {
