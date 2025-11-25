@@ -71,6 +71,7 @@
                     <option value="circle">Circle</option>
                     <option value="oval">Oval</option>
                 </select>
+                <button onclick="rotateCanvas()" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-slate-300 text-xs" title="Rotate Canvas"><i class="fa-solid fa-rotate"></i></button>
             </div>
         </div>
 
@@ -241,56 +242,24 @@
             <div class="panel rounded-lg p-4">
                 <h3 class="text-slate-400 text-sm font-bold uppercase tracking-widest mb-4 border-b border-slate-700 pb-2">Border Designer</h3>
                 
-                <!-- PRESETS -->
+                <!-- PRESETS (TABBED UI) -->
                 <div class="mb-4 bg-slate-800/50 p-2 rounded border border-slate-600">
-                    <label class="text-[10px] text-yellow-500 uppercase font-bold mb-1 block"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Quick Themes</label>
-                    <select id="presetSelector" onchange="applyPreset(this.value)" class="w-full p-2 bg-slate-900 border border-slate-600 rounded text-white text-xs outline-none focus:border-yellow-500">
-                        <option value="">Select a Professional Theme...</option>
-                        <optgroup label="Happy Occasions">
-                            <option value="wedding-classic">Wedding Classic (Pearl & Roses)</option>
-                            <option value="birthday-fun">Birthday Fun (Stars & Balloons)</option>
-                            <option value="royal-gala">Royal Gala (Amethyst & Crowns)</option>
-                            <option value="golden-anniversary">Golden Anniversary</option>
-                        </optgroup>
-                        <optgroup label="Artistic Themes">
-                            <option value="rose-garden">Rose Garden</option>
-                            <option value="forest-fern">Forest Ferns</option>
-                            <option value="autumn-leaves">Autumn Leaves</option>
-                            <option value="ocean-breeze">Ocean Breeze</option>
-                        </optgroup>
-                        <optgroup label="Closed Borders (Classic)">
-                            <option value="classic-gold">Classic Gold Double</option>
-                            <option value="baroque-frame">Ornate Baroque</option>
-                            <option value="stitched-leather">Stitched Rose</option>
-                            <option value="modern-steel">Modern Steel Minimal</option>
-                            <option value="art-deco">Art Deco Diamonds</option>
-                            <option value="royal-wavy">Royal Wavy</option>
-                        </optgroup>
-                        <optgroup label="Open Borders (Creative)">
-                            <option value="open-corners">Corner Accents (L-Shape)</option>
-                            <option value="top-bottom">Cinema (Top & Bottom)</option>
-                            <option value="side-brackets">Side Brackets</option>
-                            <option value="floating-corners">Floating Corners</option>
-                        </optgroup>
-                        <optgroup label="Curved & Rounded">
-                            <option value="soft-modern">Soft Modern (Rounded)</option>
-                            <option value="retro-rounded">Retro Rounded</option>
-                            <option value="bubble-frame">Bubble Frame</option>
-                        </optgroup>
-                        <optgroup label="Shapes (Oval/Circle)">
-                            <option value="cameo-oval">Cameo Oval</option>
-                            <option value="coin-circle">Coin Circle</option>
-                            <option value="mirror-oval">Mirror Oval</option>
-                            <option value="badge-circle">Badge Circle</option>
-                        </optgroup>
-                        <optgroup label="Decorative">
-                            <option value="hearts-love">Love & Hearts</option>
-                            <option value="stars-night">Starry Night</option>
-                            <option value="dotted-line">Dotted Elegance</option>
-                        </optgroup>
-                    </select>
-                </div>
+                    <label class="text-[10px] text-yellow-500 uppercase font-bold mb-2 block"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Quick Themes</label>
+                    
+                    <!-- Tabs -->
+                    <div class="flex gap-1 mb-2 border-b border-slate-600 pb-1">
+                        <button onclick="switchPresetTab('all')" id="tab-all" class="preset-tab active px-2 py-1 text-[10px] text-slate-300 hover:text-white border-b-2 border-transparent hover:border-slate-400 transition-all">All</button>
+                        <button onclick="switchPresetTab('floral')" id="tab-floral" class="preset-tab px-2 py-1 text-[10px] text-slate-300 hover:text-white border-b-2 border-transparent hover:border-slate-400 transition-all">Floral</button>
+                        <button onclick="switchPresetTab('classic')" id="tab-classic" class="preset-tab px-2 py-1 text-[10px] text-slate-300 hover:text-white border-b-2 border-transparent hover:border-slate-400 transition-all">Classic</button>
+                        <button onclick="switchPresetTab('modern')" id="tab-modern" class="preset-tab px-2 py-1 text-[10px] text-slate-300 hover:text-white border-b-2 border-transparent hover:border-slate-400 transition-all">Modern</button>
+                    </div>
 
+                    <!-- Preset Grid -->
+                    <div id="presetGrid" class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto custom-scrollbar p-1">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+                
                 <div class="flex justify-between items-center mb-3">
                     <span class="text-[10px] text-slate-400">Show Guide</span>
                     <label class="relative inline-flex items-center cursor-pointer">
@@ -363,7 +332,16 @@
                 
                 <!-- NEW SVG MINI-MAP -->
                 <div class="mb-4" id="segmentMapContainer">
-                    <div class="flex justify-between items-end mb-1"><label class="text-[10px] text-slate-400 uppercase font-bold">Segments</label><button id="btn-grid-reset" onclick="resetGrid()" class="text-[10px] text-yellow-600 hover:text-yellow-500">Reset</button></div>
+                    <div class="flex justify-between items-end mb-1">
+                    <label class="text-[10px] text-slate-400 uppercase font-bold">Segments</label>
+                    <div class="flex items-center gap-2">
+                        <label class="flex items-center gap-1 cursor-pointer" title="Apply changes to all layers">
+                            <input type="checkbox" id="globalGrid" class="w-3 h-3 rounded bg-slate-700 border-slate-500 text-yellow-600">
+                            <span class="text-[9px] text-slate-400">Global</span>
+                        </label>
+                        <button id="btn-grid-reset" onclick="resetGrid()" class="text-[10px] text-yellow-600 hover:text-yellow-500">Reset</button>
+                    </div>
+                </div>
                     <!-- Replaced grid buttons with SVG -->
                     <div class="bg-slate-800 border border-slate-600 p-2 rounded flex justify-center">
                          <svg id="segmentMap" width="160" height="120" viewBox="0 0 160 120"></svg>
@@ -392,6 +370,13 @@
                         <input type="checkbox" id="transparentBg" class="w-3 h-3 rounded bg-slate-700 border-slate-500 text-yellow-600">
                         <span class="text-[10px] text-slate-300">Transparent</span>
                     </label>
+                </div>
+                <div class="flex items-center justify-between bg-slate-800 rounded px-2 py-1 border border-slate-600">
+                    <span class="text-[10px] text-slate-400">Shadow Blur</span>
+                    <div class="flex items-center gap-2">
+                        <span id="val-shadowBlur" class="text-[9px] text-slate-500">4px</span>
+                        <input type="range" id="globalShadowBlur" min="0" max="20" value="4" oninput="updateGlobalShadow(this.value)" class="w-16">
+                    </div>
                 </div>
                 <div class="grid grid-cols-3 gap-2">
                     <button id="btn-copy-data" onclick="copyToClipboard()" class="py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded text-xs border border-slate-600 flex items-center justify-center gap-1"><i class="fa-solid fa-code"></i> Data</button>
@@ -716,6 +701,68 @@
                     { pattern: 'corner-shell', inset: 20, size: 30, spacing: 0, lines: 1, lineSep: 10, gridType: 'corners' },
                     { pattern: 'wavy', inset: 20, size: 5, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' }
                 ]
+            },
+
+            // --- LANDSCAPE SPECIALS ---
+            'cinema-wide': {
+                material: 'gold',
+                shape: 'rect-landscape',
+                layers: [
+                    { pattern: 'solid', inset: 10, size: 2, spacing: 0, lines: 2, lineSep: 5, gridType: 'top-bottom' },
+                    { pattern: 'star', inset: 20, size: 8, spacing: 20, lines: 1, lineSep: 10, gridType: 'top-bottom' }
+                ]
+            },
+            'garden-panorama': {
+                material: 'rose',
+                shape: 'rect-landscape',
+                floralState: { petalIn: '#ff4081', petalOut: '#f8bbd0', leaf: '#8bc34a', vein: '#558b2f' },
+                layers: [
+                    { pattern: 'leaf-pro', inset: 15, size: 20, spacing: 15, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'flower-hibiscus', inset: 15, size: 35, spacing: 0, lines: 1, lineSep: 10, gridType: 'corners' }
+                ]
+            },
+
+            // --- PROCEDURAL & CLUSTERS ---
+            'wild-vines': {
+                material: 'emerald',
+                floralState: { leaf: '#4caf50', vein: '#1b5e20' },
+                layers: [
+                    { pattern: 'leaf-pro', inset: 20, size: 25, spacing: 15, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'leaf-ivy', inset: 35, size: 15, spacing: 20, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
+            },
+            'acanthus-cluster': {
+                material: 'gold',
+                layers: [
+                    { pattern: 'leaf-cluster', inset: 20, size: 30, spacing: 25, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'solid', inset: 45, size: 2, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
+            },
+
+            // --- BIG FLOWERS & OPEN ---
+            'corner-blooms': {
+                material: 'rose',
+                floralState: { petalIn: '#d50000', petalOut: '#ff8a80', leaf: '#2e7d32', vein: '#1b5e20' },
+                layers: [
+                    { pattern: 'flower-hibiscus', inset: 20, size: 50, spacing: 0, lines: 1, lineSep: 10, gridType: 'corners' },
+                    { pattern: 'solid', inset: 20, size: 2, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
+            },
+            'royal-arch': {
+                material: 'gold',
+                layers: [
+                    { pattern: 'corner-classic', inset: 20, size: 30, spacing: 0, lines: 1, lineSep: 10, gridType: 'corners' },
+                    { pattern: 'solid', inset: 20, size: 4, spacing: 0, lines: 1, lineSep: 10, gridType: 'top-bottom' }
+                ]
+            },
+            'wreath-laurel': {
+                material: 'emerald',
+                shape: 'circle',
+                floralState: { leaf: '#66bb6a', vein: '#2e7d32' },
+                layers: [
+                    { pattern: 'leaf-pro', inset: 10, size: 20, spacing: 10, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'leaf-cluster', inset: 10, size: 15, spacing: 30, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
             }
         };
 
@@ -727,6 +774,67 @@
             else if(type === 'sides') { for(let r=0;r<4;r++) { g[r][0]=true; g[r][3]=true; } }
             return g;
         }
+
+        // --- PRESET UI LOGIC ---
+        const PRESET_CATEGORIES = {
+            'floral': ['romantic-roses', 'floral-arch', 'tropical-hoop', 'vintage-botanical', 'rose-garden', 'forest-fern', 'autumn-leaves', 'wedding-classic', 'garden-panorama', 'wild-vines', 'corner-blooms'],
+            'classic': ['classic-gold', 'baroque-frame', 'stitched-leather', 'art-deco', 'royal-wavy', 'golden-anniversary', 'acanthus-cluster', 'royal-arch'],
+            'modern': ['modern-steel', 'soft-modern', 'retro-rounded', 'bubble-frame', 'open-corners', 'top-bottom', 'side-brackets', 'floating-corners', 'cinema-wide'],
+            'shapes': ['cameo-oval', 'coin-circle', 'mirror-oval', 'badge-circle', 'hearts-love', 'stars-night', 'dotted-line', 'wreath-laurel']
+        };
+
+        function switchPresetTab(cat) {
+            document.querySelectorAll('.preset-tab').forEach(b => {
+                b.classList.remove('active', 'border-slate-400', 'text-white');
+                b.classList.add('text-slate-300', 'border-transparent');
+            });
+            const activeBtn = document.getElementById('tab-'+cat);
+            if(activeBtn) {
+                activeBtn.classList.add('active', 'border-slate-400', 'text-white');
+                activeBtn.classList.remove('text-slate-300', 'border-transparent');
+            }
+            renderPresetGrid(cat);
+        }
+
+        function renderPresetGrid(cat) {
+            const grid = document.getElementById('presetGrid');
+            if(!grid) return;
+            grid.innerHTML = '';
+            
+            let keys = [];
+            if (cat === 'all') {
+                keys = Object.keys(PRESETS);
+            } else if (PRESET_CATEGORIES[cat]) {
+                keys = PRESET_CATEGORIES[cat];
+            } else {
+                keys = PRESET_CATEGORIES['shapes'] || [];
+            }
+
+            keys.forEach(k => {
+                if (!PRESETS[k]) return;
+                const btn = document.createElement('button');
+                btn.className = "text-left p-2 rounded border border-slate-700 bg-slate-800 hover:bg-slate-700 hover:border-yellow-500 transition-all group";
+                btn.onclick = () => applyPreset(k);
+                
+                // Mini preview (colored dot based on material)
+                const matColor = MATERIALS[PRESETS[k].material] ? MATERIALS[PRESETS[k].material][0] : '#ccc';
+                
+                btn.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 rounded-full shadow-sm" style="background:${matColor}"></div>
+                        <span class="text-[10px] text-slate-300 font-bold group-hover:text-white truncate">${formatPresetName(k)}</span>
+                    </div>
+                `;
+                grid.appendChild(btn);
+            });
+        }
+
+        function formatPresetName(str) {
+            return str.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        }
+
+        // Initialize Preset Grid
+        setTimeout(() => switchPresetTab('all'), 100);
 
         function applyPreset(name) {
             if(!name || !PRESETS[name]) return;
@@ -746,15 +854,15 @@
                 setCol('col-vein', floralState.vein);
             }
             
-            // Set Shape (if defined)
-            if(p.shape) {
-                appState.shape = p.shape;
-                // Update shape UI buttons
-                document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
-                const shapeBtn = document.getElementById('shape-' + p.shape);
-                if(shapeBtn) shapeBtn.classList.add('active');
-                resizeCanvas(); // Important to resize if shape changes
-            }
+            // Set Shape (if defined, else default to rect-portrait)
+            const targetShape = p.shape || 'rect-portrait';
+            appState.shape = targetShape;
+            
+            // Update shape UI buttons
+            document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
+            const shapeBtn = document.getElementById('shape-' + targetShape);
+            if(shapeBtn) shapeBtn.classList.add('active');
+            resizeCanvas(); // Important to resize if shape changes
             
             // Clear Layers
             appState.layers = [];
@@ -826,14 +934,25 @@
         };
 
         // Procedural Leaf Helper
-        function generateProceduralLeafPath(ctx, type, width, length) {
+        function mulberry32(a) {
+            return function() {
+              var t = a += 0x6D2B79F5;
+              t = Math.imul(t ^ t >>> 15, t | 1);
+              t ^= t + Math.imul(t ^ t >>> 7, t | 61);
+              return ((t ^ t >>> 14) >>> 0) / 4294967296;
+            }
+        }
+
+        function generateProceduralLeafPath(ctx, type, width, length, seed) {
             ctx.beginPath();
             const steps = 100;
+            const rng = mulberry32(seed ? seed : 12345); // Use seeded random
+            
             // Draw right side then left side
             // Right side: t from 0 to PI
             for(let i=0; i<=steps; i++) {
                 const t = (i/steps) * Math.PI;
-                const x = getLeafX(t, type, width);
+                const x = getLeafX(t, type, width, rng);
                 const y = -length/2 + (t/Math.PI) * length; // top to bottom
                 if(i===0) ctx.moveTo(0, -length/2);
                 else ctx.lineTo(x, y);
@@ -841,14 +960,14 @@
             // Left side: t from PI to 0
             for(let i=steps; i>=0; i--) {
                 const t = (i/steps) * Math.PI;
-                const x = -getLeafX(t, type, width);
+                const x = -getLeafX(t, type, width, rng);
                 const y = -length/2 + (t/Math.PI) * length;
                 ctx.lineTo(x, y);
             }
             ctx.closePath();
         }
 
-        function getLeafX(t, type, width) {
+        function getLeafX(t, type, width, rng) {
             // t is 0 (tip) to PI (base)
             // We map 0..PI to shape
             // Standard leaf: sine wave
@@ -885,7 +1004,7 @@
             // Use pseudo-random based on t to be deterministic per draw call if needed, 
             // but here we want slight noise. 
             // The user requested "random variation". We can add a small noise factor.
-            const noise = (Math.random() - 0.5) * 0.1;
+            const noise = (rng() - 0.5) * 0.1;
             
             return (width/2) * (shape + noise);
         }
@@ -940,12 +1059,13 @@
                 const type = opts.leafShape || 'simple';
                 const length = s * 0.8; 
                 const width = s * 0.5;
+                const seed = opts.seed || 12345;
                 
                 // Draw Shape
                 ctx.fillStyle = opts.leaf;
-                if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=4;ctx.shadowOffsetX=opts.shadowOff;}
+                if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=appState.shadowBlur||4;ctx.shadowOffsetX=opts.shadowOff;}
                 
-                generateProceduralLeafPath(ctx, type, width, length);
+                generateProceduralLeafPath(ctx, type, width, length, seed);
                 ctx.fill();
                 
                 // Draw Veins
@@ -1012,8 +1132,18 @@
             appState = JSON.parse(json); 
             if (!appState.stamps) appState.stamps = [];
             if (!appState.selectedStamp) appState.selectedStamp = null;
+            if (appState.shadowBlur === undefined) appState.shadowBlur = 4; // Default
+            
             selectedLayerIndex = -1; // Reset selection on load
             document.getElementById('canvasShape').value=appState.shape; 
+            
+            // Update Shadow UI
+            const shadowEl = document.getElementById('globalShadowBlur');
+            if(shadowEl) {
+                shadowEl.value = appState.shadowBlur;
+                document.getElementById('val-shadowBlur').innerText = appState.shadowBlur + 'px';
+            }
+
             resizeCanvas(); 
             renderLayerList(); 
             updateMaterialUI(); 
@@ -1034,6 +1164,32 @@
                 // Debounce saveState for sliders to avoid history spam
                 if(this.saveTimeout) clearTimeout(this.saveTimeout);
                 this.saveTimeout = setTimeout(saveState, 500);
+            }
+        }
+        
+        function rotateCanvas() {
+            const s = appState.shape;
+            if(s === 'rect-portrait') appState.shape = 'rect-landscape';
+            else if(s === 'rect-landscape') appState.shape = 'rect-portrait';
+            
+            document.getElementById('canvasShape').value = appState.shape;
+            resizeCanvas();
+            saveState();
+        }
+
+        function updateGlobalShadow(val) {
+            appState.shadowBlur = parseInt(val);
+            document.getElementById('val-shadowBlur').innerText = val + 'px';
+            requestRedraw();
+            if(this.shadowSaveTimeout) clearTimeout(this.shadowSaveTimeout);
+            this.shadowSaveTimeout = setTimeout(saveState, 500);
+        }
+
+        function refreshLayer(index) {
+            if (index >= 0 && index < appState.layers.length) {
+                appState.layers[index].seed = Math.floor(Math.random() * 100000);
+                requestRedraw();
+                saveState();
             }
         }
 
@@ -1078,7 +1234,26 @@
             const createPath = (d, r, c) => {
                 const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
                 p.setAttribute("d", d); p.setAttribute("class", `seg-path ${gridState[r][c] ? 'active' : ''}`); p.setAttribute("id", `seg-${r}-${c}`);
-                p.onclick = () => { gridState[r][c] = !gridState[r][c]; renderMiniMap(); redraw(); }; // Added redraw() here!
+                p.onclick = () => { 
+                    gridState[r][c] = !gridState[r][c]; 
+                    
+                    // Sync to layer(s)
+                    const isGlobal = document.getElementById('globalGrid') && document.getElementById('globalGrid').checked;
+                    if (isGlobal) {
+                        appState.layers.forEach(layer => {
+                            if (!layer.grid) layer.grid = Array(4).fill().map(() => Array(4).fill(true));
+                            layer.grid[r][c] = gridState[r][c];
+                        });
+                    } else {
+                        if (selectedLayerIndex >= 0 && selectedLayerIndex < appState.layers.length) {
+                            appState.layers[selectedLayerIndex].grid[r][c] = gridState[r][c];
+                        }
+                    }
+                    
+                    renderMiniMap(); 
+                    redraw(); 
+                    saveState();
+                }; 
                 mapSvg.appendChild(p);
             };
             if (isRound) {
@@ -1102,7 +1277,26 @@
             }
         }
 
-        function resetGrid() { for(let r=0; r<4; r++) for(let c=0; c<4; c++) { if(r>0 && r<3 && c>0 && c<3) continue; gridState[r][c] = true; } renderMiniMap(); redraw(); }
+        function resetGrid() { 
+            for(let r=0; r<4; r++) for(let c=0; c<4; c++) { if(r>0 && r<3 && c>0 && c<3) continue; gridState[r][c] = true; } 
+            
+            // Sync to layer(s)
+            const isGlobal = document.getElementById('globalGrid') && document.getElementById('globalGrid').checked;
+            if (isGlobal) {
+                appState.layers.forEach(layer => {
+                    if (!layer.grid) layer.grid = Array(4).fill().map(() => Array(4).fill(true));
+                    for(let r=0; r<4; r++) for(let c=0; c<4; c++) layer.grid[r][c] = gridState[r][c];
+                });
+            } else {
+                if (selectedLayerIndex >= 0 && selectedLayerIndex < appState.layers.length) {
+                    for(let r=0; r<4; r++) for(let c=0; c<4; c++) appState.layers[selectedLayerIndex].grid[r][c] = gridState[r][c];
+                }
+            }
+            
+            renderMiniMap(); 
+            redraw(); 
+            saveState();
+        }
         function updateLineCount(n) { tempLineCount = n; document.querySelectorAll('.line-btn').forEach(b=>b.classList.remove('active', 'bg-slate-600')); document.getElementById('btn-l'+n).classList.add('active', 'bg-slate-600'); document.getElementById('val-lineCount').innerText = n; }
         function updateBorderEnding(v) { currentBorderEnding = v; }
         
@@ -1369,6 +1563,7 @@
                         ${stampBadge}
                     </div>
                     <div class="flex items-center gap-1 shrink-0">
+                        <button onclick="event.stopPropagation(); refreshLayer(${i})" class="text-slate-400 hover:text-yellow-400 px-1" title="Refresh Variation"><i class="fa-solid fa-arrows-rotate"></i></button>
                         <button onclick="event.stopPropagation(); moveLayer(${i}, -1)" class="text-slate-400 hover:text-white px-1" title="Move Up">↑</button>
                         <button onclick="event.stopPropagation(); moveLayer(${i}, 1)" class="text-slate-400 hover:text-white px-1" title="Move Down">↓</button>
                         <button onclick="event.stopPropagation(); deleteLayer(${i})" class="text-red-400 hover:text-red-300 px-1" title="Delete">x</button>
@@ -1576,7 +1771,8 @@
                 offCtx.globalCompositeOperation = 'source-in';
                 const mat = l.material || 'gold'; const bri = l.brightness || 0;
                 offCtx.fillStyle = getMaterialGradient(offCtx, mat, bri, w, h); offCtx.fillRect(0,0,w,h);
-                targetCtx.shadowColor = 'rgba(0,0,0,0.5)'; targetCtx.shadowBlur = 3 * scale; targetCtx.shadowOffsetX = 1 * scale; targetCtx.shadowOffsetY = 1 * scale;
+                const sBlur = (appState.shadowBlur !== undefined ? appState.shadowBlur : 4);
+                targetCtx.shadowColor = 'rgba(0,0,0,0.5)'; targetCtx.shadowBlur = sBlur * scale; targetCtx.shadowOffsetX = 1 * scale; targetCtx.shadowOffsetY = 1 * scale;
                 targetCtx.drawImage(offscreenCanvas, 0, 0); targetCtx.shadowColor = 'transparent'; 
 
                 // Draw Layer Stamps
@@ -1587,19 +1783,31 @@
                         const mat = s.material || 'gold'; const bri = s.brightness || 0;
                         const fillStyle = getMaterialGradient(targetCtx, mat, bri, w, h);
                         targetCtx.fillStyle = fillStyle; targetCtx.strokeStyle = getEtchColor(mat); targetCtx.lineWidth = 2 * scale;
-                        ASSETS[s.asset](targetCtx, s.size * scale, fillStyle, s.floralState || floralState);
+                        
+                        // Add shadow for depth
+                        targetCtx.shadowColor = 'rgba(0,0,0,0.3)'; targetCtx.shadowBlur = sBlur * scale; targetCtx.shadowOffsetX = 2 * scale; targetCtx.shadowOffsetY = 2 * scale;
+                        
+                        if(ASSETS[s.asset]) ASSETS[s.asset](targetCtx, s.size * scale, fillStyle, s.floralState || floralState);
                         targetCtx.restore();
                     });
                 }
             });
 
+            // Sort stamps by z-index if available (implicit order in array is z-index)
+            // We render global stamps last (on top)
+            
             appState.stamps.forEach(s => {
                targetCtx.save(); targetCtx.translate(s.x * scale, s.y * scale);
                targetCtx.rotate(s.rot); targetCtx.scale(s.flipH?-1:1, s.flipV?-1:1);
                const mat = s.material || 'gold'; const bri = s.brightness || 0;
                const fillStyle = getMaterialGradient(targetCtx, mat, bri, w, h);
                targetCtx.fillStyle = fillStyle; targetCtx.strokeStyle = getEtchColor(mat); targetCtx.lineWidth = 2 * scale;
-               ASSETS[s.asset](targetCtx, s.size * scale, fillStyle, s.floralState || floralState);
+               
+               // Ensure we clear shadow before drawing stamp to avoid double shadow on self
+               const sBlur = (appState.shadowBlur !== undefined ? appState.shadowBlur : 4);
+               targetCtx.shadowColor = 'rgba(0,0,0,0.3)'; targetCtx.shadowBlur = sBlur * scale; targetCtx.shadowOffsetX = 2 * scale; targetCtx.shadowOffsetY = 2 * scale;
+               
+               if(ASSETS[s.asset]) ASSETS[s.asset](targetCtx, s.size * scale, fillStyle, s.floralState || floralState);
                targetCtx.restore();
             });
 
@@ -2070,7 +2278,7 @@
                     ctx.save(); 
                     ctx.translate(pt.x, pt.y); 
                     ctx.rotate(ang); 
-                    drawShape(ctx, l.pattern, l.size, l.floralState); 
+                    drawShape(ctx, l.pattern, l.size, {...l.floralState, seed: (l.seed||0) + corner.idx}); 
                     ctx.restore();
                 }
             }
@@ -2089,6 +2297,8 @@
             }
             segments.push({start: segmentStart, end: tl, startIsCorner: startIsCorner}); // Final segment to end
             
+            let seedCounter = 1000; // Offset for segments
+
             // Draw shapes in each segment
             for(let seg of segments) {
                 const segLength = seg.end - seg.start;
@@ -2104,7 +2314,7 @@
                         ctx.save(); 
                         ctx.translate(x,y); 
                         ctx.rotate(ang); 
-                        drawShape(ctx,l.pattern,l.size,l.floralState); 
+                        drawShape(ctx,l.pattern,l.size, {...l.floralState, seed: (l.seed||0) + seedCounter++}); 
                         ctx.restore();
                     }
                 }
@@ -2152,7 +2362,7 @@
                     ctx.save(); 
                     ctx.translate(x,y); 
                     ctx.rotate(ang); 
-                    drawShape(ctx,l.pattern,l.size,l.floralState); 
+                    drawShape(ctx,l.pattern,l.size, {...l.floralState, seed: (l.seed||0) + seedCounter++}); 
                     ctx.restore(); 
                 }
             }
