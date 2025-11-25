@@ -3212,10 +3212,16 @@
                     lineJoin: 'miter',
                     lineDash: [],
                     transform: '',
-                    font: '10px sans-serif'
+                    font: '10px sans-serif',
+                    shadowColor: 'transparent',
+                    shadowBlur: 0,
+                    shadowOffsetX: 0,
+                    shadowOffsetY: 0
                 }];
                 this.defs = [];
                 this.gradCount = 0;
+                this.filterCount = 0;
+                this.shadowCache = {};
                 
                 // Bind methods to ensure 'this' context
                 this.beginPath = this.beginPath.bind(this);
@@ -3242,6 +3248,8 @@
                 this.drawImage = this.drawImage.bind(this);
                 this.createLinearGradient = this.createLinearGradient.bind(this);
                 this.createRadialGradient = this.createRadialGradient.bind(this);
+                this.getShadowFilter = this.getShadowFilter.bind(this);
+                this.clip = this.clip.bind(this);
             }
 
             // Property Getters/Setters
@@ -3266,15 +3274,15 @@
             setLineDash(segments) { this.currentState.lineDash = segments; }
             getLineDash() { return this.currentState.lineDash || []; }
 
-            // Shadow properties (ignored for now)
-            get shadowColor() { return 'transparent'; }
-            set shadowColor(v) {}
-            get shadowBlur() { return 0; }
-            set shadowBlur(v) {}
-            get shadowOffsetX() { return 0; }
-            set shadowOffsetX(v) {}
-            get shadowOffsetY() { return 0; }
-            set shadowOffsetY(v) {}
+            // Shadow properties
+            get shadowColor() { return this.currentState.shadowColor; }
+            set shadowColor(v) { this.currentState.shadowColor = v; }
+            get shadowBlur() { return this.currentState.shadowBlur; }
+            set shadowBlur(v) { this.currentState.shadowBlur = v; }
+            get shadowOffsetX() { return this.currentState.shadowOffsetX; }
+            set shadowOffsetX(v) { this.currentState.shadowOffsetX = v; }
+            get shadowOffsetY() { return this.currentState.shadowOffsetY; }
+            set shadowOffsetY(v) { this.currentState.shadowOffsetY = v; }
 
             get currentState() { return this.stateStack[this.stateStack.length - 1]; }
 
@@ -3284,6 +3292,10 @@
 
             restore() {
                 if (this.stateStack.length > 1) this.stateStack.pop();
+            }
+
+            clip() {
+                // No-op for SVG export
             }
 
             translate(x, y) { this.currentState.transform += ` translate(${x},${y})`; }
@@ -3383,7 +3395,8 @@
                     fillAttr = `fill="url(#${style.id})"`;
                 }
                 
-                this.elements.push(`<path d="${d}" ${fillAttr} transform="${this.currentState.transform}" stroke="none" opacity="${this.currentState.globalAlpha}" />`);
+                const filterAttr = this.getShadowFilter();
+                this.elements.push(`<path d="${d}" ${fillAttr} ${filterAttr} transform="${this.currentState.transform}" stroke="none" opacity="${this.currentState.globalAlpha}" />`);
             }
 
             stroke() {
@@ -3392,7 +3405,15 @@
                 if (this.currentState.lineDash && this.currentState.lineDash.length > 0) {
                     dashAttr = `stroke-dasharray="${this.currentState.lineDash.join(',')}"`;
                 }
-                this.elements.push(`<path d="${d}" fill="none" stroke="${this.currentState.strokeStyle}" stroke-width="${this.currentState.lineWidth}" stroke-linecap="${this.currentState.lineCap}" stroke-linejoin="${this.currentState.lineJoin}" ${dashAttr} transform="${this.currentState.transform}" opacity="${this.currentState.globalAlpha}" />`);
+                
+                const style = this.currentState.strokeStyle;
+                let strokeAttr = `stroke="${style}"`;
+                if (typeof style === 'object' && style.id) {
+                    strokeAttr = `stroke="url(#${style.id})"`;
+                }
+
+                const filterAttr = this.getShadowFilter();
+                this.elements.push(`<path d="${d}" fill="none" ${strokeAttr} stroke-width="${this.currentState.lineWidth}" stroke-linecap="${this.currentState.lineCap}" stroke-linejoin="${this.currentState.lineJoin}" ${dashAttr} ${filterAttr} transform="${this.currentState.transform}" opacity="${this.currentState.globalAlpha}" />`);
             }
             
             clearRect(x, y, w, h) {
@@ -3407,11 +3428,13 @@
                 if (typeof style === 'object' && style.id) {
                     fillAttr = `fill="url(#${style.id})"`;
                 }
-                this.elements.push(`<rect x="${this.fmt(x)}" y="${this.fmt(y)}" width="${this.fmt(w)}" height="${this.fmt(h)}" ${fillAttr} transform="${this.currentState.transform}" stroke="none" opacity="${this.currentState.globalAlpha}" />`);
+                const filterAttr = this.getShadowFilter();
+                this.elements.push(`<rect x="${this.fmt(x)}" y="${this.fmt(y)}" width="${this.fmt(w)}" height="${this.fmt(h)}" ${fillAttr} ${filterAttr} transform="${this.currentState.transform}" stroke="none" opacity="${this.currentState.globalAlpha}" />`);
             }
             
             strokeRect(x, y, w, h) {
-                this.elements.push(`<rect x="${this.fmt(x)}" y="${this.fmt(y)}" width="${this.fmt(w)}" height="${this.fmt(h)}" fill="none" stroke="${this.currentState.strokeStyle}" stroke-width="${this.currentState.lineWidth}" transform="${this.currentState.transform}" opacity="${this.currentState.globalAlpha}" />`);
+                const filterAttr = this.getShadowFilter();
+                this.elements.push(`<rect x="${this.fmt(x)}" y="${this.fmt(y)}" width="${this.fmt(w)}" height="${this.fmt(h)}" fill="none" stroke="${this.currentState.strokeStyle}" stroke-width="${this.currentState.lineWidth}" ${filterAttr} transform="${this.currentState.transform}" opacity="${this.currentState.globalAlpha}" />`);
             }
             
             drawImage(img, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight) {
@@ -3435,9 +3458,45 @@
                     _dw = dWidth; _dh = dHeight;
                 }
                 
-                this.elements.push(`<image href="${src}" x="${this.fmt(_dx)}" y="${this.fmt(_dy)}" width="${this.fmt(_dw)}" height="${this.fmt(_dh)}" transform="${this.currentState.transform}" opacity="${this.currentState.globalAlpha}" />`);
+                const filterAttr = this.getShadowFilter();
+                this.elements.push(`<image href="${src}" x="${this.fmt(_dx)}" y="${this.fmt(_dy)}" width="${this.fmt(_dw)}" height="${this.fmt(_dh)}" ${filterAttr} transform="${this.currentState.transform}" opacity="${this.currentState.globalAlpha}" />`);
             }
             
+            getShadowFilter() {
+                const s = this.currentState;
+                if (s.shadowColor === 'transparent' || (s.shadowBlur === 0 && s.shadowOffsetX === 0 && s.shadowOffsetY === 0)) {
+                    return '';
+                }
+                
+                // Create a unique key for this shadow configuration
+                const key = `${s.shadowColor}_${s.shadowBlur}_${s.shadowOffsetX}_${s.shadowOffsetY}`;
+                
+                if (this.shadowCache[key]) {
+                    return `filter="url(#${this.shadowCache[key]})"`;
+                }
+                
+                const id = `shadow_${this.filterCount++}`;
+                this.shadowCache[key] = id;
+                
+                const filterDef = {
+                    id: id,
+                    type: 'filter',
+                    content: `<filter id="${id}" x="-50%" y="-50%" width="200%" height="200%">
+                        <feGaussianBlur in="SourceAlpha" stdDeviation="${s.shadowBlur / 2}"/>
+                        <feOffset dx="${s.shadowOffsetX}" dy="${s.shadowOffsetY}" result="offsetblur"/>
+                        <feFlood flood-color="${s.shadowColor}"/>
+                        <feComposite in2="offsetblur" operator="in"/>
+                        <feMerge>
+                            <feMergeNode/>
+                            <feMergeNode in="SourceGraphic"/>
+                        </feMerge>
+                    </filter>`
+                };
+                
+                this.defs.push(filterDef);
+                return `filter="url(#${id})"`;
+            }
+
             createRadialGradient(x0, y0, r0, x1, y1, r1) {
                 const id = `grad_${this.gradCount++}`;
                 const grad = {
@@ -3481,15 +3540,17 @@
                 let defsStr = '';
                 if (this.defs.length > 0) {
                     defsStr = '<defs>';
-                    this.defs.forEach(g => {
-                        let stops = g.stops.map(s => `<stop offset="${s.offset}" stop-color="${s.color}" />`).join('');
-                        if (g.type === 'radial') {
-                            // SVG radial gradient: cx, cy, r, fx, fy
-                            // Canvas: x0, y0, r0, x1, y1, r1
-                            // We map x1,y1,r1 to cx,cy,r. x0,y0 to fx,fy.
-                            defsStr += `<radialGradient id="${g.id}" cx="${this.fmt(g.x1)}" cy="${this.fmt(g.y1)}" r="${this.fmt(g.r1)}" fx="${this.fmt(g.x0)}" fy="${this.fmt(g.y0)}" gradientUnits="userSpaceOnUse">${stops}</radialGradient>`;
+                    this.defs.forEach(d => {
+                        if (d.type === 'filter') {
+                            defsStr += d.content;
                         } else {
-                            defsStr += `<linearGradient id="${g.id}" x1="${this.fmt(g.x0)}" y1="${this.fmt(g.y0)}" x2="${this.fmt(g.x1)}" y2="${this.fmt(g.y1)}" gradientUnits="userSpaceOnUse">${stops}</linearGradient>`;
+                            // Gradient handling
+                            let stops = d.stops.map(s => `<stop offset="${s.offset}" stop-color="${s.color}" />`).join('');
+                            if (d.type === 'radial') {
+                                defsStr += `<radialGradient id="${d.id}" cx="${this.fmt(d.x1)}" cy="${this.fmt(d.y1)}" r="${this.fmt(d.r1)}" fx="${this.fmt(d.x0)}" fy="${this.fmt(d.y0)}" gradientUnits="userSpaceOnUse">${stops}</radialGradient>`;
+                            } else {
+                                defsStr += `<linearGradient id="${d.id}" x1="${this.fmt(d.x0)}" y1="${this.fmt(d.y0)}" x2="${this.fmt(d.x1)}" y2="${this.fmt(d.y1)}" gradientUnits="userSpaceOnUse">${stops}</linearGradient>`;
+                            }
                         }
                     });
                     defsStr += '</defs>';
