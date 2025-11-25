@@ -152,6 +152,17 @@
                     </div>
                 </div>
 
+                <!-- Selection Actions -->
+                <div id="selectionActions" class="mt-3 pt-3 border-t border-slate-700 hidden">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-[10px] text-yellow-500 uppercase font-bold">Selection</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="duplicateSelectedStamp()" class="flex-1 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-[10px] text-slate-300"><i class="fa-regular fa-copy mr-1"></i>Duplicate</button>
+                        <button onclick="deleteSelectedStamps()" class="flex-1 py-1 bg-red-900/30 hover:bg-red-900/50 border border-red-900 rounded text-[10px] text-red-400"><i class="fa-solid fa-trash mr-1"></i>Delete</button>
+                    </div>
+                </div>
+
                 <!-- Floral Advanced Controls -->
                 <div class="bg-slate-800/50 p-3 rounded border border-slate-600 mb-4 text-xs space-y-3">
                     <!-- New Leaf Shape Selector -->
@@ -426,7 +437,7 @@
         let customStamps = {};
         let customStampCount = 0;
 
-        let appState = { shape: 'rect-portrait', layers: [], stamps: [], selectedStamp: null };
+        let appState = { shape: 'rect-portrait', layers: [], stamps: [], selectedStamp: null, selectedStamps: [] };
         let selectedLayerIndex = -1;
         let currentMaterial = 'gold', currentBrightness = 0, currentFloralColor = 'material'; 
         let floralState = { petalIn: '#aa771c', petalOut: '#fcf6ba', count: 8, shadow: true, shadowCol: '#000000', shadowOff: 2, leaf: '#bf953f', vein: '#5c4010', veinW: 1, leafShape: 'simple' };
@@ -1148,6 +1159,9 @@
             appState = JSON.parse(json); 
             if (!appState.stamps) appState.stamps = [];
             if (!appState.selectedStamp) appState.selectedStamp = null;
+            if (!appState.selectedStamps) appState.selectedStamps = [];
+            if (appState.selectedStamp && appState.selectedStamps.length === 0) appState.selectedStamps = [appState.selectedStamp];
+            updateSelectionUI();
             if (appState.shadowBlur === undefined) appState.shadowBlur = 4; // Default
             
             selectedLayerIndex = -1; // Reset selection on load
@@ -1513,6 +1527,8 @@
                 btnPlace.className = "flex-1 py-1.5 bg-yellow-600 hover:bg-yellow-500 border border-yellow-500 rounded text-xs text-white font-bold shadow-lg shadow-yellow-900/20 transition-all";
                 btnSelect.className = "flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-xs text-slate-300 transition-all";
                 appState.selectedStamp = null;
+                appState.selectedStamps = [];
+                updateSelectionUI();
                 canvas.style.cursor = 'default';
                 requestRedraw();
             } else {
@@ -1537,6 +1553,136 @@
                 requestRedraw();
             }
         }
+
+        function duplicateSelectedStamp() {
+            // Handle Multi-Selection
+            if (appState.selectedStamps && appState.selectedStamps.length > 0) {
+                const newSelection = [];
+                const stampsToDuplicate = appState.selectedStamps.map(ref => ({
+                    ref: ref,
+                    stamp: getStampFromRef(ref)
+                })).filter(item => item.stamp);
+                
+                appState.selectedStamps = [];
+                
+                stampsToDuplicate.forEach(item => {
+                    const s = item.stamp;
+                    const ref = item.ref;
+                    
+                    const newStamp = JSON.parse(JSON.stringify(s));
+                    newStamp.x += 20;
+                    newStamp.y += 20;
+                    if(newStamp.clusterId) delete newStamp.clusterId; 
+
+                    if (ref.layerIndex === -1) {
+                        appState.stamps.push(newStamp);
+                        newSelection.push({ layerIndex: -1, stampIndex: appState.stamps.length - 1 });
+                    } else {
+                        const layer = appState.layers[ref.layerIndex];
+                        if (layer.stamps) {
+                            layer.stamps.push(newStamp);
+                            newSelection.push({ layerIndex: ref.layerIndex, stampIndex: layer.stamps.length - 1 });
+                        }
+                    }
+                });
+                
+                appState.selectedStamps = newSelection;
+                if (newSelection.length > 0) {
+                    appState.selectedStamp = newSelection[newSelection.length - 1];
+                }
+                
+                saveState();
+                requestRedraw();
+                return;
+            }
+
+            if (!appState.selectedStamp) return;
+            const s = getSelectedStamp();
+            if (!s) return;
+            
+            // Create a deep copy
+            const newStamp = JSON.parse(JSON.stringify(s));
+            
+            // Offset slightly so it's visible
+            newStamp.x += 20;
+            newStamp.y += 20;
+            if(newStamp.clusterId) delete newStamp.clusterId;
+            
+            // Add to the same location (global or layer)
+            if (appState.selectedStamp.layerIndex === -1) {
+                appState.stamps.push(newStamp);
+                // Select the new stamp
+                appState.selectedStamp = { layerIndex: -1, stampIndex: appState.stamps.length - 1 };
+            } else {
+                const layer = appState.layers[appState.selectedStamp.layerIndex];
+                if (layer.stamps) {
+                    layer.stamps.push(newStamp);
+                    // Select the new stamp
+                    appState.selectedStamp = { layerIndex: appState.selectedStamp.layerIndex, stampIndex: layer.stamps.length - 1 };
+                }
+            }
+            
+            saveState();
+            requestRedraw();
+        }
+
+        function deleteSelectedStamps() {
+            if ((!appState.selectedStamps || appState.selectedStamps.length === 0) && !appState.selectedStamp) return;
+            
+            const selections = (appState.selectedStamps && appState.selectedStamps.length > 0) 
+                ? appState.selectedStamps 
+                : [appState.selectedStamp];
+
+            // Group by layer
+            const deletions = new Map(); // key: layerIndex (-1 for global), value: [indices]
+            
+            selections.forEach(sel => {
+                if (!deletions.has(sel.layerIndex)) {
+                    deletions.set(sel.layerIndex, []);
+                }
+                deletions.get(sel.layerIndex).push(sel.stampIndex);
+            });
+
+            // Process deletions
+            deletions.forEach((indices, layerIndex) => {
+                // Sort descending to avoid index shifting issues
+                indices.sort((a, b) => b - a);
+                
+                let targetArray;
+                if (layerIndex === -1) {
+                    targetArray = appState.stamps;
+                } else {
+                    if (appState.layers[layerIndex]) {
+                        targetArray = appState.layers[layerIndex].stamps;
+                    }
+                }
+
+                if (targetArray) {
+                    indices.forEach(idx => {
+                        if (idx >= 0 && idx < targetArray.length) {
+                            targetArray.splice(idx, 1);
+                        }
+                    });
+                }
+            });
+
+            // Clear selection
+            appState.selectedStamp = null;
+            appState.selectedStamps = [];
+            
+            updateSelectionUI();
+            saveState();
+            requestRedraw();
+        }
+
+        function updateSelectionUI() {
+            const el = document.getElementById('selectionActions');
+            if (el) {
+                if (appState.selectedStamp || (appState.selectedStamps && appState.selectedStamps.length > 0)) el.classList.remove('hidden');
+                else el.classList.add('hidden');
+            }
+        }
+
         function getAllStampsInCluster(clusterId) {
             if (!clusterId) return [];
             let cluster = [];
@@ -1929,31 +2075,41 @@
             }
             
             // Draw Selection Highlight
-            if (showGhost && appState.selectedStamp) {
-                const s = getSelectedStamp();
-                if (s) {
-                    const targets = s.clusterId ? getAllStampsInCluster(s.clusterId) : [s];
-                    
-                    targets.forEach(t => {
-                        targetCtx.save();
-                        targetCtx.translate(t.x * scale, t.y * scale);
-                        targetCtx.rotate(t.rot);
-                        
-                        // Draw bounding box
-                        targetCtx.strokeStyle = '#fbbf24'; // Amber-400
-                        targetCtx.lineWidth = 2;
-                        targetCtx.setLineDash([5, 5]);
-                        
-                        const sz = (t.size || 50) * scale;
-                        targetCtx.strokeRect(-sz/2 - 5, -sz/2 - 5, sz + 10, sz + 10);
-                        
-                        // Draw resize handle (visual only)
-                        targetCtx.fillStyle = '#fbbf24';
-                        targetCtx.fillRect(sz/2, sz/2, 6, 6);
-                        
-                        targetCtx.restore();
-                    });
+            if (showGhost && ((appState.selectedStamps && appState.selectedStamps.length > 0) || appState.selectedStamp)) {
+                let targets = [];
+                let selectionRefs = appState.selectedStamps || [];
+                if (selectionRefs.length === 0 && appState.selectedStamp) {
+                    selectionRefs = [appState.selectedStamp];
                 }
+                
+                if (selectionRefs.length === 1) {
+                    const s = getStampFromRef(selectionRefs[0]);
+                    if (s) {
+                        targets = s.clusterId ? getAllStampsInCluster(s.clusterId) : [s];
+                    }
+                } else {
+                    targets = selectionRefs.map(ref => getStampFromRef(ref)).filter(s => s);
+                }
+                
+                targets.forEach(t => {
+                    targetCtx.save();
+                    targetCtx.translate(t.x * scale, t.y * scale);
+                    targetCtx.rotate(t.rot);
+                    
+                    // Draw bounding box
+                    targetCtx.strokeStyle = '#fbbf24'; // Amber-400
+                    targetCtx.lineWidth = 2;
+                    targetCtx.setLineDash([5, 5]);
+                    
+                    const sz = (t.size || 50) * scale;
+                    targetCtx.strokeRect(-sz/2 - 5, -sz/2 - 5, sz + 10, sz + 10);
+                    
+                    // Draw resize handle (visual only)
+                    targetCtx.fillStyle = '#fbbf24';
+                    targetCtx.fillRect(sz/2, sz/2, 6, 6);
+                    
+                    targetCtx.restore();
+                });
             }
             
             // Border Ghost (Preview)
@@ -2584,26 +2740,58 @@
 
         // Interaction
         let isDraggingStamp = false;
+        let hasDragged = false;
         let dragStart = { x: 0, y: 0 };
-        let initialStampPos = { x: 0, y: 0 };
+        let initialStampPos = [];
+
+        function getStampFromRef(ref) {
+            if (!ref) return null;
+            if (ref.layerIndex === -1) {
+                return appState.stamps[ref.stampIndex];
+            } else {
+                const l = appState.layers[ref.layerIndex];
+                if (l && l.stamps) return l.stamps[ref.stampIndex];
+            }
+            return null;
+        }
 
         canvas.addEventListener('mousedown', e => {
-            if (stampConfig.mode === 'select' && appState.selectedStamp) {
-                const s = getSelectedStamp();
-                if (s) {
-                    const dist = Math.hypot(s.x - mouseX, s.y - mouseY);
-                    if (dist < s.size / 2) {
-                        isDraggingStamp = true;
-                        dragStart = { x: mouseX, y: mouseY };
-                        
-                        if (s.clusterId) {
-                            // Store initial positions for all stamps in the cluster
-                            const cluster = getAllStampsInCluster(s.clusterId);
-                            initialStampPos = cluster.map(t => ({ x: t.x, y: t.y, stamp: t }));
-                        } else {
-                            initialStampPos = { x: s.x, y: s.y };
+            hasDragged = false;
+            if (stampConfig.mode === 'select' && appState.selectedStamps && appState.selectedStamps.length > 0) {
+                let hit = false;
+                for(let sel of appState.selectedStamps) {
+                    const s = getStampFromRef(sel);
+                    if(s) {
+                        const dist = Math.hypot(s.x - mouseX, s.y - mouseY);
+                        if (dist < Math.max(s.size / 2, 20)) {
+                            hit = true;
+                            break;
                         }
                     }
+                }
+
+                if (hit) {
+                    isDraggingStamp = true;
+                    dragStart = { x: mouseX, y: mouseY };
+                    
+                    let itemsToMove = [];
+                    if (appState.selectedStamps.length === 1) {
+                        const s = getStampFromRef(appState.selectedStamps[0]);
+                        if (s && s.clusterId) {
+                            const cluster = getAllStampsInCluster(s.clusterId);
+                            itemsToMove = cluster.map(t => ({ stamp: t }));
+                        } else {
+                            itemsToMove = [{ stamp: s }];
+                        }
+                    } else {
+                        itemsToMove = appState.selectedStamps.map(sel => ({ stamp: getStampFromRef(sel) })).filter(i => i.stamp);
+                    }
+
+                    initialStampPos = itemsToMove.map(item => ({
+                        stamp: item.stamp,
+                        x: item.stamp.x,
+                        y: item.stamp.y
+                    }));
                 }
             }
         });
@@ -2612,6 +2800,7 @@
             if (isDraggingStamp) {
                 isDraggingStamp = false;
                 saveState();
+                setTimeout(() => { hasDragged = false; }, 10);
             }
         });
 
@@ -2620,31 +2809,28 @@
             mouseX=e.clientX-r.left; 
             mouseY=e.clientY-r.top; 
             
-            if (isDraggingStamp && appState.selectedStamp) {
-                const s = getSelectedStamp();
-                if (s) {
-                    const dx = mouseX - dragStart.x;
-                    const dy = mouseY - dragStart.y;
-                    
-                    if (s.clusterId && Array.isArray(initialStampPos)) {
-                        // Move all stamps in cluster
-                        initialStampPos.forEach(item => {
-                            item.stamp.x = item.x + dx;
-                            item.stamp.y = item.y + dy;
-                        });
-                    } else {
-                        s.x = initialStampPos.x + dx;
-                        s.y = initialStampPos.y + dy;
+            if (isDraggingStamp && initialStampPos) {
+                const dx = mouseX - dragStart.x;
+                const dy = mouseY - dragStart.y;
+                
+                if (Math.hypot(dx, dy) > 2) hasDragged = true;
+
+                initialStampPos.forEach(item => {
+                    if (item.stamp) {
+                        item.stamp.x = item.x + dx;
+                        item.stamp.y = item.y + dy;
                     }
-                    requestRedraw();
-                }
+                });
+                
+                requestRedraw();
             } else if(stampConfig.active) {
                 redraw(); 
             }
         });
         
-        canvas.addEventListener('click', () => {
+        canvas.addEventListener('click', (e) => {
             if(!stampConfig.active)return;
+            if(hasDragged) return;
             
             // Handle Selection Mode
             if (stampConfig.mode === 'select') {
@@ -2682,9 +2868,36 @@
                     }
                 }
                 
-                appState.selectedStamp = found;
+                if (!appState.selectedStamps) appState.selectedStamps = [];
+
+                if (e.shiftKey) {
+                    if (found) {
+                        // Check if already selected
+                        const idx = appState.selectedStamps.findIndex(sel => sel.layerIndex === found.layerIndex && sel.stampIndex === found.stampIndex);
+                        if (idx >= 0) {
+                            appState.selectedStamps.splice(idx, 1);
+                            // If we removed the primary selection, update it
+                            if (appState.selectedStamp && appState.selectedStamp.layerIndex === found.layerIndex && appState.selectedStamp.stampIndex === found.stampIndex) {
+                                appState.selectedStamp = appState.selectedStamps.length > 0 ? appState.selectedStamps[appState.selectedStamps.length - 1] : null;
+                            }
+                        } else {
+                            appState.selectedStamps.push(found);
+                            appState.selectedStamp = found;
+                        }
+                    }
+                } else {
+                    if (found) {
+                        appState.selectedStamp = found;
+                        appState.selectedStamps = [found];
+                    } else {
+                        appState.selectedStamp = null;
+                        appState.selectedStamps = [];
+                    }
+                }
                 
-                if (found) {
+                updateSelectionUI();
+                
+                if (appState.selectedStamp) {
                     // Populate UI with selected stamp properties
                     const s = getSelectedStamp();
                     if (s) {
