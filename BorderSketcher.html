@@ -2112,6 +2112,24 @@
                 });
             }
             
+            // Draw Selection Box
+            if (isSelectingBox) {
+                const x = Math.min(selectionBoxStart.x, selectionBoxCurrent.x) * scale;
+                const y = Math.min(selectionBoxStart.y, selectionBoxCurrent.y) * scale;
+                const w = Math.abs(selectionBoxCurrent.x - selectionBoxStart.x) * scale;
+                const h = Math.abs(selectionBoxCurrent.y - selectionBoxStart.y) * scale;
+                
+                targetCtx.save();
+                targetCtx.strokeStyle = '#3b82f6'; // Blue-500
+                targetCtx.lineWidth = 1;
+                targetCtx.setLineDash([4, 2]);
+                targetCtx.fillStyle = 'rgba(59, 130, 246, 0.2)'; // Blue-500 with opacity
+                
+                targetCtx.fillRect(x, y, w, h);
+                targetCtx.strokeRect(x, y, w, h);
+                targetCtx.restore();
+            }
+            
             // Border Ghost (Preview)
             if (showGhost && document.getElementById('showGuide').checked) {
                const pendingL = { 
@@ -2743,6 +2761,11 @@
         let hasDragged = false;
         let dragStart = { x: 0, y: 0 };
         let initialStampPos = [];
+        
+        // Box Selection State
+        let isSelectingBox = false;
+        let selectionBoxStart = { x: 0, y: 0 };
+        let selectionBoxCurrent = { x: 0, y: 0 };
 
         function getStampFromRef(ref) {
             if (!ref) return null;
@@ -2754,23 +2777,57 @@
             }
             return null;
         }
-
-        canvas.addEventListener('mousedown', e => {
-            hasDragged = false;
-            if (stampConfig.mode === 'select' && appState.selectedStamps && appState.selectedStamps.length > 0) {
-                let hit = false;
-                for(let sel of appState.selectedStamps) {
-                    const s = getStampFromRef(sel);
-                    if(s) {
-                        const dist = Math.hypot(s.x - mouseX, s.y - mouseY);
-                        if (dist < Math.max(s.size / 2, 20)) {
-                            hit = true;
-                            break;
+        
+        function hitTestStamps(mx, my) {
+            // Check global stamps (reverse order)
+            if (appState.stamps) {
+                for (let i = appState.stamps.length - 1; i >= 0; i--) {
+                    const s = appState.stamps[i];
+                    const dist = Math.hypot(s.x - mx, s.y - my);
+                    if (dist < Math.max(s.size / 2, 20)) {
+                        return { layerIndex: -1, stampIndex: i };
+                    }
+                }
+            }
+            
+            // Check layer stamps
+            if (appState.layers) {
+                for (let l = appState.layers.length - 1; l >= 0; l--) {
+                    const layer = appState.layers[l];
+                    if (layer.stamps) {
+                        for (let i = layer.stamps.length - 1; i >= 0; i--) {
+                            const s = layer.stamps[i];
+                            const dist = Math.hypot(s.x - mx, s.y - my);
+                            if (dist < Math.max(s.size / 2, 20)) {
+                                return { layerIndex: l, stampIndex: i };
+                            }
                         }
                     }
                 }
+            }
+            return null;
+        }
 
-                if (hit) {
+        canvas.addEventListener('mousedown', e => {
+            hasDragged = false;
+            if (stampConfig.mode === 'select') {
+                // 1. Check if we hit an already selected stamp (for dragging)
+                let hitSelected = false;
+                if (appState.selectedStamps && appState.selectedStamps.length > 0) {
+                    for(let sel of appState.selectedStamps) {
+                        const s = getStampFromRef(sel);
+                        if(s) {
+                            const dist = Math.hypot(s.x - mouseX, s.y - mouseY);
+                            if (dist < Math.max(s.size / 2, 20)) {
+                                hitSelected = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                if (hitSelected) {
+                    // Start Dragging
                     isDraggingStamp = true;
                     dragStart = { x: mouseX, y: mouseY };
                     
@@ -2792,15 +2849,125 @@
                         x: item.stamp.x,
                         y: item.stamp.y
                     }));
+                } else {
+                    // 2. Check if we hit ANY stamp (to select it)
+                    const hit = hitTestStamps(mouseX, mouseY);
+                    if (hit) {
+                        // Let the click handler handle selection logic (Shift key etc)
+                        // But we might want to start dragging immediately?
+                        // For now, let's stick to click for selection, but if we want drag-on-click:
+                        // We would need to select it here.
+                        // Let's leave it to click handler for single selection, 
+                        // BUT if we want to drag unselected item immediately, we need to select it here.
+                        
+                        // Standard behavior: Click down on unselected item -> Select it (and deselect others unless Shift) -> Start Drag.
+                        
+                        if (e.shiftKey) {
+                            // If shift is held, we don't drag immediately usually, we just toggle selection on click.
+                            // So do nothing here, let click handle it.
+                        } else {
+                            // Select it immediately
+                            appState.selectedStamp = hit;
+                            appState.selectedStamps = [hit];
+                            updateSelectionUI();
+                            requestRedraw();
+                            
+                            // Start Dragging immediately
+                            isDraggingStamp = true;
+                            dragStart = { x: mouseX, y: mouseY };
+                            const s = getStampFromRef(hit);
+                            
+                            let itemsToMove = [];
+                            if (s.clusterId) {
+                                const cluster = getAllStampsInCluster(s.clusterId);
+                                itemsToMove = cluster.map(t => ({ stamp: t }));
+                            } else {
+                                itemsToMove = [{ stamp: s }];
+                            }
+                            
+                            initialStampPos = itemsToMove.map(item => ({
+                                stamp: item.stamp,
+                                x: item.stamp.x,
+                                y: item.stamp.y
+                            }));
+                        }
+                    } else {
+                        // 3. Hit nothing -> Start Box Selection
+                        isSelectingBox = true;
+                        selectionBoxStart = { x: mouseX, y: mouseY };
+                        selectionBoxCurrent = { x: mouseX, y: mouseY };
+                    }
                 }
             }
         });
 
-        canvas.addEventListener('mouseup', () => {
+        canvas.addEventListener('mouseup', (e) => {
             if (isDraggingStamp) {
                 isDraggingStamp = false;
                 saveState();
                 setTimeout(() => { hasDragged = false; }, 10);
+            }
+            
+            if (isSelectingBox) {
+                isSelectingBox = false;
+                // Finalize Box Selection
+                const x1 = Math.min(selectionBoxStart.x, selectionBoxCurrent.x);
+                const y1 = Math.min(selectionBoxStart.y, selectionBoxCurrent.y);
+                const x2 = Math.max(selectionBoxStart.x, selectionBoxCurrent.x);
+                const y2 = Math.max(selectionBoxStart.y, selectionBoxCurrent.y);
+                
+                // If box is tiny, treat as click (ignore)
+                if (Math.abs(x2 - x1) < 5 && Math.abs(y2 - y1) < 5) {
+                    requestRedraw();
+                    return;
+                }
+                
+                const newSelection = [];
+                
+                // Check global stamps
+                if (appState.stamps) {
+                    appState.stamps.forEach((s, i) => {
+                        if (s.x >= x1 && s.x <= x2 && s.y >= y1 && s.y <= y2) {
+                            newSelection.push({ layerIndex: -1, stampIndex: i });
+                        }
+                    });
+                }
+                
+                // Check layer stamps
+                if (appState.layers) {
+                    appState.layers.forEach((l, lIdx) => {
+                        if (l.stamps) {
+                            l.stamps.forEach((s, sIdx) => {
+                                if (s.x >= x1 && s.x <= x2 && s.y >= y1 && s.y <= y2) {
+                                    newSelection.push({ layerIndex: lIdx, stampIndex: sIdx });
+                                }
+                            });
+                        }
+                    });
+                }
+                
+                if (!e.shiftKey) {
+                    appState.selectedStamps = newSelection;
+                } else {
+                    // Merge with existing
+                    // Avoid duplicates
+                    newSelection.forEach(newItem => {
+                        const exists = appState.selectedStamps.some(existing => existing.layerIndex === newItem.layerIndex && existing.stampIndex === newItem.stampIndex);
+                        if (!exists) appState.selectedStamps.push(newItem);
+                    });
+                }
+                
+                if (appState.selectedStamps.length > 0) {
+                    appState.selectedStamp = appState.selectedStamps[appState.selectedStamps.length - 1];
+                } else {
+                    appState.selectedStamp = null;
+                }
+                
+                updateSelectionUI();
+                requestRedraw();
+                
+                // Prevent click handler from clearing selection
+                hasDragged = true; 
             }
         });
 
@@ -2822,6 +2989,9 @@
                     }
                 });
                 
+                requestRedraw();
+            } else if (isSelectingBox) {
+                selectionBoxCurrent = { x: mouseX, y: mouseY };
                 requestRedraw();
             } else if(stampConfig.active) {
                 redraw(); 
