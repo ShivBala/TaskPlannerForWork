@@ -73,9 +73,72 @@
                 </select>
                 <button onclick="rotateCanvas()" class="px-2 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-slate-300 text-xs" title="Rotate Canvas"><i class="fa-solid fa-rotate"></i></button>
             </div>
+        <div class="flex gap-2 mt-3 border-t border-slate-700 pt-2">
+            <button onclick="switchTab('editor')" id="tab-btn-editor" class="flex-1 py-1 text-xs font-bold text-yellow-500 border-b-2 border-yellow-500">Editor</button>
+            <button onclick="switchTab('presets')" id="tab-btn-presets" class="flex-1 py-1 text-xs font-bold text-slate-400 border-b-2 border-transparent hover:text-slate-200">Presets</button>
+        </div>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-4 space-y-6 pb-20">
+        <div id="presetsPanel" class="hidden flex-1 overflow-y-auto p-4 space-y-4 pb-20">
+            <div class="text-xs text-slate-400 mb-2">Select a style to replace current settings.</div>
+            
+            <!-- Preset: Golden Fern -->
+            <button onclick="loadPreset('golden-fern')" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg p-3 flex items-center gap-4 group transition-all hover:border-yellow-500">
+                <div class="w-12 h-12 rounded bg-gradient-to-br from-yellow-600 to-yellow-200 shadow-lg flex items-center justify-center">
+                    <i class="fa-solid fa-leaf text-yellow-900 text-xl"></i>
+                </div>
+                <div class="text-left">
+                    <div class="text-yellow-500 font-bold text-sm group-hover:text-yellow-400">Golden Fern</div>
+                    <div class="text-[10px] text-slate-400">Gold material, Fern leaves, Warm tones</div>
+                </div>
+            </button>
+
+            <!-- Preset: Silver Oak -->
+            <button onclick="loadPreset('silver-oak')" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg p-3 flex items-center gap-4 group transition-all hover:border-slate-400">
+                <div class="w-12 h-12 rounded bg-gradient-to-br from-slate-300 to-slate-100 shadow-lg flex items-center justify-center">
+                    <i class="fa-solid fa-tree text-slate-700 text-xl"></i>
+                </div>
+                <div class="text-left">
+                    <div class="text-slate-300 font-bold text-sm group-hover:text-white">Silver Oak</div>
+                    <div class="text-[10px] text-slate-400">Silver material, Oak leaves, Cool tones</div>
+                </div>
+            </button>
+
+            <!-- Preset: Rose Garden -->
+            <button onclick="loadPreset('rose-garden')" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg p-3 flex items-center gap-4 group transition-all hover:border-rose-400">
+                <div class="w-12 h-12 rounded bg-gradient-to-br from-rose-400 to-rose-200 shadow-lg flex items-center justify-center">
+                    <i class="fa-solid fa-fan text-rose-900 text-xl"></i>
+                </div>
+                <div class="text-left">
+                    <div class="text-rose-300 font-bold text-sm group-hover:text-rose-200">Rose Garden</div>
+                    <div class="text-[10px] text-slate-400">Rose Gold, Roses, Pink/Red tones</div>
+                </div>
+            </button>
+
+            <!-- Preset: Copper Maple -->
+            <button onclick="loadPreset('copper-maple')" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg p-3 flex items-center gap-4 group transition-all hover:border-orange-400">
+                <div class="w-12 h-12 rounded bg-gradient-to-br from-orange-600 to-orange-300 shadow-lg flex items-center justify-center">
+                    <i class="fa-brands fa-canadian-maple-leaf text-orange-900 text-xl"></i>
+                </div>
+                <div class="text-left">
+                    <div class="text-orange-400 font-bold text-sm group-hover:text-orange-300">Copper Maple</div>
+                    <div class="text-[10px] text-slate-400">Copper material, Maple leaves, Autumn tones</div>
+                </div>
+            </button>
+
+            <!-- Preset: Royal Purple -->
+            <button onclick="loadPreset('royal-purple')" class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg p-3 flex items-center gap-4 group transition-all hover:border-purple-400">
+                <div class="w-12 h-12 rounded bg-gradient-to-br from-purple-600 to-purple-300 shadow-lg flex items-center justify-center">
+                    <i class="fa-solid fa-crown text-purple-900 text-xl"></i>
+                </div>
+                <div class="text-left">
+                    <div class="text-purple-400 font-bold text-sm group-hover:text-purple-300">Royal Purple</div>
+                    <div class="text-[10px] text-slate-400">Steel material, Lotus, Purple/Gold tones</div>
+                </div>
+            </button>
+        </div>
+
+        <div id="editorPanel" class="flex-1 overflow-y-auto p-4 space-y-6 pb-20">
             <!-- Material -->
             <div class="panel rounded-lg p-4">
                 <div class="flex justify-between items-center mb-2">
@@ -122,6 +185,7 @@
                         </div>
                         <div><div class="flex justify-between text-[10px] text-slate-400"><span>Rot</span><span id="stampRotVal">0°</span></div><input type="range" id="stampRot" min="0" max="360" value="0" oninput="updateStampConfig('rot', this.value)"></div>
                         <div><div class="flex justify-between text-[10px] text-slate-400"><span>Size</span><span id="stampSizeVal">60px</span></div><input type="range" id="stampSize" min="20" max="200" value="60" oninput="updateStampConfig('size', this.value)"></div>
+                        <div><div class="flex justify-between text-[10px] text-slate-400"><span>Spin Cluster</span><span id="spinClusterVal">0°</span></div><input type="range" id="spinCluster" min="0" max="360" value="0" oninput="spinCluster(this.value)"></div>
                     </div>
                 </div>
 
@@ -135,8 +199,8 @@
                         </label>
                     </div>
                     <div id="clusterControls" class="hidden space-y-2 border-t border-slate-700 pt-2">
-                        <div><div class="flex justify-between text-[10px] text-slate-400"><span>Count</span><span id="val-clusterCount">5</span></div><input type="range" id="clusterCount" min="2" max="20" value="5" oninput="document.getElementById('val-clusterCount').innerText=this.value"></div>
-                        <div><div class="flex justify-between text-[10px] text-slate-400"><span>Radius</span><span id="val-clusterRadius">40px</span></div><input type="range" id="clusterRadius" min="10" max="150" value="40" oninput="document.getElementById('val-clusterRadius').innerText=this.value+'px'"></div>
+                        <div><div class="flex justify-between text-[10px] text-slate-400"><span>Count</span><span id="val-clusterCount">5</span></div><input type="range" id="clusterCount" min="2" max="20" value="5" oninput="updateClusterConfig('count', this.value)"></div>
+                        <div><div class="flex justify-between text-[10px] text-slate-400"><span>Radius</span><span id="val-clusterRadius">40px</span></div><input type="range" id="clusterRadius" min="10" max="150" value="40" oninput="updateClusterConfig('radius', this.value)"></div>
                         <p class="text-[9px] text-slate-500 italic text-center">Click canvas to place cluster center</p>
                     </div>
                 </div>
@@ -441,7 +505,7 @@
         let selectedLayerIndex = -1;
         let currentMaterial = 'gold', currentBrightness = 0, currentFloralColor = 'material'; 
         let floralState = { petalIn: '#aa771c', petalOut: '#fcf6ba', count: 8, shadow: true, shadowCol: '#000000', shadowOff: 2, leaf: '#bf953f', vein: '#5c4010', veinW: 1, leafShape: 'simple' };
-        let stampConfig = { active: 'leaf-pro', rot: 0, size: 80, flipH: false, flipV: false, mode: 'place' };
+        let stampConfig = { active: 'leaf-pro', rot: 0, size: 80, flipH: false, flipV: false, mode: 'place', clusterRot: 0 };
         let history = [], historyIndex = -1;
         let mouseX = 0, mouseY = 0;
         let currentPattern = 'solid';
@@ -1678,7 +1742,53 @@
         function updateSelectionUI() {
             const el = document.getElementById('selectionActions');
             if (el) {
-                if (appState.selectedStamp || (appState.selectedStamps && appState.selectedStamps.length > 0)) el.classList.remove('hidden');
+                if (appState.selectedStamp || (appState.selectedStamps && appState.selectedStamps.length > 0)) {
+                    el.classList.remove('hidden');
+                    // Reset cluster rotation slider
+                    stampConfig.clusterRot = 0;
+                    const slider = document.getElementById('spinCluster');
+                    if(slider) slider.value = 0;
+                    const label = document.getElementById('spinClusterVal');
+                    if(label) label.innerText = '0°';
+
+                    // Update Cluster Controls if a cluster is selected
+                    const clusterToggle = document.getElementById('clusterToggle');
+                    const clusterControls = document.getElementById('clusterControls');
+                    
+                    let selectedClusterId = null;
+                    if (appState.selectedStamps && appState.selectedStamps.length > 0) {
+                        const firstS = getStampFromRef(appState.selectedStamps[0]);
+                        if (firstS && firstS.clusterId) {
+                            selectedClusterId = firstS.clusterId;
+                        }
+                    }
+                    
+                    if (selectedClusterId) {
+                        if(clusterControls) clusterControls.classList.remove('hidden');
+                        if(clusterToggle) clusterToggle.checked = true;
+                        
+                        const clusterStamps = getAllStampsInCluster(selectedClusterId);
+                        if (clusterStamps.length > 0) {
+                            const count = clusterStamps.length;
+                            document.getElementById('clusterCount').value = count;
+                            document.getElementById('val-clusterCount').innerText = count;
+                            
+                            let sumX = 0, sumY = 0;
+                            clusterStamps.forEach(s => { sumX += s.x; sumY += s.y; });
+                            const cx = sumX / count;
+                            const cy = sumY / count;
+                            
+                            let totalDist = 0;
+                            clusterStamps.forEach(s => {
+                                totalDist += Math.hypot(s.x - cx, s.y - cy);
+                            });
+                            const avgRadius = Math.round(totalDist / count);
+                            
+                            document.getElementById('clusterRadius').value = avgRadius;
+                            document.getElementById('val-clusterRadius').innerText = avgRadius + 'px';
+                        }
+                    }
+                }
                 else el.classList.add('hidden');
             }
         }
@@ -1709,23 +1819,97 @@
 
         function updateStampConfig(k, v) { 
             const val = parseInt(v);
+            
+            let rotDelta = 0;
+            if (k === 'rot') {
+                rotDelta = (val - stampConfig.rot) * Math.PI / 180;
+            }
+
             stampConfig[k] = val; 
             if(k==='rot')document.getElementById('stampRotVal').innerText=val+'°'; 
             if(k==='size')document.getElementById('stampSizeVal').innerText=val+'px'; 
             
-            if (appState.selectedStamp) {
-                const s = getSelectedStamp();
-                if (s) {
-                    const targets = s.clusterId ? getAllStampsInCluster(s.clusterId) : [s];
-                    targets.forEach(t => {
-                        if (k === 'rot') t.rot = (val * Math.PI) / 180;
-                        if (k === 'size') t.size = val;
-                    });
-                    requestRedraw();
+            if (appState.selectedStamp || (appState.selectedStamps && appState.selectedStamps.length > 0)) {
+                let selectionRefs = appState.selectedStamps || [];
+                if (selectionRefs.length === 0 && appState.selectedStamp) {
+                    selectionRefs = [appState.selectedStamp];
                 }
+                
+                // Collect all unique stamps to modify
+                const uniqueStamps = new Set();
+                const isClusterMode = document.getElementById('clusterToggle') && document.getElementById('clusterToggle').checked;
+                
+                selectionRefs.forEach(ref => {
+                    const s = getStampFromRef(ref);
+                    if (s) {
+                        if (s.clusterId && isClusterMode) {
+                            const cluster = getAllStampsInCluster(s.clusterId);
+                            cluster.forEach(c => uniqueStamps.add(c));
+                        } else {
+                            uniqueStamps.add(s);
+                        }
+                    }
+                });
+                
+                uniqueStamps.forEach(t => {
+                    if (k === 'rot') {
+                        t.rot += rotDelta;
+                    }
+                    if (k === 'size') t.size = val;
+                });
+                requestRedraw();
             }
             renderPreview(); 
         }
+
+        function spinCluster(v) {
+            const val = parseInt(v);
+            const deltaDeg = val - stampConfig.clusterRot;
+            const deltaRad = deltaDeg * Math.PI / 180;
+            
+            stampConfig.clusterRot = val;
+            document.getElementById('spinClusterVal').innerText = val + '°';
+
+            if (appState.selectedStamps && appState.selectedStamps.length > 0) {
+                const uniqueStamps = new Set();
+                const isClusterMode = document.getElementById('clusterToggle') && document.getElementById('clusterToggle').checked;
+                appState.selectedStamps.forEach(ref => {
+                    const s = getStampFromRef(ref);
+                    if (s) {
+                        if (s.clusterId && isClusterMode) {
+                            const cluster = getAllStampsInCluster(s.clusterId);
+                            cluster.forEach(c => uniqueStamps.add(c));
+                        } else {
+                            uniqueStamps.add(s);
+                        }
+                    }
+                });
+                
+                const stamps = Array.from(uniqueStamps);
+                if (stamps.length === 0) return;
+
+                let sumX = 0, sumY = 0;
+                stamps.forEach(s => { sumX += s.x; sumY += s.y; });
+                const cx = sumX / stamps.length;
+                const cy = sumY / stamps.length;
+
+                const cos = Math.cos(deltaRad);
+                const sin = Math.sin(deltaRad);
+
+                stamps.forEach(s => {
+                    const dx = s.x - cx;
+                    const dy = s.y - cy;
+                    const nx = dx * cos - dy * sin;
+                    const ny = dx * sin + dy * cos;
+                    s.x = cx + nx;
+                    s.y = cy + ny;
+                    s.rot += deltaRad;
+                });
+
+                requestRedraw();
+            }
+        }
+
         function toggleFlip(axis) { 
             if(axis==='h')stampConfig.flipH=!stampConfig.flipH; 
             if(axis==='v')stampConfig.flipV=!stampConfig.flipV; 
@@ -1733,7 +1917,8 @@
             if (appState.selectedStamp) {
                 const s = getSelectedStamp();
                 if (s) {
-                    const targets = s.clusterId ? getAllStampsInCluster(s.clusterId) : [s];
+                    const isClusterMode = document.getElementById('clusterToggle') && document.getElementById('clusterToggle').checked;
+                    const targets = (s.clusterId && isClusterMode) ? getAllStampsInCluster(s.clusterId) : [s];
                     targets.forEach(t => {
                         if(axis==='h') t.flipH = stampConfig.flipH;
                         if(axis==='v') t.flipV = stampConfig.flipV;
@@ -1762,6 +1947,117 @@
                 console.error("Error getting selected stamp:", e);
             }
             return null;
+        }
+
+        function updateClusterConfig(key, val) {
+            const value = parseInt(val);
+            if (key === 'count') document.getElementById('val-clusterCount').innerText = value;
+            if (key === 'radius') document.getElementById('val-clusterRadius').innerText = value + 'px';
+
+            if (!appState.selectedStamps || appState.selectedStamps.length === 0) return;
+
+            // Find unique clusters in selection
+            const clusterIds = new Set();
+            appState.selectedStamps.forEach(ref => {
+                const s = getStampFromRef(ref);
+                if (s && s.clusterId) clusterIds.add(s.clusterId);
+            });
+
+            if (clusterIds.size === 0) return;
+
+            clusterIds.forEach(cId => {
+                const clusterStamps = getAllStampsInCluster(cId);
+                if (clusterStamps.length === 0) return;
+
+                // Calculate Centroid
+                let sumX = 0, sumY = 0;
+                clusterStamps.forEach(s => { sumX += s.x; sumY += s.y; });
+                const cx = sumX / clusterStamps.length;
+                const cy = sumY / clusterStamps.length;
+
+                if (key === 'radius') {
+                    // Just move them
+                    clusterStamps.forEach(s => {
+                        const angle = Math.atan2(s.y - cy, s.x - cx);
+                        s.x = cx + Math.cos(angle) * value;
+                        s.y = cy + Math.sin(angle) * value;
+                    });
+                } else if (key === 'count') {
+                    // Re-generate
+                    let layerIdx = -2; 
+                    
+                    // Check global
+                    if (appState.stamps) {
+                        const idx = appState.stamps.indexOf(clusterStamps[0]);
+                        if (idx !== -1) { layerIdx = -1; }
+                    }
+                    // Check layers
+                    if (layerIdx === -2 && appState.layers) {
+                        appState.layers.forEach((l, lIdx) => {
+                            if (l.stamps) {
+                                const idx = l.stamps.indexOf(clusterStamps[0]);
+                                if (idx !== -1) { layerIdx = lIdx; }
+                            }
+                        });
+                    }
+
+                    if (layerIdx === -2) return;
+
+                    const template = clusterStamps[0];
+                    const targetArray = (layerIdx === -1) ? appState.stamps : appState.layers[layerIdx].stamps;
+                    
+                    // Remove old stamps
+                    let i = targetArray.length;
+                    while (i--) {
+                        if (targetArray[i].clusterId === cId) {
+                            targetArray.splice(i, 1);
+                        }
+                    }
+
+                    // Create new stamps
+                    const newStamps = [];
+                    const radiusVal = parseInt(document.getElementById('clusterRadius').value);
+                    
+                    for(let i=0; i<value; i++) {
+                        const ang = (i * Math.PI * 2) / value;
+                        const stampX = cx + Math.cos(ang) * radiusVal;
+                        const stampY = cy + Math.sin(ang) * radiusVal;
+                        
+                        const newS = JSON.parse(JSON.stringify(template));
+                        newS.x = stampX;
+                        newS.y = stampY;
+                        newS.rot = ang + (Math.PI/2) + ((stampConfig.rot*Math.PI)/180);
+                        newStamps.push(newS);
+                    }
+                    
+                    targetArray.push(...newStamps);
+                }
+            });
+            
+            if (key === 'count') {
+                // Re-select
+                const newSel = [];
+                clusterIds.forEach(cId => {
+                    if (appState.stamps) {
+                        appState.stamps.forEach((s, i) => {
+                            if (s.clusterId === cId) newSel.push({ layerIndex: -1, stampIndex: i });
+                        });
+                    }
+                    if (appState.layers) {
+                        appState.layers.forEach((l, lIdx) => {
+                            if (l.stamps) {
+                                l.stamps.forEach((s, sIdx) => {
+                                    if (s.clusterId === cId) newSel.push({ layerIndex: lIdx, stampIndex: sIdx });
+                                });
+                            }
+                        });
+                    }
+                });
+                appState.selectedStamps = newSel;
+                appState.selectedStamp = newSel.length > 0 ? newSel[newSel.length-1] : null;
+            }
+
+            requestRedraw();
         }
 
         function renderPreview() {
@@ -2085,7 +2381,8 @@
                 if (selectionRefs.length === 1) {
                     const s = getStampFromRef(selectionRefs[0]);
                     if (s) {
-                        targets = s.clusterId ? getAllStampsInCluster(s.clusterId) : [s];
+                        const isClusterMode = document.getElementById('clusterToggle') && document.getElementById('clusterToggle').checked;
+                        targets = (s.clusterId && isClusterMode) ? getAllStampsInCluster(s.clusterId) : [s];
                     }
                 } else {
                     targets = selectionRefs.map(ref => getStampFromRef(ref)).filter(s => s);
@@ -2834,7 +3131,8 @@
                     let itemsToMove = [];
                     if (appState.selectedStamps.length === 1) {
                         const s = getStampFromRef(appState.selectedStamps[0]);
-                        if (s && s.clusterId) {
+                        const isClusterMode = document.getElementById('clusterToggle') && document.getElementById('clusterToggle').checked;
+                        if (s && s.clusterId && isClusterMode) {
                             const cluster = getAllStampsInCluster(s.clusterId);
                             itemsToMove = cluster.map(t => ({ stamp: t }));
                         } else {
@@ -2878,7 +3176,8 @@
                             const s = getStampFromRef(hit);
                             
                             let itemsToMove = [];
-                            if (s.clusterId) {
+                            const isClusterMode = document.getElementById('clusterToggle') && document.getElementById('clusterToggle').checked;
+                            if (s.clusterId && isClusterMode) {
                                 const cluster = getAllStampsInCluster(s.clusterId);
                                 itemsToMove = cluster.map(t => ({ stamp: t }));
                             } else {
@@ -3057,8 +3356,31 @@
                     }
                 } else {
                     if (found) {
-                        appState.selectedStamp = found;
-                        appState.selectedStamps = [found];
+                        const s = getStampFromRef(found);
+                        const isClusterMode = document.getElementById('clusterToggle') && document.getElementById('clusterToggle').checked;
+                        
+                        if (s && s.clusterId && isClusterMode) {
+                             const clusterRefs = [];
+                             if (appState.stamps) {
+                                 appState.stamps.forEach((st, i) => {
+                                     if (st.clusterId === s.clusterId) clusterRefs.push({ layerIndex: -1, stampIndex: i });
+                                 });
+                             }
+                             if (appState.layers) {
+                                 appState.layers.forEach((l, lIdx) => {
+                                     if (l.stamps) {
+                                         l.stamps.forEach((st, sIdx) => {
+                                             if (st.clusterId === s.clusterId) clusterRefs.push({ layerIndex: lIdx, stampIndex: sIdx });
+                                         });
+                                     }
+                                 });
+                             }
+                             appState.selectedStamps = clusterRefs;
+                             appState.selectedStamp = found;
+                        } else {
+                            appState.selectedStamp = found;
+                            appState.selectedStamps = [found];
+                        }
                     } else {
                         appState.selectedStamp = null;
                         appState.selectedStamps = [];
@@ -3153,6 +3475,127 @@
             }
             saveState(); redraw();
         });
+
+        // --- TAB & PRESET LOGIC ---
+        function switchTab(tab) {
+            const editorBtn = document.getElementById('tab-btn-editor');
+            const presetsBtn = document.getElementById('tab-btn-presets');
+            const editorPanel = document.getElementById('editorPanel');
+            const presetsPanel = document.getElementById('presetsPanel');
+
+            if (tab === 'editor') {
+                editorBtn.classList.add('text-yellow-500', 'border-yellow-500');
+                editorBtn.classList.remove('text-slate-400', 'border-transparent');
+                presetsBtn.classList.add('text-slate-400', 'border-transparent');
+                presetsBtn.classList.remove('text-yellow-500', 'border-yellow-500');
+                
+                editorPanel.classList.remove('hidden');
+                presetsPanel.classList.add('hidden');
+            } else {
+                presetsBtn.classList.add('text-yellow-500', 'border-yellow-500');
+                presetsBtn.classList.remove('text-slate-400', 'border-transparent');
+                editorBtn.classList.add('text-slate-400', 'border-transparent');
+                editorBtn.classList.remove('text-yellow-500', 'border-yellow-500');
+                
+                presetsPanel.classList.remove('hidden');
+                editorPanel.classList.add('hidden');
+            }
+        }
+
+        const BASE_PRESET_JSON = `{"shape":"oval","layers":[{"pattern":"solid","inset":20,"size":2,"spacing":5,"rot":0,"radius":0,"lines":3,"lineSep":6,"material":"gold","brightness":0,"grid":[[false,false,true,true],[false,false,false,true],[true,false,false,true],[true,true,true,true]],"ending":"none","floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"stamps":[{"asset":"leaf-pro","x":350.5,"y":123,"rot":0,"size":80,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0},{"asset":"leaf-pro","x":345.5,"y":188,"rot":0.08726646259971647,"size":80,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0},{"asset":"leaf-pro","x":317.5,"y":148,"rot":1.5533430342749535,"size":80,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0},{"asset":"leaf-pro","x":383.5,"y":153,"rot":1.5533430342749535,"size":80,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0},{"asset":"leaf-pro","x":321.5,"y":171,"rot":1.064650843716541,"size":80,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0},{"asset":"leaf-pro","x":375.5,"y":133,"rot":0.8552113334772214,"size":80,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0},{"asset":"leaf-pro","x":374.5,"y":178,"rot":2.234021442552742,"size":80,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0},{"asset":"leaf-pro","x":326.5,"y":127,"rot":2.3911010752322315,"size":80,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0},{"asset":"rose-real","x":349.5,"y":159,"rot":2.3911010752322315,"size":56,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":"12","shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0}]},{"pattern":"solid","inset":20,"size":2,"spacing":5,"rot":0,"radius":0,"lines":3,"lineSep":6,"material":"gold","brightness":0,"grid":[[false,false,true,true],[false,false,false,true],[true,false,false,true],[true,true,true,true]],"ending":"none","floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"simple"},"stamps":[]}],"stamps":[{"asset":"side-vine","x":413.5,"y":132,"rot":2.8623399732707,"size":46,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0},{"asset":"side-vine","x":308.5,"y":201,"rot":2.4958208303518914,"size":64,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0},{"asset":"side-vine","x":356.5,"y":99,"rot":1.8500490071139892,"size":58,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0},{"asset":"leaf-pro","x":276.5,"y":107,"rot":5.148721293383261,"size":96,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0,"clusterId":1764046253677.3223},{"asset":"leaf-pro","x":263.8606797749979,"y":141.04226065180615,"rot":5.602506898901789,"size":96,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0,"clusterId":1764046253677.3223},{"asset":"leaf-pro","x":199.1393202250021,"y":122.51141009169893,"rot":7.208209810736576,"size":96,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0,"clusterId":1764046253677.3223},{"asset":"leaf-pro","x":204.1393202250021,"y":83.48858990830108,"rot":8.464846872172513,"size":96,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0,"clusterId":1764046253677.3223},{"asset":"leaf-pro","x":237.8606797749979,"y":66.95773934819385,"rot":9.581857593448882,"size":96,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0,"clusterId":1764046253677.3223},{"asset":"leaf-pro","x":277.2003838606948,"y":80.15588490401609,"rot":13.596114873035837,"size":96,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0,"clusterId":1764046707808.7417},{"asset":"leaf-pro","x":229.31884316106482,"y":140.2846633645058,"rot":16.109388995907747,"size":96,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0,"clusterId":1764046707808.7417},{"asset":"rose-real","x":236.5,"y":105,"rot":3.0543261909900794,"size":96,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0},{"asset":"leaf-palm","x":388.42006481427296,"y":81.28287328889895,"rot":1.5707963267948966,"size":96,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0,"clusterId":1764051122893.2976},{"asset":"leaf-palm","x":360.8144150186446,"y":125.43992988485988,"rot":2.827433388230814,"size":96,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0,"clusterId":1764051122893.2976},{"asset":"leaf-palm","x":302.2415393006271,"y":117.0276878005287,"rot":4.084070449666731,"size":96,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0,"clusterId":1764051122893.2976},{"asset":"leaf-palm","x":298.04801609759176,"y":47.714769893864656,"rot":5.340707511102648,"size":96,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0,"clusterId":1764051122893.2976},{"asset":"leaf-palm","x":337.64603981207784,"y":29.115659010651783,"rot":6.5973445725385655,"size":96,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0,"clusterId":1764051122893.2976},{"asset":"leaf-pro","x":373.07084357282406,"y":72.17769593509654,"rot":1.5358897417550148,"size":44,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0,"clusterId":1764051657534.9949},{"asset":"leaf-pro","x":358.2936234314835,"y":97.544144705008,"rot":2.792526803190937,"size":44,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0,"clusterId":1764051657534.9949},{"asset":"leaf-pro","x":324.0626462683165,"y":98.80011319389669,"rot":4.049163864626858,"size":44,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0,"clusterId":1764051657534.9949},{"asset":"leaf-pro","x":314.93239515366486,"y":48.69078982079665,"rot":5.305800926062775,"size":44,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0,"clusterId":1764051657534.9949},{"asset":"leaf-pro","x":332.9447220023702,"y":37.77839059670407,"rot":6.562437987498686,"size":44,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0,"clusterId":1764051657534.9949},{"asset":"rose-real","x":335.5,"y":72,"rot":4.049163864626845,"size":44,"flipH":false,"flipV":false,"floralState":{"petalIn":"#aa771c","petalOut":"#fcf6ba","count":8,"shadow":true,"shadowCol":"#000000","shadowOff":2,"leaf":"#bf953f","vein":"#5c4010","veinW":1,"leafShape":"fern"},"material":"gold","brightness":0}],"selectedStamp":null,"selectedStamps":[],"shadowOpacity":0.3,"shadowBlur":4}`;
+
+        function loadPreset(name) {
+            if (!confirm('This will replace your current drawing with the selected preset. Continue?')) return;
+
+            // 1. Parse Base State
+            const newState = JSON.parse(BASE_PRESET_JSON);
+            
+            // 2. Define Theme Overrides
+            let theme = {
+                material: 'gold',
+                petalIn: '#aa771c', petalOut: '#fcf6ba',
+                leaf: '#bf953f', vein: '#5c4010',
+                leafShape: 'fern',
+                assetMap: {} // Map old asset name -> new asset name
+            };
+
+            switch(name) {
+                case 'golden-fern':
+                    // Default
+                    break;
+                case 'silver-oak':
+                    theme.material = 'silver';
+                    theme.petalIn = '#a0a0a0'; theme.petalOut = '#e0e0e0';
+                    theme.leaf = '#808080'; theme.vein = '#404040';
+                    break;
+                case 'rose-garden':
+                    theme.material = 'rose';
+                    theme.petalIn = '#d4af37'; theme.petalOut = '#ffcccc';
+                    theme.leaf = '#6b8e23'; theme.vein = '#3a4a12';
+                    break;
+                case 'copper-maple':
+                    theme.material = 'copper';
+                    theme.petalIn = '#b87333'; theme.petalOut = '#ffcc99';
+                    theme.leaf = '#cd5c5c'; theme.vein = '#8b4513';
+                    break;
+                case 'royal-purple':
+                    theme.material = 'steel';
+                    theme.petalIn = '#4b0082'; theme.petalOut = '#9370db';
+                    theme.leaf = '#ffd700'; theme.vein = '#daa520';
+                    break;
+            }
+
+            // 3. Apply Theme to State
+            const applyThemeToItem = (item) => {
+                item.material = theme.material;
+                if (item.floralState) {
+                    item.floralState.petalIn = theme.petalIn;
+                    item.floralState.petalOut = theme.petalOut;
+                    item.floralState.leaf = theme.leaf;
+                    item.floralState.vein = theme.vein;
+                    // Keep original leafShape
+                }
+                // Keep original assets
+            };
+
+            // Apply to Layers
+            if (newState.layers) {
+                newState.layers.forEach(l => {
+                    l.material = theme.material;
+                    if (l.floralState) {
+                        l.floralState.petalIn = theme.petalIn;
+                        l.floralState.petalOut = theme.petalOut;
+                        l.floralState.leaf = theme.leaf;
+                        l.floralState.vein = theme.vein;
+                        // Keep original leafShape
+                    }
+                    if (l.stamps) l.stamps.forEach(applyThemeToItem);
+                });
+            }
+
+            // Apply to Global Stamps
+            if (newState.stamps) {
+                newState.stamps.forEach(applyThemeToItem);
+            }
+
+            // 4. Load the New State
+            loadState(JSON.stringify(newState));
+            
+            // 5. Update Global Config to match
+            floralState.petalIn = theme.petalIn;
+            floralState.petalOut = theme.petalOut;
+            floralState.leaf = theme.leaf;
+            floralState.vein = theme.vein;
+            floralState.leafShape = 'fern';
+            setMaterial(theme.material);
+
+            const shapeEl = document.getElementById('proLeafShape');
+            if(shapeEl) shapeEl.value = 'fern';
+
+            // Switch back to editor
+            switchTab('editor');
+            alert('Preset loaded: ' + name);
+        }
 
         init();
     </script>
