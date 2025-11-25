@@ -102,6 +102,12 @@
             <div class="panel rounded-lg p-4 border-l-4 border-l-yellow-600">
                 <h3 class="text-yellow-500 text-sm font-bold uppercase tracking-widest mb-3 border-b border-slate-700 pb-2">Floral Designer</h3>
                 
+                <!-- Mode Selection -->
+                <div class="flex gap-2 mb-3">
+                    <button id="btn-mode-place" onclick="setStampMode('place')" class="flex-1 py-1.5 bg-yellow-600 hover:bg-yellow-500 border border-yellow-500 rounded text-xs text-white font-bold shadow-lg shadow-yellow-900/20 transition-all"><i class="fa-solid fa-stamp mr-1"></i>Place</button>
+                    <button id="btn-mode-select" onclick="setStampMode('select')" class="flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-xs text-slate-300 transition-all"><i class="fa-solid fa-arrow-pointer mr-1"></i>Select & Edit</button>
+                </div>
+
                 <!-- Preview & Basic Transform -->
                 <div class="flex gap-4 mb-4">
                     <div class="w-24 h-24 bg-slate-800 border border-slate-600 rounded flex items-center justify-center relative overflow-hidden shrink-0">
@@ -131,6 +137,17 @@
                         <div><div class="flex justify-between text-[10px] text-slate-400"><span>Count</span><span id="val-clusterCount">5</span></div><input type="range" id="clusterCount" min="2" max="20" value="5" oninput="document.getElementById('val-clusterCount').innerText=this.value"></div>
                         <div><div class="flex justify-between text-[10px] text-slate-400"><span>Radius</span><span id="val-clusterRadius">40px</span></div><input type="range" id="clusterRadius" min="10" max="150" value="40" oninput="document.getElementById('val-clusterRadius').innerText=this.value+'px'"></div>
                         <p class="text-[9px] text-slate-500 italic text-center">Click canvas to place cluster center</p>
+                    </div>
+                </div>
+
+                <!-- Global Stamp Actions -->
+                <div id="globalStampActions" class="mt-3 pt-3 border-t border-slate-700">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-[10px] text-slate-400 uppercase">Global Stamps</span>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="undoGlobalStamp()" class="flex-1 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-[10px] text-slate-300"><i class="fa-solid fa-rotate-left mr-1"></i>Undo</button>
+                        <button onclick="clearGlobalStamps()" class="flex-1 py-1 bg-red-900/30 hover:bg-red-900/50 border border-red-900 rounded text-[10px] text-red-400"><i class="fa-solid fa-trash mr-1"></i>Clear All</button>
                     </div>
                 </div>
 
@@ -408,11 +425,11 @@
         let customStamps = {};
         let customStampCount = 0;
 
-        let appState = { shape: 'rect-portrait', layers: [], stamps: [] };
+        let appState = { shape: 'rect-portrait', layers: [], stamps: [], selectedStamp: null };
         let selectedLayerIndex = -1;
         let currentMaterial = 'gold', currentBrightness = 0, currentFloralColor = 'material'; 
         let floralState = { petalIn: '#aa771c', petalOut: '#fcf6ba', count: 8, shadow: true, shadowCol: '#000000', shadowOff: 2, leaf: '#bf953f', vein: '#5c4010', veinW: 1, leafShape: 'simple' };
-        let stampConfig = { active: 'leaf-pro', rot: 0, size: 80, flipH: false, flipV: false };
+        let stampConfig = { active: 'leaf-pro', rot: 0, size: 80, flipH: false, flipV: false, mode: 'place' };
         let history = [], historyIndex = -1;
         let mouseX = 0, mouseY = 0;
         let currentPattern = 'solid';
@@ -626,6 +643,45 @@
                 layers: [
                     { pattern: 'corner-ornate', inset: 20, size: 40, spacing: 0, lines: 1, lineSep: 10, gridType: 'corners' },
                     { pattern: 'solid', inset: 20, size: 2, spacing: 0, lines: 2, lineSep: 5, gridType: 'all' }
+                ]
+            },
+
+            // --- FLORAL & NATURE (NEW) ---
+            'romantic-roses': {
+                material: 'gold',
+                floralState: { petalIn: '#e91e63', petalOut: '#f8bbd0', leaf: '#4caf50', vein: '#2e7d32' },
+                layers: [
+                    { pattern: 'solid', inset: 15, size: 3, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'rose-real', inset: 15, size: 40, spacing: 0, lines: 1, lineSep: 10, gridType: 'corners' },
+                    { pattern: 'leaf-pro', inset: 25, size: 20, spacing: 20, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
+            },
+            'floral-arch': {
+                material: 'rose',
+                floralState: { petalIn: '#f06292', petalOut: '#fce4ec', leaf: '#66bb6a', vein: '#388e3c' },
+                layers: [
+                    { pattern: 'flower-daisy', inset: 20, size: 25, spacing: 20, lines: 1, lineSep: 10, gridType: 'top-bottom' },
+                    { pattern: 'flower-tulip', inset: 20, size: 25, spacing: 20, lines: 1, lineSep: 10, gridType: 'sides' },
+                    { pattern: 'leaf-ivy', inset: 30, size: 15, spacing: 15, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
+            },
+            'tropical-hoop': {
+                material: 'gold',
+                shape: 'circle',
+                floralState: { petalIn: '#ffffff', petalOut: '#fff9c4', leaf: '#2e7d32', vein: '#1b5e20' },
+                layers: [
+                    { pattern: 'solid', inset: 10, size: 4, spacing: 0, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'flower-lily', inset: 10, size: 30, spacing: 40, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'leaf-palm', inset: 20, size: 25, spacing: 30, lines: 1, lineSep: 10, gridType: 'all' }
+                ]
+            },
+            'vintage-botanical': {
+                material: 'bronze',
+                floralState: { petalIn: '#d84315', petalOut: '#ffccbc', leaf: '#558b2f', vein: '#33691e' },
+                layers: [
+                    { pattern: 'solid', inset: 20, size: 2, spacing: 0, lines: 2, lineSep: 6, gridType: 'all' },
+                    { pattern: 'leaf-fern', inset: 35, size: 18, spacing: 15, lines: 1, lineSep: 10, gridType: 'all' },
+                    { pattern: 'rose-bud', inset: 35, size: 12, spacing: 30, lines: 1, lineSep: 10, gridType: 'all' }
                 ]
             },
 
@@ -954,6 +1010,8 @@
         function redo() { if(historyIndex<history.length-1){ historyIndex++; loadState(history[historyIndex]); }}
         function loadState(json) { 
             appState = JSON.parse(json); 
+            if (!appState.stamps) appState.stamps = [];
+            if (!appState.selectedStamp) appState.selectedStamp = null;
             selectedLayerIndex = -1; // Reset selection on load
             document.getElementById('canvasShape').value=appState.shape; 
             resizeCanvas(); 
@@ -972,8 +1030,10 @@
                 const prop = id; // id matches property name (inset, size, spacing, radius, lineSep)
                 // Handle special cases if any, otherwise direct assignment
                 appState.layers[selectedLayerIndex][prop] = parseInt(val);
-                redraw();
-                saveState();
+                requestRedraw();
+                // Debounce saveState for sliders to avoid history spam
+                if(this.saveTimeout) clearTimeout(this.saveTimeout);
+                this.saveTimeout = setTimeout(saveState, 500);
             }
         }
 
@@ -1046,9 +1106,76 @@
         function updateLineCount(n) { tempLineCount = n; document.querySelectorAll('.line-btn').forEach(b=>b.classList.remove('active', 'bg-slate-600')); document.getElementById('btn-l'+n).classList.add('active', 'bg-slate-600'); document.getElementById('val-lineCount').innerText = n; }
         function updateBorderEnding(v) { currentBorderEnding = v; }
         
-        function setMaterial(mat) { currentMaterial = mat; const elIn = document.getElementById('col-petal-in'); if(elIn) elIn.value = floralState.petalIn; const elOut = document.getElementById('col-petal-out'); if(elOut) elOut.value = floralState.petalOut; const elLeaf = document.getElementById('col-leaf'); if(elLeaf) elLeaf.value = floralState.leaf; const elVein = document.getElementById('col-vein'); if(elVein) elVein.value = floralState.vein; updateMaterialUI(); if (document.getElementById('applyGlobal') && document.getElementById('applyGlobal').checked) { appState.layers.forEach(l => l.material = mat); appState.stamps.forEach(s => s.material = mat); saveState(); redraw(); } renderPreview(); }
-        function setStampColor(color) { currentFloralColor = color; document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active')); if(color==='material') document.getElementById('btn-color-material').classList.add('active'); else if(color==='red') document.getElementById('btn-color-red').classList.add('active'); else if(color==='pink') document.getElementById('btn-color-pink').classList.add('active'); else if(color==='white') document.getElementById('btn-color-white').classList.add('active'); else if(color==='purple') document.getElementById('btn-color-purple').classList.add('active'); if (color !== 'material') { floralState.petalIn = FLORAL_COLORS[color].dark; floralState.petalOut = FLORAL_COLORS[color].light; document.getElementById('col-petal-in').value = floralState.petalIn; document.getElementById('col-petal-out').value = floralState.petalOut; } renderPreview(); }
-        function updateBrightness(val) { currentBrightness = parseInt(val); document.getElementById('val-bright').innerText = val + '%'; if (document.getElementById('applyGlobal').checked) { appState.layers.forEach(l => l.brightness = currentBrightness); appState.stamps.forEach(s => s.brightness = currentBrightness); saveState(); redraw(); } renderPreview(); }
+        function setMaterial(mat) { 
+            currentMaterial = mat; 
+            const elIn = document.getElementById('col-petal-in'); if(elIn) elIn.value = floralState.petalIn; 
+            const elOut = document.getElementById('col-petal-out'); if(elOut) elOut.value = floralState.petalOut; 
+            const elLeaf = document.getElementById('col-leaf'); if(elLeaf) elLeaf.value = floralState.leaf; 
+            const elVein = document.getElementById('col-vein'); if(elVein) elVein.value = floralState.vein; 
+            updateMaterialUI(); 
+            
+            if (appState.selectedStamp) {
+                const s = getSelectedStamp();
+                if (s) {
+                    s.material = currentMaterial;
+                    requestRedraw();
+                }
+            }
+
+            if (document.getElementById('applyGlobal') && document.getElementById('applyGlobal').checked) { 
+                appState.layers.forEach(l => l.material = mat); 
+                appState.stamps.forEach(s => s.material = mat); 
+                saveState(); 
+                redraw(); 
+            } 
+            renderPreview(); 
+        }
+        function setStampColor(color) { 
+            currentFloralColor = color; 
+            document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active')); 
+            if(color==='material') document.getElementById('btn-color-material').classList.add('active'); 
+            else if(color==='red') document.getElementById('btn-color-red').classList.add('active'); 
+            else if(color==='pink') document.getElementById('btn-color-pink').classList.add('active'); 
+            else if(color==='white') document.getElementById('btn-color-white').classList.add('active'); 
+            else if(color==='purple') document.getElementById('btn-color-purple').classList.add('active'); 
+            
+            if (color !== 'material') { 
+                floralState.petalIn = FLORAL_COLORS[color].dark; 
+                floralState.petalOut = FLORAL_COLORS[color].light; 
+                document.getElementById('col-petal-in').value = floralState.petalIn; 
+                document.getElementById('col-petal-out').value = floralState.petalOut; 
+            } 
+            
+            if (appState.selectedStamp) {
+                const s = getSelectedStamp();
+                if (s && s.floralState) {
+                    s.floralState.petalIn = floralState.petalIn;
+                    s.floralState.petalOut = floralState.petalOut;
+                    requestRedraw();
+                }
+            }
+            renderPreview(); 
+        }
+        function updateBrightness(val) { 
+            currentBrightness = parseInt(val); 
+            document.getElementById('val-bright').innerText = val + '%'; 
+            
+            if (appState.selectedStamp) {
+                const s = getSelectedStamp();
+                if (s) {
+                    s.brightness = currentBrightness;
+                    requestRedraw();
+                }
+            }
+
+            if (document.getElementById('applyGlobal').checked) { 
+                appState.layers.forEach(l => l.brightness = currentBrightness); 
+                appState.stamps.forEach(s => s.brightness = currentBrightness); 
+                saveState(); 
+                redraw(); 
+            } 
+            renderPreview(); 
+        }
         function updateFloralConfig(key, val) { 
             if(key==='shadow') floralState[key] = val; else floralState[key] = val; 
             if(key === 'count') document.getElementById('val-pCount').innerText = val; 
@@ -1059,25 +1186,164 @@
             const isProLeaf = (stampConfig.active === 'leaf-pro') || (currentPattern === 'leaf-pro');
             if(isProLeaf) shapeCtrl.classList.remove('hidden'); else shapeCtrl.classList.add('hidden');
             
+            // Live update selected stamp
+            if (appState.selectedStamp) {
+                const s = getSelectedStamp();
+                if (s && s.floralState) {
+                    s.floralState[key] = val;
+                    requestRedraw();
+                }
+            }
+
             // Live update selected layer
             if (selectedLayerIndex >= 0 && selectedLayerIndex < appState.layers.length) {
                 appState.layers[selectedLayerIndex].floralState = JSON.parse(JSON.stringify(floralState));
-                redraw();
+                requestRedraw();
                 saveState();
+            }
+            
+            // Update selected stamp
+            if (appState.selectedStamp) {
+                const s = getSelectedStamp();
+                if (s && s.floralState) {
+                    s.floralState[key] = val;
+                    requestRedraw();
+                }
             }
             
             renderPreview(); 
         }
         function updateMaterialUI() { const btns = document.querySelectorAll('.material-btn'); btns.forEach(b=>b.classList.remove('active')); const m = currentMaterial; if(m==='gold')document.getElementById('btn-mat-gold').classList.add('active'); if(m==='silver')document.getElementById('btn-mat-silver').classList.add('active'); if(m==='rose')document.getElementById('btn-mat-rose').classList.add('active'); if(m==='copper')document.getElementById('btn-mat-copper').classList.add('active'); if(m==='steel')document.getElementById('btn-mat-steel').classList.add('active'); }
         function changeCanvasShape(v) { appState.shape = v; resizeCanvas(); saveState(); }
-        function selectStamp(name) { stampConfig.active = name; document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active', 'border-yellow-500')); const b=document.getElementById('btn-'+name); if(b)b.classList.add('active', 'border-yellow-500'); 
+        function selectStamp(name, preventModeChange = false) { 
+            stampConfig.active = name; 
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active', 'border-yellow-500')); 
+            const b=document.getElementById('btn-'+name); 
+            if(b)b.classList.add('active', 'border-yellow-500'); 
+            
             // Show/Hide Leaf Shape Control based on selection
             const shapeCtrl = document.getElementById('leafShapeControl');
             if(name === 'leaf-pro') shapeCtrl.classList.remove('hidden'); else shapeCtrl.classList.add('hidden');
+            
+            // Switch to place mode when selecting a new tool
+            if (!preventModeChange && stampConfig.mode === 'select') setStampMode('place');
+            
             renderPreview(); 
         }
-        function updateStampConfig(k, v) { stampConfig[k] = parseInt(v); if(k==='rot')document.getElementById('stampRotVal').innerText=v+'°'; if(k==='size')document.getElementById('stampSizeVal').innerText=v+'px'; renderPreview(); }
-        function toggleFlip(axis) { if(axis==='h')stampConfig.flipH=!stampConfig.flipH; if(axis==='v')stampConfig.flipV=!stampConfig.flipV; renderPreview(); }
+
+        function setStampMode(mode) {
+            stampConfig.mode = mode;
+            const btnPlace = document.getElementById('btn-mode-place');
+            const btnSelect = document.getElementById('btn-mode-select');
+            
+            if(mode === 'place') {
+                btnPlace.className = "flex-1 py-1.5 bg-yellow-600 hover:bg-yellow-500 border border-yellow-500 rounded text-xs text-white font-bold shadow-lg shadow-yellow-900/20 transition-all";
+                btnSelect.className = "flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-xs text-slate-300 transition-all";
+                appState.selectedStamp = null;
+                canvas.style.cursor = 'default';
+                requestRedraw();
+            } else {
+                btnPlace.className = "flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-xs text-slate-300 transition-all";
+                btnSelect.className = "flex-1 py-1.5 bg-yellow-600 hover:bg-yellow-500 border border-yellow-500 rounded text-xs text-white font-bold shadow-lg shadow-yellow-900/20 transition-all";
+                canvas.style.cursor = 'crosshair';
+            }
+        }
+
+        function undoGlobalStamp() {
+            if (appState.stamps.length > 0) {
+                saveState();
+                appState.stamps.pop();
+                requestRedraw();
+            }
+        }
+
+        function clearGlobalStamps() {
+            if (appState.stamps.length > 0) {
+                saveState();
+                appState.stamps = [];
+                requestRedraw();
+            }
+        }
+        function getAllStampsInCluster(clusterId) {
+            if (!clusterId) return [];
+            let cluster = [];
+            
+            // Check global stamps
+            if (appState.stamps) {
+                appState.stamps.forEach(s => {
+                    if (s.clusterId === clusterId) cluster.push(s);
+                });
+            }
+            
+            // Check layer stamps
+            if (appState.layers) {
+                appState.layers.forEach(l => {
+                    if (l.stamps) {
+                        l.stamps.forEach(s => {
+                            if (s.clusterId === clusterId) cluster.push(s);
+                        });
+                    }
+                });
+            }
+            return cluster;
+        }
+
+        function updateStampConfig(k, v) { 
+            const val = parseInt(v);
+            stampConfig[k] = val; 
+            if(k==='rot')document.getElementById('stampRotVal').innerText=val+'°'; 
+            if(k==='size')document.getElementById('stampSizeVal').innerText=val+'px'; 
+            
+            if (appState.selectedStamp) {
+                const s = getSelectedStamp();
+                if (s) {
+                    const targets = s.clusterId ? getAllStampsInCluster(s.clusterId) : [s];
+                    targets.forEach(t => {
+                        if (k === 'rot') t.rot = (val * Math.PI) / 180;
+                        if (k === 'size') t.size = val;
+                    });
+                    requestRedraw();
+                }
+            }
+            renderPreview(); 
+        }
+        function toggleFlip(axis) { 
+            if(axis==='h')stampConfig.flipH=!stampConfig.flipH; 
+            if(axis==='v')stampConfig.flipV=!stampConfig.flipV; 
+            
+            if (appState.selectedStamp) {
+                const s = getSelectedStamp();
+                if (s) {
+                    const targets = s.clusterId ? getAllStampsInCluster(s.clusterId) : [s];
+                    targets.forEach(t => {
+                        if(axis==='h') t.flipH = stampConfig.flipH;
+                        if(axis==='v') t.flipV = stampConfig.flipV;
+                    });
+                    requestRedraw();
+                }
+            }
+            renderPreview(); 
+        }
+
+        function getSelectedStamp() {
+            if (!appState.selectedStamp) return null;
+            const { layerIndex, stampIndex } = appState.selectedStamp;
+            
+            try {
+                if (layerIndex === -1) {
+                    if (appState.stamps && appState.stamps[stampIndex]) {
+                        return appState.stamps[stampIndex];
+                    }
+                } else {
+                    if (appState.layers[layerIndex] && appState.layers[layerIndex].stamps && appState.layers[layerIndex].stamps[stampIndex]) {
+                        return appState.layers[layerIndex].stamps[stampIndex];
+                    }
+                }
+            } catch (e) {
+                console.error("Error getting selected stamp:", e);
+            }
+            return null;
+        }
 
         function renderPreview() {
             const w = previewCanvas.width, h = previewCanvas.height; const pc = previewCtx; pc.clearRect(0,0,w,h); pc.save(); pc.translate(w/2,h/2); pc.rotate((stampConfig.rot*Math.PI)/180); pc.scale(stampConfig.flipH?-1:1, stampConfig.flipV?-1:1);
@@ -1093,12 +1359,81 @@
                 const isSelected = (i === selectedLayerIndex);
                 const bgClass = isSelected ? 'bg-slate-700 border-yellow-600' : 'bg-slate-800 border-slate-700';
                 const textClass = isSelected ? 'text-yellow-500 font-bold' : 'text-slate-300';
+                const stampCount = l.stamps ? l.stamps.length : 0;
+                const stampBadge = stampCount > 0 ? `<span class="ml-1 text-[9px] bg-yellow-900 text-yellow-200 px-1 rounded">${stampCount}</span>` : '';
+                
                 return `
                 <div class="flex justify-between items-center p-1 px-2 rounded border ${bgClass} cursor-pointer hover:bg-slate-700 transition-colors" onclick="selectLayer(${i})">
-                    <span class="${textClass}">L${i+1}: ${l.pattern} (${l.lines}x)</span>
-                    <button onclick="event.stopPropagation(); deleteLayer(${i})" class="text-red-400 hover:text-red-300 px-2">x</button>
+                    <div class="flex items-center gap-1 overflow-hidden">
+                        <span class="${textClass} truncate">L${i+1}: ${l.pattern}</span>
+                        ${stampBadge}
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0">
+                        <button onclick="event.stopPropagation(); moveLayer(${i}, -1)" class="text-slate-400 hover:text-white px-1" title="Move Up">↑</button>
+                        <button onclick="event.stopPropagation(); moveLayer(${i}, 1)" class="text-slate-400 hover:text-white px-1" title="Move Down">↓</button>
+                        <button onclick="event.stopPropagation(); deleteLayer(${i})" class="text-red-400 hover:text-red-300 px-1" title="Delete">x</button>
+                    </div>
                 </div>`;
             }).join(''); 
+            
+            // Update Layer Tools
+            const toolsDiv = document.getElementById('layerTools');
+            if(!toolsDiv) {
+                const d = document.createElement('div');
+                d.id = 'layerTools';
+                d.className = 'mt-2 grid grid-cols-2 gap-2';
+                document.getElementById('layerList').after(d);
+            }
+            
+            const tools = document.getElementById('layerTools');
+            if(selectedLayerIndex >= 0 && appState.layers[selectedLayerIndex]) {
+                const l = appState.layers[selectedLayerIndex];
+                const hasStamps = l.stamps && l.stamps.length > 0;
+                tools.innerHTML = `
+                    <button onclick="undoLayerStamp()" class="py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 text-[10px] rounded border border-slate-600 ${hasStamps?'':'opacity-50 cursor-not-allowed'}" ${hasStamps?'':'disabled'}>Undo Stamp</button>
+                    <button onclick="clearLayerStamps()" class="py-1 bg-slate-700 hover:bg-red-900/50 text-red-300 text-[10px] rounded border border-slate-600 ${hasStamps?'':'opacity-50 cursor-not-allowed'}" ${hasStamps?'':'disabled'}>Clear Stamps</button>
+                `;
+            } else {
+                tools.innerHTML = '';
+            }
+        }
+
+        function moveLayer(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= appState.layers.length) return;
+            
+            // Swap
+            const temp = appState.layers[index];
+            appState.layers[index] = appState.layers[newIndex];
+            appState.layers[newIndex] = temp;
+            
+            // Follow selection
+            if (selectedLayerIndex === index) selectedLayerIndex = newIndex;
+            else if (selectedLayerIndex === newIndex) selectedLayerIndex = index;
+            
+            saveState();
+            renderLayerList();
+            requestRedraw();
+        }
+
+        function undoLayerStamp() {
+            if (selectedLayerIndex >= 0 && appState.layers[selectedLayerIndex].stamps && appState.layers[selectedLayerIndex].stamps.length > 0) {
+                appState.layers[selectedLayerIndex].stamps.pop();
+                saveState();
+                renderLayerList(); // Update badge
+                requestRedraw();
+            }
+        }
+
+        function clearLayerStamps() {
+            if (selectedLayerIndex >= 0 && appState.layers[selectedLayerIndex].stamps) {
+                if(confirm('Clear all stamps from this layer?')) {
+                    appState.layers[selectedLayerIndex].stamps = [];
+                    saveState();
+                    renderLayerList();
+                    requestRedraw();
+                }
+            }
         }
 
         function selectLayer(index) {
@@ -1191,7 +1526,23 @@
         function getEtchColor(mat) { if(mat === 'gold') return 'rgba(60, 40, 10, 0.5)'; if(mat === 'silver') return 'rgba(30, 30, 30, 0.5)'; if(mat === 'rose') return 'rgba(60, 20, 20, 0.5)'; if(mat === 'copper') return 'rgba(50, 20, 0, 0.5)'; return 'rgba(0,0,0,0.6)'; }
         function setBaseContext(ctx, width) { ctx.strokeStyle = '#FFFFFF'; ctx.fillStyle = '#FFFFFF'; ctx.lineWidth = width; ctx.lineJoin = 'round'; ctx.miterLimit = 10; ctx.setLineDash([]); }
 
-        function redraw() { renderScene(canvas, ctx, 1, true); }
+        let isRedrawPending = false;
+        function requestRedraw() {
+            if (!isRedrawPending) {
+                isRedrawPending = true;
+                requestAnimationFrame(() => {
+                    try {
+                        renderScene(canvas, ctx, 1, true);
+                    } catch (e) {
+                        console.error("Render error:", e);
+                    } finally {
+                        isRedrawPending = false;
+                    }
+                });
+            }
+        }
+
+        function redraw() { requestRedraw(); }
 
         function renderScene(targetCanvas, targetCtx, scale, showGhost) {
             const w = targetCanvas.width; const h = targetCanvas.height;
@@ -1253,14 +1604,42 @@
             });
 
             // Ghost Stamp
-            if(showGhost && stampConfig.active && mouseX > 0 && !document.getElementById('clusterToggle').checked) {
+            if(showGhost && stampConfig.active && mouseX > 0 && !document.getElementById('clusterToggle').checked && stampConfig.mode !== 'select') {
                 targetCtx.save(); targetCtx.globalAlpha = 0.5; targetCtx.translate(mouseX, mouseY);
                 targetCtx.rotate((stampConfig.rot*Math.PI)/180); targetCtx.scale(stampConfig.flipH?-1:1, stampConfig.flipV?-1:1);
                 const mat = currentMaterial; const bri = currentBrightness;
                 const fillStyle = getMaterialGradient(targetCtx, mat, bri, w, h);
                 targetCtx.fillStyle = fillStyle; targetCtx.strokeStyle = getEtchColor(mat);
-                ASSETS[stampConfig.active](targetCtx, stampConfig.size, fillStyle, floralState);
+                if(ASSETS[stampConfig.active]) ASSETS[stampConfig.active](targetCtx, stampConfig.size, fillStyle, floralState);
                 targetCtx.restore();
+            }
+            
+            // Draw Selection Highlight
+            if (showGhost && appState.selectedStamp) {
+                const s = getSelectedStamp();
+                if (s) {
+                    const targets = s.clusterId ? getAllStampsInCluster(s.clusterId) : [s];
+                    
+                    targets.forEach(t => {
+                        targetCtx.save();
+                        targetCtx.translate(t.x * scale, t.y * scale);
+                        targetCtx.rotate(t.rot);
+                        
+                        // Draw bounding box
+                        targetCtx.strokeStyle = '#fbbf24'; // Amber-400
+                        targetCtx.lineWidth = 2;
+                        targetCtx.setLineDash([5, 5]);
+                        
+                        const sz = (t.size || 50) * scale;
+                        targetCtx.strokeRect(-sz/2 - 5, -sz/2 - 5, sz + 10, sz + 10);
+                        
+                        // Draw resize handle (visual only)
+                        targetCtx.fillStyle = '#fbbf24';
+                        targetCtx.fillRect(sz/2, sz/2, 6, 6);
+                        
+                        targetCtx.restore();
+                    });
+                }
             }
             
             // Border Ghost (Preview)
@@ -1888,15 +2267,150 @@
         function downloadCanvas(){ const scale = parseInt(document.getElementById('exportScale').value); const w = canvas.width * scale; const h = canvas.height * scale; const hiResCanvas = document.createElement('canvas'); hiResCanvas.width = w; hiResCanvas.height = h; const hiResCtx = hiResCanvas.getContext('2d'); renderScene(hiResCanvas, hiResCtx, scale, false); const l=document.createElement('a'); l.download=`frame_x${scale}.png`; l.href=hiResCanvas.toDataURL(); l.click(); }
 
         // Interaction
-        canvas.addEventListener('mousemove', e => { const r=canvas.getBoundingClientRect(); mouseX=e.clientX-r.left; mouseY=e.clientY-r.top; if(stampConfig.active) redraw(); });
+        let isDraggingStamp = false;
+        let dragStart = { x: 0, y: 0 };
+        let initialStampPos = { x: 0, y: 0 };
+
+        canvas.addEventListener('mousedown', e => {
+            if (stampConfig.mode === 'select' && appState.selectedStamp) {
+                const s = getSelectedStamp();
+                if (s) {
+                    const dist = Math.hypot(s.x - mouseX, s.y - mouseY);
+                    if (dist < s.size / 2) {
+                        isDraggingStamp = true;
+                        dragStart = { x: mouseX, y: mouseY };
+                        
+                        if (s.clusterId) {
+                            // Store initial positions for all stamps in the cluster
+                            const cluster = getAllStampsInCluster(s.clusterId);
+                            initialStampPos = cluster.map(t => ({ x: t.x, y: t.y, stamp: t }));
+                        } else {
+                            initialStampPos = { x: s.x, y: s.y };
+                        }
+                    }
+                }
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => {
+            if (isDraggingStamp) {
+                isDraggingStamp = false;
+                saveState();
+            }
+        });
+
+        canvas.addEventListener('mousemove', e => { 
+            const r=canvas.getBoundingClientRect(); 
+            mouseX=e.clientX-r.left; 
+            mouseY=e.clientY-r.top; 
+            
+            if (isDraggingStamp && appState.selectedStamp) {
+                const s = getSelectedStamp();
+                if (s) {
+                    const dx = mouseX - dragStart.x;
+                    const dy = mouseY - dragStart.y;
+                    
+                    if (s.clusterId && Array.isArray(initialStampPos)) {
+                        // Move all stamps in cluster
+                        initialStampPos.forEach(item => {
+                            item.stamp.x = item.x + dx;
+                            item.stamp.y = item.y + dy;
+                        });
+                    } else {
+                        s.x = initialStampPos.x + dx;
+                        s.y = initialStampPos.y + dy;
+                    }
+                    requestRedraw();
+                }
+            } else if(stampConfig.active) {
+                redraw(); 
+            }
+        });
+        
         canvas.addEventListener('click', () => {
             if(!stampConfig.active)return;
             
+            // Handle Selection Mode
+            if (stampConfig.mode === 'select') {
+                let found = null;
+                
+                // Ensure stamps array exists
+                if (!appState.stamps) appState.stamps = [];
+
+                // Check global stamps (reverse order to select top-most)
+                for (let i = appState.stamps.length - 1; i >= 0; i--) {
+                    const s = appState.stamps[i];
+                    const dist = Math.hypot(s.x - mouseX, s.y - mouseY);
+                    // Increase hit area slightly for better UX
+                    if (dist < Math.max(s.size / 2, 20)) {
+                        found = { layerIndex: -1, stampIndex: i };
+                        break;
+                    }
+                }
+                
+                // Check layer stamps if not found
+                if (!found) {
+                    for (let l = appState.layers.length - 1; l >= 0; l--) {
+                        const layer = appState.layers[l];
+                        if (layer.stamps) {
+                            for (let i = layer.stamps.length - 1; i >= 0; i--) {
+                                const s = layer.stamps[i];
+                                const dist = Math.hypot(s.x - mouseX, s.y - mouseY);
+                                if (dist < Math.max(s.size / 2, 20)) {
+                                    found = { layerIndex: l, stampIndex: i };
+                                    break;
+                                }
+                            }
+                        }
+                        if (found) break;
+                    }
+                }
+                
+                appState.selectedStamp = found;
+                
+                if (found) {
+                    // Populate UI with selected stamp properties
+                    const s = getSelectedStamp();
+                    if (s) {
+                        // Update Stamp Config UI
+                        stampConfig.rot = Math.round((s.rot * 180) / Math.PI) % 360; // Approximate
+                        stampConfig.size = s.size;
+                        stampConfig.flipH = s.flipH;
+                        stampConfig.flipV = s.flipV;
+                        
+                        document.getElementById('stampRot').value = stampConfig.rot;
+                        document.getElementById('stampRotVal').innerText = stampConfig.rot + '°';
+                        document.getElementById('stampSize').value = stampConfig.size;
+                        document.getElementById('stampSizeVal').innerText = stampConfig.size + 'px';
+                        
+                        // Update Floral Config UI if applicable
+                        if (s.floralState) {
+                            floralState = JSON.parse(JSON.stringify(s.floralState));
+                            // Update UI controls
+                            if(document.getElementById('val-pCount')) document.getElementById('val-pCount').innerText = floralState.count;
+                            if(document.getElementById('val-vein')) document.getElementById('val-vein').innerText = floralState.veinW + 'px';
+                        }
+                        
+                        // Select the tool corresponding to the stamp asset
+                        selectStamp(s.asset, true);
+                        
+                        // Keep in select mode
+                        stampConfig.mode = 'select';
+                        document.getElementById('btn-mode-select').className = "flex-1 py-1.5 bg-yellow-600 hover:bg-yellow-500 border border-yellow-500 rounded text-xs text-white font-bold shadow-lg shadow-yellow-900/20 transition-all";
+                        document.getElementById('btn-mode-place').className = "flex-1 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-xs text-slate-300 transition-all";
+                    }
+                }
+                
+                requestRedraw();
+                return;
+            }
+
             const isCluster = document.getElementById('clusterToggle').checked;
             
             if (isCluster) {
                 const count = parseInt(document.getElementById('clusterCount').value);
                 const radius = parseInt(document.getElementById('clusterRadius').value);
+                const clusterId = Date.now() + Math.random(); // Unique ID for the cluster
                 // Draw Wreath
                 for(let i=0; i<count; i++) {
                     const ang = (i * Math.PI * 2) / count;
@@ -1910,7 +2424,8 @@
                         size: stampConfig.size,
                         flipH: stampConfig.flipH, flipV: stampConfig.flipV,
                         floralState: JSON.parse(JSON.stringify(floralState)),
-                        material: currentMaterial, brightness: currentBrightness
+                        material: currentMaterial, brightness: currentBrightness,
+                        clusterId: clusterId
                     };
 
                     if (selectedLayerIndex >= 0 && selectedLayerIndex < appState.layers.length) {
