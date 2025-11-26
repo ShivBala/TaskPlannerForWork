@@ -1648,6 +1648,25 @@
             const shapeCtrl = document.getElementById('leafShapeControl');
             if(name === 'leaf-pro') shapeCtrl.classList.remove('hidden'); else shapeCtrl.classList.add('hidden');
             
+            // If in select mode and we have a selection, update the selected stamp(s) to the new asset
+            if (stampConfig.mode === 'select' && appState.selectedStamps && appState.selectedStamps.length > 0) {
+                let changed = false;
+                appState.selectedStamps.forEach(ref => {
+                    const s = getStampFromRef(ref);
+                    if(s) {
+                        s.asset = name;
+                        changed = true;
+                    }
+                });
+                
+                if (changed) {
+                    requestRedraw();
+                    saveState();
+                    renderPreview();
+                    return; // Stay in select mode
+                }
+            }
+
             // Switch to place mode when selecting a new tool
             if (!preventModeChange && stampConfig.mode === 'select') setStampMode('place');
             
