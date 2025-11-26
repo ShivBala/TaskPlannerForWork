@@ -3510,10 +3510,12 @@
                 // Since input is SourceAlpha (black + alpha), we map Alpha to RGB.
                 const matrix = `0 0 0 ${r} 0   0 0 0 ${g} 0   0 0 0 ${b} 0   0 0 0 ${a} 0`;
                 
+                // We need a large filter region to avoid clipping the shadow, especially for small objects with large blur.
+                // Using 400% padding (x=-200%, width=500%) should cover most cases.
                 const filterDef = {
                     id: id,
                     type: 'filter',
-                    content: `<filter id="${id}" x="-50%" y="-50%" width="200%" height="200%">
+                    content: `<filter id="${id}" x="-200%" y="-200%" width="500%" height="500%">
                         <feGaussianBlur in="SourceAlpha" stdDeviation="${s.shadowBlur / 2}" result="blur"/>
                         <feOffset in="blur" dx="${s.shadowOffsetX}" dy="${s.shadowOffsetY}" result="offsetBlur"/>
                         <feColorMatrix in="offsetBlur" type="matrix" values="${matrix}" result="shadow"/>
