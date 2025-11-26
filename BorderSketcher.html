@@ -3478,27 +3478,45 @@
                 const id = `shadow_${this.filterCount++}`;
                 this.shadowCache[key] = id;
                 
-                // Parse rgba to separate color and opacity for better compatibility
-                let color = s.shadowColor;
-                let opacity = 1;
-                if (color && color.startsWith('rgba')) {
-                    const parts = color.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
+                // Parse color to RGBA for feColorMatrix
+                let r = 0, g = 0, b = 0, a = 1;
+                const c = s.shadowColor;
+                
+                if (c.startsWith('#')) {
+                    const hex = c.substring(1);
+                    r = parseInt(hex.substring(0, 2), 16) / 255;
+                    g = parseInt(hex.substring(2, 4), 16) / 255;
+                    b = parseInt(hex.substring(4, 6), 16) / 255;
+                } else if (c.startsWith('rgba')) {
+                    const parts = c.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
                     if (parts) {
-                        color = `rgb(${parts[1]},${parts[2]},${parts[3]})`;
-                        opacity = parseFloat(parts[4]);
+                        r = parseInt(parts[1]) / 255;
+                        g = parseInt(parts[2]) / 255;
+                        b = parseInt(parts[3]) / 255;
+                        a = parseFloat(parts[4]);
+                    }
+                } else if (c.startsWith('rgb')) {
+                    const parts = c.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+                    if (parts) {
+                        r = parseInt(parts[1]) / 255;
+                        g = parseInt(parts[2]) / 255;
+                        b = parseInt(parts[3]) / 255;
                     }
                 }
                 
-                // Use the robust filter chain (Blur -> Offset -> Flood -> Composite -> Merge)
-                // This avoids compatibility issues with feDropShadow and ensures correct masking
+                // Use feColorMatrix to colorize the blur directly.
+                // This avoids feFlood/feComposite masking issues that cause square artifacts.
+                // Matrix logic: R_out = R_in*0 + ... + A_in * R_shadow
+                // Since input is SourceAlpha (black + alpha), we map Alpha to RGB.
+                const matrix = `0 0 0 ${r} 0   0 0 0 ${g} 0   0 0 0 ${b} 0   0 0 0 ${a} 0`;
+                
                 const filterDef = {
                     id: id,
                     type: 'filter',
                     content: `<filter id="${id}" x="-50%" y="-50%" width="200%" height="200%">
                         <feGaussianBlur in="SourceAlpha" stdDeviation="${s.shadowBlur / 2}" result="blur"/>
                         <feOffset in="blur" dx="${s.shadowOffsetX}" dy="${s.shadowOffsetY}" result="offsetBlur"/>
-                        <feFlood flood-color="${color}" flood-opacity="${opacity}" result="flood"/>
-                        <feComposite in="flood" in2="offsetBlur" operator="in" result="shadow"/>
+                        <feColorMatrix in="offsetBlur" type="matrix" values="${matrix}" result="shadow"/>
                         <feMerge>
                             <feMergeNode in="shadow"/>
                             <feMergeNode in="SourceGraphic"/>
