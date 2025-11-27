@@ -251,11 +251,13 @@
                         <h4 class="section-header text-rose-300">Colors</h4>
                         <div class="flex justify-between items-center"><span class="text-slate-400">Inner</span><input type="color" id="col-petal-in" value="#bf953f" oninput="updateFloralConfig('petalIn', this.value)"></div>
                         <div class="flex justify-between items-center mt-1"><span class="text-slate-400">Outer</span><input type="color" id="col-petal-out" value="#fcf6ba" oninput="updateFloralConfig('petalOut', this.value)"></div>
+                        <div class="flex justify-between items-center mt-1"><span class="text-slate-400">Center</span><input type="color" id="col-center" value="#1a237e" oninput="updateFloralConfig('centerColor', this.value)"></div>
                     </div>
                     <div>
                         <h4 class="section-header text-rose-300">Structure</h4>
                         <div class="flex justify-between mb-1"><span class="text-slate-400">Petals</span><span id="val-pCount">8</span></div>
                         <input type="range" id="petalCount" min="3" max="100" value="8" oninput="updateFloralConfig('count', this.value)">
+                        <div class="mt-1"><div class="flex justify-between text-[10px] text-slate-400"><span>Center Size</span><span id="val-centerSize">1.0x</span></div><input type="range" id="centerSize" min="0.1" max="3.0" step="0.1" value="1.0" oninput="updateFloralConfig('centerSize', this.value)"></div>
                         <div class="flex items-center justify-between mt-2">
                             <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="petalShadow" checked onchange="updateFloralConfig('shadow', this.checked)" class="rounded border-slate-600 bg-slate-700 text-rose-500"><span class="text-slate-400">Shadows</span></label>
                             <input type="color" id="col-shadow" value="#000000" oninput="updateFloralConfig('shadowCol', this.value)">
@@ -1316,7 +1318,19 @@
                     ctx.restore();
                 }
             },
-            'flower-daisy': (ctx, s, style, opts) => { const r = s/2; const cr = r*0.3; const petals = parseInt(opts.count) || 12; for(let i=0; i<petals; i++){ ctx.save(); ctx.rotate((i*Math.PI*2)/petals); ctx.fillStyle = opts.petalOut; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=2;ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} ctx.beginPath(); ctx.ellipse(0, r*0.6, r*0.15, r*0.4, 0, 0, Math.PI*2); ctx.fill(); ctx.restore(); } if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=2;ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} const g = ctx.createRadialGradient(0,0,0,0,0,cr); g.addColorStop(0,opts.vein); g.addColorStop(1,opts.petalIn); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0,0,cr,0,Math.PI*2); ctx.fill(); },
+            'flower-daisy': (ctx, s, style, opts) => { 
+                const r = s/2; 
+                const cSize = parseFloat(opts.centerSize) || 1.0;
+                const cr = r*0.3 * cSize; 
+                const petals = parseInt(opts.count) || 12; 
+                for(let i=0; i<petals; i++){ ctx.save(); ctx.rotate((i*Math.PI*2)/petals); ctx.fillStyle = opts.petalOut; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=2;ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} ctx.beginPath(); ctx.ellipse(0, r*0.6, r*0.15, r*0.4, 0, 0, Math.PI*2); ctx.fill(); ctx.restore(); } 
+                if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=2;ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} 
+                const g = ctx.createRadialGradient(0,0,0,0,0,cr); 
+                const cCol = opts.centerColor || opts.vein;
+                g.addColorStop(0, cCol); 
+                g.addColorStop(1, opts.petalIn); 
+                ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0,0,cr,0,Math.PI*2); ctx.fill(); 
+            },
             'flower-tulip': (ctx, s, style, opts) => { const h = s; const w = s*0.6; const g = ctx.createLinearGradient(0, h/2, 0, -h/2); g.addColorStop(0, opts.petalIn); g.addColorStop(1, opts.petalOut); ctx.fillStyle = g; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=4;ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} ctx.beginPath(); ctx.moveTo(0, h/2); ctx.bezierCurveTo(w, h/2, w, -h/4, 0, -h/2); ctx.bezierCurveTo(-w, -h/4, -w, h/2, 0, h/2); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.vein; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0, h/2); ctx.quadraticCurveTo(w*0.3, 0, 0, -h/2); ctx.stroke(); },
             'flower-lotus': (ctx, s, style, opts) => {
                 const layers = 3;
@@ -1343,9 +1357,10 @@
                 }
                 
                 ctx.save();
-                ctx.fillStyle = '#aadd33';
+                ctx.fillStyle = opts.centerColor || '#aadd33';
+                const cSize = parseFloat(opts.centerSize) || 1.0;
                 ctx.beginPath();
-                ctx.arc(0,0, 15 * scale, 0, Math.PI*2);
+                ctx.arc(0,0, 15 * scale * cSize, 0, Math.PI*2);
                 ctx.fill();
                 ctx.restore();
             },
@@ -1356,7 +1371,14 @@
                 const scaleFactor = s / 200;
                 const spread = 11 * scaleFactor;
                 const color = opts.petalIn || '#ff0000';
+                const cSize = parseFloat(opts.centerSize) || 1.0;
 
+                // Adjust loop start based on center size to avoid gap or overlap
+                // If center is bigger, we might need to start petals further out, or just let them be covered.
+                // The original code had `i > 3`. 
+                // If we increase center size, we might want to stop earlier (higher i) to avoid petals inside the big center?
+                // Or just let the center cover them. Let's just let the center cover them for now.
+                
                 for (let i = count; i > 3; i--) {
                     const r = Math.sqrt(i) * spread;
                     const theta = i * goldenAngle;
@@ -1379,10 +1401,11 @@
                 }
 
                 // Center Disk
-                const diskSize = 15 * scaleFactor;
+                const diskSize = 15 * scaleFactor * cSize;
                 const grad = ctx.createRadialGradient(0,0, diskSize*0.1, 0,0, diskSize);
-                grad.addColorStop(0, '#1a237e');
-                grad.addColorStop(1, '#000051');
+                const cCol = opts.centerColor || '#1a237e';
+                grad.addColorStop(0, cCol);
+                grad.addColorStop(1, adjustColorPercent(cCol, -40));
                 ctx.fillStyle = grad;
                 if(opts.shadow){
                     ctx.shadowBlur = 15;
@@ -1393,13 +1416,13 @@
                 ctx.fill();
 
                 // Florets
-                ctx.fillStyle = "#3949ab";
+                ctx.fillStyle = adjustColorPercent(cCol, 20); // Lighter than center
                 ctx.shadowColor = 'transparent';
                 for(let k=0; k<12; k++) {
                     let ang = k * (Math.PI*2/12) + (k%2?0.2:0);
-                    let dist = ((k%2) ? 6 : 10) * scaleFactor;
+                    let dist = ((k%2) ? 6 : 10) * scaleFactor * cSize;
                     ctx.beginPath(); 
-                    ctx.arc(Math.cos(ang)*dist, Math.sin(ang)*dist, 1.5 * scaleFactor, 0, Math.PI*2); 
+                    ctx.arc(Math.cos(ang)*dist, Math.sin(ang)*dist, 1.5 * scaleFactor * cSize, 0, Math.PI*2); 
                     ctx.fill();
                 }
             },
@@ -1826,6 +1849,7 @@
             if(key==='shadow') floralState[key] = val; else floralState[key] = val; 
             if(key === 'count') document.getElementById('val-pCount').innerText = val; 
             if(key === 'veinW') document.getElementById('val-vein').innerText = val + 'px'; 
+            if(key === 'centerSize') document.getElementById('val-centerSize').innerText = val + 'x';
             
             // Toggle Visibility of Leaf Shape Control
             const shapeCtrl = document.getElementById('leafShapeControl');
@@ -2523,6 +2547,7 @@
                 
                 setVal('col-petal-in', floralState.petalIn);
                 setVal('col-petal-out', floralState.petalOut);
+                setVal('col-center', floralState.centerColor || '#1a237e');
                 setVal('col-leaf', floralState.leaf);
                 setVal('col-vein', floralState.vein);
                 setVal('col-shadow', floralState.shadowCol);
@@ -2530,6 +2555,9 @@
                 setVal('petalCount', floralState.count);
                 setText('val-pCount', floralState.count);
                 
+                setVal('centerSize', floralState.centerSize || 1.0);
+                setText('val-centerSize', (floralState.centerSize || 1.0) + 'x');
+
                 setCheck('petalShadow', floralState.shadow);
                 
                 setVal('veinThick', floralState.veinW);

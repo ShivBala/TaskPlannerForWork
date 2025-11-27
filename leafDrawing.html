@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Photorealistic Leaf Engine</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background: #121212;
+            color: #e0e0e0;
+            display: flex;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .controls {
+            width: 300px;
+            background: #1e1e1e;
+            padding: 20px;
+            border-right: 1px solid #333;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            z-index: 10;
+            box-shadow: 5px 0 15px rgba(0,0,0,0.5);
+            overflow-y: auto;
+        }
+
+        .group {
+            background: #2c2c2c;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        h3 { margin: 0 0 10px 0; font-size: 0.9rem; color: #81c784; text-transform: uppercase; letter-spacing: 1px; }
+
+        label { display: block; font-size: 0.75rem; color: #aaa; margin-bottom: 5px; }
+        
+        input[type="range"], select {
+            width: 100%;
+            background: #121212;
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: white;
+            padding: 4px;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #66bb6a, #43a047);
+            color: white;
+            border: none;
+            padding: 15px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            font-size: 1rem;
+        }
+        button:hover { transform: translateY(-1px); }
+        button:disabled { opacity: 0.5; cursor: wait; }
+
+        .viewport {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at center, #333 0%, #000 100%);
+            position: relative;
+        }
+
+        canvas {
+            filter: drop-shadow(0 20px 50px rgba(0,0,0,0.6));
+        }
+
+        #loading {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="controls">
+    <div class="group">
+        <h3>Morphology</h3>
+        <label>Leaf Shape</label>
+        <select id="shape">
+            <option value="maple">Acer (Maple)</option>
+            <option value="oak">Quercus (Oak)</option>
+            <option value="birch">Betula (Birch)</option>
+            <option value="lilac">Syringa (Lilac)</option>
+            <option value="fern">Polypodium (Fern)</option>
+        </select>
+        
+        <label>Fractal Edge Detail</label>
+        <input type="range" id="jaggedness" min="0" max="100" value="40">
+
+        <label>Asymmetry (Bend)</label>
+        <input type="range" id="bend" min="-30" max="30" value="10">
+    </div>
+
+    <div class="group">
+        <h3>Surface Texture</h3>
+        <label>Cellular Noise</label>
+        <input type="range" id="noise" min="0" max="100" value="60">
+        
+        <label>Vein Prominence</label>
+        <input type="range" id="veinPop" min="1" max="10" value="5">
+    </div>
+
+    <div class="group">
+        <h3>Color</h3>
+        <label>Chlorophyll Hue</label>
+        <input type="range" id="hue" min="0" max="360" value="100">
+        <label>Decay/Dryness</label>
+        <input type="range" id="decay" min="0" max="100" value="10">
+    </div>
+
+    <button id="renderBtn">Render Realistic Leaf</button>
+</div>
+
+<div class="viewport">
+    <canvas id="cvs" width="900" height="900"></canvas>
+    <div id="loading">Synthesizing Cellular Structure...</div>
+</div>
+
+<script>
+    const canvas = document.getElementById('cvs');
+    const ctx = canvas.getContext('2d');
+    const ui = {
+        shape: document.getElementById('shape'),
+        jaggedness: document.getElementById('jaggedness'),
+        bend: document.getElementById('bend'),
+        noise: document.getElementById('noise'),
+        veinPop: document.getElementById('veinPop'),
+        hue: document.getElementById('hue'),
+        decay: document.getElementById('decay'),
+        btn: document.getElementById('renderBtn'),
+        load: document.getElementById('loading')
+    };
+
+    // --- Noise Utilities for Naturalism ---
+    // Simple pseudo-random hash for deterministic noise
+    function hash(x) {
+        x = Math.sin(x) * 43758.5453123;
+        return x - Math.floor(x);
+    }
+
+    function noise1D(x) {
+        const i = Math.floor(x);
+        const f = x - i;
+        const u = f * f * (3.0 - 2.0 * f);
+        return hash(i) * (1.0 - u) + hash(i + 1) * u;
+    }
+
+    // Fractal Brownian Motion (Layers of noise for jagged edges)
+    function fbm(x, octaves) {
+        let v = 0.0;
+        let a = 0.5;
+        let shift = 0.0;
+        for (let i = 0; i < octaves; i++) {
+            v += a * noise1D(x);
+            x = x * 2.0 + shift;
+            a *= 0.5;
+        }
+        return v;
+    }
+
+    ui.btn.addEventListener('click', () => {
+        ui.btn.disabled = true;
+        ui.load.style.display = 'block';
+        setTimeout(() => {
+            render();
+            ui.btn.disabled = false;
+            ui.load.style.display = 'none';
+        }, 50);
+    });
+
+    // --- Main Render Pipeline ---
+    function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
+        const params = {
+            type: ui.shape.value,
+            jagged: parseInt(ui.jaggedness.value) / 100,
+            bend: parseInt(ui.bend.value), // Degrees
+            textureStr: parseInt(ui.noise.value),
+            vein3D: parseInt(ui.veinPop.value),
+            hue: parseInt(ui.hue.value),
+            decay: parseInt(ui.decay.value) / 100
+        };
+
+        const cx = canvas.width / 2;
+        const cy = canvas.height * 0.85;
+        const len = 600;
+
+        // 1. Generate Skeleton (Midrib + curve)
+        const spine = generateSpine(cx, cy, len, params.bend);
+
+        // 2. Generate Margin Polygon (with fractal noise)
+        const outline = generateMargin(spine, params);
+
+        // 3. Draw Base Layer (Gradient + Mask)
+        ctx.save();
+        drawLeafShape(outline);
+        ctx.clip(); // Restrict all future drawing to inside the leaf
+
+        // 4. Fill with organic gradient
+        fillBaseColor(params);
+
+        // 5. Generate Venation
+        const veins = generateVeins(spine, outline, params);
+        
+        // 6. Render Veins (Double pass for 3D effect)
+        drawVeinsRealistic(veins, params);
+
+        // 7. Apply Surface Texture (The "Realistic" look)
+        applyTexture(params);
+
+        ctx.restore();
+
+        // 8. Draw Stem (outside clip)
+        drawStem(spine);
+    }
+
+    function generateSpine(cx, cy, len, bendDeg) {
+        const points = [];
+        const steps = 50;
+        const bendRad = bendDeg * (Math.PI / 180);
+        
+        for(let i=0; i<=steps; i++) {
+            const t = i/steps;
+            // Quadratic Bezier curve for spine bend
+            // Calculate X offset based on sine of t
+            const xOff = Math.sin(t * Math.PI) * (len * 0.2) * (bendDeg/30);
+            
+            points.push({
+                x: cx + xOff,
+                y: cy - (t * len),
+                t: t
+            });
+        }
+        return points;
+    }
+
+    function generateMargin(spine, params) {
+        const leftSide = [];
+        const rightSide = [];
+        const steps = spine.length;
+        
+        // Shape Definitions (Width functions)
+        const shapes = {
+            oak: (t) => Math.sin(t*Math.PI) * (0.5 + Math.abs(Math.cos(t*Math.PI*5))*0.4),
+            maple: (t) => {
+                let base = Math.sin(t*Math.PI);
+                let fingers = Math.cos(t*Math.PI*5);
+                return base * (0.3 + (fingers > 0 ? fingers : 0) * 0.8);
+            },
+            birch: (t) => Math.sin(t*Math.PI) * (0.1 + t*0.6), // Triangular bottom
+            lilac: (t) => Math.sin(t*Math.PI) * (1 - t*0.5) + (Math.pow(1-t, 10)*0.2), // Heart
+            fern: (t) => Math.sin(t*Math.PI) * 0.3 // Narrow
+        };
+
+        const getWidth = shapes[params.type] || shapes['lilac'];
+
+        for(let i=0; i<steps; i++) {
+            const node = spine[i];
+            const t = node.t;
+            
+            // Base width
+            let w = getWidth(t) * 300; // Scale
+
+            // Apply Fractal Noise to edge
+            // We use t to scroll through noise space
+            // We vary frequency based on leaf type
+            const freq = (params.type === 'birch' || params.type === 'fern') ? 80 : 20;
+            const noise = (fbm(t * freq, 4) - 0.5) * (params.jagged * 60);
+            
+            w += noise;
+            if(w < 2) w = 2; // Min width
+
+            // Perpendicular vector to spine
+            // Simple approximation: just horizontal offset since spine is mostly vertical
+            // For better accuracy we should calculate normal of spine, but this works for slight bends
+            
+            leftSide.push({ x: node.x - w, y: node.y });
+            rightSide.push({ x: node.x + w, y: node.y });
+        }
+
+        // Return closed loop
+        return [...leftSide, ...rightSide.reverse()];
+    }
+
+    function drawLeafShape(points) {
+        ctx.beginPath();
+        ctx.moveTo(points[0].x, points[0].y);
+        for(let i=1; i<points.length; i++) ctx.lineTo(points[i].x, points[i].y);
+        ctx.closePath();
+    }
+
+    function fillBaseColor(params) {
+        // Create a complex gradient
+        const grd = ctx.createRadialGradient(
+            canvas.width/2, canvas.height/2, 50,
+            canvas.width/2, canvas.height/2, 600
+        );
+        
+        // HSL manipulation
+        const h = params.hue;
+        const s = 60 - (params.decay * 40); // Less saturated if decayed
+        const l = 40 + (params.decay * 20); // Lighter (brown) if decayed
+
+        // Inner/Outer color variation
+        grd.addColorStop(0, `hsl(${h}, ${s}%, ${l}%)`);
+        grd.addColorStop(1, `hsl(${h + 10}, ${s - 10}%, ${l - 10}%)`);
+
+        ctx.fillStyle = grd;
+        ctx.fill();
+
+        // Add "Dead Spots" if decay is high
+        if(params.decay > 0.1) {
+            ctx.globalCompositeOperation = 'source-over';
+            const spots = params.decay * 50;
+            ctx.fillStyle = 'rgba(100, 70, 40, 0.4)';
+            for(let i=0; i<spots; i++) {
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                const r = Math.random() * 20;
+                ctx.beginPath();
+                ctx.arc(x,y,r,0,Math.PI*2);
+                ctx.fill();
+            }
+        }
+    }
+
+    function generateVeins(spine, margin, params) {
+        const veins = [];
+        // Secondary Veins branching from spine
+        const count = 15;
+        
+        for(let i=1; i<count-1; i++) {
+            const t = i/count;
+            const spineIdx = Math.floor(t * spine.length);
+            const startNode = spine[spineIdx];
+            
+            if(!startNode) continue;
+
+            // Determine angle based on species
+            let angle = -Math.PI/4; // Default up-diagonal
+            if(params.type === 'maple') angle = -Math.PI/3;
+            if(params.type === 'oak') angle = -Math.PI/5;
+
+            // Left Branch
+            veins.push(traceVein(startNode, angle, margin, 1));
+            // Right Branch
+            veins.push(traceVein(startNode, -angle - Math.PI, margin, -1)); // Flip angle
+        }
+        return veins;
+    }
+
+    function traceVein(start, angle, margin, side) {
+        const path = [{x: start.x, y: start.y}];
+        let curr = {x: start.x, y: start.y};
+        const segLen = 10;
+        let dist = 0;
+        
+        // Walk until we hit the margin
+        for(let k=0; k<50; k++) {
+            // Curvature (veins tend to curve towards tip)
+            angle += (side * 0.05); 
+
+            curr = {
+                x: curr.x + Math.cos(angle) * segLen,
+                y: curr.y + Math.sin(angle) * segLen
+            };
+
+            // Check if inside poly (rough bounds check for performance)
+            if(curr.x < 0 || curr.x > canvas.width) break;
+
+            path.push(curr);
+            dist += segLen;
+            if(dist > 300) break; // Max length
+        }
+        return path;
+    }
+
+    function drawVeinsRealistic(veinPaths, params) {
+        // We draw veins using a "carved" look: A dark line, offset by a light line
+        
+        veinPaths.forEach(path => {
+            if(path.length < 2) return;
+            
+            // Smooth the path
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // 1. Shadow (creates depth)
+            ctx.beginPath();
+            ctx.moveTo(path[0].x, path[0].y);
+            for(let i=1; i<path.length; i++) ctx.lineTo(path[i].x, path[i].y);
+            
+            ctx.strokeStyle = `rgba(0,0,0, ${0.1 * params.vein3D})`;
+            ctx.lineWidth = 4;
+            ctx.stroke();
+
+            // 2. Highlight (creates ridge)
+            ctx.beginPath();
+            ctx.moveTo(path[0].x - 2, path[0].y - 2); // Slight offset
+            for(let i=1; i<path.length; i++) ctx.lineTo(path[i].x - 2, path[i].y - 2);
+            
+            ctx.strokeStyle = `rgba(255,255,255, ${0.05 * params.vein3D})`;
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 3. The Vein Color itself (translucent)
+            ctx.beginPath();
+            ctx.moveTo(path[0].x, path[0].y);
+            for(let i=1; i<path.length; i++) ctx.lineTo(path[i].x, path[i].y);
+            
+            ctx.strokeStyle = `rgba(150, 255, 150, 0.4)`;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+        });
+
+        // Draw Midrib
+        const spine = generateSpine(canvas.width/2, canvas.height*0.85, 600, params.bend);
+        ctx.beginPath();
+        ctx.moveTo(spine[0].x, spine[0].y);
+        for(let i=1; i<spine.length; i++) ctx.lineTo(spine[i].x, spine[i].y);
+        ctx.strokeStyle = 'rgba(200, 255, 200, 0.5)';
+        ctx.lineWidth = 4;
+        ctx.stroke();
+    }
+
+    function applyTexture(params) {
+        if(params.textureStr <= 0) return;
+
+        // Get pixel data
+        const id = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const d = id.data;
+        
+        // This simulates "cellular" noise
+        // We iterate pixels and modify lightness based on noise
+        for (let i = 0; i < d.length; i += 4) {
+            // Skip transparent pixels (outside leaf)
+            if(d[i+3] === 0) continue;
+
+            const x = (i / 4) % canvas.width;
+            const y = Math.floor((i / 4) / canvas.width);
+
+            // High frequency noise for cells
+            const n = noise1D(x * 0.8 + y * 0.8) * noise1D(x * 0.05);
+            
+            // Apply noise as contrast
+            const strength = (params.textureStr / 200); // 0 to 0.5
+            const factor = 1.0 + (n - 0.5) * strength;
+
+            d[i]   = Math.min(255, d[i] * factor);
+            d[i+1] = Math.min(255, d[i+1] * factor);
+            d[i+2] = Math.min(255, d[i+2] * factor);
+        }
+        ctx.putImageData(id, 0, 0);
+    }
+
+    function drawStem(spine) {
+        ctx.beginPath();
+        const base = spine[0];
+        ctx.moveTo(base.x, base.y);
+        // Extend downwards
+        ctx.quadraticCurveTo(base.x - 5, base.y + 50, base.x + 10, base.y + 100);
+        
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#4e342e'; // Brownish
+        ctx.lineWidth = 8;
+        ctx.stroke();
+    }
+
+    // Init
+    setTimeout(render, 100);
+
+</script>
+</body>
+</html>
