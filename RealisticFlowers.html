@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Procedural Realistic Flowers</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #1a1a1a; }
+        canvas { display: block; }
+        #loading {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: white; font-family: sans-serif; pointer-events: none;
+        }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="loading">Generating Geometry...</div>
+    
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+
+        // --- SCENE SETUP ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x202025);
+        scene.fog = new THREE.Fog(0x202025, 10, 50);
+
+        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 15, 20);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.target.set(0, 5, 0);
+
+        // --- LIGHTING ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+        scene.add(ambientLight);
+
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+        dirLight.position.set(10, 20, 10);
+        dirLight.castShadow = true;
+        dirLight.shadow.mapSize.width = 2048;
+        dirLight.shadow.mapSize.height = 2048;
+        scene.add(dirLight);
+
+        const spotLight = new THREE.SpotLight(0xffeebb, 100);
+        spotLight.position.set(-10, 10, 0);
+        spotLight.angle = Math.PI / 6;
+        spotLight.penumbra = 1;
+        scene.add(spotLight);
+
+        // --- MATERIALS ---
+        // Using Standard materials for reaction to light (PBR approximation)
+        const petalMaterial = new THREE.MeshStandardMaterial({ 
+            side: THREE.DoubleSide, 
+            roughness: 0.5, 
+            metalness: 0.1,
+            flatShading: false
+        });
+
+        const centerMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x331100, 
+            roughness: 0.9,
+            metalness: 0.0
+        });
+
+        const stemMaterial = new THREE.MeshStandardMaterial({ 
+            color: 0x2e8b57, 
+            roughness: 0.6 
+        });
+
+        let currentFlowerGroup = new THREE.Group();
+        scene.add(currentFlowerGroup);
+
+        // --- GEOMETRY GENERATORS ---
+
+        // Helper: Create a basic petal shape using a distorted sphere
+        function createGenericPetal(width, length, curl, curvature) {
+            // High segment count for smoothness
+            const geometry = new THREE.SphereGeometry(1, 16, 16); 
+            
+            const positionAttribute = geometry.attributes.position;
+            const vertex = new THREE.Vector3();
+
+            for (let i = 0; i < positionAttribute.count; i++) {
+                vertex.fromBufferAttribute(positionAttribute, i);
+                
+                // Flatten to make it petal-like
+                vertex.x *= width; 
+                vertex.y *= length;
+                vertex.z *= 0.1; // Thinness
+
+                // Curve the petal (Cup shape)
+                const distY = vertex.y;
+                vertex.z += (distY * distY) * curvature * 0.1;
+
+                // Curl the tip
+                if (vertex.y > 0) {
+                    vertex.z -= (vertex.y * curl);
+                }
+
+                positionAttribute.setXYZ(i, vertex.x, vertex.y, vertex.z);
+            }
+            
+            geometry.computeVertexNormals();
+            return geometry;
+        }
+
+        function createLeaf(yPos) {
+            const geometry = createGenericPetal(0.8, 2.5, 0.2, 0.5);
+            const leaf = new THREE.Mesh(geometry, stemMaterial);
+            leaf.position.set(0, yPos, 0);
+            leaf.rotation.x = Math.PI / 2; // Flat
+            leaf.rotation.z = Math.random() * Math.PI; // Random direction
+            leaf.rotation.x += (Math.random() - 0.5) * 0.5; // Random tilt
+            leaf.position.x = Math.sin(leaf.rotation.z) * 0.2;
+            leaf.position.z = Math.cos(leaf.rotation.z) * 0.2;
+            leaf.castShadow = true;
+            return leaf;
+        }
+
+        // --- FLOWER TYPE LOGIC ---
+
+        function generateFlower(params) {
+            // Cleanup old flower
+            scene.remove(currentFlowerGroup);
+            currentFlowerGroup = new THREE.Group();
+            
+            // cleanup memory
+            currentFlowerGroup.traverse((child) => {
+                if (child.isMesh) {
+                    child.geometry.dispose();
+                    // We reuse global materials, don't dispose them
+                }
+            });
+
+            // Set Color
+            petalMaterial.color.set(params.color);
+            // Emissive gives it a bit of "subsurface scattering" fake glow
+            petalMaterial.emissive = new THREE.Color(params.color).multiplyScalar(0.1);
+
+            // STEM
+            const stemGeo = new THREE.CylinderGeometry(0.15 * params.scale, 0.2 * params.scale, 10, 8);
+            const stem = new THREE.Mesh(stemGeo, stemMaterial);
+            stem.position.y = -5;
+            stem.castShadow = true;
+            currentFlowerGroup.add(stem);
+
+            // LEAVES
+            const leaf1 = createLeaf(-2);
+            const leaf2 = createLeaf(-4);
+            leaf1.scale.setScalar(params.scale);
+            leaf2.scale.setScalar(params.scale);
+            currentFlowerGroup.add(leaf1);
+            currentFlowerGroup.add(leaf2);
+
+            // FLOWER HEAD CONTAINER
+            const head = new THREE.Group();
+            head.scale.setScalar(params.scale);
+            currentFlowerGroup.add(head);
+
+            switch(params.type) {
+                case 'Daisy': buildDaisy(head, params); break;
+                case 'Rose': buildRose(head, params); break;
+                case 'Lotus': buildLotus(head, params); break;
+                case 'Lily': buildLily(head, params); break;
+                case 'Cosmos': buildCosmos(head, params); break;
+            }
+
+            scene.add(currentFlowerGroup);
+        }
+
+        // 1. DAISY: Flat arrangement, prominent center
+        function buildDaisy(group, params) {
+            // Center
+            const centerGeo = new THREE.SphereGeometry(0.8, 32, 16);
+            centerGeo.scale(1, 0.5, 1);
+            const center = new THREE.Mesh(centerGeo, new THREE.MeshStandardMaterial({ color: 0xffaa00, roughness: 1 }));
+            group.add(center);
+
+            const petalGeo = createGenericPetal(0.3, 2.5, 0.1, 0.05);
+
+            for (let i = 0; i < params.petalCount; i++) {
+                const angle = (i / params.petalCount) * Math.PI * 2;
+                const petal = new THREE.Mesh(petalGeo, petalMaterial);
+                
+                // Position logic
+                petal.position.y = 0;
+                petal.rotation.y = 0;
+                petal.rotation.z = angle;
+                petal.rotateX(Math.PI / 2 - 0.2); // Lay flat-ish
+                petal.translateY(1.5); // Move outward
+                
+                petal.castShadow = true;
+                petal.receiveShadow = true;
+                group.add(petal);
+            }
+        }
+
+        // 2. ROSE: Spiral phyllotaxis, tighter center
+        function buildRose(group, params) {
+            const goldenAngle = 137.5 * (Math.PI / 180);
+            // Rose petals are wider and rounder
+            const petalGeo = createGenericPetal(0.8, 1.5, 0.5, 2.0); 
+
+            for (let i = 0; i < params.petalCount; i++) {
+                const angle = i * goldenAngle;
+                const dist = 0.3 * Math.sqrt(i); // Logarithmic spiral spacing
+                
+                const petal = new THREE.Mesh(petalGeo, petalMaterial);
+                
+                petal.position.y = Math.sqrt(i) * 0.1; // Height stack
+                petal.rotation.y = -angle; // Rotate around stem
+                
+                // The "blooming" logic: center petals stand up, outer petals fall down
+                const bloomProgress = i / params.petalCount;
+                const openAngle = (Math.PI / 2) * (bloomProgress * 1.5) + 0.2;
+                
+                petal.rotateX(openAngle);
+                petal.translateY(dist); 
+                
+                petal.castShadow = true;
+                petal.receiveShadow = true;
+                group.add(petal);
+            }
+        }
+
+        // 3. LOTUS: Cup shape, layered tiers
+        function buildLotus(group, params) {
+            // Center
+            const centerGeo = new THREE.CylinderGeometry(0.5, 0.3, 0.8, 16);
+            const center = new THREE.Mesh(centerGeo, new THREE.MeshStandardMaterial({ color: 0xffff00 }));
+            group.add(center);
+
+            const petalGeo = createGenericPetal(0.6, 2.0, 0.1, 1.5); // Wide, cupped
+            
+            const layers = 4;
+            const petalsPerLayer = Math.floor(params.petalCount / layers);
+
+            for(let l = 0; l < layers; l++) {
+                for (let i = 0; i < petalsPerLayer; i++) {
+                    const angle = (i / petalsPerLayer) * Math.PI * 2 + (l * 0.5); // Offset layers
+                    const petal = new THREE.Mesh(petalGeo, petalMaterial);
+                    
+                    petal.rotation.y = -angle;
+                    // Lower layers are flatter, inner layers point up
+                    const openness = (l / layers) * 0.5 + 0.5; // 0.5 to 1.0
+                    petal.rotateX(Math.PI / 2 * openness); 
+                    petal.translateY(0.5 + (l*0.2));
+
+                    petal.castShadow = true;
+                    group.add(petal);
+                }
+            }
+        }
+
+        // 4. LILY: Trumpet shape, long petals fused at base
+        function buildLily(group, params) {
+            // Long pistils
+            for(let k=0; k<6; k++) {
+                const pistil = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 2), new THREE.MeshStandardMaterial({color: 0x883300}));
+                pistil.rotation.z = (k/6) * Math.PI * 2;
+                pistil.rotation.x = 0.5;
+                group.add(pistil);
+            }
+
+            // Lilies usually have fixed 6 petals, but we allow control
+            const petalGeo = createGenericPetal(0.4, 3.5, 0.8, 0.2); // Long, curled tip
+
+            for (let i = 0; i < params.petalCount; i++) {
+                const angle = (i / params.petalCount) * Math.PI * 2;
+                const petal = new THREE.Mesh(petalGeo, petalMaterial);
+                
+                petal.rotation.y = -angle;
+                petal.rotateX(Math.PI / 4); // 45 degree trumpet
+                petal.translateY(1.0);
+                
+                petal.castShadow = true;
+                group.add(petal);
+            }
+        }
+
+        // 5. COSMOS: Wide, erratic, thin petals
+        function buildCosmos(group, params) {
+            const centerGeo = new THREE.SphereGeometry(0.4, 16, 16);
+            const center = new THREE.Mesh(centerGeo, new THREE.MeshStandardMaterial({ color: 0x442200 }));
+            group.add(center);
+
+            const petalGeo = createGenericPetal(0.5, 2.2, 0.0, 0.0); // Very flat, somewhat rectangular
+            // Manually tweak vertices to make edges jagged for cosmos
+            const pos = petalGeo.attributes.position;
+            for(let i=0; i<pos.count; i++) {
+                if(pos.getY(i) > 1.8) { // Tip of petal
+                     pos.setX(i, pos.getX(i) + (Math.random()-0.5)*0.2); // Jagged
+                }
+            }
+            petalGeo.computeVertexNormals();
+
+            for (let i = 0; i < params.petalCount; i++) {
+                const angle = (i / params.petalCount) * Math.PI * 2;
+                const petal = new THREE.Mesh(petalGeo, petalMaterial);
+                
+                petal.rotation.y = 0;
+                petal.rotation.z = angle;
+                petal.rotateX(Math.PI / 2); // Flat
+                petal.translateY(1.2);
+                
+                // Slight random flutter
+                petal.rotation.x += (Math.random() - 0.5) * 0.2;
+
+                petal.castShadow = true;
+                group.add(petal);
+            }
+        }
+
+
+        // --- GUI SETUP ---
+        const guiParams = {
+            type: 'Rose',
+            color: '#ff0040',
+            petalCount: 25,
+            scale: 1.0,
+            rotate: true
+        };
+
+        const gui = new GUI();
+        
+        gui.add(guiParams, 'type', ['Daisy', 'Rose', 'Lotus', 'Lily', 'Cosmos'])
+           .name('Flower Type')
+           .onChange(() => updateFlower());
+        
+        gui.addColor(guiParams, 'color')
+           .name('Petal Color')
+           .onChange(() => updateFlower());
+        
+        gui.add(guiParams, 'petalCount', 5, 100, 1)
+           .name('Petal Count')
+           .onChange(() => updateFlower());
+        
+        gui.add(guiParams, 'scale', 0.5, 3.0)
+           .name('Size')
+           .onChange(() => updateFlower());
+
+        gui.add(guiParams, 'rotate').name('Auto Rotate');
+
+        function updateFlower() {
+            // Adjust defaults for nicer first impressions when switching types
+            if(guiParams.type === 'Daisy' && guiParams.petalCount > 30) guiParams.petalCount = 12;
+            if(guiParams.type === 'Lily' && guiParams.petalCount > 20) guiParams.petalCount = 6;
+            
+            generateFlower(guiParams);
+        }
+
+        // --- ANIMATION LOOP ---
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+
+            if (guiParams.rotate) {
+                currentFlowerGroup.rotation.y = time * 0.2;
+            }
+
+            // Gentle swaying in wind
+            currentFlowerGroup.rotation.z = Math.sin(time * 0.5) * 0.05;
+            currentFlowerGroup.rotation.x = Math.sin(time * 0.3) * 0.05;
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Initialize
+        document.getElementById('loading').style.display = 'none';
+        generateFlower(guiParams);
+        animate();
+
+        // Handle Resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+    </script>
+</body>
+</html>
