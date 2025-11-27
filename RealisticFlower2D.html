@@ -3,21 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>2D Realistic Flowers</title>
+    <title>Fixed Zinnia Center</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #222; font-family: sans-serif; }
         canvas { display: block; }
         
         #controls {
             position: absolute; top: 20px; right: 20px;
-            background: rgba(0, 0, 0, 0.8); color: white;
+            background: rgba(0, 0, 0, 0.85); color: white;
             padding: 20px; border-radius: 8px;
-            width: 250px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            width: 260px; box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            border: 1px solid #444;
         }
         .control-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-size: 0.9em; color: #ccc; }
-        input[type="range"] { width: 100%; }
-        select, input[type="color"] { width: 100%; padding: 5px; border: none; border-radius: 4px; }
+        label { display: block; margin-bottom: 6px; font-size: 0.85rem; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        input[type="range"] { width: 100%; accent-color: #00bcd4; cursor: pointer; }
+        select, input[type="color"] { width: 100%; padding: 6px; border: 1px solid #444; background: #333; color: white; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -26,24 +27,17 @@
         <div class="control-group">
             <label>Flower Type</label>
             <select id="typeSelect">
-                <option value="rose">Rose</option>
                 <option value="daisy">Daisy</option>
-                <option value="lotus">Lotus</option>
-                <option value="lily">Lily</option>
-                <option value="cosmos">Cosmos</option>
+                <option value="zinnia" selected>Zinnia</option>
             </select>
         </div>
         <div class="control-group">
             <label>Petal Color</label>
-            <input type="color" id="colorPicker" value="#e60042">
+            <input type="color" id="colorPicker" value="#ff4081">
         </div>
         <div class="control-group">
-            <label>Petal Count (Density)</label>
-            <input type="range" id="petalCount" min="5" max="60" value="30">
-        </div>
-        <div class="control-group">
-            <label>Size</label>
-            <input type="range" id="sizeScale" min="0.5" max="2.0" step="0.1" value="1.0">
+            <label>Petal Count</label>
+            <input type="range" id="petalCount" min="20" max="150" value="80">
         </div>
     </div>
 
@@ -53,16 +47,13 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         
-        // State
         const params = {
-            type: 'rose',
-            color: '#e60042',
-            count: 30,
-            scale: 1.0,
-            rotation: 0
+            type: 'zinnia', // Default to Zinnia to show fix
+            color: '#ff4081',
+            count: 80,
+            scale: 1.0
         };
 
-        // Resize handling
         let cx, cy;
         function resize() {
             canvas.width = window.innerWidth;
@@ -73,325 +64,161 @@
         }
         window.addEventListener('resize', resize);
 
-        // Inputs
-        document.getElementById('typeSelect').addEventListener('change', (e) => { params.type = e.target.value; draw(); });
+        // Event Listeners
+        document.getElementById('typeSelect').addEventListener('change', (e) => { 
+            params.type = e.target.value; 
+            if(params.type === 'daisy') {
+                params.count = 25; 
+                document.getElementById('petalCount').value = 25;
+                params.color = '#ffffff';
+                document.getElementById('colorPicker').value = '#ffffff';
+            } else {
+                params.count = 80;
+                document.getElementById('petalCount').value = 80;
+                params.color = '#ff4081';
+                document.getElementById('colorPicker').value = '#ff4081';
+            }
+            draw(); 
+        });
         document.getElementById('colorPicker').addEventListener('input', (e) => { params.color = e.target.value; draw(); });
         document.getElementById('petalCount').addEventListener('input', (e) => { params.count = parseInt(e.target.value); draw(); });
-        document.getElementById('sizeScale').addEventListener('input', (e) => { params.scale = parseFloat(e.target.value); draw(); });
 
-        // Helper: Lighten/Darken Hex color
         function shadeColor(color, percent) {
             let R = parseInt(color.substring(1,3),16);
             let G = parseInt(color.substring(3,5),16);
             let B = parseInt(color.substring(5,7),16);
-
-            R = parseInt(R * (100 + percent) / 100);
-            G = parseInt(G * (100 + percent) / 100);
-            B = parseInt(B * (100 + percent) / 100);
-
-            R = (R<255)?R:255;  
-            G = (G<255)?G:255;  
-            B = (B<255)?B:255;  
-
-            let RR = ((R.toString(16).length==1)?"0"+R.toString(16):R.toString(16));
-            let GG = ((G.toString(16).length==1)?"0"+G.toString(16):G.toString(16));
-            let BB = ((B.toString(16).length==1)?"0"+B.toString(16):B.toString(16));
-
-            return "#"+RR+GG+BB;
+            R = parseInt(R * (100 + percent) / 100); G = parseInt(G * (100 + percent) / 100); B = parseInt(B * (100 + percent) / 100);
+            R = (R<255)?R:(R>0?255:0); G = (G<255)?G:(G>0?255:0); B = (B<255)?B:(B>0?255:0);
+            return "#" + (1<<24|R<<16|G<<8|B).toString(16).slice(1);
         }
 
-        // --- DRAWING PRIMITIVES ---
+        function drawPetal(ctx, w, h, color, type) {
+            const grad = ctx.createLinearGradient(0, 0, 0, h);
+            grad.addColorStop(0, shadeColor(color, 20)); 
+            grad.addColorStop(0.6, color);
+            grad.addColorStop(1, shadeColor(color, -30));
 
-        // Draws a single petal shape with a gradient to fake 3D volume
-        function drawPetalShape(ctx, width, length, color, type = 'standard') {
-            const grad = ctx.createLinearGradient(0, 0, 0, length);
-            
-            // Gradient Logic: Darker at base (0), Lighter at tip (length)
-            const dark = shadeColor(color, -40);
-            const mid = color;
-            const light = shadeColor(color, 40);
-
-            grad.addColorStop(0, dark);
-            grad.addColorStop(0.4, mid);
-            grad.addColorStop(1, light);
-            
             ctx.fillStyle = grad;
-            // Fake ambient occlusion shadow on edges
             ctx.shadowColor = "rgba(0,0,0,0.5)";
-            ctx.shadowBlur = 10;
-            ctx.shadowOffsetX = 0;
-            ctx.shadowOffsetY = 2;
+            ctx.shadowBlur = 8;
+            ctx.shadowOffsetY = 4;
 
             ctx.beginPath();
             ctx.moveTo(0, 0);
 
-            if (type === 'standard') {
-                // Classic rounded petal
-                ctx.bezierCurveTo(width, length * 0.3, width, length * 0.7, 0, length);
-                ctx.bezierCurveTo(-width, length * 0.7, -width, length * 0.3, 0, 0);
-            } else if (type === 'pointed') {
-                // Lotus/Lily style
-                ctx.quadraticCurveTo(width, length * 0.4, 0, length);
-                ctx.quadraticCurveTo(-width, length * 0.4, 0, 0);
-            } else if (type === 'jagged') {
-                // Cosmos style
-                ctx.lineTo(width/2, length*0.2);
-                ctx.lineTo(width, length);
-                // Jagged tip
-                ctx.lineTo(width/3, length*0.9);
-                ctx.lineTo(0, length);
-                ctx.lineTo(-width/3, length*0.9);
-                ctx.lineTo(-width, length);
-                ctx.lineTo(-width/2, length*0.2);
-            } else if (type === 'rose') {
-                // Wide, heart-like for rose
-                ctx.bezierCurveTo(width * 1.5, length * 0.2, width, length, 0, length * 0.9);
-                ctx.bezierCurveTo(-width, length, -width * 1.5, length * 0.2, 0, 0);
+            if (type === 'daisy') {
+                ctx.bezierCurveTo(w/2, h*0.2, w, h*0.8, 0, h);
+                ctx.bezierCurveTo(-w, h*0.8, -w/2, h*0.2, 0, 0);
+            } else {
+                // Zinnia: Slightly sharper, wider at middle
+                ctx.bezierCurveTo(w*1.1, h*0.4, w*0.9, h*0.95, 0, h);
+                ctx.bezierCurveTo(-w*0.9, h*0.95, -w*1.1, h*0.4, 0, 0);
             }
-
             ctx.fill();
+            
+            if(type === 'daisy') {
+                ctx.strokeStyle = "rgba(0,0,0,0.1)"; ctx.lineWidth = 1;
+                ctx.beginPath(); ctx.moveTo(0, 10); ctx.lineTo(0, h*0.9); ctx.stroke();
+            }
         }
 
-        function drawLeaf(angle, dist, scale) {
-            ctx.save();
-            ctx.translate(cx, cy);
-            ctx.rotate(angle);
-            ctx.translate(0, dist);
-            ctx.scale(scale, scale);
-            
-            // Leaf Gradient
-            const grad = ctx.createLinearGradient(0, 0, 0, 150);
-            grad.addColorStop(0, '#0f3d0f');
-            grad.addColorStop(1, '#4caf50');
-            ctx.fillStyle = grad;
-            
-            ctx.shadowBlur = 5;
-            ctx.shadowColor = 'black';
-
-            ctx.beginPath();
-            ctx.moveTo(0,0);
-            ctx.bezierCurveTo(40, 50, 40, 100, 0, 150);
-            ctx.bezierCurveTo(-40, 100, -40, 50, 0, 0);
-            ctx.fill();
-
-            // Vein
-            ctx.strokeStyle = "rgba(0,0,0,0.2)";
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(0,0);
-            ctx.lineTo(0,140);
-            ctx.stroke();
-
-            ctx.restore();
-        }
-
-        // --- SPECIFIC FLOWERS ---
-
+        // --- DAISY LOGIC ---
         function drawDaisy() {
-            const pCount = Math.max(8, params.count); // Minimum limits
-            const pLength = 120 * params.scale;
-            const pWidth = 30 * params.scale;
-
-            for (let i = 0; i < pCount; i++) {
-                ctx.save();
-                ctx.translate(cx, cy);
-                ctx.rotate((Math.PI * 2 / pCount) * i + params.rotation);
-                // Push petal out slightly from center
-                ctx.translate(0, 20 * params.scale); 
-                drawPetalShape(ctx, pWidth, pLength, params.color, 'standard');
+            const radius = 45; 
+            for (let i = 0; i < params.count; i++) {
+                const angle = (Math.PI * 2 * i) / params.count;
+                const lenVar = (i % 2 === 0) ? 1.0 : 0.97; 
+                ctx.save(); ctx.translate(cx, cy); ctx.rotate(angle); ctx.translate(0, radius);
+                drawPetal(ctx, 22, 130 * lenVar, params.color, 'daisy');
                 ctx.restore();
             }
-
-            // Center Disk
-            ctx.save();
-            ctx.translate(cx, cy);
-            const radGrad = ctx.createRadialGradient(0,0, 5 * params.scale, 0,0, 30 * params.scale);
-            radGrad.addColorStop(0, '#ffe066');
-            radGrad.addColorStop(1, '#cc8800');
-            ctx.fillStyle = radGrad;
-            ctx.shadowBlur = 5;
-            ctx.beginPath();
-            ctx.arc(0, 0, 30 * params.scale, 0, Math.PI*2);
-            ctx.fill();
-            ctx.restore();
+            drawDisk(50, '#ffcc00', '#f57f17'); // Yellow center for daisy
         }
 
-        function drawRose() {
-            // Painters algorithm: Draw OUTSIDE (large) petals first, inside (small) last
-            // But visually for 2D top-down, we simulate depth by overlapping.
-            // Rose math: Golden Angle 137.5 degrees
+        // --- ZINNIA LOGIC (Fixed) ---
+        function drawZinnia() {
             const goldenAngle = 137.5 * (Math.PI / 180);
+            const spread = 11;
             
-            // We iterate backward to draw outer petals first if we want them behind
-            // BUT for a rose "cup", usually inner petals are on top.
-            
-            // Let's draw outer to inner (large to small)
-            const maxRadius = 100 * params.scale;
-            
-            // We need to loop "backwards" visually, meaning start with largest radius
-            for (let i = params.count; i > 0; i--) {
-                const angle = i * goldenAngle + params.rotation;
-                const dist = Math.sqrt(i) * (15 * params.scale); // Spiral spacing
-                const scale = (i / params.count) * 0.5 + 0.5; // Inner are smaller
+            // FIX 1: Loop down closer to 0 to tighten the center space.
+            // We stop at i > 3. The smaller 'i' is, the closer the petal is to the center.
+            for (let i = params.count; i > 3; i--) {
+                const r = Math.sqrt(i) * spread;
+                const theta = i * goldenAngle;
+                
+                const x = r * Math.cos(theta);
+                const y = r * Math.sin(theta);
+                
+                // Scale petals down as they get closer to center
+                const scale = (i / params.count) * 0.6 + 0.4;
 
                 ctx.save();
                 ctx.translate(cx, cy);
-                ctx.rotate(angle);
-                ctx.translate(0, dist); 
+                ctx.translate(x, y);
+                ctx.rotate(theta - Math.PI/2);
                 
-                // Rose petals are wider
-                // We darken inner petals slightly to simulate the tight bud shadow
-                const darkenFactor = (1 - (i/params.count)) * -30;
-                const pColor = shadeColor(params.color, darkenFactor);
+                // Inner petals are darker
+                const pColor = shadeColor(params.color, (scale * 30) - 15);
                 
-                drawPetalShape(ctx, 40 * params.scale * scale, 50 * params.scale * scale, pColor, 'rose');
-                ctx.restore();
-            }
-        }
-
-        function drawLotus() {
-            // Lotus has tiered layers.
-            const layers = 3;
-            const petalsPerLayer = Math.floor(params.count / layers);
-            
-            for(let L = 0; L < layers; L++) {
-                // Outer layers (L=0) are darker and larger
-                // Inner layers (L=2) are brighter and smaller
-                const layerScale = 1.0 - (L * 0.2); 
-                const layerColor = shadeColor(params.color, L * 15);
-                
-                for(let i=0; i<petalsPerLayer; i++) {
-                    ctx.save();
-                    ctx.translate(cx, cy);
-                    // Offset angle for each layer so they interleave
-                    const angleOffset = (L % 2 === 0) ? 0 : (Math.PI / petalsPerLayer);
-                    const angle = (Math.PI * 2 / petalsPerLayer) * i + angleOffset + params.rotation;
-                    
-                    ctx.rotate(angle);
-                    ctx.translate(0, 20 * params.scale); 
-                    
-                    drawPetalShape(ctx, 40 * params.scale * layerScale, 130 * params.scale * layerScale, layerColor, 'pointed');
-                    ctx.restore();
-                }
-            }
-            
-            // Center Pod
-            ctx.save();
-            ctx.translate(cx, cy);
-            ctx.fillStyle = '#aadd33';
-            ctx.beginPath();
-            ctx.arc(0,0, 15 * params.scale, 0, Math.PI*2);
-            ctx.fill();
-            ctx.restore();
-        }
-
-        function drawLily() {
-            // 6 Petals standard, but we use slider. Star shape.
-            const pCount = (params.count > 10) ? 6 : params.count; // Lilies usually have 6
-            
-            for (let i = 0; i < pCount; i++) {
-                ctx.save();
-                ctx.translate(cx, cy);
-                ctx.rotate((Math.PI * 2 / pCount) * i + params.rotation);
-                
-                // Lilies have stripes usually, we simulate with a thin gradient
-                drawPetalShape(ctx, 35 * params.scale, 140 * params.scale, params.color, 'pointed');
-                
-                // Draw the central vein/stripe specific to lilies
-                ctx.beginPath();
-                ctx.moveTo(0, 20);
-                ctx.lineTo(0, 120 * params.scale);
-                ctx.strokeStyle = "rgba(0,0,0,0.3)";
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                
+                drawPetal(ctx, 32 * scale, 75 * scale, pColor, 'zinnia');
                 ctx.restore();
             }
 
-            // Stamens
-            for(let i=0; i<6; i++) {
-                ctx.save();
-                ctx.translate(cx, cy);
-                ctx.rotate((Math.PI * 2 / 6) * i + params.rotation + 0.5);
-                ctx.fillStyle = '#5c3a21';
-                ctx.beginPath();
-                ctx.moveTo(0,0);
-                ctx.fillRect(-2, 30*params.scale, 4, 15*params.scale); // Anther
-                ctx.restore();
-            }
-        }
-
-        function drawCosmos() {
-            const pCount = Math.max(8, params.count);
+            // FIX 2: Dark Blue Center, size reduced to fit tight spiral
+            drawDisk(15, '#1a237e', '#000051'); 
             
-            for (let i = 0; i < pCount; i++) {
-                ctx.save();
-                ctx.translate(cx, cy);
-                ctx.rotate((Math.PI * 2 / pCount) * i + params.rotation);
-                ctx.translate(0, 15 * params.scale);
-                
-                drawPetalShape(ctx, 35 * params.scale, 110 * params.scale, params.color, 'jagged');
-                
-                // Cosmos often have longitudinal grooves
-                ctx.strokeStyle = "rgba(255,255,255,0.3)";
-                ctx.lineWidth = 1;
-                ctx.beginPath(); ctx.moveTo(-10, 20); ctx.lineTo(-10, 80); ctx.stroke();
-                ctx.beginPath(); ctx.moveTo(10, 20); ctx.lineTo(10, 80); ctx.stroke();
-
-                ctx.restore();
-            }
-
-            // Yellow pollen center
-            ctx.save();
-            ctx.translate(cx, cy);
-            ctx.fillStyle = '#ffcc00';
-            ctx.shadowBlur = 2;
-            ctx.beginPath();
-            ctx.arc(0, 0, 15 * params.scale, 0, Math.PI*2);
-            ctx.fill();
-            // Stippling for pollen texture
-            ctx.fillStyle = '#cc9900';
-            for(let k=0; k<10; k++){
-                let rx = (Math.random()-0.5)*20*params.scale;
-                let ry = (Math.random()-0.5)*20*params.scale;
-                ctx.beginPath(); ctx.arc(rx, ry, 2, 0, Math.PI*2); ctx.fill();
+            // Add tiny florets on top
+            ctx.save(); ctx.translate(cx, cy); ctx.fillStyle = "#3949ab";
+            for(let k=0; k<12; k++) {
+                let ang = k * (Math.PI*2/12) + (k%2?0.2:0); // slight offset
+                let dist = (k%2) ? 6 : 10;
+                ctx.beginPath(); ctx.arc(Math.cos(ang)*dist, Math.sin(ang)*dist, 1.5, 0, Math.PI*2); ctx.fill();
             }
             ctx.restore();
         }
 
-        // --- MAIN LOOP ---
+        function drawDisk(size, color1, color2) {
+            ctx.save();
+            ctx.translate(cx, cy);
+            const grad = ctx.createRadialGradient(0,0, size*0.1, 0,0, size);
+            grad.addColorStop(0, color1);
+            grad.addColorStop(1, color2);
+            ctx.fillStyle = grad;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = "rgba(0,0,0,0.7)";
+            ctx.beginPath();
+            ctx.arc(0, 0, size, 0, Math.PI*2);
+            ctx.fill();
+            ctx.restore();
+        }
+
+        function drawLeaves() {
+            for(let i=0; i<8; i++) {
+                ctx.save(); ctx.translate(cx, cy); ctx.rotate(i * (Math.PI*2/8) + 0.3);
+                ctx.translate(0, 50); // Tighter leaves for zinnia look
+                ctx.fillStyle = "#2e7d32"; ctx.shadowBlur=15; ctx.shadowColor="black";
+                ctx.beginPath(); ctx.moveTo(0,0); 
+                ctx.bezierCurveTo(35,50, 25,120, 0,140); ctx.bezierCurveTo(-25,120, -35,50, 0,0); 
+                ctx.fill(); ctx.restore();
+            }
+        }
 
         function draw() {
-            // Clear Background
-            ctx.fillStyle = '#222';
+            const bgGrad = ctx.createRadialGradient(cx, cy, 10, cx, cy, 600);
+            bgGrad.addColorStop(0, '#222'); bgGrad.addColorStop(1, '#111');
+            ctx.fillStyle = bgGrad;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Draw Background Leaves first (Greenery)
-            const numLeaves = 5;
-            for(let i=0; i<numLeaves; i++) {
-                drawLeaf((Math.PI*2/numLeaves)*i + params.rotation + 0.5, 40*params.scale, params.scale);
-            }
+            drawLeaves();
 
-            // Draw Selected Flower
-            switch (params.type) {
-                case 'rose': drawRose(); break;
-                case 'daisy': drawDaisy(); break;
-                case 'lotus': drawLotus(); break;
-                case 'lily': drawLily(); break;
-                case 'cosmos': drawCosmos(); break;
+            if (params.type === 'daisy') {
+                drawDaisy();
+            } else {
+                drawZinnia();
             }
         }
 
-        // Animation Loop for subtle rotation
-        function animate() {
-            params.rotation += 0.002;
-            draw();
-            requestAnimationFrame(animate);
-        }
-
-        // Init
         resize();
-        animate();
 
     </script>
 </body>

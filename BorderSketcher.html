@@ -255,7 +255,7 @@
                     <div>
                         <h4 class="section-header text-rose-300">Structure</h4>
                         <div class="flex justify-between mb-1"><span class="text-slate-400">Petals</span><span id="val-pCount">8</span></div>
-                        <input type="range" id="petalCount" min="3" max="20" value="8" oninput="updateFloralConfig('count', this.value)">
+                        <input type="range" id="petalCount" min="3" max="100" value="8" oninput="updateFloralConfig('count', this.value)">
                         <div class="flex items-center justify-between mt-2">
                             <label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" id="petalShadow" checked onchange="updateFloralConfig('shadow', this.checked)" class="rounded border-slate-600 bg-slate-700 text-rose-500"><span class="text-slate-400">Shadows</span></label>
                             <input type="color" id="col-shadow" value="#000000" oninput="updateFloralConfig('shadowCol', this.value)">
@@ -301,6 +301,7 @@
                     <button onclick="selectStamp('flower-tulip')" id="btn-flower-tulip" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-brands fa-pagelines text-red-300"></i> Tulip</button>
                     <button onclick="selectStamp('flower-lotus')" id="btn-flower-lotus" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-water text-pink-200"></i> Lotus</button>
                     <button onclick="selectStamp('flower-hibiscus')" id="btn-flower-hibiscus" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-fan text-red-400"></i> Hibiscus</button>
+                    <button onclick="selectStamp('flower-zinnia')" id="btn-flower-zinnia" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-sun text-orange-500"></i> Zinnia</button>
 
                     <div class="text-[10px] text-slate-500 uppercase font-bold mt-3 mb-1">New Leaves</div>
                     <button onclick="selectStamp('leaf-maple')" id="btn-leaf-maple" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-brands fa-canadian-maple-leaf text-orange-400"></i> Maple</button>
@@ -1245,6 +1246,10 @@
                 // Wide, heart-like for rose
                 ctx.bezierCurveTo(w * 1.5, h * 0.2, w, h, 0, h * 0.9);
                 ctx.bezierCurveTo(-w, h, -w * 1.5, h * 0.2, 0, 0);
+            } else if (shapeType === 'zinnia') {
+                // Zinnia: Slightly sharper, wider at middle
+                ctx.bezierCurveTo(w*1.1, h*0.4, w*0.9, h*0.95, 0, h);
+                ctx.bezierCurveTo(-w*0.9, h*0.95, -w*1.1, h*0.4, 0, 0);
             }
 
             ctx.fill();
@@ -1311,7 +1316,7 @@
                     ctx.restore();
                 }
             },
-            'flower-daisy': (ctx, s, style, opts) => { const r = s/2; const cr = r*0.3; const petals = 12; for(let i=0; i<petals; i++){ ctx.save(); ctx.rotate((i*Math.PI*2)/petals); ctx.fillStyle = opts.petalOut; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=2;ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} ctx.beginPath(); ctx.ellipse(0, r*0.6, r*0.15, r*0.4, 0, 0, Math.PI*2); ctx.fill(); ctx.restore(); } if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=2;ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} const g = ctx.createRadialGradient(0,0,0,0,0,cr); g.addColorStop(0,opts.vein); g.addColorStop(1,opts.petalIn); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0,0,cr,0,Math.PI*2); ctx.fill(); },
+            'flower-daisy': (ctx, s, style, opts) => { const r = s/2; const cr = r*0.3; const petals = parseInt(opts.count) || 12; for(let i=0; i<petals; i++){ ctx.save(); ctx.rotate((i*Math.PI*2)/petals); ctx.fillStyle = opts.petalOut; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=2;ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} ctx.beginPath(); ctx.ellipse(0, r*0.6, r*0.15, r*0.4, 0, 0, Math.PI*2); ctx.fill(); ctx.restore(); } if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=2;ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} const g = ctx.createRadialGradient(0,0,0,0,0,cr); g.addColorStop(0,opts.vein); g.addColorStop(1,opts.petalIn); ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0,0,cr,0,Math.PI*2); ctx.fill(); },
             'flower-tulip': (ctx, s, style, opts) => { const h = s; const w = s*0.6; const g = ctx.createLinearGradient(0, h/2, 0, -h/2); g.addColorStop(0, opts.petalIn); g.addColorStop(1, opts.petalOut); ctx.fillStyle = g; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=4;ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} ctx.beginPath(); ctx.moveTo(0, h/2); ctx.bezierCurveTo(w, h/2, w, -h/4, 0, -h/2); ctx.bezierCurveTo(-w, -h/4, -w, h/2, 0, h/2); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.vein; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0, h/2); ctx.quadraticCurveTo(w*0.3, 0, 0, -h/2); ctx.stroke(); },
             'flower-lotus': (ctx, s, style, opts) => {
                 const layers = 3;
@@ -1345,6 +1350,59 @@
                 ctx.restore();
             },
             'flower-hibiscus': (ctx, s, style, opts) => { const r = s/2; const g = ctx.createRadialGradient(0,0,0,0,0,r); g.addColorStop(0,opts.petalIn); g.addColorStop(1,opts.petalOut); ctx.fillStyle = g; for(let i=0; i<5; i++){ ctx.save(); ctx.rotate((i*Math.PI*2)/5); if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=4;ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} ctx.beginPath(); ctx.moveTo(0,0); ctx.bezierCurveTo(r, -r*0.5, r, r*0.5, 0, 0); ctx.fill(); ctx.restore(); } ctx.shadowColor='transparent'; ctx.strokeStyle='yellow'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(r*0.8, 0); ctx.stroke(); ctx.fillStyle='red'; ctx.beginPath(); ctx.arc(r*0.8, 0, 3, 0, Math.PI*2); ctx.fill(); },
+            'flower-zinnia': (ctx, s, style, opts) => {
+                const count = parseInt(opts.count) || 80;
+                const goldenAngle = 137.5 * (Math.PI / 180);
+                const scaleFactor = s / 200;
+                const spread = 11 * scaleFactor;
+                const color = opts.petalIn || '#ff0000';
+
+                for (let i = count; i > 3; i--) {
+                    const r = Math.sqrt(i) * spread;
+                    const theta = i * goldenAngle;
+                    
+                    const x = r * Math.cos(theta);
+                    const y = r * Math.sin(theta);
+                    
+                    const pScale = ((i / count) * 0.6 + 0.4); // Relative scale
+                    
+                    ctx.save();
+                    ctx.translate(x, y);
+                    ctx.rotate(theta - Math.PI/2);
+                    
+                    // Inner petals are darker
+                    const pColor = adjustColorPercent(color, (pScale * 30) - 15);
+                    
+                    // Draw petal with absolute size based on scaleFactor
+                    drawRealisticPetal(ctx, 32 * pScale * scaleFactor, 75 * pScale * scaleFactor, pColor, 'zinnia', opts);
+                    ctx.restore();
+                }
+
+                // Center Disk
+                const diskSize = 15 * scaleFactor;
+                const grad = ctx.createRadialGradient(0,0, diskSize*0.1, 0,0, diskSize);
+                grad.addColorStop(0, '#1a237e');
+                grad.addColorStop(1, '#000051');
+                ctx.fillStyle = grad;
+                if(opts.shadow){
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = "rgba(0,0,0,0.7)";
+                }
+                ctx.beginPath();
+                ctx.arc(0, 0, diskSize, 0, Math.PI*2);
+                ctx.fill();
+
+                // Florets
+                ctx.fillStyle = "#3949ab";
+                ctx.shadowColor = 'transparent';
+                for(let k=0; k<12; k++) {
+                    let ang = k * (Math.PI*2/12) + (k%2?0.2:0);
+                    let dist = ((k%2) ? 6 : 10) * scaleFactor;
+                    ctx.beginPath(); 
+                    ctx.arc(Math.cos(ang)*dist, Math.sin(ang)*dist, 1.5 * scaleFactor, 0, Math.PI*2); 
+                    ctx.fill();
+                }
+            },
             'leaf-maple': (ctx, s, style, opts) => { const r = s/2; ctx.fillStyle = opts.leaf; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=3;} ctx.beginPath(); for(let i=0; i<5; i++){ const ang = (Math.PI/4) * (i-2) - Math.PI/2; const len = (i%2===0) ? r : r*0.6; const x = Math.cos(ang)*len; const y = Math.sin(ang)*len; ctx.lineTo(x, y); ctx.lineTo(x*0.5, y*0.5); } ctx.lineTo(0, r*0.5); ctx.closePath(); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.vein; ctx.lineWidth=parseFloat(opts.veinW); ctx.stroke(); },
             'leaf-oak': (ctx, s, style, opts) => { const h = s; const w = s*0.4; ctx.fillStyle = opts.leaf; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=3;} ctx.beginPath(); ctx.moveTo(0, h/2); for(let i=0; i<=4; i++) { const y = h/2 - (i*(h/4)); const x = (i%2===0) ? w : w*0.5; ctx.quadraticCurveTo(x, y+(h/8), (i===4?0:w*0.2), y); } for(let i=0; i<=4; i++) { ctx.quadraticCurveTo(-w, -h/2+(i*(h/4)), 0, h/2); } ctx.fill(); },
             'leaf-palm': (ctx, s, style, opts) => { const r = s/2; ctx.fillStyle = opts.leaf; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=3;} ctx.beginPath(); ctx.moveTo(0, r); const segs = 7; for(let i=0; i<segs; i++){ const ang = -Math.PI + (i*Math.PI)/(segs-1); ctx.lineTo(Math.cos(ang)*r, Math.sin(ang)*r); ctx.lineTo(0, r*0.8); } ctx.fill(); },
