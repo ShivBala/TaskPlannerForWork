@@ -227,6 +227,10 @@
                     <div class="flex justify-between items-center mb-2">
                         <span class="text-[10px] text-yellow-500 uppercase font-bold">Selection</span>
                     </div>
+                    <div class="flex gap-2 mb-2">
+                        <button onclick="moveStampOrder(1)" class="flex-1 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-[10px] text-slate-300" title="Bring Forward"><i class="fa-solid fa-arrow-up mr-1"></i>Up</button>
+                        <button onclick="moveStampOrder(-1)" class="flex-1 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-[10px] text-slate-300" title="Send Backward"><i class="fa-solid fa-arrow-down mr-1"></i>Down</button>
+                    </div>
                     <div class="flex gap-2">
                         <button onclick="duplicateSelectedStamp()" class="flex-1 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-[10px] text-slate-300"><i class="fa-regular fa-copy mr-1"></i>Duplicate</button>
                         <button onclick="deleteSelectedStamps()" class="flex-1 py-1 bg-red-900/30 hover:bg-red-900/50 border border-red-900 rounded text-[10px] text-red-400"><i class="fa-solid fa-trash mr-1"></i>Delete</button>
@@ -512,7 +516,7 @@
         let customStamps = {};
         let customStampCount = 0;
 
-        let appState = { shape: 'rect-portrait', layers: [], stamps: [], selectedStamp: null, selectedStamps: [] };
+        let appState = { shape: 'rect-portrait', layers: [], stamps: [], selectedStamp: null, selectedStamps: [], shadowBlur: 4 };
         let selectedLayerIndex = -1;
         let currentMaterial = 'gold', currentBrightness = 0, currentFloralColor = 'material'; 
         let floralState = { petalIn: '#aa771c', petalOut: '#fcf6ba', count: 8, shadow: true, shadowCol: '#000000', shadowOff: 2, leaf: '#bf953f', vein: '#5c4010', veinW: 1, leafShape: 'simple' };
@@ -1217,8 +1221,9 @@
             ctx.fillStyle = gradient;
             
             if(opts && opts.shadow) {
-                 ctx.shadowColor = opts.shadowCol || "rgba(0,0,0,0.5)";
-                 ctx.shadowBlur = 10;
+                 const sOp = (appState.shadowOpacity !== undefined) ? appState.shadowOpacity : 0.5;
+                 ctx.shadowColor = hexToRgba(opts.shadowCol || '#000000', sOp);
+                 ctx.shadowBlur = (opts.shadowBlur !== undefined) ? opts.shadowBlur : (appState.shadowBlur !== undefined ? appState.shadowBlur : 10);
                  ctx.shadowOffsetX = 0;
                  ctx.shadowOffsetY = 2;
             }
@@ -1283,10 +1288,10 @@
                 ctx.fill(); 
             },
             'top-crown': (ctx, s, style) => { ctx.beginPath(); ctx.moveTo(-s/2,s/2); ctx.lineTo(s/2,s/2); ctx.lineTo(s/2,0); ctx.lineTo(s/4,s/4); ctx.lineTo(0,-s/2); ctx.lineTo(-s/4,s/4); ctx.lineTo(-s/2,0); ctx.closePath(); ctx.fill(); },
-            'rose-real': (ctx, s, style, opts) => { const r=s/2; const pCount=parseInt(opts.count)||8; const getPetalFill=(c,ir,o=0)=>{const g=c.createRadialGradient(o,o,0,0,0,ir);g.addColorStop(0,opts.petalIn);g.addColorStop(1,opts.petalOut);return g;}; for(let i=pCount-1;i>=0;i--){ctx.beginPath(); const a=i*(Math.PI*2/(pCount/2.5)); const sc=0.4+(i/pCount)*0.6; ctx.save(); ctx.rotate(a); ctx.translate(0,r*sc*0.4); if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=4;ctx.shadowOffsetX=parseInt(opts.shadowOff);ctx.shadowOffsetY=parseInt(opts.shadowOff);} ctx.fillStyle=getPetalFill(ctx,r*sc,r*0.1); ctx.moveTo(0,0); ctx.bezierCurveTo(r*sc,-r*sc*0.5,r*sc,r*sc*0.5,0,r*sc); ctx.bezierCurveTo(-r*sc,r*sc*0.5,-r*sc,-r*sc*0.5,0,0); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=0.5; ctx.stroke(); ctx.restore();} ctx.fillStyle=getPetalFill(ctx,r*0.3); ctx.beginPath(); ctx.arc(0,0,r*0.2,0,Math.PI*2); ctx.fill(); },
-            'rose-bud': (ctx, s, style, opts) => { const h=s; const w=s*0.6; const g=ctx.createRadialGradient(-w*0.2,0,0,0,0,h); g.addColorStop(0,opts.petalOut); g.addColorStop(1,opts.petalIn); ctx.fillStyle=g; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=5;ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} ctx.beginPath(); ctx.moveTo(0,h/2); ctx.bezierCurveTo(w,h/2,w,-h/2,0,-h/2); ctx.bezierCurveTo(-w,-h/2,-w,h/2,0,h/2); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.petalIn; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,h/2); ctx.quadraticCurveTo(w*0.5,0,0,-h/4); ctx.stroke(); ctx.strokeStyle=opts.vein; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(0,h/2); ctx.lineTo(0,h/2+s*0.2); ctx.stroke(); },
-            'leaf-cluster': (ctx, s, style, opts) => { const dl=(ox,oy,r,sc)=>{ctx.save(); ctx.translate(ox,oy); ctx.rotate(r); ctx.scale(sc,sc); ctx.beginPath(); ctx.moveTo(0,0); ctx.bezierCurveTo(s*0.5,-s*0.2,s*0.8,-s*0.1,s,0); ctx.bezierCurveTo(s*0.8,s*0.1,s*0.5,s*0.2,0,0); ctx.fillStyle=opts.leaf; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=3;ctx.shadowOffsetX=opts.shadowOff;} ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.vein; ctx.lineWidth=parseFloat(opts.veinW); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(s*0.9,0); ctx.stroke(); for(let j=1;j<4;j++){ctx.beginPath();ctx.moveTo(s*0.2*j,0);ctx.lineTo(s*0.25*j+s*0.1,-s*0.1);ctx.stroke();ctx.beginPath();ctx.moveTo(s*0.2*j,0);ctx.lineTo(s*0.25*j+s*0.1,s*0.1);ctx.stroke();} ctx.restore();}; dl(0,0,-0.5,0.8); dl(0,0,0.5,0.8); dl(0,0,0,1); },
-            'leaf-fern': (ctx, s, style, opts) => { ctx.beginPath(); ctx.moveTo(0,s/2); ctx.quadraticCurveTo(s*0.2,0,0,-s/2); for(let i=0;i<parseInt(opts.count);i++){const y=(s/2)-(i*(s/parseInt(opts.count))); const w=(s/3)*Math.sin((i/parseInt(opts.count))*Math.PI); ctx.moveTo(0,y); ctx.quadraticCurveTo(w,y-5,0,y-10); ctx.moveTo(0,y); ctx.quadraticCurveTo(-w,y-5,0,y-10);} ctx.fillStyle=opts.leaf; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=2;} ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.vein; ctx.lineWidth=parseFloat(opts.veinW); ctx.beginPath(); ctx.moveTo(0,s/2); ctx.quadraticCurveTo(s*0.2,0,0,-s/2); ctx.stroke(); },
+            'rose-real': (ctx, s, style, opts) => { const r=s/2; const pCount=parseInt(opts.count)||8; const getPetalFill=(c,ir,o=0)=>{const g=c.createRadialGradient(o,o,0,0,0,ir);g.addColorStop(0,opts.petalIn);g.addColorStop(1,opts.petalOut);return g;}; for(let i=pCount-1;i>=0;i--){ctx.beginPath(); const a=i*(Math.PI*2/(pCount/2.5)); const sc=0.4+(i/pCount)*0.6; ctx.save(); ctx.rotate(a); ctx.translate(0,r*sc*0.4); if(opts.shadow){const sOp=(appState.shadowOpacity!==undefined)?appState.shadowOpacity:0.5;ctx.shadowColor=hexToRgba(opts.shadowCol||'#000000',sOp);ctx.shadowBlur=(opts.shadowBlur!==undefined)?opts.shadowBlur:(appState.shadowBlur!==undefined?appState.shadowBlur:4);ctx.shadowOffsetX=parseInt(opts.shadowOff);ctx.shadowOffsetY=parseInt(opts.shadowOff);} ctx.fillStyle=getPetalFill(ctx,r*sc,r*0.1); ctx.moveTo(0,0); ctx.bezierCurveTo(r*sc,-r*sc*0.5,r*sc,r*sc*0.5,0,r*sc); ctx.bezierCurveTo(-r*sc,r*sc*0.5,-r*sc,-r*sc*0.5,0,0); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle='rgba(255,255,255,0.2)'; ctx.lineWidth=0.5; ctx.stroke(); ctx.restore();} ctx.fillStyle=opts.centerColor || getPetalFill(ctx,r*0.3); ctx.beginPath(); ctx.arc(0,0,r*0.2,0,Math.PI*2); ctx.fill(); },
+            'rose-bud': (ctx, s, style, opts) => { const h=s; const w=s*0.6; const g=ctx.createRadialGradient(-w*0.2,0,0,0,0,h); g.addColorStop(0,opts.petalOut); g.addColorStop(1,opts.petalIn); ctx.fillStyle=g; if(opts.shadow){const sOp=(appState.shadowOpacity!==undefined)?appState.shadowOpacity:0.5;ctx.shadowColor=hexToRgba(opts.shadowCol||'#000000',sOp);ctx.shadowBlur=(opts.shadowBlur!==undefined)?opts.shadowBlur:(appState.shadowBlur!==undefined?appState.shadowBlur:5);ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} ctx.beginPath(); ctx.moveTo(0,h/2); ctx.bezierCurveTo(w,h/2,w,-h/2,0,-h/2); ctx.bezierCurveTo(-w,-h/2,-w,h/2,0,h/2); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.petalIn; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,h/2); ctx.quadraticCurveTo(w*0.5,0,0,-h/4); ctx.stroke(); ctx.strokeStyle=opts.vein; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(0,h/2); ctx.lineTo(0,h/2+s*0.2); ctx.stroke(); },
+            'leaf-cluster': (ctx, s, style, opts) => { const dl=(ox,oy,r,sc)=>{ctx.save(); ctx.translate(ox,oy); ctx.rotate(r); ctx.scale(sc,sc); ctx.beginPath(); ctx.moveTo(0,0); ctx.bezierCurveTo(s*0.5,-s*0.2,s*0.8,-s*0.1,s,0); ctx.bezierCurveTo(s*0.8,s*0.1,s*0.5,s*0.2,0,0); ctx.fillStyle=opts.leaf; if(opts.shadow){const sOp=(appState.shadowOpacity!==undefined)?appState.shadowOpacity:0.5;ctx.shadowColor=hexToRgba(opts.shadowCol||'#000000',sOp);ctx.shadowBlur=(opts.shadowBlur!==undefined)?opts.shadowBlur:(appState.shadowBlur!==undefined?appState.shadowBlur:3);ctx.shadowOffsetX=opts.shadowOff;} ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.vein; ctx.lineWidth=parseFloat(opts.veinW); ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(s*0.9,0); ctx.stroke(); for(let j=1;j<4;j++){ctx.beginPath();ctx.moveTo(s*0.2*j,0);ctx.lineTo(s*0.25*j+s*0.1,-s*0.1);ctx.stroke();ctx.beginPath();ctx.moveTo(s*0.2*j,0);ctx.lineTo(s*0.25*j+s*0.1,s*0.1);ctx.stroke();} ctx.restore();}; dl(0,0,-0.5,0.8); dl(0,0,0.5,0.8); dl(0,0,0,1); },
+            'leaf-fern': (ctx, s, style, opts) => { ctx.beginPath(); ctx.moveTo(0,s/2); ctx.quadraticCurveTo(s*0.2,0,0,-s/2); for(let i=0;i<parseInt(opts.count);i++){const y=(s/2)-(i*(s/parseInt(opts.count))); const w=(s/3)*Math.sin((i/parseInt(opts.count))*Math.PI); ctx.moveTo(0,y); ctx.quadraticCurveTo(w,y-5,0,y-10); ctx.moveTo(0,y); ctx.quadraticCurveTo(-w,y-5,0,y-10);} ctx.fillStyle=opts.leaf; if(opts.shadow){const sOp=(appState.shadowOpacity!==undefined)?appState.shadowOpacity:0.5;ctx.shadowColor=hexToRgba(opts.shadowCol||'#000000',sOp);ctx.shadowBlur=(opts.shadowBlur!==undefined)?opts.shadowBlur:(appState.shadowBlur!==undefined?appState.shadowBlur:2);} ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.vein; ctx.lineWidth=parseFloat(opts.veinW); ctx.beginPath(); ctx.moveTo(0,s/2); ctx.quadraticCurveTo(s*0.2,0,0,-s/2); ctx.stroke(); },
             'flower-lily': (ctx, s, style, opts) => {
                 const count = (parseInt(opts.count) > 10) ? 6 : parseInt(opts.count) || 6; 
                 const color = opts.petalIn || '#e60042';
@@ -1311,7 +1316,7 @@
                 for(let i=0; i<6; i++) {
                     ctx.save();
                     ctx.rotate((Math.PI * 2 / 6) * i + 0.5);
-                    ctx.fillStyle = '#5c3a21';
+                    ctx.fillStyle = opts.centerColor || '#5c3a21';
                     ctx.beginPath();
                     ctx.moveTo(0,0);
                     ctx.fillRect(-2 * scale, 30*scale, 4*scale, 15*scale); 
@@ -1323,15 +1328,15 @@
                 const cSize = parseFloat(opts.centerSize) || 1.0;
                 const cr = r*0.3 * cSize; 
                 const petals = parseInt(opts.count) || 12; 
-                for(let i=0; i<petals; i++){ ctx.save(); ctx.rotate((i*Math.PI*2)/petals); ctx.fillStyle = opts.petalOut; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=2;ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} ctx.beginPath(); ctx.ellipse(0, r*0.6, r*0.15, r*0.4, 0, 0, Math.PI*2); ctx.fill(); ctx.restore(); } 
-                if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=2;ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} 
+                for(let i=0; i<petals; i++){ ctx.save(); ctx.rotate((i*Math.PI*2)/petals); ctx.fillStyle = opts.petalOut; if(opts.shadow){const sOp=(appState.shadowOpacity!==undefined)?appState.shadowOpacity:0.5;ctx.shadowColor=hexToRgba(opts.shadowCol||'#000000',sOp);ctx.shadowBlur=(opts.shadowBlur!==undefined)?opts.shadowBlur:(appState.shadowBlur!==undefined?appState.shadowBlur:2);ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} ctx.beginPath(); ctx.ellipse(0, r*0.6, r*0.15, r*0.4, 0, 0, Math.PI*2); ctx.fill(); ctx.restore(); } 
+                if(opts.shadow){const sOp=(appState.shadowOpacity!==undefined)?appState.shadowOpacity:0.5;ctx.shadowColor=hexToRgba(opts.shadowCol||'#000000',sOp);ctx.shadowBlur=(opts.shadowBlur!==undefined)?opts.shadowBlur:(appState.shadowBlur!==undefined?appState.shadowBlur:2);ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} 
                 const g = ctx.createRadialGradient(0,0,0,0,0,cr); 
                 const cCol = opts.centerColor || opts.vein;
                 g.addColorStop(0, cCol); 
                 g.addColorStop(1, opts.petalIn); 
                 ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0,0,cr,0,Math.PI*2); ctx.fill(); 
             },
-            'flower-tulip': (ctx, s, style, opts) => { const h = s; const w = s*0.6; const g = ctx.createLinearGradient(0, h/2, 0, -h/2); g.addColorStop(0, opts.petalIn); g.addColorStop(1, opts.petalOut); ctx.fillStyle = g; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=4;ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} ctx.beginPath(); ctx.moveTo(0, h/2); ctx.bezierCurveTo(w, h/2, w, -h/4, 0, -h/2); ctx.bezierCurveTo(-w, -h/4, -w, h/2, 0, h/2); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.vein; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0, h/2); ctx.quadraticCurveTo(w*0.3, 0, 0, -h/2); ctx.stroke(); },
+            'flower-tulip': (ctx, s, style, opts) => { const h = s; const w = s*0.6; const g = ctx.createLinearGradient(0, h/2, 0, -h/2); g.addColorStop(0, opts.petalIn); g.addColorStop(1, opts.petalOut); ctx.fillStyle = g; if(opts.shadow){const sOp=(appState.shadowOpacity!==undefined)?appState.shadowOpacity:0.5;ctx.shadowColor=hexToRgba(opts.shadowCol||'#000000',sOp);ctx.shadowBlur=(opts.shadowBlur!==undefined)?opts.shadowBlur:(appState.shadowBlur!==undefined?appState.shadowBlur:4);ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} ctx.beginPath(); ctx.moveTo(0, h/2); ctx.bezierCurveTo(w, h/2, w, -h/4, 0, -h/2); ctx.bezierCurveTo(-w, -h/4, -w, h/2, 0, h/2); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.vein; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0, h/2); ctx.quadraticCurveTo(w*0.3, 0, 0, -h/2); ctx.stroke(); },
             'flower-lotus': (ctx, s, style, opts) => {
                 const layers = 3;
                 const count = parseInt(opts.count) || 30; 
@@ -1364,7 +1369,7 @@
                 ctx.fill();
                 ctx.restore();
             },
-            'flower-hibiscus': (ctx, s, style, opts) => { const r = s/2; const g = ctx.createRadialGradient(0,0,0,0,0,r); g.addColorStop(0,opts.petalIn); g.addColorStop(1,opts.petalOut); ctx.fillStyle = g; for(let i=0; i<5; i++){ ctx.save(); ctx.rotate((i*Math.PI*2)/5); if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=4;ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} ctx.beginPath(); ctx.moveTo(0,0); ctx.bezierCurveTo(r, -r*0.5, r, r*0.5, 0, 0); ctx.fill(); ctx.restore(); } ctx.shadowColor='transparent'; ctx.strokeStyle='yellow'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(r*0.8, 0); ctx.stroke(); ctx.fillStyle='red'; ctx.beginPath(); ctx.arc(r*0.8, 0, 3, 0, Math.PI*2); ctx.fill(); },
+            'flower-hibiscus': (ctx, s, style, opts) => { const r = s/2; const g = ctx.createRadialGradient(0,0,0,0,0,r); g.addColorStop(0,opts.petalIn); g.addColorStop(1,opts.petalOut); ctx.fillStyle = g; for(let i=0; i<5; i++){ ctx.save(); ctx.rotate((i*Math.PI*2)/5); if(opts.shadow){const sOp=(appState.shadowOpacity!==undefined)?appState.shadowOpacity:0.5;ctx.shadowColor=hexToRgba(opts.shadowCol||'#000000',sOp);ctx.shadowBlur=(opts.shadowBlur!==undefined)?opts.shadowBlur:(appState.shadowBlur!==undefined?appState.shadowBlur:4);ctx.shadowOffsetX=opts.shadowOff;ctx.shadowOffsetY=opts.shadowOff;} ctx.beginPath(); ctx.moveTo(0,0); ctx.bezierCurveTo(r, -r*0.5, r, r*0.5, 0, 0); ctx.fill(); ctx.restore(); } ctx.shadowColor='transparent'; ctx.strokeStyle='yellow'; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(r*0.8, 0); ctx.stroke(); ctx.fillStyle=opts.centerColor || 'red'; ctx.beginPath(); ctx.arc(r*0.8, 0, 3, 0, Math.PI*2); ctx.fill(); },
             'flower-zinnia': (ctx, s, style, opts) => {
                 const count = parseInt(opts.count) || 80;
                 const goldenAngle = 137.5 * (Math.PI / 180);
@@ -1401,15 +1406,16 @@
                 }
 
                 // Center Disk
-                const diskSize = 15 * scaleFactor * cSize;
+                const diskSize = 22 * scaleFactor * cSize;
                 const grad = ctx.createRadialGradient(0,0, diskSize*0.1, 0,0, diskSize);
                 const cCol = opts.centerColor || '#1a237e';
                 grad.addColorStop(0, cCol);
                 grad.addColorStop(1, adjustColorPercent(cCol, -40));
                 ctx.fillStyle = grad;
                 if(opts.shadow){
-                    ctx.shadowBlur = 15;
-                    ctx.shadowColor = "rgba(0,0,0,0.7)";
+                    ctx.shadowBlur = (opts.shadowBlur !== undefined) ? opts.shadowBlur : (appState.shadowBlur !== undefined ? appState.shadowBlur : 15);
+                    const sOp = (appState.shadowOpacity !== undefined) ? appState.shadowOpacity : 0.7;
+                    ctx.shadowColor = hexToRgba(opts.shadowCol || '#000000', sOp);
                 }
                 ctx.beginPath();
                 ctx.arc(0, 0, diskSize, 0, Math.PI*2);
@@ -1426,11 +1432,11 @@
                     ctx.fill();
                 }
             },
-            'leaf-maple': (ctx, s, style, opts) => { const r = s/2; ctx.fillStyle = opts.leaf; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=3;} ctx.beginPath(); for(let i=0; i<5; i++){ const ang = (Math.PI/4) * (i-2) - Math.PI/2; const len = (i%2===0) ? r : r*0.6; const x = Math.cos(ang)*len; const y = Math.sin(ang)*len; ctx.lineTo(x, y); ctx.lineTo(x*0.5, y*0.5); } ctx.lineTo(0, r*0.5); ctx.closePath(); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.vein; ctx.lineWidth=parseFloat(opts.veinW); ctx.stroke(); },
-            'leaf-oak': (ctx, s, style, opts) => { const h = s; const w = s*0.4; ctx.fillStyle = opts.leaf; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=3;} ctx.beginPath(); ctx.moveTo(0, h/2); for(let i=0; i<=4; i++) { const y = h/2 - (i*(h/4)); const x = (i%2===0) ? w : w*0.5; ctx.quadraticCurveTo(x, y+(h/8), (i===4?0:w*0.2), y); } for(let i=0; i<=4; i++) { ctx.quadraticCurveTo(-w, -h/2+(i*(h/4)), 0, h/2); } ctx.fill(); },
-            'leaf-palm': (ctx, s, style, opts) => { const r = s/2; ctx.fillStyle = opts.leaf; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=3;} ctx.beginPath(); ctx.moveTo(0, r); const segs = 7; for(let i=0; i<segs; i++){ const ang = -Math.PI + (i*Math.PI)/(segs-1); ctx.lineTo(Math.cos(ang)*r, Math.sin(ang)*r); ctx.lineTo(0, r*0.8); } ctx.fill(); },
-            'leaf-ivy': (ctx, s, style, opts) => { const r = s/2; ctx.fillStyle = opts.leaf; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=3;} ctx.beginPath(); ctx.moveTo(0, r*0.5); ctx.lineTo(r*0.8, r*0.2); ctx.lineTo(r*0.5, -r*0.2); ctx.lineTo(0, -r); ctx.lineTo(-r*0.5, -r*0.2); ctx.lineTo(-r*0.8, r*0.2); ctx.closePath(); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.vein; ctx.stroke(); },
-            'leaf-willow': (ctx, s, style, opts) => { const h = s; const w = s*0.15; ctx.fillStyle = opts.leaf; if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=2;} ctx.beginPath(); ctx.moveTo(0, h/2); ctx.quadraticCurveTo(w, 0, 0, -h/2); ctx.quadraticCurveTo(-w, 0, 0, h/2); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.vein; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0, h/2); ctx.lineTo(0, -h/2); ctx.stroke(); },
+            'leaf-maple': (ctx, s, style, opts) => { const r = s/2; ctx.fillStyle = opts.leaf; if(opts.shadow){const sOp=(appState.shadowOpacity!==undefined)?appState.shadowOpacity:0.5;ctx.shadowColor=hexToRgba(opts.shadowCol||'#000000',sOp);ctx.shadowBlur=(opts.shadowBlur!==undefined)?opts.shadowBlur:(appState.shadowBlur!==undefined?appState.shadowBlur:3);} ctx.beginPath(); for(let i=0; i<5; i++){ const ang = (Math.PI/4) * (i-2) - Math.PI/2; const len = (i%2===0) ? r : r*0.6; const x = Math.cos(ang)*len; const y = Math.sin(ang)*len; ctx.lineTo(x, y); ctx.lineTo(x*0.5, y*0.5); } ctx.lineTo(0, r*0.5); ctx.closePath(); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.vein; ctx.lineWidth=parseFloat(opts.veinW); ctx.stroke(); },
+            'leaf-oak': (ctx, s, style, opts) => { const h = s; const w = s*0.4; ctx.fillStyle = opts.leaf; if(opts.shadow){const sOp=(appState.shadowOpacity!==undefined)?appState.shadowOpacity:0.5;ctx.shadowColor=hexToRgba(opts.shadowCol||'#000000',sOp);ctx.shadowBlur=(opts.shadowBlur!==undefined)?opts.shadowBlur:(appState.shadowBlur!==undefined?appState.shadowBlur:3);} ctx.beginPath(); ctx.moveTo(0, h/2); for(let i=0; i<=4; i++) { const y = h/2 - (i*(h/4)); const x = (i%2===0) ? w : w*0.5; ctx.quadraticCurveTo(x, y+(h/8), (i===4?0:w*0.2), y); } for(let i=0; i<=4; i++) { ctx.quadraticCurveTo(-w, -h/2+(i*(h/4)), 0, h/2); } ctx.fill(); },
+            'leaf-palm': (ctx, s, style, opts) => { const r = s/2; ctx.fillStyle = opts.leaf; if(opts.shadow){const sOp=(appState.shadowOpacity!==undefined)?appState.shadowOpacity:0.5;ctx.shadowColor=hexToRgba(opts.shadowCol||'#000000',sOp);ctx.shadowBlur=(opts.shadowBlur!==undefined)?opts.shadowBlur:(appState.shadowBlur!==undefined?appState.shadowBlur:3);} ctx.beginPath(); ctx.moveTo(0, r); const segs = 7; for(let i=0; i<segs; i++){ const ang = -Math.PI + (i*Math.PI)/(segs-1); ctx.lineTo(Math.cos(ang)*r, Math.sin(ang)*r); ctx.lineTo(0, r*0.8); } ctx.fill(); },
+            'leaf-ivy': (ctx, s, style, opts) => { const r = s/2; ctx.fillStyle = opts.leaf; if(opts.shadow){const sOp=(appState.shadowOpacity!==undefined)?appState.shadowOpacity:0.5;ctx.shadowColor=hexToRgba(opts.shadowCol||'#000000',sOp);ctx.shadowBlur=(opts.shadowBlur!==undefined)?opts.shadowBlur:(appState.shadowBlur!==undefined?appState.shadowBlur:3);} ctx.beginPath(); ctx.moveTo(0, r*0.5); ctx.lineTo(r*0.8, r*0.2); ctx.lineTo(r*0.5, -r*0.2); ctx.lineTo(0, -r); ctx.lineTo(-r*0.5, -r*0.2); ctx.lineTo(-r*0.8, r*0.2); ctx.closePath(); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.vein; ctx.stroke(); },
+            'leaf-willow': (ctx, s, style, opts) => { const h = s; const w = s*0.15; ctx.fillStyle = opts.leaf; if(opts.shadow){const sOp=(appState.shadowOpacity!==undefined)?appState.shadowOpacity:0.5;ctx.shadowColor=hexToRgba(opts.shadowCol||'#000000',sOp);ctx.shadowBlur=(opts.shadowBlur!==undefined)?opts.shadowBlur:(appState.shadowBlur!==undefined?appState.shadowBlur:2);} ctx.beginPath(); ctx.moveTo(0, h/2); ctx.quadraticCurveTo(w, 0, 0, -h/2); ctx.quadraticCurveTo(-w, 0, 0, h/2); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.vein; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0, h/2); ctx.lineTo(0, -h/2); ctx.stroke(); },
             'leaf-simple': (ctx, s, style, opts) => {
                 const scale = s / 150;
                 ctx.save();
@@ -1443,8 +1449,9 @@
                 ctx.fillStyle = grad;
                 
                 if(opts.shadow){
-                    ctx.shadowBlur = 5;
-                    ctx.shadowColor = opts.shadowCol || 'black';
+                    ctx.shadowBlur = (opts.shadowBlur !== undefined) ? opts.shadowBlur : (appState.shadowBlur !== undefined ? appState.shadowBlur : 5);
+                    const sOp = (appState.shadowOpacity !== undefined) ? appState.shadowOpacity : 0.5;
+                    ctx.shadowColor = hexToRgba(opts.shadowCol || '#000000', sOp);
                 }
 
                 ctx.beginPath();
@@ -1472,7 +1479,7 @@
                 
                 // Draw Shape
                 ctx.fillStyle = opts.leaf;
-                if(opts.shadow){ctx.shadowColor=opts.shadowCol;ctx.shadowBlur=appState.shadowBlur||4;ctx.shadowOffsetX=opts.shadowOff;}
+                if(opts.shadow){const sOp=(appState.shadowOpacity!==undefined)?appState.shadowOpacity:0.5;ctx.shadowColor=hexToRgba(opts.shadowCol||'#000000',sOp);ctx.shadowBlur=(opts.shadowBlur!==undefined)?opts.shadowBlur:(appState.shadowBlur!==undefined?appState.shadowBlur:4);ctx.shadowOffsetX=opts.shadowOff;}
                 
                 generateProceduralLeafPath(ctx, type, width, length, seed);
                 ctx.fill();
@@ -1498,8 +1505,9 @@
                         
                         ASSETS[id] = (ctx, s, style, opts) => {
                             if(opts && opts.shadow) {
-                                ctx.shadowColor = opts.shadowCol || 'rgba(0,0,0,0.5)';
-                                ctx.shadowBlur = 4;
+                                const sOp = (appState.shadowOpacity !== undefined) ? appState.shadowOpacity : 0.5;
+                                ctx.shadowColor = hexToRgba(opts.shadowCol || '#000000', sOp);
+                                ctx.shadowBlur = (opts.shadowBlur !== undefined) ? opts.shadowBlur : (appState.shadowBlur !== undefined ? appState.shadowBlur : 4);
                                 ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2;
                             } else {
                                 ctx.shadowColor = 'transparent';
@@ -1655,12 +1663,19 @@
 
             const isGlobal = document.getElementById('globalMode') && document.getElementById('globalMode').checked;
             if (isGlobal) {
-                appState.layers.forEach(layer => { layer.pattern = type; });
+                appState.layers.forEach(layer => { 
+                    layer.pattern = type; 
+                    // Snapshot floral state if it's a floral pattern
+                    if(ASSETS[type]) layer.floralState = JSON.parse(JSON.stringify(floralState));
+                });
                 renderLayerList(); 
                 redraw();
                 saveState();
             } else if (selectedLayerIndex >= 0 && selectedLayerIndex < appState.layers.length) {
                 appState.layers[selectedLayerIndex].pattern = type;
+                // Snapshot floral state if it's a floral pattern
+                if(ASSETS[type]) appState.layers[selectedLayerIndex].floralState = JSON.parse(JSON.stringify(floralState));
+                
                 renderLayerList(); // Update list text
                 redraw();
                 saveState();
@@ -1916,6 +1931,12 @@
 
             // Switch to place mode when selecting a new tool
             if (!preventModeChange && stampConfig.mode === 'select') setStampMode('place');
+            
+            // Deselect layer to prevent accidental edits to border while configuring stamp
+            if (!preventModeChange) {
+                selectedLayerIndex = -1;
+                renderLayerList(); // Update UI to show no layer selected
+            }
             
             renderPreview(); 
         }
@@ -3371,7 +3392,18 @@
             // Check if it's a complex asset (stamp)
             if (ASSETS[t]) {
                 // Use layer state or current global floral state or default
-                const opts = layerOpts || floralState || { petalIn: '#aa771c', petalOut: '#fcf6ba', count: 8, shadow: true, shadowCol: '#000000', shadowOff: 2, leaf: '#bf953f', vein: '#5c4010', veinW: 1 };
+                // Merge to ensure we have all properties even if layerOpts is partial (e.g. only has seed)
+                const defaults = { petalIn: '#aa771c', petalOut: '#fcf6ba', count: 8, shadow: true, shadowCol: '#000000', shadowOff: 2, leaf: '#bf953f', vein: '#5c4010', veinW: 1 };
+                
+                // If layerOpts is provided (it's a layer render), use it + defaults. 
+                // Don't mix in global floralState unless layerOpts is explicitly null/undefined (which might imply "use current settings").
+                let opts;
+                if (layerOpts) {
+                     opts = { ...defaults, ...layerOpts };
+                } else {
+                     opts = floralState || defaults;
+                }
+                
                 // Pass current fillStyle as style
                 ASSETS[t](ctx, s, ctx.fillStyle, opts);
                 return;
@@ -4288,6 +4320,54 @@
             }
             saveState(); redraw();
         });
+
+        function moveStampOrder(dir) {
+            if (!appState.selectedStamp) return;
+            
+            const { layerIndex, stampIndex } = appState.selectedStamp;
+            
+            let list;
+            if (layerIndex === -1) {
+                list = appState.stamps;
+            } else {
+                if (appState.layers[layerIndex]) {
+                    list = appState.layers[layerIndex].stamps;
+                }
+            }
+            
+            if (!list) return;
+            
+            const idx1 = stampIndex;
+            const idx2 = stampIndex + dir;
+            
+            // Check bounds
+            if (idx2 < 0 || idx2 >= list.length) return;
+            
+            // Swap objects in the list
+            const temp = list[idx1];
+            list[idx1] = list[idx2];
+            list[idx2] = temp;
+            
+            // Update all selection references
+            // We need to update BOTH the item we moved AND the item we swapped with
+            // so that selection highlights remain on the correct objects
+            const updateRef = (ref) => {
+                if (ref.layerIndex === layerIndex) {
+                    if (ref.stampIndex === idx1) ref.stampIndex = idx2;
+                    else if (ref.stampIndex === idx2) ref.stampIndex = idx1;
+                }
+            };
+            
+            if (appState.selectedStamps) {
+                appState.selectedStamps.forEach(updateRef);
+            }
+            
+            // Also update the primary selection pointer
+            updateRef(appState.selectedStamp);
+            
+            saveState();
+            requestRedraw();
+        }
 
         // --- COLOR THEMES ---
         const COLOR_THEMES = [
