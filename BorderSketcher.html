@@ -2535,22 +2535,82 @@
         }
 
         function toggleFlip(axis) { 
-            if(axis==='h')stampConfig.flipH=!stampConfig.flipH; 
-            if(axis==='v')stampConfig.flipV=!stampConfig.flipV; 
-            
-            if (appState.selectedStamp) {
+            // 1. Identify Targets
+            let targets = [];
+            if (appState.selectedStamps && appState.selectedStamps.length > 0) {
+                targets = appState.selectedStamps.map(ref => getStampFromRef(ref)).filter(s => s);
+            } else if (appState.selectedStamp) {
                 const s = getSelectedStamp();
                 if (s) {
                     const isClusterMode = document.getElementById('clusterToggle') && document.getElementById('clusterToggle').checked;
-                    const targets = (s.clusterId && isClusterMode) ? getAllStampsInCluster(s.clusterId) : [s];
-                    targets.forEach(t => {
-                        if(axis==='h') t.flipH = stampConfig.flipH;
-                        if(axis==='v') t.flipV = stampConfig.flipV;
-                    });
-                    requestRedraw();
+                    if (s.clusterId && isClusterMode) {
+                        targets = getAllStampsInCluster(s.clusterId);
+                    } else {
+                        targets = [s];
+                    }
                 }
             }
-            renderPreview(); 
+
+            // 2. If no selection, just toggle the global config for next stamp
+            if (targets.length === 0) {
+                if(axis==='h') stampConfig.flipH = !stampConfig.flipH;
+                if(axis==='v') stampConfig.flipV = !stampConfig.flipV;
+                renderPreview();
+                return;
+            }
+
+            // 3. Group Flip Logic
+            // Calculate Center
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            targets.forEach(t => {
+                minX = Math.min(minX, t.x);
+                maxX = Math.max(maxX, t.x);
+                minY = Math.min(minY, t.y);
+                maxY = Math.max(maxY, t.y);
+            });
+            
+            const cx = (minX + maxX) / 2;
+            const cy = (minY + maxY) / 2;
+
+            targets.forEach(t => {
+                if (axis === 'h') {
+                    // Mirror X around CX
+                    t.x = cx - (t.x - cx);
+                    // Flip Orientation Horizontal (Screen Space)
+                    // Rule: rot = -rot, flipH = !flipH
+                    t.rot = -t.rot;
+                    t.flipH = !t.flipH;
+                } else {
+                    // Mirror Y around CY
+                    t.y = cy - (t.y - cy);
+                    // Flip Orientation Vertical (Screen Space)
+                    // Rule: rot = -rot, flipV = !flipV
+                    t.rot = -t.rot;
+                    t.flipV = !t.flipV;
+                }
+            });
+
+            // 4. Update UI / Config to match primary selection
+            if (appState.selectedStamp) {
+                const s = getSelectedStamp();
+                if (s) {
+                    stampConfig.flipH = s.flipH;
+                    stampConfig.flipV = s.flipV;
+                    // Normalize rotation for UI
+                    let deg = Math.round((s.rot * 180) / Math.PI);
+                    stampConfig.rot = ((deg % 360) + 360) % 360;
+                    
+                    // Update UI controls
+                    const rotInput = document.getElementById('stampRot');
+                    if(rotInput) {
+                        rotInput.value = stampConfig.rot;
+                        document.getElementById('stampRotVal').innerText = stampConfig.rot + '°';
+                    }
+                }
+            }
+
+            saveState();
+            requestRedraw();
         }
 
         function getSelectedStamp() {
