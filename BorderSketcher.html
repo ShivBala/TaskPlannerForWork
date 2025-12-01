@@ -281,7 +281,7 @@
                         <div class="mt-1"><div class="flex justify-between text-[10px] text-slate-400"><span>Width</span><span id="val-botanyWidth">1.0</span></div><input type="range" id="botanyWidth" min="0.5" max="2.0" step="0.1" value="1.0" oninput="updateFloralConfig('botanyWidth', this.value)"></div>
                         <div class="mt-1"><div class="flex justify-between text-[10px] text-slate-400"><span>Bend</span><span id="val-botanyBend">10</span></div><input type="range" id="botanyBend" min="-60" max="60" step="5" value="10" oninput="updateFloralConfig('botanyBend', this.value)"></div>
                         <div class="mt-1"><div class="flex justify-between text-[10px] text-slate-400"><span>Serration</span><span id="val-botanySerration">0</span></div><input type="range" id="botanySerration" min="0" max="20" step="1" value="0" oninput="updateFloralConfig('botanySerration', this.value)"></div>
-                        <div class="mt-1"><div class="flex justify-between text-[10px] text-slate-400"><span>Vein Density</span><span id="val-botanyVeinDensity">10</span></div><input type="range" id="botanyVeinDensity" min="5" max="30" step="1" value="10" oninput="updateFloralConfig('botanyVeinDensity', this.value)"></div>
+                        <div class="mt-1"><div class="flex justify-between text-[10px] text-slate-400"><span>Density</span><span id="val-botanyVeinDensity">10</span></div><input type="range" id="botanyVeinDensity" min="5" max="30" step="1" value="10" oninput="updateFloralConfig('botanyVeinDensity', this.value)"></div>
                         <div class="mt-1"><div class="flex justify-between text-[10px] text-slate-400"><span>Vein Angle</span><span id="val-botanyVeinAngle">45</span></div><input type="range" id="botanyVeinAngle" min="10" max="80" step="5" value="45" oninput="updateFloralConfig('botanyVeinAngle', this.value)"></div>
                         <div class="mt-1"><div class="flex justify-between text-[10px] text-slate-400"><span>Texture</span><span id="val-botanyTexture">0</span></div><input type="range" id="botanyTexture" min="0" max="10" step="1" value="0" oninput="updateFloralConfig('botanyTexture', this.value)"></div>
                     </div>
@@ -1478,7 +1478,8 @@
             drawMidrib(ctx, spine, len);
             const leafletCount = 8 + Math.floor(params.vDens / 5);
             for (let i = 0; i < leafletCount; i++) {
-                const t = 0.1 + (i / leafletCount) * 0.8;
+                // Distribute leaflets closer to the tip to avoid gaps
+                const t = 0.1 + (i / (leafletCount > 1 ? leafletCount - 1 : 1)) * 0.85;
                 const idx = Math.floor(t * (spine.length - 1));
                 const pos = spine[idx];
                 const nextPos = spine[Math.min(idx + 1, spine.length - 1)];
