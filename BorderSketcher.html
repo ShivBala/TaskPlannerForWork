@@ -276,6 +276,15 @@
                         <div class="flex justify-between items-center"><span class="text-slate-400">Vein Color</span><input type="color" id="col-vein" value="#5c4010" oninput="updateFloralConfig('vein', this.value)"></div>
                         <div class="mt-1"><div class="flex justify-between text-[10px] text-slate-400"><span>Vein Thick</span><span id="val-vein">1px</span></div><input type="range" id="veinThick" min="0.5" max="5" step="0.5" value="1" oninput="updateFloralConfig('veinW', this.value)"></div>
                     </div>
+                    <div>
+                        <h4 class="section-header text-emerald-300">Botany Settings</h4>
+                        <div class="mt-1"><div class="flex justify-between text-[10px] text-slate-400"><span>Width</span><span id="val-botanyWidth">1.0</span></div><input type="range" id="botanyWidth" min="0.5" max="2.0" step="0.1" value="1.0" oninput="updateFloralConfig('botanyWidth', this.value)"></div>
+                        <div class="mt-1"><div class="flex justify-between text-[10px] text-slate-400"><span>Bend</span><span id="val-botanyBend">10</span></div><input type="range" id="botanyBend" min="-60" max="60" step="5" value="10" oninput="updateFloralConfig('botanyBend', this.value)"></div>
+                        <div class="mt-1"><div class="flex justify-between text-[10px] text-slate-400"><span>Serration</span><span id="val-botanySerration">0</span></div><input type="range" id="botanySerration" min="0" max="20" step="1" value="0" oninput="updateFloralConfig('botanySerration', this.value)"></div>
+                        <div class="mt-1"><div class="flex justify-between text-[10px] text-slate-400"><span>Vein Density</span><span id="val-botanyVeinDensity">10</span></div><input type="range" id="botanyVeinDensity" min="5" max="30" step="1" value="10" oninput="updateFloralConfig('botanyVeinDensity', this.value)"></div>
+                        <div class="mt-1"><div class="flex justify-between text-[10px] text-slate-400"><span>Vein Angle</span><span id="val-botanyVeinAngle">45</span></div><input type="range" id="botanyVeinAngle" min="10" max="80" step="5" value="45" oninput="updateFloralConfig('botanyVeinAngle', this.value)"></div>
+                        <div class="mt-1"><div class="flex justify-between text-[10px] text-slate-400"><span>Texture</span><span id="val-botanyTexture">0</span></div><input type="range" id="botanyTexture" min="0" max="10" step="1" value="0" oninput="updateFloralConfig('botanyTexture', this.value)"></div>
+                    </div>
                 </div>
 
                 <!-- Floral Color Picker -->
@@ -303,6 +312,16 @@
 
                     <div class="text-[10px] text-slate-500 uppercase font-bold mt-2 mb-1">Pro Leaves</div>
                     <button onclick="selectStamp('leaf-pro')" id="btn-leaf-pro" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-leaf text-green-400"></i> Procedural Leaf</button>
+
+                    <div class="text-[10px] text-slate-500 uppercase font-bold mt-2 mb-1">Botany Studio</div>
+                    <button onclick="selectStamp('botany-lanceolate')" id="btn-botany-lanceolate" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-leaf text-emerald-400"></i> Willow (Lanceolate)</button>
+                    <button onclick="selectStamp('botany-ovate')" id="btn-botany-ovate" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-apple-whole text-emerald-500"></i> Apple (Ovate)</button>
+                    <button onclick="selectStamp('botany-cordate')" id="btn-botany-cordate" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-heart text-emerald-600"></i> Lilac (Cordate)</button>
+                    <button onclick="selectStamp('botany-lobed')" id="btn-botany-lobed" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-tree text-emerald-700"></i> Oak (Lobed)</button>
+                    <button onclick="selectStamp('botany-palmate')" id="btn-botany-palmate" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-brands fa-canadian-maple-leaf text-orange-500"></i> Maple (Palmate)</button>
+                    <button onclick="selectStamp('botany-monstera')" id="btn-botany-monstera" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-leaf text-green-600"></i> Monstera</button>
+                    <button onclick="selectStamp('botany-ginkgo')" id="btn-botany-ginkgo" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-fan text-yellow-500"></i> Ginkgo</button>
+                    <button onclick="selectStamp('botany-pinnate')" id="btn-botany-pinnate" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-feather text-green-400"></i> Fern (Pinnate)</button>
 
                     <div class="text-[10px] text-slate-500 uppercase font-bold mt-2 mb-1">New Flowers</div>
                     <button onclick="selectStamp('flower-lily')" id="btn-flower-lily" class="tool-btn w-full p-2 rounded text-xs flex items-center gap-3 border border-transparent"><i class="fa-solid fa-spa text-pink-300"></i> Lily</button>
@@ -555,7 +574,10 @@
         let appState = { shape: 'rect-portrait', layers: [], stamps: [], selectedStamp: null, selectedStamps: [], shadowBlur: 4, shadowBlurBorder: 4, shadowBlurFlower: 4, shadowBlurLeaf: 4, shadowBlurLine: 4 };
         let selectedLayerIndex = -1;
         let currentMaterial = 'gold', currentBrightness = 0, currentFloralColor = 'material'; 
-        let floralState = { petalIn: '#aa771c', petalOut: '#fcf6ba', count: 8, shadow: true, shadowCol: '#000000', shadowOff: 2, leaf: '#bf953f', vein: '#5c4010', veinW: 1, leafShape: 'simple' };
+        let floralState = { 
+            petalIn: '#aa771c', petalOut: '#fcf6ba', count: 8, shadow: true, shadowCol: '#000000', shadowOff: 2, leaf: '#bf953f', vein: '#5c4010', veinW: 1, leafShape: 'simple',
+            botanyWidth: 1.0, botanyBend: 10, botanySerration: 0, botanyVeinDensity: 10, botanyVeinAngle: 45, botanyTexture: 0
+        };
         let stampConfig = { active: 'leaf-pro', rot: 0, size: 80, flipH: false, flipV: false, mode: 'place', clusterRot: 0 };
         let history = [], historyIndex = -1;
         let mouseX = 0, mouseY = 0;
@@ -1329,6 +1351,195 @@
             ctx.fill();
         }
 
+        // --- BOTANY STUDIO LOGIC ---
+        function generateSpine(cx, cy, len, bendDeg) {
+            const points = [];
+            const steps = 50; // Reduced steps for performance
+            const rad = bendDeg * (Math.PI / 180);
+            
+            for (let i = 0; i <= steps; i++) {
+                const t = i / steps;
+                const x = cx + Math.sin(t * Math.PI) * (len * 0.2) * (rad * 2);
+                const y = cy - (t * len);
+                points.push({ x, y, t });
+            }
+            return points;
+        }
+
+        function generateOutline(spine, params, len) {
+            const path = new Path2D();
+            const leftPoints = [];
+            const rightPoints = [];
+            
+            spine.forEach((pt, i) => {
+                const t = pt.t;
+                const next = spine[Math.min(i+1, spine.length-1)];
+                const prev = spine[Math.max(i-1, 0)];
+                const angle = Math.atan2(next.y - prev.y, next.x - prev.x);
+                const perp = angle + Math.PI/2;
+
+                let w = 0;
+                if (params.type === 'lanceolate') w = Math.sin(t * Math.PI) * (len * 0.15);
+                else if (params.type === 'ovate') w = Math.sin(t * Math.PI) * Math.pow(1-t, 0.3) * (len * 0.3);
+                else if (params.type === 'cordate') { w = Math.sin(t * Math.PI) * (1 - t * 0.5) * (len * 0.35); if(t < 0.2) w += (0.2-t)*(len * 0.4); }
+                else if (params.type === 'lobed') { const base = Math.sin(t * Math.PI); const lobes = Math.abs(Math.cos(t * Math.PI * 3)); w = base * ((len*0.15) + lobes * (len*0.18)); }
+                else if (params.type === 'palmate') { const base = Math.sin(t * Math.PI); const spikes = Math.cos(t * Math.PI * 5); let mod = spikes > 0 ? spikes : spikes * 0.2; w = base * ((len*0.15) + mod * (len*0.2)); }
+                else if (params.type === 'monstera') { w = Math.sin(t * Math.PI) * (len * 0.35); if(t < 0.15) w += (0.15-t)*(len * 0.3); }
+                else if (params.type === 'ginkgo') { w = t * (len * 0.45); if(t > 0.9) w += Math.sin(t*50)*(len * 0.015); }
+
+                w *= params.wFactor;
+                if (params.jagged > 0) {
+                    const noise = Math.sin(t * 100) * Math.cos(t * 23);
+                    w += noise * (params.jagged * (len * 0.001)); // Scaled jaggedness
+                }
+
+                leftPoints.push({ x: pt.x + Math.cos(perp) * w, y: pt.y + Math.sin(perp) * w });
+                rightPoints.push({ x: pt.x - Math.cos(perp) * w, y: pt.y - Math.sin(perp) * w });
+            });
+
+            path.moveTo(spine[0].x, spine[0].y);
+            leftPoints.forEach(p => path.lineTo(p.x, p.y));
+            path.lineTo(spine[spine.length-1].x, spine[spine.length-1].y);
+            for (let i = rightPoints.length - 1; i >= 0; i--) path.lineTo(rightPoints[i].x, rightPoints[i].y);
+            path.closePath();
+            return path;
+        }
+
+        function drawVeins(ctx, spine, params, len) {
+            if (params.vDens <= 0) return;
+            ctx.beginPath();
+            const step = Math.floor(100 / (params.vDens + 2));
+            for (let i = 5; i < spine.length - 10; i += step) { // Adjusted range
+                const pos = spine[i];
+                const next = spine[Math.min(i+2, spine.length-1)];
+                const prev = spine[Math.max(i-2, 0)];
+                const spineAngle = Math.atan2(next.y - prev.y, next.x - prev.x);
+                const leftAngle = spineAngle - params.vAng;
+                const rightAngle = spineAngle + params.vAng;
+                const veinLen = len * 0.3 * params.wFactor;
+                ctx.moveTo(pos.x, pos.y); ctx.lineTo(pos.x + Math.cos(leftAngle) * veinLen, pos.y + Math.sin(leftAngle) * veinLen);
+                ctx.moveTo(pos.x, pos.y); ctx.lineTo(pos.x + Math.cos(rightAngle) * veinLen, pos.y + Math.sin(rightAngle) * veinLen);
+            }
+            ctx.lineWidth = len * 0.002; ctx.strokeStyle = "rgba(0,0,0,0.15)"; ctx.stroke();
+            ctx.beginPath(); ctx.save(); ctx.translate(0, 1); ctx.strokeStyle = "rgba(255,255,255,0.1)"; ctx.stroke(); ctx.restore();
+        }
+
+        function drawMidrib(ctx, spine, len) {
+            ctx.beginPath(); ctx.moveTo(spine[0].x, spine[0].y);
+            for(let i=1; i<spine.length; i++) ctx.lineTo(spine[i].x, spine[i].y);
+            ctx.lineCap = 'round'; ctx.lineWidth = len * 0.005; ctx.strokeStyle = "rgba(0,0,0,0.2)"; ctx.stroke();
+            ctx.lineWidth = len * 0.002; ctx.strokeStyle = "rgba(255,255,255,0.3)"; ctx.stroke();
+        }
+
+        function drawStem(ctx, basePt, len) {
+            ctx.beginPath(); ctx.moveTo(basePt.x, basePt.y);
+            ctx.quadraticCurveTo(basePt.x, basePt.y + (len*0.07), basePt.x, basePt.y + (len*0.12));
+            ctx.lineWidth = len * 0.008; ctx.strokeStyle = '#5d4037'; ctx.stroke();
+        }
+
+        function cutHoles(ctx, spine, len) {
+            ctx.globalCompositeOperation = 'destination-out'; ctx.fillStyle = 'black';
+            const count = 3 + Math.floor(Math.random() * 4);
+            for(let i=0; i<count; i++) {
+                const idx = 15 + Math.floor(Math.random() * 30);
+                const pt = spine[idx];
+                const size = (len * 0.02) + Math.random() * (len * 0.03);
+                const offset = (len * 0.06) + Math.random() * (len * 0.1);
+                ctx.beginPath(); ctx.ellipse(pt.x - offset, pt.y, size, size*0.6, 0.5, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.ellipse(pt.x + offset, pt.y, size, size*0.6, -0.5, 0, Math.PI*2); ctx.fill();
+            }
+            ctx.globalCompositeOperation = 'source-over';
+        }
+
+        function drawLeaflet(ctx, cx, cy, angle, len, params) {
+            ctx.save(); ctx.translate(cx, cy); ctx.rotate(angle);
+            ctx.shadowBlur = len * 0.1; ctx.shadowColor = "rgba(0,0,0,0.4)"; ctx.shadowOffsetX = len*0.02; ctx.shadowOffsetY = len*0.02;
+            const path = new Path2D(); path.moveTo(0, 0);
+            const steps = 10;
+            for(let i=0; i<=steps; i++) {
+                let t = i/steps; let w = Math.sin(t * Math.PI) * (len * 0.3);
+                if (params.jagged > 0) w += (Math.random()-0.5) * (params.jagged * (len * 0.005));
+                path.lineTo(t*len, w);
+            }
+            path.lineTo(len, 0);
+            for(let i=steps; i>=0; i--) {
+                let t = i/steps; let w = Math.sin(t * Math.PI) * (len * 0.3);
+                if (params.jagged > 0) w += (Math.random()-0.5) * (params.jagged * (len * 0.005));
+                path.lineTo(t*len, -w);
+            }
+            path.closePath();
+            ctx.fillStyle = params.color; ctx.fill(path);
+            ctx.shadowBlur = 0; ctx.strokeStyle = "rgba(0,0,0,0.1)"; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(len * 0.8, 0); ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawCompoundLeaf(ctx, spine, params, len) {
+            drawMidrib(ctx, spine, len);
+            const leafletCount = 8 + Math.floor(params.vDens / 5);
+            for (let i = 0; i < leafletCount; i++) {
+                const t = 0.1 + (i / leafletCount) * 0.8;
+                const idx = Math.floor(t * (spine.length - 1));
+                const pos = spine[idx];
+                const nextPos = spine[Math.min(idx + 1, spine.length - 1)];
+                const spineAngle = Math.atan2(nextPos.y - pos.y, nextPos.x - pos.x);
+                const scale = Math.sin(t * Math.PI) * (len * 0.18) * params.wFactor;
+                drawLeaflet(ctx, pos.x, pos.y, spineAngle - 1.2, scale, params);
+                drawLeaflet(ctx, pos.x, pos.y, spineAngle + 1.2, scale, params);
+            }
+            const tip = spine[spine.length - 1];
+            const tipAngle = Math.atan2(spine[spine.length-1].y - spine[spine.length-5].y, spine[spine.length-1].x - spine[spine.length-5].x);
+            drawLeaflet(ctx, tip.x, tip.y, tipAngle, len * 0.12 * params.wFactor, params);
+        }
+
+        function drawBotanyLeaf(ctx, s, style, opts, species) {
+            // Map opts to params
+            const params = {
+                type: species,
+                wFactor: (opts.botanyWidth !== undefined) ? parseFloat(opts.botanyWidth) : 1.0,
+                bend: (opts.botanyBend !== undefined) ? parseFloat(opts.botanyBend) : 10,
+                jagged: (opts.botanySerration !== undefined) ? parseFloat(opts.botanySerration) : 0,
+                vDens: (opts.botanyVeinDensity !== undefined) ? parseFloat(opts.botanyVeinDensity) : 10,
+                vAng: ((opts.botanyVeinAngle !== undefined) ? parseFloat(opts.botanyVeinAngle) : 45) * (Math.PI / 180),
+                color: (opts.leaf) ? opts.leaf : (typeof style === 'string' ? style : '#5b8c5a'),
+                noise: (opts.botanyTexture !== undefined) ? parseFloat(opts.botanyTexture) : 0
+            };
+
+            const cx = 0;
+            const cy = s * 0.4; // Start slightly below center
+            const len = s * 0.9; // Use most of the size
+
+            ctx.save();
+            const spine = generateSpine(cx, cy, len, params.bend);
+
+            if (params.type === 'pinnate') {
+                drawCompoundLeaf(ctx, spine, params, len);
+            } else {
+                const outline = generateOutline(spine, params, len);
+                
+                if(opts && opts.shadow){
+                    const sOp = (appState.shadowOpacity !== undefined) ? appState.shadowOpacity : 0.5;
+                    ctx.shadowColor = hexToRgba(opts.shadowCol || '#000000', sOp);
+                    ctx.shadowBlur = (opts.shadowBlur !== undefined) ? opts.shadowBlur : 4;
+                    ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2;
+                }
+
+                ctx.fillStyle = params.color;
+                ctx.fill(outline);
+                ctx.shadowColor = 'transparent';
+
+                ctx.save();
+                ctx.clip(outline);
+                drawVeins(ctx, spine, params, len);
+                if (params.type === 'monstera') cutHoles(ctx, spine, len);
+                ctx.restore();
+                
+                drawMidrib(ctx, spine, len);
+            }
+            drawStem(ctx, spine[0], len);
+            ctx.restore();
+        }
+
         const ASSETS = {
             // ... (Previous Assets) ...
             'corner-classic': (ctx, s, style, opts) => { 
@@ -1757,7 +1968,17 @@
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
                 drawProceduralVeins(ctx, type, width, length, style);
-            }
+            },
+
+            // --- BOTANY STUDIO ASSETS ---
+            'botany-lanceolate': (ctx, s, style, opts) => drawBotanyLeaf(ctx, s, style, opts, 'lanceolate'),
+            'botany-ovate': (ctx, s, style, opts) => drawBotanyLeaf(ctx, s, style, opts, 'ovate'),
+            'botany-cordate': (ctx, s, style, opts) => drawBotanyLeaf(ctx, s, style, opts, 'cordate'),
+            'botany-lobed': (ctx, s, style, opts) => drawBotanyLeaf(ctx, s, style, opts, 'lobed'),
+            'botany-palmate': (ctx, s, style, opts) => drawBotanyLeaf(ctx, s, style, opts, 'palmate'),
+            'botany-monstera': (ctx, s, style, opts) => drawBotanyLeaf(ctx, s, style, opts, 'monstera'),
+            'botany-ginkgo': (ctx, s, style, opts) => drawBotanyLeaf(ctx, s, style, opts, 'ginkgo'),
+            'botany-pinnate': (ctx, s, style, opts) => drawBotanyLeaf(ctx, s, style, opts, 'pinnate')
         };
 
         function handleStampUpload(input) {
@@ -2130,6 +2351,14 @@
             if(key === 'count') document.getElementById('val-pCount').innerText = val; 
             if(key === 'veinW') document.getElementById('val-vein').innerText = val + 'px'; 
             if(key === 'centerSize') document.getElementById('val-centerSize').innerText = val + 'x';
+            
+            // Botany UI Updates
+            if(key === 'botanyWidth') document.getElementById('val-botanyWidth').innerText = val;
+            if(key === 'botanyBend') document.getElementById('val-botanyBend').innerText = val;
+            if(key === 'botanySerration') document.getElementById('val-botanySerration').innerText = val;
+            if(key === 'botanyVeinDensity') document.getElementById('val-botanyVeinDensity').innerText = val;
+            if(key === 'botanyVeinAngle') document.getElementById('val-botanyVeinAngle').innerText = val;
+            if(key === 'botanyTexture') document.getElementById('val-botanyTexture').innerText = val;
             
             // Toggle Visibility of Leaf Shape Control
             const shapeCtrl = document.getElementById('leafShapeControl');

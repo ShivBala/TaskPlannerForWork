@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grid Stack Studio</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --panel-color: #2d2d2d;
+            --text-color: #e0e0e0;
+            --accent-color: #4CAF50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar Controls */
+        .controls {
+            width: 320px;
+            background-color: var(--panel-color);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+            overflow-y: auto;
+            z-index: 10;
+        }
+
+        h2 { margin-top: 0; font-weight: 300; letter-spacing: 1px; }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        label { font-size: 0.9em; opacity: 0.8; }
+
+        input[type="number"], input[type="file"] {
+            background: #404040;
+            border: 1px solid #555;
+            color: white;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+        }
+
+        button:hover { background-color: #45a049; }
+        
+        .secondary-btn {
+            background-color: #555;
+            margin-top: 10px;
+        }
+        .secondary-btn:hover { background-color: #666; }
+
+        /* Main Preview Area */
+        .preview-area {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            background-image: radial-gradient(#333 1px, transparent 1px);
+            background-size: 20px 20px;
+            overflow: auto;
+        }
+
+        canvas {
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain; /* Ensures the canvas scales visually */
+        }
+
+        .status {
+            font-size: 0.8em;
+            color: #aaa;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <h2>Grid Stack Studio</h2>
+
+        <div class="control-group">
+            <label>1. Upload Images</label>
+            <input type="file" id="imageInput" multiple accept="image/*">
+            <div id="fileStatus" class="status">No images loaded</div>
+        </div>
+
+        <hr style="width:100%; border:0; border-top:1px solid #444;">
+
+        <div class="control-group">
+            <label>Columns (Horizontal)</label>
+            <input type="number" id="colCount" value="3" min="1">
+        </div>
+
+        <div class="control-group">
+            <label>Rows (Vertical)</label>
+            <input type="number" id="rowCount" value="2" min="1">
+        </div>
+
+        <div class="control-group">
+            <label>Total Output Width (px)</label>
+            <input type="number" id="outputWidth" value="1920">
+        </div>
+
+        <div class="control-group">
+            <label>Total Output Height (px)</label>
+            <input type="number" id="outputHeight" value="1080">
+        </div>
+
+        <div class="control-group">
+            <label>Gap (px)</label>
+            <input type="number" id="gridGap" value="10" min="0">
+        </div>
+
+        <button onclick="renderGrid()">Update Preview</button>
+        <button class="secondary-btn" onclick="downloadImage()">Download Result</button>
+    </div>
+
+    <div class="preview-area">
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const fileStatus = document.getElementById('fileStatus');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let loadedImages = [];
+
+        // 1. Handle File Uploads
+        imageInput.addEventListener('change', (e) => {
+            const files = Array.from(e.target.files);
+            if (files.length === 0) return;
+
+            fileStatus.textContent = `Loading ${files.length} images...`;
+            loadedImages = [];
+
+            let loadedCount = 0;
+
+            files.forEach((file) => {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        loadedImages.push(img);
+                        loadedCount++;
+                        if (loadedCount === files.length) {
+                            fileStatus.textContent = `${loadedImages.length} images ready.`;
+                            renderGrid();
+                        }
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+
+        // 2. The Smart Crop Function (Object-Fit: Cover logic)
+        function drawImageProp(ctx, img, x, y, w, h, offsetX, offsetY) {
+            if (arguments.length === 2) {
+                x = y = 0;
+                w = ctx.canvas.width;
+                h = ctx.canvas.height;
+            }
+
+            // default offset is center
+            offsetX = typeof offsetX === "number" ? offsetX : 0.5;
+            offsetY = typeof offsetY === "number" ? offsetY : 0.5;
+
+            // keep bounds [0.0, 1.0]
+            if (offsetX < 0) offsetX = 0;
+            if (offsetY < 0) offsetY = 0;
+            if (offsetX > 1) offsetX = 1;
+            if (offsetY > 1) offsetY = 1;
+
+            var iw = img.width,
+                ih = img.height,
+                r = Math.min(w / iw, h / ih),
+                nw = iw * r,   // new prop. width
+                nh = ih * r,   // new prop. height
+                cx, cy, cw, ch, ar = 1;
+
+            // decide which gap to fill    
+            if (nw < w) ar = w / nw;                             
+            if (Math.abs(ar - 1) < 1e-14 && nh < h) ar = h / nh;  // updated
+            nw *= ar;
+            nh *= ar;
+
+            // calc source rectangle
+            cw = iw / (nw / w);
+            ch = ih / (nh / h);
+
+            cx = (iw - cw) * offsetX;
+            cy = (ih - ch) * offsetY;
+
+            // make sure source rectangle is valid
+            if (cx < 0) cx = 0;
+            if (cy < 0) cy = 0;
+            if (cw > iw) cw = iw;
+            if (ch > ih) ch = ih;
+
+            // fill image in dest. rectangle
+            ctx.drawImage(img, cx, cy, cw, ch,  x, y, w, h);
+        }
+
+        // 3. Main Render Logic
+        function renderGrid() {
+            const cols = parseInt(document.getElementById('colCount').value);
+            const rows = parseInt(document.getElementById('rowCount').value);
+            const totalW = parseInt(document.getElementById('outputWidth').value);
+            const totalH = parseInt(document.getElementById('outputHeight').value);
+            const gap = parseInt(document.getElementById('gridGap').value);
+
+            // Set actual canvas resolution
+            canvas.width = totalW;
+            canvas.height = totalH;
+
+            // Background fill (optional, shows in gaps)
+            ctx.fillStyle = "#000000";
+            ctx.fillRect(0, 0, totalW, totalH);
+
+            if (loadedImages.length === 0) {
+                // Draw placeholder text if empty
+                ctx.fillStyle = "#333";
+                ctx.fillRect(0,0, totalW, totalH);
+                ctx.fillStyle = "#555";
+                ctx.font = "30px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText("Upload images to start", totalW/2, totalH/2);
+                return;
+            }
+
+            // Calculate cell size excluding gaps
+            // Total width = (cols * cellW) + ((cols - 1) * gap)
+            // So: cellW = (TotalW - (cols-1)*gap) / cols
+            
+            const cellW = (totalW - (cols - 1) * gap) / cols;
+            const cellH = (totalH - (rows - 1) * gap) / rows;
+
+            let imgIndex = 0;
+
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    
+                    // Stop if we run out of images
+                    if (imgIndex >= loadedImages.length) break;
+
+                    const x = c * (cellW + gap);
+                    const y = r * (cellH + gap);
+
+                    // Use smart crop to fill the cell
+                    drawImageProp(ctx, loadedImages[imgIndex], x, y, cellW, cellH);
+
+                    imgIndex++;
+                }
+            }
+        }
+
+        // 4. Download Logic
+        function downloadImage() {
+            const link = document.createElement('a');
+            link.download = 'grid-stack-result.png';
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Initial render
+        renderGrid();
+
+    </script>
+</body>
+</html>
