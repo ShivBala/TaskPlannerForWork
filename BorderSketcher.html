@@ -228,8 +228,10 @@
                         <span class="text-[10px] text-yellow-500 uppercase font-bold">Selection</span>
                     </div>
                     <div class="flex gap-2 mb-2">
+                        <button onclick="moveStampToFront()" class="flex-1 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-[10px] text-slate-300" title="Bring to Front"><i class="fa-solid fa-angles-up mr-1"></i>Front</button>
                         <button onclick="moveStampOrder(1)" class="flex-1 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-[10px] text-slate-300" title="Bring Forward"><i class="fa-solid fa-arrow-up mr-1"></i>Up</button>
                         <button onclick="moveStampOrder(-1)" class="flex-1 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-[10px] text-slate-300" title="Send Backward"><i class="fa-solid fa-arrow-down mr-1"></i>Down</button>
+                        <button onclick="moveStampToBack()" class="flex-1 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-[10px] text-slate-300" title="Send to Back"><i class="fa-solid fa-angles-down mr-1"></i>Back</button>
                     </div>
                     <div class="flex gap-2">
                         <button onclick="duplicateSelectedStamp()" class="flex-1 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-[10px] text-slate-300"><i class="fa-regular fa-copy mr-1"></i>Duplicate</button>
@@ -1558,12 +1560,10 @@
             'leaf-ivy': (ctx, s, style, opts) => { const r = s/2; ctx.fillStyle = opts.leaf; if(opts.shadow){const sOp=(appState.shadowOpacity!==undefined)?appState.shadowOpacity:0.5;ctx.shadowColor=hexToRgba(opts.shadowCol||'#000000',sOp);ctx.shadowBlur=(opts.shadowBlur!==undefined)?opts.shadowBlur:(appState.shadowBlurLeaf!==undefined?appState.shadowBlurLeaf:3);} ctx.beginPath(); ctx.moveTo(0, r*0.5); ctx.lineTo(r*0.8, r*0.2); ctx.lineTo(r*0.5, -r*0.2); ctx.lineTo(0, -r); ctx.lineTo(-r*0.5, -r*0.2); ctx.lineTo(-r*0.8, r*0.2); ctx.closePath(); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.vein; ctx.stroke(); },
             'leaf-willow': (ctx, s, style, opts) => { const h = s; const w = s*0.15; ctx.fillStyle = opts.leaf; if(opts.shadow){const sOp=(appState.shadowOpacity!==undefined)?appState.shadowOpacity:0.5;ctx.shadowColor=hexToRgba(opts.shadowCol||'#000000',sOp);ctx.shadowBlur=(opts.shadowBlur!==undefined)?opts.shadowBlur:(appState.shadowBlurLeaf!==undefined?appState.shadowBlurLeaf:2);} ctx.beginPath(); ctx.moveTo(0, h/2); ctx.quadraticCurveTo(w, 0, 0, -h/2); ctx.quadraticCurveTo(-w, 0, 0, h/2); ctx.fill(); ctx.shadowColor='transparent'; ctx.strokeStyle=opts.vein; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0, h/2); ctx.lineTo(0, -h/2); ctx.stroke(); },
             'leaf-simple': (ctx, s, style, opts) => {
-                const scale = s / 150;
-                ctx.save();
-                ctx.scale(scale, scale);
-                ctx.translate(0, -75); 
-
-                const grad = ctx.createLinearGradient(0, 0, 0, 150);
+                const h = s;
+                const w = s * (80/150); 
+                
+                const grad = ctx.createLinearGradient(0, -h/2, 0, h/2);
                 grad.addColorStop(0, opts.leaf || '#0f3d0f'); 
                 grad.addColorStop(1, adjustColorPercent(opts.leaf || '#4caf50', 20)); 
                 ctx.fillStyle = grad;
@@ -1575,19 +1575,17 @@
                 }
 
                 ctx.beginPath();
-                ctx.moveTo(0,0);
-                ctx.bezierCurveTo(40, 50, 40, 100, 0, 150);
-                ctx.bezierCurveTo(-40, 100, -40, 50, 0, 0);
+                ctx.moveTo(0, -h/2);
+                ctx.bezierCurveTo(w/2, -h/2 + h/3, w/2, -h/2 + 2*h/3, 0, h/2);
+                ctx.bezierCurveTo(-w/2, -h/2 + 2*h/3, -w/2, -h/2 + h/3, 0, -h/2);
                 ctx.fill();
 
                 ctx.strokeStyle = opts.vein || "rgba(0,0,0,0.2)";
-                ctx.lineWidth = 2;
+                ctx.lineWidth = parseFloat(opts.veinW) || 1;
                 ctx.beginPath();
-                ctx.moveTo(0,0);
-                ctx.lineTo(0,140);
+                ctx.moveTo(0, -h/2);
+                ctx.lineTo(0, h/2 - h/15);
                 ctx.stroke();
-
-                ctx.restore();
             },
 
             // --- SHAPES & LINES ---
@@ -4692,6 +4690,64 @@
             }
             
             // Also update the primary selection pointer
+            updateRef(appState.selectedStamp);
+            
+            saveState();
+            requestRedraw();
+        }
+
+        function moveStampToFront() {
+            if (!appState.selectedStamp) return;
+            const { layerIndex, stampIndex } = appState.selectedStamp;
+            
+            let list;
+            if (layerIndex === -1) list = appState.stamps;
+            else if (appState.layers[layerIndex]) list = appState.layers[layerIndex].stamps;
+            
+            if (!list || list.length < 2 || stampIndex === list.length - 1) return;
+            
+            const item = list.splice(stampIndex, 1)[0];
+            list.push(item);
+            
+            const newIndex = list.length - 1;
+            
+            const updateRef = (ref) => {
+                if (ref.layerIndex === layerIndex) {
+                    if (ref.stampIndex === stampIndex) ref.stampIndex = newIndex;
+                    else if (ref.stampIndex > stampIndex && ref.stampIndex <= newIndex) ref.stampIndex--;
+                }
+            };
+            
+            if (appState.selectedStamps) appState.selectedStamps.forEach(updateRef);
+            updateRef(appState.selectedStamp);
+            
+            saveState();
+            requestRedraw();
+        }
+
+        function moveStampToBack() {
+            if (!appState.selectedStamp) return;
+            const { layerIndex, stampIndex } = appState.selectedStamp;
+            
+            let list;
+            if (layerIndex === -1) list = appState.stamps;
+            else if (appState.layers[layerIndex]) list = appState.layers[layerIndex].stamps;
+            
+            if (!list || list.length < 2 || stampIndex === 0) return;
+            
+            const item = list.splice(stampIndex, 1)[0];
+            list.unshift(item);
+            
+            const newIndex = 0;
+            
+            const updateRef = (ref) => {
+                if (ref.layerIndex === layerIndex) {
+                    if (ref.stampIndex === stampIndex) ref.stampIndex = newIndex;
+                    else if (ref.stampIndex >= newIndex && ref.stampIndex < stampIndex) ref.stampIndex++;
+                }
+            };
+            
+            if (appState.selectedStamps) appState.selectedStamps.forEach(updateRef);
             updateRef(appState.selectedStamp);
             
             saveState();

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hybrid Metal Studio v17 - Dual Scene</title>
+    <title>Hybrid Metal Studio v18</title>
     <style>
         body { margin: 0; overflow: hidden; background: #151515; font-family: 'Segoe UI', sans-serif; }
         
@@ -15,7 +15,6 @@
             scrollbar-width: thin; scrollbar-color: #444 #111;
         }
 
-        /* TABS */
         .tabs { display: flex; background: #111; border-bottom: 1px solid #333; position: sticky; top: 0; z-index: 10; }
         .tab-btn {
             flex: 1; padding: 15px 0; background: #111; border: none; color: #666;
@@ -27,7 +26,6 @@
         .tab-content { display: none; padding: 20px; }
         .tab-content.active { display: block; }
 
-        /* CONTROLS */
         .control-group { margin-bottom: 15px; }
         label { display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 5px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
         input[type="text"], select { width: 100%; padding: 8px; background: #222; border: 1px solid #444; color: #fff; border-radius: 4px; font-size: 0.9rem; }
@@ -35,7 +33,6 @@
         input[type="color"] { -webkit-appearance: none; border: none; width: 100%; height: 30px; padding: 0; cursor: pointer; background: none; }
         
         .section-title { color: #00bfff; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; margin: 25px 0 10px 0; border-bottom: 1px solid #333; padding-bottom: 5px; }
-        
         .light-panel { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 6px; border: 1px solid #333; }
 
         .btn-row { display: flex; gap: 10px; padding: 20px; background: #080808; border-top: 1px solid #333; position: sticky; bottom: 0; }
@@ -44,14 +41,10 @@
         #btn-video { background: #ff4444; color: white; }
         #btn-video.recording { background: #fff; color: #f00; animation: pulse 1s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
-
-        #textureCanvas { display: none; }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Gayathri:wght@800&family=Noto+Sans+Malayalam:wght@800&display=swap" rel="stylesheet">
 </head>
 <body>
-
-    <canvas id="textureCanvas"></canvas>
 
     <div id="ui-container">
         <div class="tabs">
@@ -72,6 +65,17 @@
             
             <div class="section-title">Material</div>
             <div class="control-group">
+                <label>Preset Theme</label>
+                <select id="engPreset">
+                    <option value="gold" selected>Gold</option>
+                    <option value="silver">Silver</option>
+                    <option value="platinum">Platinum</option>
+                    <option value="bronze">Bronze</option>
+                    <option value="rose">Rose Gold</option>
+                    <option value="custom">Custom...</option>
+                </select>
+            </div>
+            <div class="control-group">
                 <label>Color</label>
                 <input type="color" id="engColor" value="#ffd700">
             </div>
@@ -87,15 +91,15 @@
             <div class="section-title">Studio Lighting</div>
             <div class="light-panel">
                 <div class="control-group">
-                    <label>Environment Brightness (Reflections)</label>
+                    <label>Environment (Reflection)</label>
                     <input type="range" id="engEnvInt" min="0" max="5" step="0.1" value="1.5">
                 </div>
                 <div class="control-group">
-                    <label>Key Light (Main)</label>
+                    <label>Key Light</label>
                     <input type="range" id="engKeyInt" min="0" max="10" step="0.1" value="3.0">
                 </div>
                 <div class="control-group">
-                    <label>Rim Light (Edge Highlight)</label>
+                    <label>Rim Light</label>
                     <input type="range" id="engRimInt" min="0" max="20" step="0.5" value="8.0">
                 </div>
                 <div class="control-group">
@@ -120,6 +124,17 @@
             </div>
 
             <div class="section-title">Material</div>
+            <div class="control-group">
+                <label>Preset Theme</label>
+                <select id="malPreset">
+                    <option value="gold" selected>Gold</option>
+                    <option value="silver">Silver</option>
+                    <option value="platinum">Platinum</option>
+                    <option value="bronze">Bronze</option>
+                    <option value="rose">Rose Gold</option>
+                    <option value="custom">Custom...</option>
+                </select>
+            </div>
             <div class="control-group">
                 <label>Color</label>
                 <input type="color" id="malColor" value="#ffd700">
@@ -209,6 +224,14 @@
             glob: { gap: 40, thick: 1.2, anim: 'write', speed: 1.0 }
         };
 
+        const PRESETS = {
+            gold:     { col: '#ffd700', rough: 0.15, metal: 1.0 },
+            silver:   { col: '#e0e0e0', rough: 0.2, metal: 1.0 },
+            platinum: { col: '#a0b2c6', rough: 0.1, metal: 1.0 },
+            bronze:   { col: '#cd7f32', rough: 0.3, metal: 1.0 },
+            rose:     { col: '#b76e79', rough: 0.2, metal: 1.0 }
+        };
+
         // --- DUAL SCENE SETUP ---
         const sceneEng = new THREE.Scene();
         const sceneMal = new THREE.Scene();
@@ -218,63 +241,53 @@
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setPixelRatio(window.devicePixelRatio); // High DPI for sharpness
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.autoClear = false; // CRITICAL FOR DUAL SCENE
+        renderer.autoClear = false; 
         document.body.appendChild(renderer.domElement);
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
 
-        // --- ENVIRONMENT GENERATION (High Contrast Studio) ---
-        // Instead of loading a file, we generate a high dynamic range texture for reflections
+        // --- ENVIRONMENT ---
         function createStudioEnv() {
             const canvas = document.createElement('canvas');
             canvas.width = 512; canvas.height = 256;
             const ctx = canvas.getContext('2d');
-            // Background
             ctx.fillStyle = '#111'; ctx.fillRect(0,0,512,256);
-            // Soft Light
             const g = ctx.createLinearGradient(0,0,0,256);
             g.addColorStop(0, '#444'); g.addColorStop(1, '#000');
             ctx.fillStyle = g; ctx.fillRect(0,0,512,256);
-            // Bright Strip (Rim Light Reflection)
-            ctx.fillStyle = '#fff'; ctx.fillRect(0, 100, 512, 20);
-            ctx.fillStyle = '#888'; ctx.fillRect(0, 140, 512, 10);
+            ctx.fillStyle = '#fff'; ctx.fillRect(0, 100, 512, 20); // Rim line
             
             const tex = new THREE.CanvasTexture(canvas);
             tex.mapping = THREE.EquirectangularReflectionMapping;
             return tex;
         }
         const studioEnv = createStudioEnv();
-        // Only apply to English Scene (Metal Wires)
         sceneEng.environment = studioEnv; 
 
-        // --- LIGHTING RIGS (PHYSICALLY SEPARATE SCENES) ---
-        
-        // RIG 1: English Scene
+        // --- LIGHTING ---
         const eKey = new THREE.DirectionalLight(0xffffff, cfg.eng.kInt);
         eKey.position.set(cfg.eng.lx, cfg.eng.ly, 100);
         sceneEng.add(eKey);
         
         const eRim = new THREE.SpotLight(0xffffff, cfg.eng.rInt);
-        eRim.position.set(-100, 50, -20); // Behind the text
+        eRim.position.set(-100, 50, -20);
         eRim.lookAt(0,0,0);
         sceneEng.add(eRim);
 
-        // RIG 2: Malayalam Scene
         const mKey = new THREE.DirectionalLight(0xffffff, cfg.mal.kInt);
         mKey.position.set(cfg.mal.lx, 50, 200);
         sceneMal.add(mKey);
         
-        const mAmb = new THREE.AmbientLight(0xffffff, 0.5); // Flat ambient for texture readability
+        const mAmb = new THREE.AmbientLight(0xffffff, 0.5);
         sceneMal.add(mAmb);
 
         // --- ASSETS ---
         const fontLoader = new FontLoader();
         let engFont = null;
         
-        // --- MESH CONTAINERS ---
         const grpEng = new THREE.Group(); sceneEng.add(grpEng);
         const grpMal = new THREE.Group(); sceneMal.add(grpMal);
 
@@ -294,10 +307,10 @@
         fontLoader.load('https://unpkg.com/three@0.160.0/examples/fonts/helvetiker_regular.typeface.json', (f) => {
             engFont = f;
             refreshEng(1.0);
-            refreshMal();
+            refreshMal(1.0); // Pass progress
         });
 
-        // BUILD ENGLISH (Geometry)
+        // 1. ENGLISH GEOMETRY (Wire Growth)
         function refreshEng(progress = 1.0) {
             if(!engFont) return;
             grpEng.clear();
@@ -311,7 +324,7 @@
                 points.push(points[0]); 
                 
                 const curve = new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(p.x, p.y, 0)));
-                const fullLen = Math.floor(points.length * 2); // Higher detail
+                const fullLen = Math.floor(points.length * 2);
                 const drawCount = Math.max(2, Math.floor(fullLen * progress));
                 
                 if (drawCount > 2) {
@@ -324,7 +337,7 @@
 
                 // Holes
                 if(progress > 0.3) {
-                    const hProg = (progress - 0.3) * 1.43; // Map 0.3-1.0 to 0-1
+                    const hProg = (progress - 0.3) * 1.43; 
                     if(hProg > 0) {
                         shape.holes.forEach(hole => {
                             const hPoints = hole.getPoints();
@@ -352,38 +365,52 @@
                 matEng.envMapIntensity = parseFloat(cfg.eng.env);
 
                 const mesh = new THREE.Mesh(geo, matEng);
-                // Pos
+                // Center Y offset
                 const yPos = (cfg.glob.gap + cfg.eng.size/2 + cfg.mal.size/2) / 2;
                 mesh.position.y = yPos;
                 grpEng.add(mesh);
             }
         }
 
-        // BUILD MALAYALAM (Texture)
-        const cvs = document.createElement('canvas'); cvs.width = 4096; cvs.height = 1024;
+        // 2. MALAYALAM TEXTURE (Wipe Effect)
+        // High-res canvas for sharpness
+        const cvs = document.createElement('canvas'); 
+        cvs.width = 4096; cvs.height = 1024;
         const ctx = cvs.getContext('2d');
 
-        function refreshMal() {
+        function refreshMal(progress = 1.0) {
             grpMal.clear();
             ctx.clearRect(0,0,4096,1024);
-            const fs = cfg.mal.size * 4;
+            
+            // Draw Full Text
+            const fs = cfg.mal.size * 5; // Higher internal res for sharpness
             ctx.font = `bold ${fs}px 'Gayathri', sans-serif`;
             ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
             
-            // Thread Styling on Texture
+            // Text Styling
             ctx.lineJoin = 'round'; ctx.lineCap = 'round';
             ctx.strokeStyle = 'white';
-            ctx.lineWidth = cfg.glob.thick * 6;
+            ctx.lineWidth = cfg.glob.thick * 8; 
+
+            // Clip for Animation (Wipe Effect)
+            ctx.save();
+            ctx.beginPath();
+            // Reveal box based on progress
+            ctx.rect(0, 0, 4096 * progress, 1024);
+            ctx.clip();
+            
             ctx.strokeText(cfg.mal.text, 2048, 512);
+            ctx.restore();
 
             const tex = new THREE.CanvasTexture(cvs);
             tex.minFilter = THREE.LinearFilter;
+            tex.anisotropy = renderer.capabilities.getMaxAnisotropy(); // CRITICAL FOR SHARPNESS
             
             matMal.map = null; matMal.alphaMap = tex;
             matMal.color.set(cfg.mal.col);
             matMal.roughness = parseFloat(cfg.mal.rough);
             matMal.metalness = parseFloat(cfg.mal.metal);
-            matMal.alphaTest = 0.05;
+            matMal.alphaTest = 0.05; // Sharp cutout
             matMal.needsUpdate = true;
 
             const plane = new THREE.PlaneGeometry(409.6, 102.4);
@@ -393,73 +420,75 @@
             grpMal.add(mesh);
         }
 
-        // --- UI BINDING ---
-        const inputs = {
-            engText: 'value', engSize: 'value', engColor: 'value', engRough: 'value', engMetal: 'value',
-            engEnvInt: 'value', engKeyInt: 'value', engRimInt: 'value', engLightX: 'value', engLightY: 'value',
-            malText: 'value', malSize: 'value', malColor: 'value', malRough: 'value', malMetal: 'value',
-            malLightInt: 'value', malLightX: 'value',
-            textGap: 'value', wireThick: 'value', animType: 'value', animSpeed: 'value'
-        };
-
-        function updateState() {
-            for(const [id, prop] of Object.entries(inputs)) {
-                const el = document.getElementById(id);
-                if(el) {
-                   if(id.startsWith('eng')) {
-                       const key = id.replace('eng','').toLowerCase();
-                       if(key === 'text') cfg.eng.text = el.value;
-                       else if(key === 'size') cfg.eng.size = parseInt(el.value);
-                       else if(key === 'color') cfg.eng.col = el.value;
-                       else if(key === 'envint') cfg.eng.env = parseFloat(el.value);
-                       else if(key === 'keyint') cfg.eng.kInt = parseFloat(el.value);
-                       else if(key === 'rimint') cfg.eng.rInt = parseFloat(el.value);
-                       else if(key === 'lightx') cfg.eng.lx = parseFloat(el.value);
-                       else if(key === 'lighty') cfg.eng.ly = parseFloat(el.value);
-                       else if(key === 'rough') cfg.eng.rough = parseFloat(el.value);
-                       else if(key === 'metal') cfg.eng.metal = parseFloat(el.value);
-                   }
-                   else if(id.startsWith('mal')) {
-                       const key = id.replace('mal','').toLowerCase();
-                       if(key === 'text') cfg.mal.text = el.value;
-                       else if(key === 'size') cfg.mal.size = parseInt(el.value);
-                       else if(key === 'color') cfg.mal.col = el.value;
-                       else if(key === 'lightint') cfg.mal.kInt = parseFloat(el.value);
-                       else if(key === 'lightx') cfg.mal.lx = parseFloat(el.value);
-                       else if(key === 'rough') cfg.mal.rough = parseFloat(el.value);
-                       else if(key === 'metal') cfg.mal.metal = parseFloat(el.value);
-                   }
-                   else {
-                       if(id === 'textGap') cfg.glob.gap = parseInt(el.value);
-                       if(id === 'wireThick') cfg.glob.thick = parseFloat(el.value);
-                       if(id === 'animType') cfg.glob.anim = el.value;
-                       if(id === 'animSpeed') cfg.glob.speed = parseFloat(el.value);
-                   }
-                }
+        // --- UI & LOGIC ---
+        function applyPreset(layer, presetName) {
+            if(presetName === 'custom') return;
+            const p = PRESETS[presetName];
+            if(layer === 'eng') {
+                cfg.eng.col = p.col; cfg.eng.rough = p.rough; cfg.eng.metal = p.metal;
+                document.getElementById('engColor').value = p.col;
+                document.getElementById('engRough').value = p.rough;
+                document.getElementById('engMetal').value = p.metal;
+            } else {
+                cfg.mal.col = p.col; cfg.mal.rough = p.rough; cfg.mal.metal = p.metal;
+                document.getElementById('malColor').value = p.col;
+                document.getElementById('malRough').value = p.rough;
+                document.getElementById('malMetal').value = p.metal;
             }
-            
-            // Apply Lighting
-            sceneEng.environmentIntensity = cfg.eng.env; // Setup env intensity
-            eKey.intensity = cfg.eng.kInt; eKey.position.set(cfg.eng.lx, cfg.eng.ly, 100);
-            eRim.intensity = cfg.eng.rInt;
-            mKey.intensity = cfg.mal.kInt; mKey.position.x = cfg.mal.lx;
+            // Trigger visual update
+            matEng.color.set(cfg.eng.col); matEng.roughness=cfg.eng.rough; matEng.metalness=cfg.eng.metal;
+            matMal.color.set(cfg.mal.col); matMal.roughness=cfg.mal.rough; matMal.metalness=cfg.mal.metal;
         }
 
-        Object.keys(inputs).forEach(id => {
-            document.getElementById(id).addEventListener('input', () => {
-                updateState();
-                if(id.includes('Size') || id.includes('Text') || id.includes('Thick') || id.includes('Gap')) {
-                    refreshEng(1.0);
-                    refreshMal();
-                } else {
-                    // Quick material updates
-                    matEng.color.set(cfg.eng.col); matEng.roughness = cfg.eng.rough; matEng.metalness = cfg.eng.metal; matEng.envMapIntensity = cfg.eng.env;
-                    matMal.color.set(cfg.mal.col); matMal.roughness = cfg.mal.rough; matMal.metalness = cfg.mal.metal;
-                }
-            });
-        });
+        // --- INPUT BINDINGS ---
+        const bind = (id, layer, prop, type='val', needsRebuild=false) => {
+            const el = document.getElementById(id);
+            if(!el) return;
+            el.addEventListener('input', (e) => {
+                let val = (type === 'float') ? parseFloat(e.target.value) : 
+                          (type === 'int') ? parseInt(e.target.value) : e.target.value;
+                
+                if(layer==='eng') cfg.eng[prop] = val;
+                else if(layer==='mal') cfg.mal[prop] = val;
+                else cfg.glob[prop] = val;
 
-        // --- RENDER LOOP (DUAL SCENE) ---
+                // Immediate Updates
+                if(prop.includes('Color')) { 
+                    document.getElementById(layer+'Preset').value = 'custom';
+                }
+                
+                // Lighting
+                eKey.intensity = cfg.eng.kInt; eKey.position.set(cfg.eng.lx, cfg.eng.ly, 100);
+                eRim.intensity = cfg.eng.rInt;
+                mKey.intensity = cfg.mal.kInt; mKey.position.x = cfg.mal.lx;
+                matEng.envMapIntensity = cfg.eng.env;
+
+                // Materials
+                matEng.color.set(cfg.eng.col); matEng.roughness=cfg.eng.rough; matEng.metalness=cfg.eng.metal;
+                matMal.color.set(cfg.mal.col); matMal.roughness=cfg.mal.rough; matMal.metalness=cfg.mal.metal;
+
+                if(needsRebuild) { refreshEng(1.0); refreshMal(1.0); }
+            });
+        };
+
+        // Bind Controls
+        bind('engText', 'eng', 'text', 'val', true); bind('engSize', 'eng', 'size', 'int', true);
+        bind('engColor', 'eng', 'col'); bind('engRough', 'eng', 'rough', 'float'); bind('engMetal', 'eng', 'metal', 'float');
+        bind('engEnvInt', 'eng', 'env', 'float'); bind('engKeyInt', 'eng', 'kInt', 'float'); bind('engRimInt', 'eng', 'rInt', 'float'); 
+        bind('engLightX', 'eng', 'lx', 'float'); bind('engLightY', 'eng', 'ly', 'float');
+
+        bind('malText', 'mal', 'text', 'val', true); bind('malSize', 'mal', 'size', 'int', true);
+        bind('malColor', 'mal', 'col'); bind('malRough', 'mal', 'rough', 'float'); bind('malMetal', 'mal', 'metal', 'float');
+        bind('malLightInt', 'mal', 'kInt', 'float'); bind('malLightX', 'mal', 'lx', 'float');
+
+        bind('textGap', 'glob', 'gap', 'int', true); bind('wireThick', 'glob', 'thick', 'float', true);
+        bind('animType', 'glob', 'anim'); bind('animSpeed', 'glob', 'speed', 'float');
+
+        // Presets
+        document.getElementById('engPreset').addEventListener('change', (e) => applyPreset('eng', e.target.value));
+        document.getElementById('malPreset').addEventListener('change', (e) => applyPreset('mal', e.target.value));
+
+        // --- RENDER LOOP ---
         let isRecording = false;
         let animTime = 0;
         let recorder;
@@ -472,22 +501,31 @@
                 
                 if(type === 'write') {
                     const prog = Math.min(animTime * 3, 1.0);
-                    refreshEng(prog); // Rebuild geom
+                    refreshEng(prog); 
+                    refreshMal(prog);
                 } else if(type === 'fade') {
-                    matEng.opacity = Math.min(animTime * 2, 1);
-                    matMal.opacity = Math.min(animTime * 2, 1);
+                    const op = Math.min(animTime * 2, 1);
+                    matEng.opacity = op; matMal.opacity = op;
                 } else if(type === 'rotate') {
                     grpEng.rotation.y = animTime * 4;
                     grpMal.rotation.y = animTime * 4;
                 } else if(type === 'float') {
-                    grpEng.position.y = (cfg.glob.gap/2) + Math.sin(animTime*2)*10;
+                    const offset = (cfg.glob.gap/2);
+                    grpEng.position.y = offset + Math.sin(animTime*2)*10;
+                    grpMal.position.y = -offset + Math.sin(animTime*2 + 1)*10;
                 }
+            } else {
+                // Ensure proper positioning when not animating
+                 const yEng = (cfg.glob.gap + cfg.eng.size/2 + cfg.mal.size/2) / 2;
+                 const yMal = -yEng;
+                 grpEng.position.y = yEng;
+                 grpMal.position.y = yMal;
             }
 
             // Dual Render
             renderer.clear();
             renderer.render(sceneEng, camera);
-            renderer.clearDepth(); // IMPORTANT: Allows Mal to overlay correctly without Z-fighting or occlusion issues
+            renderer.clearDepth(); 
             renderer.render(sceneMal, camera);
         }
 
@@ -498,16 +536,13 @@
         }
         animate();
 
-        // --- ACTIONS ---
+        // --- EXPORT ---
         const btnRec = document.getElementById('btn-video');
-        
         btnRec.addEventListener('click', () => {
             if(!isRecording) {
                 isRecording = true; animTime = 0;
-                
-                // Init State
-                if(cfg.glob.anim === 'write') refreshEng(0);
-                if(cfg.glob.anim === 'fade') { matEng.opacity = 0; matMal.opacity = 0; }
+                if(cfg.glob.anim === 'write') { refreshEng(0); refreshMal(0); }
+                if(cfg.glob.anim === 'fade') { matEng.opacity=0; matMal.opacity=0; }
                 
                 const stream = renderer.domElement.captureStream(30);
                 recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
@@ -515,21 +550,19 @@
                 recorder.ondataavailable = e => chunks.push(e.data);
                 recorder.onstop = () => {
                     const b = new Blob(chunks, {type:'video/webm'});
-                    const u = URL.createObjectURL(b);
+                    const url = URL.createObjectURL(b);
                     const a = document.createElement('a');
-                    a.style.display='none'; a.href=u; a.download='anim.webm';
+                    a.style.display='none'; a.href=url; a.download='anim.webm';
                     document.body.appendChild(a); a.click();
-                    
                     // Reset
-                    refreshEng(1.0); matEng.opacity=1; matMal.opacity=1;
-                    grpEng.rotation.set(0,0,0); grpMal.rotation.set(0,0,0);
+                    refreshEng(1.0); refreshMal(1.0); matEng.opacity=1; matMal.opacity=1;
+                    grpEng.rotation.y=0; grpMal.rotation.y=0;
                 };
                 recorder.start();
                 btnRec.innerText = "STOP RECORDING";
                 btnRec.classList.add('recording');
             } else {
-                isRecording = false;
-                recorder.stop();
+                isRecording = false; recorder.stop();
                 btnRec.innerText = "RECORD VIDEO";
                 btnRec.classList.remove('recording');
             }
@@ -538,7 +571,7 @@
         document.getElementById('btn-png').addEventListener('click', () => {
             render();
             const a = document.createElement('a');
-            a.download = 'hybrid-metal-v17.png'; a.href = renderer.domElement.toDataURL('image/png'); a.click();
+            a.download = 'hybrid-metal-v18.png'; a.href = renderer.domElement.toDataURL('image/png'); a.click();
         });
         
         window.addEventListener('resize', () => {
