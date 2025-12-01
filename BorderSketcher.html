@@ -4995,10 +4995,38 @@
             if (!appState.selectedStamp) return;
             const { layerIndex, stampIndex } = appState.selectedStamp;
             
-            let list;
-            if (layerIndex === -1) list = appState.stamps;
-            else if (appState.layers[layerIndex]) list = appState.layers[layerIndex].stamps;
+            // Case 1: Move from Layer to Global (Absolute Front)
+            if (layerIndex !== -1) {
+                const layer = appState.layers[layerIndex];
+                if (!layer || !layer.stamps) return;
+                
+                const item = layer.stamps.splice(stampIndex, 1)[0];
+                if (!appState.stamps) appState.stamps = [];
+                appState.stamps.push(item);
+                
+                const newIndex = appState.stamps.length - 1;
+                
+                const updateRef = (ref) => {
+                    if (ref.layerIndex === layerIndex) {
+                        if (ref.stampIndex === stampIndex) {
+                            ref.layerIndex = -1;
+                            ref.stampIndex = newIndex;
+                        } else if (ref.stampIndex > stampIndex) {
+                            ref.stampIndex--;
+                        }
+                    }
+                };
+                
+                if (appState.selectedStamps) appState.selectedStamps.forEach(updateRef);
+                updateRef(appState.selectedStamp);
+                
+                saveState();
+                requestRedraw();
+                return;
+            }
             
+            // Case 2: Already Global - Standard Reorder
+            let list = appState.stamps;
             if (!list || list.length < 2 || stampIndex === list.length - 1) return;
             
             const item = list.splice(stampIndex, 1)[0];
@@ -5007,7 +5035,7 @@
             const newIndex = list.length - 1;
             
             const updateRef = (ref) => {
-                if (ref.layerIndex === layerIndex) {
+                if (ref.layerIndex === -1) {
                     if (ref.stampIndex === stampIndex) ref.stampIndex = newIndex;
                     else if (ref.stampIndex > stampIndex && ref.stampIndex <= newIndex) ref.stampIndex--;
                 }
