@@ -167,6 +167,10 @@
                     <div class="flex justify-between text-[10px] text-slate-400"><span>Brightness</span><span id="val-bright">0%</span></div>
                     <input type="range" id="brightness" min="-50" max="50" value="0" oninput="updateBrightness(this.value)">
                 </div>
+                <div class="mt-2 flex items-center gap-2">
+                    <input type="checkbox" id="chk-original-color" class="w-3 h-3 rounded border-slate-600 bg-slate-700 text-yellow-600 focus:ring-0" onchange="redraw()">
+                    <label for="chk-original-color" class="text-[10px] text-slate-400 cursor-pointer select-none">Use Original Colors (PNG)</label>
+                </div>
             </div>
 
             <!-- Stamps & Floral Designer -->
@@ -1983,7 +1987,60 @@
                             } else {
                                 ctx.shadowColor = 'transparent';
                             }
-                            ctx.drawImage(img, -s/2, -s/2, s, s);
+
+                            // Apply material/style if provided (masking)
+                            const useOriginal = document.getElementById('chk-original-color') && document.getElementById('chk-original-color').checked;
+                            
+                            if (style && !useOriginal) {
+                                let scratch = document.getElementById('scratch-canvas');
+                                if (!scratch) {
+                                    scratch = document.createElement('canvas');
+                                    scratch.id = 'scratch-canvas';
+                                    scratch.style.display = 'none';
+                                    document.body.appendChild(scratch);
+                                }
+                                // Resize scratch if needed (optimize: only if smaller)
+                                const dim = Math.ceil(s);
+                                if (scratch.width < dim || scratch.height < dim) {
+                                    scratch.width = Math.max(scratch.width, dim);
+                                    scratch.height = Math.max(scratch.height, dim);
+                                }
+                                const sCtx = scratch.getContext('2d');
+                                sCtx.save();
+                                sCtx.globalCompositeOperation = 'source-over';
+                                sCtx.clearRect(0, 0, dim, dim);
+                                sCtx.drawImage(img, 0, 0, s, s);
+                                sCtx.globalCompositeOperation = 'source-in';
+                                
+                                // Re-generate gradient for the stamp size to ensure visibility and correct scaling
+                                const mat = (opts && opts.material) ? opts.material : 'gold';
+                                const bri = (opts && opts.brightness) ? opts.brightness : 0;
+                                sCtx.fillStyle = getMaterialGradient(sCtx, mat, bri, s, s);
+                                
+                                sCtx.fillRect(0, 0, s, s);
+                                sCtx.restore();
+                                
+                                if (ctx.isSVG) {
+                                    // For SVG, convert masked canvas to image
+                                    // Create a temp canvas of exact size to avoid extra whitespace if scratch is huge
+                                    const temp = document.createElement('canvas');
+                                    temp.width = dim; temp.height = dim;
+                                    const tCtx = temp.getContext('2d');
+                                    tCtx.drawImage(scratch, 0, 0, s, s, 0, 0, s, s);
+                                    try {
+                                        const dataUrl = temp.toDataURL();
+                                        ctx.drawImage({ src: dataUrl, width: s, height: s }, -s/2, -s/2, s, s);
+                                    } catch(e) {
+                                        console.error("SVG Export Error (Tainted Canvas):", e);
+                                        // Fallback: draw original image if masking fails due to taint
+                                        ctx.drawImage(img, -s/2, -s/2, s, s);
+                                    }
+                                } else {
+                                    ctx.drawImage(scratch, 0, 0, s, s, -s/2, -s/2, s, s);
+                                }
+                            } else {
+                                ctx.drawImage(img, -s/2, -s/2, s, s);
+                            }
                             ctx.shadowColor = 'transparent';
                         };
                         
@@ -3337,9 +3394,16 @@
                         setBaseContext(offCtx, scaledL.size);
                         if(isRound) drawLayerCircular(offCtx, scaledL, w, h, scale); else drawLayerRect(offCtx, scaledL, w, h, scale);
                     }
-                    offCtx.globalCompositeOperation = 'source-in';
-                    const mat = l.material || 'gold'; const bri = l.brightness || 0;
-                    offCtx.fillStyle = getMaterialGradient(offCtx, mat, bri, w, h); offCtx.fillRect(0,0,w,h);
+                    
+                    // Check if we should apply material composite
+                    const isCustom = l.pattern && l.pattern.startsWith('custom-');
+                    const useOriginal = document.getElementById('chk-original-color') && document.getElementById('chk-original-color').checked;
+                    
+                    if (!(isCustom && useOriginal)) {
+                        offCtx.globalCompositeOperation = 'source-in';
+                        const mat = l.material || 'gold'; const bri = l.brightness || 0;
+                        offCtx.fillStyle = getMaterialGradient(offCtx, mat, bri, w, h); offCtx.fillRect(0,0,w,h);
+                    }
                     
                     targetCtx.shadowColor = hexToRgba(sColor, sOpacity); 
                     targetCtx.shadowBlur = sBlur * scale; targetCtx.shadowOffsetX = 1 * scale; targetCtx.shadowOffsetY = 1 * scale;
@@ -4104,11 +4168,11 @@
             // We pass scale=1 because SVG is vector, we don't need to scale up pixels
             renderScene({ width: w, height: h }, svgCtx, 1, false);
             
-            const svgContent = svgCtx.getSerializedSVG();
+            const svgParts = svgCtx.getSVGParts();
             
-            if (debugMode) console.log("SVG Generation Complete. Content length:", svgContent.length);
+            if (debugMode) console.log("SVG Generation Complete. Parts count:", svgParts.length);
             
-            const blob = new Blob([svgContent], {type: 'image/svg+xml'});
+            const blob = new Blob(svgParts, {type: 'image/svg+xml'});
             const url = URL.createObjectURL(blob);
             const l = document.createElement('a');
             l.download = `border_sketcher_${new Date().getTime()}.svg`;
@@ -4144,6 +4208,8 @@
                 this.gradCount = 0;
                 this.filterCount = 0;
                 this.shadowCache = {};
+                this.imgCache = {}; // Cache for image Data URLs to IDs
+                this.imgCount = 0;
                 
                 // Bind methods to ensure 'this' context
                 this.beginPath = this.beginPath.bind(this);
@@ -4416,24 +4482,52 @@
                 let _dx, _dy, _dw, _dh;
                 let src = img.src;
                 
-                if (dWidth === undefined) {
-                    // drawImage(img, dx, dy)
-                    _dx = sx; _dy = sy;
-                    _dw = img.width; _dh = img.height;
-                } else if (dHeight === undefined) {
-                    // drawImage(img, dx, dy, dw, dh)
+                // If img is a canvas, convert to data URL
+                if (!src && img.toDataURL) {
+                    src = img.toDataURL();
+                }
+                
+                if (dWidth !== undefined) {
+                    // 9 arguments: drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh)
+                    _dx = dx; _dy = dy;
+                    _dw = dWidth; _dh = dHeight;
+                } else if (sWidth !== undefined) {
+                    // 5 arguments: drawImage(img, dx, dy, dw, dh)
+                    // Arguments passed are: img, sx(dx), sy(dy), sWidth(dw), sHeight(dh)
                     _dx = sx; _dy = sy;
                     _dw = sWidth; _dh = sHeight;
                 } else {
-                    // drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh)
-                    // SVG <image> doesn't support source clipping easily (needs viewBox/symbol).
-                    // For simplicity, we'll just draw the whole image at dest rect.
-                    _dx = dx; _dy = dy;
-                    _dw = dWidth; _dh = dHeight;
+                    // 3 arguments: drawImage(img, dx, dy)
+                    _dx = sx; _dy = sy;
+                    _dw = img.naturalWidth || img.width; 
+                    _dh = img.naturalHeight || img.height;
                 }
                 
                 const filterAttr = this.getShadowFilter();
-                this.elements.push(`<image href="${src}" x="${this.fmt(_dx)}" y="${this.fmt(_dy)}" width="${this.fmt(_dw)}" height="${this.fmt(_dh)}" ${filterAttr} transform="${this.currentState.transform}" opacity="${this.currentState.globalAlpha}" />`);
+                
+                // Optimize: Use <defs> and <use> for repeated images to reduce file size
+                if (src && src.length > 100) { // Only cache if data URL is significant
+                    let imgId = this.imgCache[src];
+                    if (!imgId) {
+                        imgId = `img_${this.imgCount++}`;
+                        this.imgCache[src] = imgId;
+                        
+                        // Use <symbol> to allow scaling via <use> width/height
+                        // We need natural dimensions for viewBox
+                        // Use _dw/_dh as fallback if natural dims are missing (e.g. from object wrapper)
+                        let natW = img.naturalWidth || img.width || _dw;
+                        let natH = img.naturalHeight || img.height || _dh;
+                        
+                        this.defs.push({
+                            type: 'image',
+                            content: `<symbol id="${imgId}" viewBox="0 0 ${natW} ${natH}" preserveAspectRatio="none"><image href="${src}" xlink:href="${src}" width="${natW}" height="${natH}" preserveAspectRatio="none" /></symbol>`
+                        });
+                    }
+                    
+                    this.elements.push(`<use href="#${imgId}" xlink:href="#${imgId}" x="${this.fmt(_dx)}" y="${this.fmt(_dy)}" width="${this.fmt(_dw)}" height="${this.fmt(_dh)}" ${filterAttr} transform="${this.currentState.transform}" opacity="${this.currentState.globalAlpha}" />`);
+                } else {
+                    this.elements.push(`<image href="${src}" xlink:href="${src}" x="${this.fmt(_dx)}" y="${this.fmt(_dy)}" width="${this.fmt(_dw)}" height="${this.fmt(_dh)}" ${filterAttr} transform="${this.currentState.transform}" opacity="${this.currentState.globalAlpha}" preserveAspectRatio="none" />`);
+                }
             }
             
             getShadowFilter() {
@@ -4544,12 +4638,12 @@
                 return parseFloat(n.toFixed(3));
             }
             
-            getSerializedSVG() {
+            getSVGParts() {
                 let defsStr = '';
                 if (this.defs.length > 0) {
                     defsStr = '<defs>';
                     this.defs.forEach(d => {
-                        if (d.type === 'filter') {
+                        if (d.type === 'filter' || d.type === 'image') {
                             defsStr += d.content;
                         } else {
                             // Gradient handling
@@ -4564,10 +4658,10 @@
                     defsStr += '</defs>';
                 }
                 
-                return `<svg xmlns="http://www.w3.org/2000/svg" width="${this.width}" height="${this.height}" viewBox="0 0 ${this.width} ${this.height}">
-                    ${defsStr}
-                    ${this.elements.join('\n')}
-                </svg>`;
+                const header = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${this.width}" height="${this.height}" viewBox="0 0 ${this.width} ${this.height}">\n${defsStr}\n`;
+                const footer = '\n</svg>';
+                
+                return [header].concat(this.elements, [footer]);
             }
         }
 
