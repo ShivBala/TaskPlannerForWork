@@ -428,6 +428,10 @@
                         <button id="pat-leaf-maple" onclick="setPattern('leaf-maple')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center" title="Maple"><i class="fa-brands fa-canadian-maple-leaf text-xs"></i></button>
                         <button id="pat-leaf-fern" onclick="setPattern('leaf-fern')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center" title="Fern"><i class="fa-solid fa-feather text-xs"></i></button>
                     </div>
+                    <label class="text-[10px] text-slate-400 uppercase font-bold mb-1 block mt-2 hidden" id="lbl-custom-patterns">Custom Pattern</label>
+                    <div class="grid grid-cols-7 gap-1 hidden" id="div-custom-patterns">
+                        <button id="pat-custom-latest" onclick="setPattern('custom-latest')" class="pattern-btn p-2 bg-slate-800 border border-slate-600 rounded hover:bg-slate-700 text-center" title="Custom Pattern"><i class="fa-solid fa-image text-xs"></i></button>
+                    </div>
                 </div>
                 <div class="grid grid-cols-2 gap-3 mb-4">
                     <!-- Global Edit Toggle -->
@@ -1992,6 +1996,23 @@
                         const list = document.getElementById('stampList');
                         list.insertBefore(btn, list.children[1]);
                         selectStamp(id);
+
+                        // Register as custom pattern
+                        ASSETS['custom-latest'] = ASSETS[id];
+                        
+                        const lblCustom = document.getElementById('lbl-custom-patterns');
+                        const divCustom = document.getElementById('div-custom-patterns');
+                        const btnCustom = document.getElementById('pat-custom-latest');
+                        
+                        if(lblCustom) lblCustom.classList.remove('hidden');
+                        if(divCustom) divCustom.classList.remove('hidden');
+                        if(btnCustom) {
+                            btnCustom.innerHTML = '';
+                            btnCustom.style.backgroundImage = `url(${e.target.result})`;
+                            btnCustom.style.backgroundSize = 'contain';
+                            btnCustom.style.backgroundPosition = 'center';
+                            btnCustom.style.backgroundRepeat = 'no-repeat';
+                        }
                     }
                     img.src = e.target.result;
                 }
