@@ -212,6 +212,17 @@
                     </div>
                 </div>
 
+                <!-- Smart Guides Control -->
+                <div class="bg-slate-800/50 p-2 rounded border border-blue-900/50 mb-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-[10px] text-blue-400 font-bold uppercase"><i class="fa-solid fa-ruler-combined mr-1"></i>Smart Guides</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="smartGuidesToggle" class="sr-only peer">
+                            <div class="w-7 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div> 
+                </div>
+
                 <!-- Global Stamp Actions -->
                 <div id="globalStampActions" class="mt-3 pt-3 border-t border-slate-700">
                     <div class="flex justify-between items-center mb-2">
@@ -3221,6 +3232,51 @@
         function getEtchColor(mat) { if(mat === 'gold') return 'rgba(60, 40, 10, 0.5)'; if(mat === 'silver') return 'rgba(30, 30, 30, 0.5)'; if(mat === 'rose') return 'rgba(60, 20, 20, 0.5)'; if(mat === 'copper') return 'rgba(50, 20, 0, 0.5)'; return 'rgba(0,0,0,0.6)'; }
         function setBaseContext(ctx, width) { ctx.strokeStyle = '#FFFFFF'; ctx.fillStyle = '#FFFFFF'; ctx.lineWidth = width; ctx.lineJoin = 'round'; ctx.miterLimit = 10; ctx.setLineDash([]); }
 
+        function drawSmartGuides(ctx, w, h, scale) {
+            if (!appState.selectedStamp) return;
+            
+            const s = getStampFromRef(appState.selectedStamp);
+            if (!s) return;
+            
+            const x = s.x * scale;
+            const y = s.y * scale;
+            
+            ctx.save();
+            ctx.lineWidth = 1;
+            
+            const threshold = 15 * scale; // Snap threshold visual
+            
+            // Helper to draw line
+            const drawLine = (x1, y1, x2, y2, color, isActive) => {
+                ctx.strokeStyle = color;
+                ctx.setLineDash(isActive ? [] : [4, 4]);
+                ctx.globalAlpha = isActive ? 1.0 : 0.2;
+                ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+            };
+
+            // Center X
+            const cx = w/2;
+            drawLine(cx, 0, cx, h, '#06b6d4', Math.abs(x - cx) < threshold); // Cyan
+            
+            // Center Y
+            const cy = h/2;
+            drawLine(0, cy, w, cy, '#06b6d4', Math.abs(y - cy) < threshold);
+            
+            // Golden Ratio X
+            const gr1x = w * 0.382;
+            const gr2x = w * 0.618;
+            drawLine(gr1x, 0, gr1x, h, '#eab308', Math.abs(x - gr1x) < threshold); // Gold
+            drawLine(gr2x, 0, gr2x, h, '#eab308', Math.abs(x - gr2x) < threshold);
+            
+            // Golden Ratio Y
+            const gr1y = h * 0.382;
+            const gr2y = h * 0.618;
+            drawLine(0, gr1y, w, gr1y, '#eab308', Math.abs(y - gr1y) < threshold);
+            drawLine(0, gr2y, w, gr2y, '#eab308', Math.abs(y - gr2y) < threshold);
+            
+            ctx.restore();
+        }
+
         let isRedrawPending = false;
         function requestRedraw() {
             if (!isRedrawPending) {
@@ -3382,6 +3438,12 @@
                     
                     targetCtx.restore();
                 });
+            }
+
+            // Smart Guides
+            const guidesOn = document.getElementById('smartGuidesToggle') && document.getElementById('smartGuidesToggle').checked;
+            if (guidesOn && isDraggingStamp && appState.selectedStamp) {
+                 drawSmartGuides(targetCtx, w, h, scale);
             }
             
             // Draw Selection Box
