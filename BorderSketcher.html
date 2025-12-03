@@ -1977,7 +1977,7 @@
                     document.getElementById('layerStampUpload').click();
                 }
         
-                async function triggerLayerPaste(index) {3
+        async function triggerLayerPaste(index) {
                     uploadTargetLayerIndex = index;
                     try {
                         const items = await navigator.clipboard.read();
@@ -2013,8 +2013,10 @@
                                     ctx.shadowColor = 'transparent';
                                 }
         
-                                // Check if we should use original color (global setting)
-                                const useOriginal = document.getElementById('chk-original-color') && document.getElementById('chk-original-color').checked;
+                                // Check if we should use original color (global setting OR layer specific override)
+                                const globalOriginal = document.getElementById('chk-original-color') && document.getElementById('chk-original-color').checked;
+                                const layerOriginal = opts && opts.useOriginalColor;
+                                const useOriginal = globalOriginal || layerOriginal;
                                 
                                 if (style && !useOriginal) {
                                     let scratch = document.getElementById('scratch-canvas');
@@ -2046,12 +2048,36 @@
                                     sCtx.restore();
                                     
                                     if (ctx.isSVG) {
-                                        const temp = document.createElement('canvas');
-                                        temp.width = dim; temp.height = dim;
-                                        const tCtx = temp.getContext('2d');
-                                        tCtx.drawImage(scratch, 0, 0, s, s, 0, 0, s, s);
+                                        // Optimization: Cache tinted versions to avoid embedding unique base64 for every stamp size
+                                        if (!ASSETS[id].svgCache) ASSETS[id].svgCache = {};
+                                        const cacheKey = mat + '_' + bri;
+                                        
+                                        let dataUrl = ASSETS[id].svgCache[cacheKey];
+                                        if (!dataUrl) {
+                                            // Generate at a fixed resolution (e.g. natural size or max 512)
+                                            // We use the image's natural size to preserve quality, capped at 1024 to prevent massive blobs
+                                            const natW = img.naturalWidth || 512;
+                                            const natH = img.naturalHeight || 512;
+                                            const maxDim = 1024;
+                                            const scale = Math.min(1, maxDim / Math.max(natW, natH));
+                                            const cW = Math.floor(natW * scale);
+                                            const cH = Math.floor(natH * scale);
+                                            
+                                            const temp = document.createElement('canvas');
+                                            temp.width = cW; temp.height = cH;
+                                            const tCtx = temp.getContext('2d');
+                                            
+                                            // Draw and tint at this fixed resolution
+                                            tCtx.drawImage(img, 0, 0, cW, cH);
+                                            tCtx.globalCompositeOperation = 'source-in';
+                                            tCtx.fillStyle = getMaterialGradient(tCtx, mat, bri, cW, cH);
+                                            tCtx.fillRect(0, 0, cW, cH);
+                                            
+                                            dataUrl = temp.toDataURL();
+                                            ASSETS[id].svgCache[cacheKey] = dataUrl;
+                                        }
+                                        
                                         try {
-                                            const dataUrl = temp.toDataURL();
                                             ctx.drawImage({ src: dataUrl, width: s, height: s }, -s/2, -s/2, s, s);
                                         } catch(e) {
                                             ctx.drawImage(img, -s/2, -s/2, s, s);
@@ -2137,18 +2163,36 @@
                                 sCtx.restore();
                                 
                                 if (ctx.isSVG) {
-                                    // For SVG, convert masked canvas to image
-                                    // Create a temp canvas of exact size to avoid extra whitespace if scratch is huge
-                                    const temp = document.createElement('canvas');
-                                    temp.width = dim; temp.height = dim;
-                                    const tCtx = temp.getContext('2d');
-                                    tCtx.drawImage(scratch, 0, 0, s, s, 0, 0, s, s);
+                                    // Optimization: Cache tinted versions
+                                    if (!ASSETS[id].svgCache) ASSETS[id].svgCache = {};
+                                    const cacheKey = mat + '_' + bri;
+                                    
+                                    let dataUrl = ASSETS[id].svgCache[cacheKey];
+                                    if (!dataUrl) {
+                                        const natW = img.naturalWidth || 512;
+                                        const natH = img.naturalHeight || 512;
+                                        const maxDim = 1024;
+                                        const scale = Math.min(1, maxDim / Math.max(natW, natH));
+                                        const cW = Math.floor(natW * scale);
+                                        const cH = Math.floor(natH * scale);
+                                        
+                                        const temp = document.createElement('canvas');
+                                        temp.width = cW; temp.height = cH;
+                                        const tCtx = temp.getContext('2d');
+                                        
+                                        tCtx.drawImage(img, 0, 0, cW, cH);
+                                        tCtx.globalCompositeOperation = 'source-in';
+                                        tCtx.fillStyle = getMaterialGradient(tCtx, mat, bri, cW, cH);
+                                        tCtx.fillRect(0, 0, cW, cH);
+                                        
+                                        dataUrl = temp.toDataURL();
+                                        ASSETS[id].svgCache[cacheKey] = dataUrl;
+                                    }
+                                    
                                     try {
-                                        const dataUrl = temp.toDataURL();
                                         ctx.drawImage({ src: dataUrl, width: s, height: s }, -s/2, -s/2, s, s);
                                     } catch(e) {
                                         console.error("SVG Export Error (Tainted Canvas):", e);
-                                        // Fallback: draw original image if masking fails due to taint
                                         ctx.drawImage(img, -s/2, -s/2, s, s);
                                     }
                                 } else {
@@ -3157,12 +3201,15 @@
 
         function addLayer() { appState.layers.push({ pattern: currentPattern, inset: parseInt(document.getElementById('inset').value), size: parseInt(document.getElementById('size').value), spacing: parseInt(document.getElementById('spacing').value), rot: 0, radius: parseInt(document.getElementById('radius').value), lines: tempLineCount, lineSep: parseInt(document.getElementById('lineSep').value), material: currentMaterial, brightness: currentBrightness, grid: JSON.parse(JSON.stringify(gridState)), ending: currentBorderEnding, floralState: JSON.parse(JSON.stringify(floralState)), stamps: [] }); saveState(); renderLayerList(); redraw(); }
         function renderLayerList() { 
+            // console.log('Rendering layer list', appState.layers);
             document.getElementById('layerList').innerHTML = appState.layers.map((l,i) => {
                 const isSelected = (i === selectedLayerIndex);
                 const bgClass = isSelected ? 'bg-slate-700 border-yellow-600' : 'bg-slate-800 border-slate-700';
                 const textClass = isSelected ? 'text-yellow-500 font-bold' : 'text-slate-300';
                 const stampCount = l.stamps ? l.stamps.length : 0;
                 const stampBadge = stampCount > 0 ? `<span class="ml-1 text-[9px] bg-yellow-900 text-yellow-200 px-1 rounded">${stampCount}</span>` : '';
+                const isOriginalColor = l.floralState && l.floralState.useOriginalColor;
+                const paletteClass = isOriginalColor ? 'text-green-400' : 'text-slate-400';
                 
                 return `
                 <div class="flex justify-between items-center p-1 px-2 rounded border ${bgClass} cursor-pointer hover:bg-slate-700 transition-colors" onclick="selectLayer(${i})">
@@ -3171,7 +3218,7 @@
                         ${stampBadge}
                     </div>
                     <div class="flex items-center gap-1 shrink-0">
-                        <button onclick="event.stopPropagation(); toggleLayerOriginalColor(${i})" class="text-slate-400 hover:text-green-400 px-1 ${l.floralState && l.floralState.useOriginalColor ? 'text-green-400' : ''}" title="Toggle Original Color"><i class="fa-solid fa-palette"></i></button>
+                        <button onclick="event.stopPropagation(); toggleLayerOriginalColor(${i})" class="${paletteClass} hover:text-green-400 px-1" title="Toggle Original Color"><i class="fa-solid fa-palette"></i></button>
                         <button onclick="event.stopPropagation(); triggerLayerUpload(${i})" class="text-slate-400 hover:text-blue-400 px-1" title="Import PNG to Layer"><i class="fa-solid fa-file-import"></i></button>
                         <button onclick="event.stopPropagation(); triggerLayerPaste(${i})" class="text-slate-400 hover:text-blue-400 px-1" title="Paste PNG to Layer"><i class="fa-solid fa-paste"></i></button>
                         <button onclick="event.stopPropagation(); refreshLayer(${i})" class="text-slate-400 hover:text-yellow-400 px-1" title="Refresh Variation"><i class="fa-solid fa-arrows-rotate"></i></button>
@@ -3338,6 +3385,16 @@
                 renderLayerList(); // Update list text if needed
                 redraw();
                 saveState();
+            }
+        }
+
+        function toggleLayerOriginalColor(i) {
+            if (appState.layers[i]) {
+                if (!appState.layers[i].floralState) appState.layers[i].floralState = {};
+                appState.layers[i].floralState.useOriginalColor = !appState.layers[i].floralState.useOriginalColor;
+                saveState();
+                renderLayerList();
+                redraw();
             }
         }
 

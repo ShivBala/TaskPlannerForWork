@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Grid Studio</title>
+    <title>Grid Stack Studio v3</title>
     <style>
         :root {
-            --bg-color: #1e1e1e;
-            --panel-color: #2b2b2b;
-            --text-color: #f0f0f0;
-            --accent-color: #3b82f6;
-            --highlight-color: #f59e0b;
+            --bg-color: #1a1a1a;
+            --panel-color: #2d2d2d;
+            --text-color: #e0e0e0;
+            --accent-color: #007ACC;
+            --highlight-color: #FFD700;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
@@ -23,161 +23,203 @@
             overflow: hidden;
         }
 
-        /* Sidebar */
-        .sidebar {
+        /* Sidebar Controls */
+        .controls {
             width: 340px;
             background-color: var(--panel-color);
             padding: 20px;
             display: flex;
             flex-direction: column;
-            gap: 15px;
-            box-shadow: 4px 0 15px rgba(0,0,0,0.4);
+            gap: 12px;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.5);
             overflow-y: auto;
             z-index: 10;
         }
 
-        h2, h3 { margin: 0; font-weight: 500; }
-        h2 { font-size: 1.2rem; margin-bottom: 10px; color: var(--accent-color); }
-        h3 { font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; color: #888; margin-top: 10px; }
+        h2, h3 { margin: 0 0 5px 0; font-weight: 300; letter-spacing: 1px; }
+        h3 { font-size: 1em; color: var(--accent-color); margin-top:10px; border-bottom: 1px solid #444; padding-bottom: 5px; }
 
-        .control-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            background: #333;
+        /* Tabs */
+        .tabs { display: flex; gap: 5px; margin-bottom: 10px; }
+        .tab-btn {
+            flex: 1;
             padding: 10px;
-            border-radius: 6px;
+            background: #444;
+            border: none;
+            color: #aaa;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+        .tab-btn.active {
+            background: #383838;
+            color: white;
+            border-bottom-color: var(--accent-color);
         }
 
-        label { font-size: 0.85rem; color: #ccc; }
+        .control-group { display: flex; flex-direction: column; gap: 5px; }
+        .mode-controls { display: none; } /* Hidden by default */
+        .mode-controls.active { display: block; }
 
-        input, button {
-            background: #444;
+        .row { display: flex; gap: 10px; }
+
+        label { font-size: 0.85em; opacity: 0.8; }
+
+        input[type="number"], input[type="file"], input[type="color"] {
+            background: #404040;
             border: 1px solid #555;
             color: white;
-            padding: 8px;
+            padding: 6px;
             border-radius: 4px;
-            font-size: 0.9rem;
+            width: 100%;
+            box-sizing: border-box;
         }
 
-        input[type="color"] { height: 40px; width: 100%; cursor: pointer; padding: 2px; }
-        
-        button {
+        input[type="range"] { width: 100%; cursor: pointer; }
+
+        button.action-btn {
             background-color: var(--accent-color);
+            color: white;
             border: none;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        button:hover { filter: brightness(1.1); }
-        
-        .download-btn { background-color: #10b981; margin-top: auto; }
-
-        .instructions {
-            font-size: 0.8rem;
-            color: #aaa;
-            background: #222;
             padding: 10px;
-            border-left: 3px solid var(--highlight-color);
-            line-height: 1.4;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+            width: 100%;
         }
+        button.action-btn:hover { background-color: #0062a3; }
+        
+        .secondary-btn { background-color: #555; margin-top: 10px; }
+        .secondary-btn:hover { background-color: #666; }
 
-        /* Main Canvas Area */
-        .workspace {
+        .preview-area {
             flex-grow: 1;
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 40px;
+            background-color: #222;
             background-image: 
-                linear-gradient(45deg, #252525 25%, transparent 25%), 
-                linear-gradient(-45deg, #252525 25%, transparent 25%), 
-                linear-gradient(45deg, transparent 75%, #252525 75%), 
-                linear-gradient(-45deg, transparent 75%, #252525 75%);
+                linear-gradient(45deg, #2a2a2a 25%, transparent 25%), 
+                linear-gradient(-45deg, #2a2a2a 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #2a2a2a 75%), 
+                linear-gradient(-45deg, transparent 75%, #2a2a2a 75%);
             background-size: 20px 20px;
             background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-            overflow: hidden;
-            position: relative;
+            overflow: auto;
         }
 
         canvas {
-            box-shadow: 0 0 30px rgba(0,0,0,0.6);
-            max-width: 95%;
-            max-height: 95%;
-            cursor: grab;
+            box-shadow: 0 0 30px rgba(0,0,0,0.7);
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
         }
-        canvas:active { cursor: grabbing; }
 
-        /* Current Selection Indicator in Sidebar */
-        #selectionInfo {
-            font-size: 0.8rem;
-            color: var(--highlight-color);
-            min-height: 20px;
-        }
+        .status { font-size: 0.8em; color: #aaa; }
     </style>
 </head>
 <body>
 
-    <div class="sidebar">
-        <h2>Smart Grid Studio</h2>
-        
-        <div class="instructions">
-            <strong>How to Interact:</strong><br>
-            • <strong>Click</strong> an image to select it.<br>
-            • <strong>Drag</strong> to move the image inside its cell.<br>
-            • <strong>Scroll Wheel</strong> to zoom in/out.<br>
-        </div>
+    <div class="controls">
+        <h2>Grid Stack Studio v3</h2>
 
-        <h3>Global Settings</h3>
-        
         <div class="control-group">
-            <label>Upload Images</label>
+            <label>1. Upload Images</label>
             <input type="file" id="imageInput" multiple accept="image/*">
+            <div id="fileStatus" class="status">No images loaded</div>
+        </div>
+
+        <div class="row">
+            <div class="control-group" style="flex:1">
+                <label>Output W</label>
+                <input type="number" id="outputWidth" value="1920" onchange="requestRender()">
+            </div>
+            <div class="control-group" style="flex:1">
+                <label>Output H</label>
+                <input type="number" id="outputHeight" value="1080" onchange="requestRender()">
+            </div>
         </div>
 
         <div class="control-group">
-            <div style="display:flex; gap:10px;">
-                <div style="flex:1">
-                    <label>Columns</label>
-                    <input type="number" id="colCount" value="3" min="1">
+            <label>Background Color</label>
+            <input type="color" id="bgColor" value="#000000" onchange="requestRender()">
+        </div>
+
+        <h3>Layout Mode</h3>
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchMode('grid')">Grid</button>
+            <button class="tab-btn" onclick="switchMode('layer')">Layers</button>
+        </div>
+
+        <div id="gridControls" class="mode-controls active">
+            <div class="row">
+                <div class="control-group" style="flex:1">
+                    <label>Cols</label>
+                    <input type="number" id="colCount" value="3" min="1" onchange="requestRender()">
                 </div>
-                <div style="flex:1">
+                <div class="control-group" style="flex:1">
                     <label>Rows</label>
-                    <input type="number" id="rowCount" value="2" min="1">
+                    <input type="number" id="rowCount" value="2" min="1" onchange="requestRender()">
+                </div>
+            </div>
+            <div class="control-group">
+                <label>Gap (px)</label>
+                <input type="number" id="gridGap" value="10" min="0" onchange="requestRender()">
+            </div>
+            
+            <div id="editPanel" style="display:none; margin-top:15px; border-top:1px solid #444; padding-top:10px;">
+                <label style="color:var(--highlight-color)">Selected Image Adjustments</label>
+                <div class="control-group">
+                    <label>Zoom <span id="zoomVal">100%</span></label>
+                    <input type="range" id="itemZoom" min="10" max="300" value="100" oninput="updateSelected()">
+                </div>
+                <div class="control-group">
+                    <label>Pan X</label>
+                    <input type="range" id="itemPanX" min="-500" max="500" value="0" oninput="updateSelected()">
+                </div>
+                <div class="control-group">
+                    <label>Pan Y</label>
+                    <input type="range" id="itemPanY" min="-500" max="500" value="0" oninput="updateSelected()">
                 </div>
             </div>
         </div>
 
-        <div class="control-group">
-            <label>Canvas Size (Output)</label>
-            <div style="display:flex; gap:10px;">
-                <input type="number" id="outputWidth" value="1920" placeholder="W">
-                <input type="number" id="outputHeight" value="1080" placeholder="H">
+        <div id="layerControls" class="mode-controls">
+            <div class="control-group">
+                <label>Scale Reduction per Layer (%)</label>
+                <input type="range" id="layerScale" min="50" max="100" value="90" oninput="document.getElementById('scaleDisplay').innerText = this.value + '%'; requestRender()">
+                <div class="status" style="text-align:right" id="scaleDisplay">90%</div>
+                <div class="status">100% = Same size (Deck of cards)</div>
+                <div class="status">< 100% = Tunnel effect</div>
+            </div>
+
+            <div class="control-group">
+                <label>Horizontal Offset (px)</label>
+                <input type="range" id="layerOffsetX" min="-200" max="200" value="50" oninput="document.getElementById('offXDisplay').innerText = this.value + 'px'; requestRender()">
+                <div class="status" style="text-align:right" id="offXDisplay">50px</div>
+            </div>
+
+            <div class="control-group">
+                <label>Vertical Offset (px)</label>
+                <input type="range" id="layerOffsetY" min="-200" max="200" value="50" oninput="document.getElementById('offYDisplay').innerText = this.value + 'px'; requestRender()">
+                <div class="status" style="text-align:right" id="offYDisplay">50px</div>
+            </div>
+            
+             <div class="control-group">
+                <label>Start Position</label>
+                <select id="startPos" onchange="requestRender()" style="background:#404040; color:white; padding:5px; border:1px solid #555;">
+                    <option value="center">Center (Tunnel)</option>
+                    <option value="topLeft">Top Left (Cascade)</option>
+                </select>
             </div>
         </div>
 
-        <div class="control-group">
-            <label>Gap (px)</label>
-            <input type="number" id="gridGap" value="20" min="0">
-        </div>
-
-        <div class="control-group">
-            <label>Background Fill Color</label>
-            <input type="color" id="bgColor" value="#ffffff">
-        </div>
-
-        <h3>Selected Image</h3>
-        <div id="selectionInfo">No image selected</div>
-        <div class="control-group">
-            <label>Zoom Level</label>
-            <input type="range" id="manualZoom" min="0.1" max="5" step="0.1" value="1">
-            <button onclick="resetSelected()">Reset Selection to Fit</button>
-        </div>
-
-        <button class="download-btn" onclick="downloadImage()">Download High-Res</button>
+        <div style="flex-grow:1"></div>
+        <button class="action-btn secondary-btn" onclick="downloadImage()">Download Result</button>
     </div>
 
-    <div class="workspace">
+    <div class="preview-area">
         <canvas id="canvas"></canvas>
     </div>
 
@@ -185,271 +227,282 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         
-        // State Management
-        let appState = {
-            images: [], // Holds { imgObj, x, y, scale, cellIndex }
-            config: {
-                cols: 3,
-                rows: 2,
-                width: 1920,
-                height: 1080,
-                gap: 20,
-                bgColor: "#ffffff"
-            },
-            selection: -1, // Index of currently selected image
-            isDragging: false,
-            lastMouse: { x: 0, y: 0 }
-        };
+        // State
+        let currentMode = 'grid'; // 'grid' or 'layer'
+        let loadedImages = [];
+        let imageStates = []; // specific to grid mode (zoom/pan)
+        let selectedIndex = -1;
 
-        // DOM Elements
-        const inputs = {
-            cols: document.getElementById('colCount'),
-            rows: document.getElementById('rowCount'),
-            w: document.getElementById('outputWidth'),
-            h: document.getElementById('outputHeight'),
-            gap: document.getElementById('gridGap'),
-            bg: document.getElementById('bgColor'),
-            zoom: document.getElementById('manualZoom'),
-            info: document.getElementById('selectionInfo')
-        };
-
-        // --- Event Listeners for Controls ---
-        Object.values(inputs).forEach(el => {
-            if(el.type !== 'range') el.addEventListener('input', updateConfig);
-        });
-        
-        inputs.zoom.addEventListener('input', (e) => {
-            if (appState.selection !== -1) {
-                appState.images[appState.selection].scale = parseFloat(e.target.value);
-                draw();
-            }
-        });
-
-        document.getElementById('imageInput').addEventListener('change', handleUpload);
-
-        // --- Canvas Interaction Logic ---
-        
-        // Mouse Down: Select and Start Drag
-        canvas.addEventListener('mousedown', e => {
-            const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-            const clickX = (e.clientX - rect.left) * scaleX;
-            const clickY = (e.clientY - rect.top) * scaleY;
-
-            // Find which cell was clicked
-            const cellDims = getCellDimensions();
-            const col = Math.floor(clickX / (cellDims.width + appState.config.gap));
-            const row = Math.floor(clickY / (cellDims.height + appState.config.gap));
+        // --- Tabs Logic ---
+        function switchMode(mode) {
+            currentMode = mode;
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.mode-controls').forEach(div => div.classList.remove('active'));
             
-            // Map grid coords to image index
-            const index = row * appState.config.cols + col;
+            // Activate specific tab
+            const tabIndex = mode === 'grid' ? 0 : 1;
+            document.querySelectorAll('.tab-btn')[tabIndex].classList.add('active');
+            document.getElementById(mode + 'Controls').classList.add('active');
 
-            if (index >= 0 && index < appState.images.length) {
-                appState.selection = index;
-                appState.isDragging = true;
-                appState.lastMouse = { x: e.clientX, y: e.clientY };
-                
-                // Update UI to match selected image
-                inputs.zoom.value = appState.images[index].scale;
-                inputs.info.innerText = `Editing Image #${index + 1}`;
-                draw(); // Redraw to show selection highlight
-            } else {
-                appState.selection = -1;
-                inputs.info.innerText = "No image selected";
-                draw();
-            }
-        });
-
-        // Mouse Move: Pan Image
-        window.addEventListener('mousemove', e => {
-            if (!appState.isDragging || appState.selection === -1) return;
-
-            // Calculate delta based on visual size vs canvas size
-            const rect = canvas.getBoundingClientRect();
-            const scaleRatio = canvas.width / rect.width; // Mapping screen pixels to canvas pixels
-
-            const dx = (e.clientX - appState.lastMouse.x) * scaleRatio;
-            const dy = (e.clientY - appState.lastMouse.y) * scaleRatio;
-
-            appState.images[appState.selection].x += dx;
-            appState.images[appState.selection].y += dy;
-
-            appState.lastMouse = { x: e.clientX, y: e.clientY };
-            draw();
-        });
-
-        window.addEventListener('mouseup', () => {
-            appState.isDragging = false;
-        });
-
-        // Scroll Wheel: Zoom
-        canvas.addEventListener('wheel', e => {
-            e.preventDefault();
-            if (appState.selection !== -1) {
-                const speed = 0.05;
-                const dir = e.deltaY > 0 ? -1 : 1;
-                let newScale = appState.images[appState.selection].scale + (dir * speed);
-                
-                // Limits
-                if (newScale < 0.1) newScale = 0.1;
-                if (newScale > 10) newScale = 10;
-
-                appState.images[appState.selection].scale = newScale;
-                inputs.zoom.value = newScale;
-                draw();
-            }
-        });
-
-
-        // --- Core Functions ---
-
-        function updateConfig() {
-            appState.config.cols = parseInt(inputs.cols.value) || 1;
-            appState.config.rows = parseInt(inputs.rows.value) || 1;
-            appState.config.width = parseInt(inputs.w.value) || 1000;
-            appState.config.height = parseInt(inputs.h.value) || 1000;
-            appState.config.gap = parseInt(inputs.gap.value) || 0;
-            appState.config.bgColor = inputs.bg.value;
-            draw();
+            render();
         }
 
-        function handleUpload(e) {
+        // --- Upload Logic ---
+        document.getElementById('imageInput').addEventListener('change', (e) => {
             const files = Array.from(e.target.files);
-            if (!files.length) return;
+            if (files.length === 0) return;
 
-            appState.images = []; // Clear current
-            appState.selection = -1;
+            document.getElementById('fileStatus').textContent = `Loading ${files.length} images...`;
+            loadedImages = [];
+            imageStates = [];
+            selectedIndex = -1;
 
-            let loaded = 0;
-            files.forEach(file => {
-                const img = new Image();
+            let loadedCount = 0;
+            files.forEach((file) => {
                 const reader = new FileReader();
-                reader.onload = (ev) => {
-                    img.src = ev.target.result;
+                reader.onload = (evt) => {
+                    const img = new Image();
                     img.onload = () => {
-                        // Initialize image state
-                        appState.images.push({
-                            obj: img,
-                            x: 0, // Offset from center
-                            y: 0,
-                            scale: 1.0 
-                        });
-                        loaded++;
-                        if(loaded === files.length) {
-                            // Sort images? Currently pushes as they load. 
-                            // Could sort by filename here if needed.
-                            draw();
+                        loadedImages.push(img);
+                        imageStates.push({ zoom: 1, x: 0, y: 0 }); // Default grid state
+                        loadedCount++;
+                        if (loadedCount === files.length) {
+                            document.getElementById('fileStatus').textContent = `${loadedImages.length} images ready.`;
+                            render();
                         }
-                    }
+                    };
+                    img.src = evt.target.result;
                 };
                 reader.readAsDataURL(file);
             });
+        });
+
+        // --- Render Loop Wrapper ---
+        function requestRender() {
+            render();
         }
 
-        function getCellDimensions() {
-            const { width, height, cols, rows, gap } = appState.config;
-            const cellW = (width - (cols - 1) * gap) / cols;
-            const cellH = (height - (rows - 1) * gap) / rows;
-            return { width: cellW, height: cellH };
+        function render() {
+            if (currentMode === 'grid') renderGrid();
+            else renderLayers();
         }
 
-        function resetSelected() {
-            if(appState.selection !== -1) {
-                appState.images[appState.selection].x = 0;
-                appState.images[appState.selection].y = 0;
-                appState.images[appState.selection].scale = 1.0;
-                inputs.zoom.value = 1.0;
-                draw();
+        // --- GRID RENDERER (Previous Logic) ---
+        function renderGrid() {
+            const cols = parseInt(document.getElementById('colCount').value);
+            const rows = parseInt(document.getElementById('rowCount').value);
+            const totalW = parseInt(document.getElementById('outputWidth').value);
+            const totalH = parseInt(document.getElementById('outputHeight').value);
+            const gap = parseInt(document.getElementById('gridGap').value);
+            const bgColor = document.getElementById('bgColor').value;
+
+            canvas.width = totalW;
+            canvas.height = totalH;
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, totalW, totalH);
+
+            if (loadedImages.length === 0) return drawEmptyState(totalW, totalH);
+
+            const cellW = (totalW - (cols - 1) * gap) / cols;
+            const cellH = (totalH - (rows - 1) * gap) / rows;
+
+            let imgIndex = 0;
+            for (let r = 0; r < rows; r++) {
+                for (let c = 0; c < cols; c++) {
+                    if (imgIndex >= loadedImages.length) break;
+
+                    const img = loadedImages[imgIndex];
+                    const state = imageStates[imgIndex];
+                    const cellX = c * (cellW + gap);
+                    const cellY = r * (cellH + gap);
+
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.rect(cellX, cellY, cellW, cellH);
+                    ctx.clip();
+
+                    ctx.fillStyle = bgColor;
+                    ctx.fillRect(cellX, cellY, cellW, cellH);
+
+                    // Fit logic
+                    const imgRatio = img.width / img.height;
+                    const cellRatio = cellW / cellH;
+                    let drawW, drawH;
+
+                    if (imgRatio > cellRatio) { drawW = cellW; drawH = cellW / imgRatio; } 
+                    else { drawH = cellH; drawW = cellH * imgRatio; }
+
+                    drawW *= state.zoom;
+                    drawH *= state.zoom;
+
+                    const centerX = cellX + (cellW - drawW) / 2;
+                    const centerY = cellY + (cellH - drawH) / 2;
+                    
+                    ctx.drawImage(img, centerX + state.x, centerY + state.y, drawW, drawH);
+                    ctx.restore();
+
+                    if (imgIndex === selectedIndex) {
+                        ctx.lineWidth = 4;
+                        ctx.strokeStyle = '#FFD700';
+                        ctx.strokeRect(cellX, cellY, cellW, cellH);
+                    }
+                    imgIndex++;
+                }
             }
         }
 
-        function draw() {
-            // 1. Setup Canvas
-            canvas.width = appState.config.width;
-            canvas.height = appState.config.height;
-            const { width: cellW, height: cellH } = getCellDimensions();
-            const { gap, cols, bgColor } = appState.config;
+        // --- LAYER RENDERER (New Logic) ---
+        function renderLayers() {
+            const totalW = parseInt(document.getElementById('outputWidth').value);
+            const totalH = parseInt(document.getElementById('outputHeight').value);
+            const bgColor = document.getElementById('bgColor').value;
+            
+            // Layer Params
+            const scalePercent = parseInt(document.getElementById('layerScale').value) / 100;
+            const offX = parseInt(document.getElementById('layerOffsetX').value);
+            const offY = parseInt(document.getElementById('layerOffsetY').value);
+            const startPos = document.getElementById('startPos').value;
 
-            // 2. Fill Background (Gaps color)
-            ctx.fillStyle = bgColor; // Use user selected color for everything
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            canvas.width = totalW;
+            canvas.height = totalH;
+            ctx.fillStyle = bgColor;
+            ctx.fillRect(0, 0, totalW, totalH);
 
-            // 3. Render Images
-            appState.images.forEach((imgData, index) => {
-                // Calculate Grid Position
-                const col = index % cols;
-                const row = Math.floor(index / cols);
-                
-                // Stop if outside defined grid
-                if (row >= appState.config.rows) return;
+            if (loadedImages.length === 0) return drawEmptyState(totalW, totalH);
 
-                const cellX = col * (cellW + gap);
-                const cellY = row * (cellH + gap);
+            let currentScale = 1.0;
+            let currentX, currentY;
 
-                // Save context for clipping
-                ctx.save();
-                
-                // Create Clipping Region (The Cell)
-                ctx.beginPath();
-                ctx.rect(cellX, cellY, cellW, cellH);
-                ctx.clip();
+            // Initial Position Logic
+            // If "Center" start, we find center of canvas.
+            // If "TopLeft" start, we start near 0,0 (with some padding usually desired, but we'll stick to logic).
+            
+            // Note: We need to calculate the base size for the first image.
+            // Let's assume we want the first image to fit "Cover" style into the full canvas initially.
+            
+            loadedImages.forEach((img, i) => {
+                // 1. Calculate dimensions for this iteration
+                // Base dimensions (fitting the canvas)
+                const imgRatio = img.width / img.height;
+                const canvasRatio = totalW / totalH;
+                let baseW, baseH;
 
-                // Draw Background for this specific cell (user choice)
-                ctx.fillStyle = bgColor;
-                ctx.fillRect(cellX, cellY, cellW, cellH);
-
-                // Calculate "Contain" fit
-                const img = imgData.obj;
-                const ratio = Math.min(cellW / img.width, cellH / img.height);
-                
-                // Determine base size (fitted)
-                const fittedW = img.width * ratio;
-                const fittedH = img.height * ratio;
-
-                // Determine final size (with user zoom)
-                const finalW = fittedW * imgData.scale;
-                const finalH = fittedH * imgData.scale;
-
-                // Center position + User Offset
-                const centerX = cellX + (cellW / 2);
-                const centerY = cellY + (cellH / 2);
-                
-                const drawX = centerX - (finalW / 2) + imgData.x;
-                const drawY = centerY - (finalH / 2) + imgData.y;
-
-                ctx.drawImage(img, drawX, drawY, finalW, finalH);
-
-                // Visual Highlight for Selection
-                if (appState.selection === index) {
-                    ctx.strokeStyle = '#f59e0b'; // Highlight color
-                    ctx.lineWidth = Math.max(5, canvas.width * 0.005); // Dynamic thickness
-                    ctx.strokeRect(cellX, cellY, cellW, cellH);
+                // Fit 'Contain' style logic for base layer so we see it all
+                if (imgRatio > canvasRatio) {
+                    baseW = totalW;
+                    baseH = totalW / imgRatio;
+                } else {
+                    baseH = totalH;
+                    baseW = totalH * imgRatio;
                 }
 
-                ctx.restore();
+                // Apply Progressive Scale
+                let drawW = baseW * currentScale;
+                let drawH = baseH * currentScale;
+
+                // 2. Calculate Position
+                if (i === 0) {
+                    // First image placement
+                    if (startPos === 'center') {
+                        currentX = (totalW - drawW) / 2;
+                        currentY = (totalH - drawH) / 2;
+                    } else {
+                        // Top Left Cascade Start
+                        currentX = 0; 
+                        currentY = 0;
+                    }
+                } else {
+                    // Subsequent images shift by offset
+                    currentX += offX;
+                    currentY += offY;
+                    
+                    // If centering logic is active (Tunnel mode), we need to re-center based on new smaller size
+                    // But if user wants OFFSET (Cascade), we just add X/Y.
+                    // To support "Tunnel" where they just shrink in place:
+                    if (offX === 0 && offY === 0 && startPos === 'center') {
+                         currentX = (totalW - drawW) / 2;
+                         currentY = (totalH - drawH) / 2;
+                    }
+                }
+
+                // Draw Shadow for depth
+                ctx.shadowColor = "rgba(0,0,0,0.5)";
+                ctx.shadowBlur = 15;
+                ctx.shadowOffsetX = 5;
+                ctx.shadowOffsetY = 5;
+
+                ctx.drawImage(img, currentX, currentY, drawW, drawH);
+
+                // Reset shadow
+                ctx.shadowColor = "transparent";
+
+                // Decrement scale for next loop
+                currentScale *= scalePercent;
             });
         }
 
-        function downloadImage() {
-            // Temporarily unselect to remove highlight border
-            const prevSelection = appState.selection;
-            appState.selection = -1;
-            draw();
-
-            const link = document.createElement('a');
-            link.download = 'smart-grid-result.png';
-            link.href = canvas.toDataURL('image/png', 1.0);
-            link.click();
-
-            // Restore selection
-            appState.selection = prevSelection;
-            draw();
+        function drawEmptyState(w, h) {
+            ctx.fillStyle = "#555";
+            ctx.font = "30px sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("Upload images to start", w/2, h/2);
         }
 
-        // Initial Draw
-        draw();
+        // --- Grid Selection Logic ---
+        canvas.addEventListener('mousedown', (e) => {
+            if (currentMode !== 'grid') return; // Selection only for grid mode
+            
+            const rect = canvas.getBoundingClientRect();
+            const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
 
+            const cols = parseInt(document.getElementById('colCount').value);
+            const rows = parseInt(document.getElementById('rowCount').value);
+            const gap = parseInt(document.getElementById('gridGap').value);
+            const cellW = (canvas.width - (cols - 1) * gap) / cols;
+            const cellH = (canvas.height - (rows - 1) * gap) / rows;
+
+            const col = Math.floor(clickX / (cellW + gap));
+            const row = Math.floor(clickY / (cellH + gap));
+
+            if (col >= cols || row >= rows) return;
+            const index = row * cols + col;
+
+            if (index < loadedImages.length) {
+                selectedIndex = index;
+                const state = imageStates[index];
+                document.getElementById('editPanel').style.display = 'block';
+                document.getElementById('itemZoom').value = state.zoom * 100;
+                document.getElementById('zoomVal').textContent = Math.round(state.zoom * 100) + '%';
+                document.getElementById('itemPanX').value = state.x;
+                document.getElementById('itemPanY').value = state.y;
+                render();
+            }
+        });
+
+        function updateSelected() {
+            if (selectedIndex === -1 || currentMode !== 'grid') return;
+            const z = parseInt(document.getElementById('itemZoom').value) / 100;
+            const x = parseInt(document.getElementById('itemPanX').value);
+            const y = parseInt(document.getElementById('itemPanY').value);
+            document.getElementById('zoomVal').textContent = Math.round(z * 100) + '%';
+            imageStates[selectedIndex] = { zoom: z, x: x, y: y };
+            render();
+        }
+
+        function downloadImage() {
+            const prevSel = selectedIndex;
+            selectedIndex = -1; // hide selection border
+            render(); 
+            const link = document.createElement('a');
+            link.download = `grid-stack-${currentMode}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+            selectedIndex = prevSel;
+            render();
+        }
+
+        render();
     </script>
 </body>
 </html>
