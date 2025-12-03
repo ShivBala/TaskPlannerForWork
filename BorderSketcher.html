@@ -195,7 +195,7 @@
                             <button id="btn-flip-v" onclick="toggleFlip('v')" class="flex-1 py-1 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-[10px] text-slate-300">Flip V</button>
                         </div>
                         <div><div class="flex justify-between text-[10px] text-slate-400"><span>Rot</span><span id="stampRotVal">0°</span></div><input type="range" id="stampRot" min="0" max="360" value="0" oninput="updateStampConfig('rot', this.value)"></div>
-                        <div><div class="flex justify-between text-[10px] text-slate-400"><span>Size</span><span id="stampSizeVal">60px</span></div><input type="range" id="stampSize" min="20" max="200" value="60" oninput="updateStampConfig('size', this.value)"></div>
+                        <div><div class="flex justify-between text-[10px] text-slate-400"><span>Size</span><span id="stampSizeVal">60px</span></div><input type="range" id="stampSize" min="20" max="2000" value="60" oninput="updateStampConfig('size', this.value)"></div>
                         <div><div class="flex justify-between text-[10px] text-slate-400"><span>Spin Cluster</span><span id="spinClusterVal">0°</span></div><input type="range" id="spinCluster" min="0" max="360" value="0" oninput="spinCluster(this.value)"></div>
                     </div>
                 </div>
@@ -320,6 +320,7 @@
                     <!-- Import Button -->
                     <div class="mb-3 border-b border-slate-700 pb-2">
                          <input type="file" id="stampUpload" accept="image/png" class="hidden" onchange="handleStampUpload(this)">
+                        <input type="file" id="layerStampUpload" accept="image/png" class="hidden" onchange="handleLayerStampUpload(this)">
                          <button id="btn-import-png" onclick="document.getElementById('stampUpload').click()" class="w-full py-2 bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold rounded border border-slate-500 flex items-center justify-center gap-2">
                              <i class="fa-solid fa-upload"></i> Import PNG
                          </button>
@@ -3055,6 +3056,7 @@
                         ${stampBadge}
                     </div>
                     <div class="flex items-center gap-1 shrink-0">
+                        <button onclick="event.stopPropagation(); triggerLayerUpload(${i})" class="text-slate-400 hover:text-blue-400 px-1" title="Import PNG to Layer"><i class="fa-solid fa-file-import"></i></button>
                         <button onclick="event.stopPropagation(); refreshLayer(${i})" class="text-slate-400 hover:text-yellow-400 px-1" title="Refresh Variation"><i class="fa-solid fa-arrows-rotate"></i></button>
                         <button onclick="event.stopPropagation(); moveLayer(${i}, -1)" class="text-slate-400 hover:text-white px-1" title="Move Up">↑</button>
                         <button onclick="event.stopPropagation(); moveLayer(${i}, 1)" class="text-slate-400 hover:text-white px-1" title="Move Down">↓</button>

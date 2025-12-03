@@ -55,7 +55,7 @@
                     </label>
                 </div>
                 
-                <!-- New Action Buttons -->
+                <!-- Action Buttons -->
                 <div class="flex gap-2">
                     <button id="pasteBtn" class="flex-1 bg-gray-700 hover:bg-gray-600 text-xs py-2 rounded border border-gray-600 transition-colors flex items-center justify-center gap-2" title="Or press Ctrl+V">
                         <i data-lucide="clipboard-copy" class="w-3 h-3"></i> Paste
@@ -177,6 +177,13 @@
 
         <div class="p-6 border-t border-gray-700 bg-gray-850">
             <label class="block text-sm font-semibold text-gray-300 mb-3">4. Export</label>
+            
+            <!-- Force Transparent Checkbox -->
+            <div class="flex items-center gap-2 mb-3">
+                 <input type="checkbox" id="forceTransparent" class="w-4 h-4 rounded bg-gray-700 border-gray-600 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-gray-800 cursor-pointer">
+                 <label for="forceTransparent" class="text-xs text-gray-400 select-none cursor-pointer">Force Transparent Background</label>
+            </div>
+
             <div class="grid grid-cols-2 gap-3">
                 <button onclick="downloadPNG()" class="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
                     <i data-lucide="download" class="w-4 h-4"></i> PNG (4K)
@@ -518,31 +525,14 @@
             const scale = TARGET_RES / currentMax;
 
             // Recalculate parameters at scale
-            // If Strict Mode: We scale the Exact Canvas Dimensions
-            // If Snap Mode: We scale the Snapped Dimensions
             const exportW = canvas.width * scale;
             const exportH = canvas.height * scale;
-            
-            // To find tW/tH at scale, we use the ratio from current canvas
-            // tW_scaled = (tW_current / canvasW_current) * exportW
-            // Actually simpler: re-run logic or just pass scaled tileW/tileH?
-            // Re-running logic is safer to avoid float drift, but we need the calculated tW/tH.
-            
-            // We can infer tW/tH from the current canvas context? 
-            // Better: Extract logic. But for simplicity, we scale the current tW/tH.
-            // In Snap Mode: tW = thickness. Strict: tW = calculated.
-            // We need to fetch the *actual* tW/tH used in updateCanvas.
-            // Let's recalculate simply:
             
             let tW, tH;
             const strideRef = state.thickness + state.gap;
             
             if (state.strictMode) {
-                 // Recalculate based on current base canvas
-                 // We need to use the exact same logic as updateCanvas but scaled up
-                 // Actually, exportW is just canvas.width * scale. 
-                 // So tileW_export = tileW_current * scale.
-                 const strideRefX = (state.thickness + state.gap); // Approximation for count
+                 const strideRefX = (state.thickness + state.gap);
                  const countX = Math.max(1, Math.round((canvas.width + state.gap) / strideRefX));
                  const countY = Math.max(1, Math.round((canvas.height + state.gap) / strideRefX));
                  
@@ -555,12 +545,16 @@
             
             const scaledGap = state.gap * scale;
 
+            // Check force transparent toggle
+            const forceTransparent = document.getElementById('forceTransparent').checked;
+            const exportBg = forceTransparent ? 'transparent' : state.bgColor;
+
             const offCanvas = document.createElement('canvas');
             offCanvas.width = exportW;
             offCanvas.height = exportH;
             const offCtx = offCanvas.getContext('2d');
 
-            renderFrame(offCtx, exportW, exportH, tW, tH, scaledGap, state.exposure, state.bgColor);
+            renderFrame(offCtx, exportW, exportH, tW, tH, scaledGap, state.exposure, exportBg);
 
             const link = document.createElement('a');
             link.download = `framed-${state.strictMode ? 'strict' : 'snap'}-${Date.now()}.png`;
@@ -635,9 +629,13 @@
                 </filter>
             `;
             
+            // Check force transparent toggle
+            const forceTransparent = document.getElementById('forceTransparent').checked;
+            const exportBg = forceTransparent ? 'transparent' : state.bgColor;
+
             let bgRect = "";
-            if (state.bgColor && state.bgColor !== 'transparent') {
-                bgRect = `<rect x="${tW}" y="${tH}" width="${w - tW*2}" height="${h - tH*2}" fill="${state.bgColor}" />`;
+            if (exportBg && exportBg !== 'transparent') {
+                bgRect = `<rect x="${tW}" y="${tH}" width="${w - tW*2}" height="${h - tH*2}" fill="${exportBg}" />`;
             }
 
             const svgContent = `
