@@ -1970,7 +1970,122 @@
             'botany-pinnate': (ctx, s, style, opts) => drawBotanyLeaf(ctx, s, style, opts, 'pinnate')
         };
 
-        function handleStampUpload(input) {
+                let uploadTargetLayerIndex = -1;
+        
+                function triggerLayerUpload(index) {
+                    uploadTargetLayerIndex = index;
+                    document.getElementById('layerStampUpload').click();
+                }
+        
+                async function triggerLayerPaste(index) {3
+                    uploadTargetLayerIndex = index;
+                    try {
+                        const items = await navigator.clipboard.read();
+                        for (const item of items) {
+                            if (item.types.includes('image/png') || item.types.includes('image/jpeg')) {
+                                const blob = await item.getType(item.types.find(t => t.startsWith('image/')));
+                                processLayerImageBlob(blob, index);
+                                return;
+                            }
+                        }
+                        alert('No image found in clipboard');
+                    } catch (err) {
+                        console.error('Failed to read clipboard contents: ', err);
+                        alert('Could not paste image. Please ensure you have granted clipboard permissions.');
+                    }
+                }
+        
+                function processLayerImageBlob(blob, index) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const img = new Image();
+                        img.onload = function() {
+                            const timestamp = new Date().getTime();
+                            const id = 'layer-asset-' + index + '-' + timestamp;
+                            
+                            ASSETS[id] = (ctx, s, style, opts) => {
+                                if(opts && opts.shadow) {
+                                    const sOp = (appState.shadowOpacity !== undefined) ? appState.shadowOpacity : 0.5;
+                                    ctx.shadowColor = hexToRgba(opts.shadowCol || '#000000', sOp);
+                                    ctx.shadowBlur = (opts.shadowBlur !== undefined) ? opts.shadowBlur : (appState.shadowBlurFlower !== undefined ? appState.shadowBlurFlower : 4);
+                                    ctx.shadowOffsetX = 2; ctx.shadowOffsetY = 2;
+                                } else {
+                                    ctx.shadowColor = 'transparent';
+                                }
+        
+                                // Check if we should use original color (global setting)
+                                const useOriginal = document.getElementById('chk-original-color') && document.getElementById('chk-original-color').checked;
+                                
+                                if (style && !useOriginal) {
+                                    let scratch = document.getElementById('scratch-canvas');
+                                    if (!scratch) {
+                                        scratch = document.createElement('canvas');
+                                        scratch.id = 'scratch-canvas';
+                                        scratch.style.display = 'none';
+                                        document.body.appendChild(scratch);
+                                    }
+                                    // Resize scratch if needed
+                                    const dim = Math.ceil(s);
+                                    if (scratch.width < dim || scratch.height < dim) {
+                                        scratch.width = Math.max(scratch.width, dim);
+                                        scratch.height = Math.max(scratch.height, dim);
+                                    }
+                                    const sCtx = scratch.getContext('2d');
+                                    sCtx.save();
+                                    sCtx.globalCompositeOperation = 'source-over';
+                                    sCtx.clearRect(0, 0, dim, dim);
+                                    sCtx.drawImage(img, 0, 0, s, s);
+                                    sCtx.globalCompositeOperation = 'source-in';
+                                    
+                                    // Re-generate gradient for the stamp size
+                                    const mat = (opts && opts.material) ? opts.material : 'gold';
+                                    const bri = (opts && opts.brightness) ? opts.brightness : 0;
+                                    sCtx.fillStyle = getMaterialGradient(sCtx, mat, bri, s, s);
+                                    
+                                    sCtx.fillRect(0, 0, s, s);
+                                    sCtx.restore();
+                                    
+                                    if (ctx.isSVG) {
+                                        const temp = document.createElement('canvas');
+                                        temp.width = dim; temp.height = dim;
+                                        const tCtx = temp.getContext('2d');
+                                        tCtx.drawImage(scratch, 0, 0, s, s, 0, 0, s, s);
+                                        try {
+                                            const dataUrl = temp.toDataURL();
+                                            ctx.drawImage({ src: dataUrl, width: s, height: s }, -s/2, -s/2, s, s);
+                                        } catch(e) {
+                                            ctx.drawImage(img, -s/2, -s/2, s, s);
+                                        }
+                                    } else {
+                                        ctx.drawImage(scratch, 0, 0, s, s, -s/2, -s/2, s, s);
+                                    }
+                                } else {
+                                    ctx.drawImage(img, -s/2, -s/2, s, s);
+                                }
+                            };
+        
+                            if (index >= 0 && appState.layers[index]) {
+                                appState.layers[index].pattern = id;
+                                selectLayer(index);
+                                saveState();
+                                renderLayerList();
+                                requestRedraw();
+                            }
+                        };
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(blob);
+                }
+        
+                function handleLayerStampUpload(input) {
+                    if (input.files && input.files[0]) {
+                        processLayerImageBlob(input.files[0], uploadTargetLayerIndex);
+                        input.value = '';
+                    }
+                }
+        
+        // ...existing code...
+                function handleStampUpload(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
                 reader.onload = function(e) {
@@ -3056,7 +3171,9 @@
                         ${stampBadge}
                     </div>
                     <div class="flex items-center gap-1 shrink-0">
+                        <button onclick="event.stopPropagation(); toggleLayerOriginalColor(${i})" class="text-slate-400 hover:text-green-400 px-1 ${l.floralState && l.floralState.useOriginalColor ? 'text-green-400' : ''}" title="Toggle Original Color"><i class="fa-solid fa-palette"></i></button>
                         <button onclick="event.stopPropagation(); triggerLayerUpload(${i})" class="text-slate-400 hover:text-blue-400 px-1" title="Import PNG to Layer"><i class="fa-solid fa-file-import"></i></button>
+                        <button onclick="event.stopPropagation(); triggerLayerPaste(${i})" class="text-slate-400 hover:text-blue-400 px-1" title="Paste PNG to Layer"><i class="fa-solid fa-paste"></i></button>
                         <button onclick="event.stopPropagation(); refreshLayer(${i})" class="text-slate-400 hover:text-yellow-400 px-1" title="Refresh Variation"><i class="fa-solid fa-arrows-rotate"></i></button>
                         <button onclick="event.stopPropagation(); moveLayer(${i}, -1)" class="text-slate-400 hover:text-white px-1" title="Move Up">↑</button>
                         <button onclick="event.stopPropagation(); moveLayer(${i}, 1)" class="text-slate-400 hover:text-white px-1" title="Move Down">↓</button>
@@ -3224,7 +3341,17 @@
             }
         }
 
-        function deleteLayer(i) { appState.layers.splice(i,1); saveState(); renderLayerList(); redraw(); }
+        function deleteLayer(i) { 
+            // Clean up assets if they are layer-specific
+            const layer = appState.layers[i];
+            if (layer && layer.pattern && layer.pattern.startsWith('layer-asset-')) {
+                delete ASSETS[layer.pattern];
+            }
+            appState.layers.splice(i,1); 
+            saveState(); 
+            renderLayerList(); 
+            redraw(); 
+        }
         function clearLayers() { appState.layers=[]; appState.stamps=[]; saveState(); renderLayerList(); redraw(); }
 
         function adjustColor(hex, amt) { let usePound = false; if(hex[0]=="#"){ hex=hex.slice(1); usePound=true; } let num = parseInt(hex,16); let r=(num>>16)+amt; let b=((num>>8)&0x00FF)+amt; let g=(num&0x0000FF)+amt; if(r>255)r=255;else if(r<0)r=0; if(b>255)b=255;else if(b<0)b=0; if(g>255)g=255;else if(g<0)g=0; return (usePound?"#":"") + (g | (b<<8) | (r<<16)).toString(16).padStart(6,"0"); }
