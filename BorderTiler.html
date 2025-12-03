@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TileFrame - Custom Border Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Updated Lucide CDN to a newer version and ensuring it loads -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e1e1e; }
+        ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
+
+        .canvas-container {
+            background-image: 
+                linear-gradient(45deg, #2a2a2a 25%, transparent 25%), 
+                linear-gradient(-45deg, #2a2a2a 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #2a2a2a 75%), 
+                linear-gradient(-45deg, transparent 75%, #2a2a2a 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            background-color: #1a1a1a;
+        }
+
+        /* Toggle Switch */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #6366f1;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #6366f1;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 h-screen flex flex-col md:flex-row overflow-hidden">
+
+    <!-- Sidebar Control Panel -->
+    <aside class="w-full md:w-80 bg-gray-800 border-r border-gray-700 flex flex-col z-20 shadow-xl overflow-y-auto">
+        <div class="p-6 border-b border-gray-700">
+            <h1 class="text-xl font-bold flex items-center gap-2 text-indigo-400">
+                <i data-lucide="layout-template" class="w-6 h-6"></i> TileFrame
+            </h1>
+            <p class="text-xs text-gray-400 mt-1">Perfect Fit Border Generator</p>
+        </div>
+
+        <div class="p-6 space-y-8 flex-1">
+            
+            <!-- Upload Section -->
+            <div class="space-y-3">
+                <label class="block text-sm font-semibold text-gray-300">1. Upload Tile (Square PNG)</label>
+                <div class="relative group">
+                    <input type="file" id="imageInput" accept="image/png, image/jpeg" class="hidden">
+                    <label for="imageInput" class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer hover:border-indigo-500 hover:bg-gray-750 transition-all">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <i data-lucide="upload-cloud" class="w-8 h-8 text-gray-400 mb-2 group-hover:text-indigo-400"></i>
+                            <p class="text-sm text-gray-400 text-center"><span class="font-semibold">Click to upload</span></p>
+                            <p class="text-xs text-gray-500 mt-1" id="fileName">No file chosen</p>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Presets Section -->
+            <div class="space-y-3">
+                <label class="block text-sm font-semibold text-gray-300">2. Approx. Aspect Ratio</label>
+                <p class="text-[10px] text-gray-400 mb-2">Canvas will snap to nearest full tile size.</p>
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="setRatio(16, 9)" class="preset-btn px-3 py-2 text-xs bg-gray-700 hover:bg-gray-600 rounded border border-gray-600 active:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">YouTube (16:9)</button>
+                    <button onclick="setRatio(1, 1)" class="preset-btn px-3 py-2 text-xs bg-gray-700 hover:bg-gray-600 rounded border border-gray-600 active:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">Square (1:1)</button>
+                    <button onclick="setRatio(9, 16)" class="preset-btn px-3 py-2 text-xs bg-gray-700 hover:bg-gray-600 rounded border border-gray-600 active:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">Story (9:16)</button>
+                    <button onclick="setRatio(4, 5)" class="preset-btn px-3 py-2 text-xs bg-gray-700 hover:bg-gray-600 rounded border border-gray-600 active:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">Portrait (4:5)</button>
+                    <button onclick="setRatio(4, 3)" class="preset-btn px-3 py-2 text-xs bg-gray-700 hover:bg-gray-600 rounded border border-gray-600 active:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">Landscape (4:3)</button>
+                    <button onclick="setRatio(3, 2)" class="preset-btn px-3 py-2 text-xs bg-gray-700 hover:bg-gray-600 rounded border border-gray-600 active:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">Photo (3:2)</button>
+                </div>
+            </div>
+
+            <!-- Controls Section -->
+            <div class="space-y-6">
+                <label class="block text-sm font-semibold text-gray-300">3. Customize</label>
+                
+                <div class="space-y-1">
+                    <div class="flex justify-between">
+                        <label class="text-xs text-gray-400">Border Thickness</label>
+                        <span id="thicknessVal" class="text-xs text-indigo-400 font-mono">50px</span>
+                    </div>
+                    <input type="range" id="thickness" min="10" max="300" value="60" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+
+                <div class="space-y-1">
+                    <div class="flex justify-between">
+                        <label class="text-xs text-gray-400">Tile Gap</label>
+                        <span id="gapVal" class="text-xs text-indigo-400 font-mono">0px</span>
+                    </div>
+                    <input type="range" id="gap" min="0" max="100" value="0" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+                
+                <!-- Mirror Toggle -->
+                <div class="flex items-center justify-between">
+                    <label class="text-xs text-gray-400 flex items-center gap-2">
+                        Mirror Alternates
+                        <i data-lucide="flip-horizontal" class="w-3 h-3 text-gray-500"></i>
+                    </label>
+                    <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                        <input type="checkbox" name="toggle" id="mirrorToggle" checked class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
+                        <label for="mirrorToggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-700 cursor-pointer"></label>
+                    </div>
+                </div>
+
+                <div class="space-y-1">
+                    <div class="flex justify-between">
+                        <label class="text-xs text-gray-400">Exposure (Brightness)</label>
+                        <span id="exposureVal" class="text-xs text-indigo-400 font-mono">100%</span>
+                    </div>
+                    <input type="range" id="exposure" min="0" max="200" value="100" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+                 
+                 <div class="space-y-1">
+                    <div class="flex justify-between">
+                        <label class="text-xs text-gray-400">Inner Background</label>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="setBg('transparent')" class="w-8 h-8 rounded border border-gray-600 bg-gray-800" title="Transparent"><i data-lucide="eraser" class="w-4 h-4 mx-auto text-gray-400"></i></button>
+                        <button onclick="setBg('#ffffff')" class="w-8 h-8 rounded border border-gray-600 bg-white" title="White"></button>
+                        <button onclick="setBg('#000000')" class="w-8 h-8 rounded border border-gray-600 bg-black" title="Black"></button>
+                        <input type="color" id="bgColorPicker" onchange="setBg(this.value)" class="w-8 h-8 p-0 border-0 rounded cursor-pointer bg-transparent">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-6 border-t border-gray-700 bg-gray-850">
+            <label class="block text-sm font-semibold text-gray-300 mb-3">4. Export</label>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="downloadPNG()" class="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <i data-lucide="download" class="w-4 h-4"></i> PNG (4K)
+                </button>
+                <button onclick="downloadSVG()" class="flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-gray-600">
+                    <i data-lucide="file-code" class="w-4 h-4"></i> SVG
+                </button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Canvas Area -->
+    <main class="flex-1 flex flex-col relative overflow-hidden bg-black">
+        <div class="absolute top-4 left-4 z-10 bg-black/50 text-white text-xs px-3 py-1 rounded backdrop-blur-sm pointer-events-none">
+            Preview Mode - Auto Snapped
+        </div>
+        
+        <div class="flex-1 canvas-container flex items-center justify-center p-8 overflow-auto">
+            <canvas id="previewCanvas" class="shadow-2xl max-w-full max-h-full transition-all duration-300"></canvas>
+        </div>
+        
+        <div class="h-8 bg-gray-800 text-gray-500 text-xs flex items-center px-4 border-t border-gray-700 justify-between">
+            <span id="dimsDisplay">Dimensions: 0 x 0 (Snapped)</span>
+            <span>Zoom: Fit</span>
+        </div>
+    </main>
+
+    <script>
+        // --- State ---
+        const state = {
+            image: null,
+            imageSrc: null,
+            aspectRatio: 16/9,
+            thickness: 60,
+            gap: 0,
+            exposure: 100,
+            bgColor: 'transparent',
+            mirrorAlternates: true,
+            canvasBaseSize: 1200 // Base size for calculation logic
+        };
+
+        // --- Elements ---
+        const canvas = document.getElementById('previewCanvas');
+        const ctx = canvas.getContext('2d');
+        const imageInput = document.getElementById('imageInput');
+        const fileNameDisplay = document.getElementById('fileName');
+        const dimsDisplay = document.getElementById('dimsDisplay');
+        const mirrorToggle = document.getElementById('mirrorToggle');
+
+        // --- Icons ---
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            } else {
+                const checkLucide = setInterval(() => {
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                        clearInterval(checkLucide);
+                    }
+                }, 100);
+            }
+        });
+
+        // --- Initialization ---
+        const placeholderImg = new Image();
+        placeholderImg.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='m4.93 4.93 14.14 14.14'/%3E%3C/svg%3E";
+        placeholderImg.onload = () => {
+            state.image = placeholderImg;
+            state.imageSrc = placeholderImg.src;
+            updateCanvas();
+        };
+
+        // --- Event Listeners ---
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                fileNameDisplay.textContent = file.name;
+                const reader = new FileReader();
+                reader.onload = (evt) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        state.image = img;
+                        state.imageSrc = evt.target.result;
+                        updateCanvas();
+                    };
+                    img.src = evt.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        const bindSlider = (id, key, suffix = '') => {
+            const el = document.getElementById(id);
+            const disp = document.getElementById(id + 'Val');
+            el.addEventListener('input', (e) => {
+                state[key] = parseFloat(e.target.value);
+                disp.textContent = state[key] + suffix;
+                updateCanvas();
+            });
+        };
+
+        bindSlider('thickness', 'thickness', 'px');
+        bindSlider('gap', 'gap', 'px');
+        bindSlider('exposure', 'exposure', '%');
+
+        mirrorToggle.addEventListener('change', (e) => {
+            state.mirrorAlternates = e.target.checked;
+            updateCanvas();
+        });
+
+        function setRatio(w, h) {
+            state.aspectRatio = w / h;
+            updateCanvas();
+        }
+
+        function setBg(color) {
+            state.bgColor = color;
+            updateCanvas();
+        }
+
+        // --- Core Rendering Logic ---
+        function updateCanvas() {
+            if (!state.image) return;
+
+            // 1. Calculate Target Dimensions (Ideal World)
+            let targetW, targetH;
+            if (state.aspectRatio >= 1) {
+                targetW = state.canvasBaseSize;
+                targetH = state.canvasBaseSize / state.aspectRatio;
+            } else {
+                targetH = state.canvasBaseSize;
+                targetW = state.canvasBaseSize * state.aspectRatio;
+            }
+
+            // 2. SNAP LOGIC
+            const stride = state.thickness + state.gap;
+            const countX = Math.max(1, Math.round((targetW + state.gap) / stride));
+            const countY = Math.max(1, Math.round((targetH + state.gap) / stride));
+
+            const w = countX * stride - state.gap;
+            const h = countY * stride - state.gap;
+
+            // Update Canvas
+            canvas.width = w;
+            canvas.height = h;
+
+            dimsDisplay.textContent = `Dimensions: ${w} x ${h} px (Snapped to Grid)`;
+
+            renderFrame(ctx, w, h, state.thickness, state.gap, state.exposure, state.bgColor);
+        }
+
+        // Helper to draw a single tile with optional flipping
+        function drawTile(ctx, img, x, y, size, flipH, flipV) {
+            if (!flipH && !flipV) {
+                ctx.drawImage(img, x, y, size, size);
+                return;
+            }
+            
+            ctx.save();
+            // Move to center of the tile position to scale around center
+            ctx.translate(x + size/2, y + size/2);
+            // Apply Flip
+            ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
+            // Draw image centered at (0,0) in local space
+            ctx.drawImage(img, -size/2, -size/2, size, size);
+            ctx.restore();
+        }
+
+        function renderFrame(context, width, height, thickness, gap, exposure, bgColor) {
+            context.clearRect(0, 0, width, height);
+
+            // Inner Background
+            if (bgColor && bgColor !== 'transparent') {
+                context.fillStyle = bgColor;
+                context.fillRect(thickness, thickness, width - (thickness * 2), height - (thickness * 2));
+            } else if (bgColor === 'transparent') {
+                context.clearRect(thickness, thickness, width - (thickness * 2), height - (thickness * 2));
+            }
+
+            // Apply Exposure
+            context.filter = `brightness(${exposure}%)`;
+
+            const img = state.image;
+            const tileSize = thickness;
+            const stride = tileSize + gap;
+            
+            // Mirror logic helper
+            // We only mirror if enabled AND index is odd
+            const shouldMirror = (i) => state.mirrorAlternates && (i % 2 !== 0);
+
+            // TOP EDGE (Horizontal placement)
+            let countX = Math.ceil((width + gap) / stride);
+            for (let i = 0; i < countX; i++) {
+                let x = i * stride;
+                // Flip H if odd
+                drawTile(context, img, x, 0, tileSize, shouldMirror(i), false);
+            }
+
+            // BOTTOM EDGE (Horizontal placement)
+            for (let i = 0; i < countX; i++) {
+                let x = i * stride;
+                // Flip H if odd
+                drawTile(context, img, x, height - tileSize, tileSize, shouldMirror(i), false);
+            }
+
+            // LEFT EDGE (Vertical placement)
+            let countY = Math.ceil((height + gap) / stride);
+            for (let i = 0; i < countY; i++) {
+                let y = i * stride;
+                // Flip V if odd
+                drawTile(context, img, 0, y, tileSize, false, shouldMirror(i));
+            }
+
+            // RIGHT EDGE (Vertical placement)
+            for (let i = 0; i < countY; i++) {
+                let y = i * stride;
+                // Flip V if odd
+                drawTile(context, img, width - tileSize, y, tileSize, false, shouldMirror(i));
+            }
+
+            context.filter = 'none';
+        }
+
+        // --- Export Functions ---
+
+        function downloadPNG() {
+            if (!state.image) return;
+
+            const TARGET_RES = 3840; 
+            const currentMax = Math.max(canvas.width, canvas.height);
+            const scale = TARGET_RES / currentMax;
+
+            const exportW = canvas.width * scale;
+            const exportH = canvas.height * scale;
+            
+            const scaledThickness = state.thickness * scale;
+            const scaledGap = state.gap * scale;
+
+            const offCanvas = document.createElement('canvas');
+            offCanvas.width = exportW;
+            offCanvas.height = exportH;
+            const offCtx = offCanvas.getContext('2d');
+
+            renderFrame(offCtx, exportW, exportH, scaledThickness, scaledGap, state.exposure, state.bgColor);
+
+            const link = document.createElement('a');
+            link.download = `framed-mirror-${Date.now()}.png`;
+            link.href = offCanvas.toDataURL('image/png', 1.0);
+            link.click();
+        }
+
+        function downloadSVG() {
+            if (!state.imageSrc) return;
+
+            const w = canvas.width;
+            const h = canvas.height;
+            const tileSize = state.thickness;
+            const gap = state.gap;
+            const stride = tileSize + gap;
+            
+            // Optimization: Define image ONCE in defs
+            // This prevents repeating the base64 string for every single tile
+            const imgId = "tile-img";
+            const imgDef = `<image id="${imgId}" href="${state.imageSrc}" width="${tileSize}" height="${tileSize}" preserveAspectRatio="none" />`;
+
+            let tiles = "";
+
+            // Helper to generate SVG tile using <use> tag
+            const addTile = (x, y, flipH, flipV) => {
+                let transform = "";
+                // To mirror in SVG around the tile center:
+                // translate(cx, cy) scale(sx, sy) translate(-cx, -cy)
+                if (flipH || flipV) {
+                    const cx = x + tileSize / 2;
+                    const cy = y + tileSize / 2;
+                    const sx = flipH ? -1 : 1;
+                    const sy = flipV ? -1 : 1;
+                    transform = `transform="translate(${cx}, ${cy}) scale(${sx}, ${sy}) translate(-${cx}, -${cy})"`;
+                }
+
+                // Use <use> tag referencing the ID in defs
+                tiles += `<use href="#${imgId}" x="${x}" y="${y}" ${transform} />`;
+            };
+
+            const shouldMirror = (i) => state.mirrorAlternates && (i % 2 !== 0);
+
+            // Top
+            let countX = Math.ceil((w + gap) / stride);
+            for (let i = 0; i < countX; i++) {
+                addTile(i * stride, 0, shouldMirror(i), false);
+            }
+            // Bottom
+            for (let i = 0; i < countX; i++) {
+                addTile(i * stride, h - tileSize, shouldMirror(i), false);
+            }
+            // Left
+            let countY = Math.ceil((h + gap) / stride);
+            for (let i = 0; i < countY; i++) {
+                addTile(0, i * stride, false, shouldMirror(i));
+            }
+            // Right
+            for (let i = 0; i < countY; i++) {
+                addTile(w - tileSize, i * stride, false, shouldMirror(i));
+            }
+
+            const slope = state.exposure / 100;
+            const filterDef = `
+                <filter id="brightness">
+                    <feComponentTransfer>
+                        <feFuncR type="linear" slope="${slope}"/>
+                        <feFuncG type="linear" slope="${slope}"/>
+                        <feFuncB type="linear" slope="${slope}"/>
+                    </feComponentTransfer>
+                </filter>
+            `;
+            
+            let bgRect = "";
+            if (state.bgColor && state.bgColor !== 'transparent') {
+                bgRect = `<rect x="${tileSize}" y="${tileSize}" width="${w - tileSize*2}" height="${h - tileSize*2}" fill="${state.bgColor}" />`;
+            }
+
+            const svgContent = `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">
+                    <defs>
+                        ${filterDef}
+                        ${imgDef}
+                    </defs>
+                    ${bgRect}
+                    <g filter="url(#brightness)">
+                        ${tiles}
+                    </g>
+                </svg>
+            `;
+
+            const blob = new Blob([svgContent], {type: 'image/svg+xml'});
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `framed-mirror-${Date.now()}.svg`;
+            link.click();
+        }
+
+    </script>
+</body>
+</html>
