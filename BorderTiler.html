@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TileFrame - Custom Border Generator</title>
+    <title>TileFrame Studio</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Three.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
         body { font-family: 'Inter', sans-serif; }
@@ -16,18 +18,19 @@
         ::-webkit-scrollbar-thumb:hover { background: #6b7280; }
 
         .canvas-container {
-            background-image: 
-                linear-gradient(45deg, #2a2a2a 25%, transparent 25%), 
-                linear-gradient(-45deg, #2a2a2a 25%, transparent 25%), 
-                linear-gradient(45deg, transparent 75%, #2a2a2a 75%), 
-                linear-gradient(-45deg, transparent 75%, #2a2a2a 75%);
-            background-size: 20px 20px;
-            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-            background-color: #1a1a1a;
+            background-color: #0f0f0f;
+            overflow: hidden;
+            position: relative;
         }
+        
+        /* 3D Cursor */
+        .cursor-grab { cursor: grab; }
+        .cursor-grabbing { cursor: grabbing; }
 
         .toggle-checkbox:checked { right: 0; border-color: #6366f1; }
         .toggle-checkbox:checked + .toggle-label { background-color: #6366f1; }
+        
+        .tab-btn.active { background-color: #4f46e5; color: white; border-color: #4f46e5; }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100 h-screen flex flex-col md:flex-row overflow-hidden">
@@ -35,9 +38,9 @@
     <aside class="w-full md:w-80 bg-gray-800 border-r border-gray-700 flex flex-col z-20 shadow-xl overflow-y-auto">
         <div class="p-6 border-b border-gray-700">
             <h1 class="text-xl font-bold flex items-center gap-2 text-indigo-400">
-                <i data-lucide="layout-template" class="w-6 h-6"></i> TileFrame
+                <i data-lucide="layers" class="w-6 h-6"></i> TileFrame Studio
             </h1>
-            <p class="text-xs text-gray-400 mt-1">Perfect Fit Border Generator</p>
+            <p class="text-xs text-gray-400 mt-1">2D/3D Border & Pipe Generator</p>
         </div>
 
         <div class="p-6 space-y-8 flex-1">
@@ -46,21 +49,19 @@
                 <label class="block text-sm font-semibold text-gray-300">1. Upload Tile</label>
                 <div class="relative group">
                     <input type="file" id="imageInput" accept="image/png, image/jpeg" class="hidden">
-                    <label for="imageInput" class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer hover:border-indigo-500 hover:bg-gray-750 transition-all">
-                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                            <i data-lucide="upload-cloud" class="w-8 h-8 text-gray-400 mb-2 group-hover:text-indigo-400"></i>
-                            <p class="text-sm text-gray-400 text-center"><span class="font-semibold">Click to upload</span></p>
-                            <p class="text-xs text-gray-500 mt-1" id="fileName">No file chosen</p>
+                    <label for="imageInput" class="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer hover:border-indigo-500 hover:bg-gray-750 transition-all">
+                        <div class="flex flex-col items-center justify-center pt-3 pb-4">
+                            <i data-lucide="upload-cloud" class="w-6 h-6 text-gray-400 mb-2 group-hover:text-indigo-400"></i>
+                            <p class="text-xs text-gray-500 text-center" id="fileName">Upload / Paste</p>
                         </div>
                     </label>
                 </div>
                 
-                <!-- Action Buttons -->
                 <div class="flex gap-2">
-                    <button id="pasteBtn" class="flex-1 bg-gray-700 hover:bg-gray-600 text-xs py-2 rounded border border-gray-600 transition-colors flex items-center justify-center gap-2" title="Or press Ctrl+V">
+                    <button id="pasteBtn" class="flex-1 bg-gray-700 hover:bg-gray-600 text-[10px] py-2 rounded border border-gray-600 transition-colors flex items-center justify-center gap-1">
                         <i data-lucide="clipboard-copy" class="w-3 h-3"></i> Paste
                     </button>
-                    <button id="dlTileBtn" class="flex-1 bg-gray-700 hover:bg-gray-600 text-xs py-2 rounded border border-gray-600 transition-colors flex items-center justify-center gap-2">
+                    <button id="dlTileBtn" class="flex-1 bg-gray-700 hover:bg-gray-600 text-[10px] py-2 rounded border border-gray-600 transition-colors flex items-center justify-center gap-1">
                         <i data-lucide="save" class="w-3 h-3"></i> Save Tile
                     </button>
                 </div>
@@ -68,595 +69,655 @@
 
             <div class="space-y-3">
                 <label class="block text-sm font-semibold text-gray-300">2. Canvas Ratio</label>
-                <div class="grid grid-cols-2 gap-2">
-                    <button onclick="setRatio(16, 9)" class="preset-btn px-3 py-2 text-xs bg-gray-700 hover:bg-gray-600 rounded border border-gray-600 active:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">YouTube (16:9)</button>
-                    <button onclick="setRatio(1, 1)" class="preset-btn px-3 py-2 text-xs bg-gray-700 hover:bg-gray-600 rounded border border-gray-600 active:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">Square (1:1)</button>
-                    <button onclick="setRatio(9, 16)" class="preset-btn px-3 py-2 text-xs bg-gray-700 hover:bg-gray-600 rounded border border-gray-600 active:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">Story (9:16)</button>
-                    <button onclick="setRatio(4, 5)" class="preset-btn px-3 py-2 text-xs bg-gray-700 hover:bg-gray-600 rounded border border-gray-600 active:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">Portrait (4:5)</button>
-                    <button onclick="setRatio(4, 3)" class="preset-btn px-3 py-2 text-xs bg-gray-700 hover:bg-gray-600 rounded border border-gray-600 active:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">Landscape (4:3)</button>
-                    <button onclick="setRatio(3, 2)" class="preset-btn px-3 py-2 text-xs bg-gray-700 hover:bg-gray-600 rounded border border-gray-600 active:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">Photo (3:2)</button>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="setRatio(16, 9)" class="preset-btn px-2 py-2 text-[10px] bg-gray-700 hover:bg-gray-600 rounded border border-gray-600">16:9</button>
+                    <button onclick="setRatio(1, 1)" class="preset-btn px-2 py-2 text-[10px] bg-gray-700 hover:bg-gray-600 rounded border border-gray-600">1:1</button>
+                    <button onclick="setRatio(9, 16)" class="preset-btn px-2 py-2 text-[10px] bg-gray-700 hover:bg-gray-600 rounded border border-gray-600">9:16</button>
+                    <button onclick="setRatio(4, 5)" class="preset-btn px-2 py-2 text-[10px] bg-gray-700 hover:bg-gray-600 rounded border border-gray-600">4:5</button>
+                    <button onclick="setRatio(4, 3)" class="preset-btn px-2 py-2 text-[10px] bg-gray-700 hover:bg-gray-600 rounded border border-gray-600">4:3</button>
+                    <button onclick="setRatio(3, 2)" class="preset-btn px-2 py-2 text-[10px] bg-gray-700 hover:bg-gray-600 rounded border border-gray-600">3:2</button>
                 </div>
             </div>
 
-            <div class="space-y-6">
-                <label class="block text-sm font-semibold text-gray-300">3. Customize</label>
-                
-                <!-- Mode Toggles -->
-                <div class="space-y-4 p-3 bg-gray-750 rounded-lg border border-gray-700">
-                    <!-- Mirror Toggle -->
-                    <div class="flex items-center justify-between">
-                        <label class="text-xs text-gray-300 flex items-center gap-2">
-                            Mirror Alternates
-                        </label>
-                        <div class="relative inline-block w-10 align-middle select-none">
-                            <input type="checkbox" id="mirrorToggle" checked class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300"/>
-                            <label for="mirrorToggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-700 cursor-pointer transition-colors duration-300"></label>
-                        </div>
-                    </div>
-
-                    <!-- Strict Mode Toggle -->
-                    <div class="flex items-center justify-between border-t border-gray-600 pt-3">
-                        <div>
-                            <label class="text-xs text-indigo-300 font-semibold flex items-center gap-2">
-                                Strict Fit (Fixed Canvas)
-                            </label>
-                            <p class="text-[10px] text-gray-400">Forces exact aspect ratio</p>
-                        </div>
-                        <div class="relative inline-block w-10 align-middle select-none">
-                            <input type="checkbox" id="strictToggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300"/>
-                            <label for="strictToggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-700 cursor-pointer transition-colors duration-300"></label>
-                        </div>
+            <!-- Toggles Section -->
+            <div class="space-y-4 p-3 bg-gray-750 rounded-lg border border-gray-700">
+                <div class="flex items-center justify-between">
+                    <label class="text-xs text-gray-300">Mirror Alternates</label>
+                    <div class="relative inline-block w-8 align-middle select-none">
+                        <input type="checkbox" id="mirrorToggle" checked class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300"/>
+                        <label for="mirrorToggle" class="toggle-label block overflow-hidden h-4 rounded-full bg-gray-700 cursor-pointer transition-colors duration-300"></label>
                     </div>
                 </div>
-
-                <!-- Validation Box (Visible only in Strict Mode) -->
-                <div id="validationBox" class="hidden p-3 rounded border text-xs space-y-2 bg-gray-800 border-gray-600">
-                    <div class="font-semibold text-gray-300 border-b border-gray-700 pb-1 mb-1">Fit Validator</div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-400">Required Tile Ratio:</span>
-                        <span id="reqRatioVal" class="font-mono text-indigo-400">1.00</span>
-                    </div>
-                    <div class="flex justify-between">
-                        <span class="text-gray-400">Your Image Ratio:</span>
-                        <span id="imgRatioVal" class="font-mono text-gray-300">1.00</span>
-                    </div>
-                    <div id="fitStatus" class="mt-2 text-center p-1 rounded font-bold bg-green-900/50 text-green-400 border border-green-700">
-                        Perfect Match
-                    </div>
-                    
-                    <!-- Pixel Size Calculator -->
-                    <div class="border-t border-gray-700 mt-3 pt-3">
-                        <label class="text-[10px] text-gray-400 block mb-1">Pixel Size Calculator (Helper)</label>
-                        <div class="flex gap-2 items-center">
-                            <input type="number" id="calcW" placeholder="W" class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-indigo-300 focus:outline-none focus:border-indigo-500 placeholder-gray-600">
-                            <span class="text-gray-500 text-xs">x</span>
-                            <input type="number" id="calcH" placeholder="H" class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-indigo-300 focus:outline-none focus:border-indigo-500 placeholder-gray-600">
-                        </div>
-                        <p class="text-[9px] text-gray-500 italic mt-1">Enter one value to calculate the other.</p>
+                <div class="flex items-center justify-between border-t border-gray-600 pt-2">
+                    <label class="text-xs text-indigo-300 font-semibold">Strict Fit Mode</label>
+                    <div class="relative inline-block w-8 align-middle select-none">
+                        <input type="checkbox" id="strictToggle" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300"/>
+                        <label for="strictToggle" class="toggle-label block overflow-hidden h-4 rounded-full bg-gray-700 cursor-pointer transition-colors duration-300"></label>
                     </div>
                 </div>
+            </div>
 
-                <!-- Sliders -->
+            <!-- Validation Box -->
+            <div id="validationBox" class="hidden p-3 rounded border text-xs space-y-2 bg-gray-800 border-gray-600">
+                <div class="font-semibold text-gray-300 border-b border-gray-700 pb-1 mb-1">Fit Validator</div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Required Ratio:</span>
+                    <span id="reqRatioVal" class="font-mono text-indigo-400">1.00</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-400">Your Ratio:</span>
+                    <span id="imgRatioVal" class="font-mono text-gray-300">1.00</span>
+                </div>
+                <div id="fitStatus" class="mt-2 text-center p-1 rounded font-bold bg-green-900/50 text-green-400 border border-green-700">Perfect Match</div>
+            </div>
+
+            <!-- 2D Settings -->
+            <div class="space-y-4">
+                <label class="block text-sm font-semibold text-gray-300">3. Pattern Settings</label>
                 <div class="space-y-1">
-                    <div class="flex justify-between">
-                        <label class="text-xs text-gray-400">Border Thickness</label>
-                        <span id="thicknessVal" class="text-xs text-indigo-400 font-mono">50px</span>
-                    </div>
-                    <input type="range" id="thickness" min="10" max="300" value="60" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                    <div class="flex justify-between"><label class="text-xs text-gray-400">Tile Size</label><span id="thicknessVal" class="text-xs text-indigo-400">60px</span></div>
+                    <input type="range" id="thickness" min="10" max="300" value="60" class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
                 </div>
-
                 <div class="space-y-1">
-                    <div class="flex justify-between">
-                        <label class="text-xs text-gray-400">Tile Gap</label>
-                        <span id="gapVal" class="text-xs text-indigo-400 font-mono">0px</span>
-                    </div>
-                    <input type="range" id="gap" min="0" max="100" value="0" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                    <div class="flex justify-between"><label class="text-xs text-gray-400">Gap</label><span id="gapVal" class="text-xs text-indigo-400">0px</span></div>
+                    <input type="range" id="gap" min="0" max="100" value="0" class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
                 </div>
-
-                <div class="space-y-1">
-                    <div class="flex justify-between">
-                        <label class="text-xs text-gray-400">Exposure</label>
-                        <span id="exposureVal" class="text-xs text-indigo-400 font-mono">100%</span>
-                    </div>
-                    <input type="range" id="exposure" min="0" max="200" value="100" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
-                </div>
-                 
                  <div class="space-y-1">
-                    <div class="flex justify-between">
-                        <label class="text-xs text-gray-400">Inner Background</label>
-                    </div>
+                    <div class="flex justify-between"><label class="text-xs text-gray-400">Inner BG</label></div>
                     <div class="flex gap-2">
-                        <button onclick="setBg('transparent')" class="w-8 h-8 rounded border border-gray-600 bg-gray-800" title="Transparent"><i data-lucide="eraser" class="w-4 h-4 mx-auto text-gray-400"></i></button>
-                        <button onclick="setBg('#ffffff')" class="w-8 h-8 rounded border border-gray-600 bg-white" title="White"></button>
-                        <button onclick="setBg('#000000')" class="w-8 h-8 rounded border border-gray-600 bg-black" title="Black"></button>
-                        <input type="color" id="bgColorPicker" onchange="setBg(this.value)" class="w-8 h-8 p-0 border-0 rounded cursor-pointer bg-transparent">
+                        <button onclick="setBg('transparent')" class="w-6 h-6 rounded border border-gray-600 bg-gray-800" title="Transparent"><i data-lucide="eraser" class="w-3 h-3 mx-auto text-gray-400"></i></button>
+                        <button onclick="setBg('#ffffff')" class="w-6 h-6 rounded border border-gray-600 bg-white" title="White"></button>
+                        <button onclick="setBg('#000000')" class="w-6 h-6 rounded border border-gray-600 bg-black" title="Black"></button>
+                        <input type="color" id="bgColorPicker" onchange="setBg(this.value)" class="w-6 h-6 p-0 border-0 rounded cursor-pointer bg-transparent">
                     </div>
                 </div>
             </div>
+
+            <!-- Pipe Settings -->
+            <div class="space-y-4 border-t border-gray-700 pt-4">
+                <label class="block text-sm font-semibold text-gray-300 flex items-center justify-between">
+                    <span>4. Pipe / Line Settings</span>
+                    <div class="relative inline-block w-8 align-middle select-none">
+                        <input type="checkbox" id="pipeToggle" checked class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300"/>
+                        <label for="pipeToggle" class="toggle-label block overflow-hidden h-4 rounded-full bg-gray-700 cursor-pointer transition-colors duration-300"></label>
+                    </div>
+                </label>
+                
+                <div class="flex gap-4">
+                    <label class="flex items-center gap-2 text-xs text-gray-400">
+                        <input type="checkbox" id="outerPipeToggle" checked class="rounded bg-gray-700 border-gray-600 text-indigo-500"> Outer
+                    </label>
+                    <label class="flex items-center gap-2 text-xs text-gray-400">
+                        <input type="checkbox" id="innerPipeToggle" checked class="rounded bg-gray-700 border-gray-600 text-indigo-500"> Inner
+                    </label>
+                </div>
+
+                <div class="space-y-1">
+                    <div class="flex justify-between"><label class="text-xs text-gray-400">Outer Radius</label><span id="outerRadiusVal" class="text-xs text-indigo-400">8px</span></div>
+                    <input type="range" id="outerRadius" min="1" max="50" value="8" class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+
+                <div class="space-y-1">
+                    <div class="flex justify-between"><label class="text-xs text-gray-400">Inner Radius</label><span id="innerRadiusVal" class="text-xs text-indigo-400">8px</span></div>
+                    <input type="range" id="innerRadius" min="1" max="50" value="8" class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+
+                <div class="space-y-1">
+                    <div class="flex justify-between"><label class="text-xs text-gray-400">Border Offset</label><span id="offsetVal" class="text-xs text-indigo-400">0px</span></div>
+                    <input type="range" id="pipeOffset" min="-50" max="50" value="0" class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+
+                <div class="space-y-1">
+                    <div class="flex justify-between"><label class="text-xs text-gray-400">Lighting / Intensity</label><span id="lightVal" class="text-xs text-indigo-400">1.0</span></div>
+                    <input type="range" id="lightIntensity" min="0" max="300" value="100" class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                </div>
+            </div>
+
         </div>
 
         <div class="p-6 border-t border-gray-700 bg-gray-850">
-            <label class="block text-sm font-semibold text-gray-300 mb-3">4. Export</label>
-            
-            <!-- Force Transparent Checkbox -->
+            <label class="block text-sm font-semibold text-gray-300 mb-3">5. Export</label>
             <div class="flex items-center gap-2 mb-3">
-                 <input type="checkbox" id="forceTransparent" class="w-4 h-4 rounded bg-gray-700 border-gray-600 text-indigo-500 focus:ring-indigo-500 focus:ring-offset-gray-800 cursor-pointer">
-                 <label for="forceTransparent" class="text-xs text-gray-400 select-none cursor-pointer">Force Transparent Background</label>
+                 <input type="checkbox" id="forceTransparent" class="w-4 h-4 rounded bg-gray-700 border-gray-600 text-indigo-500">
+                 <label for="forceTransparent" class="text-xs text-gray-400">Transparent BG</label>
             </div>
-
-            <div class="grid grid-cols-2 gap-3">
-                <button onclick="downloadPNG()" class="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
-                    <i data-lucide="download" class="w-4 h-4"></i> PNG (4K)
-                </button>
-                <button onclick="downloadSVG()" class="flex items-center justify-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors border border-gray-600">
-                    <i data-lucide="file-code" class="w-4 h-4"></i> SVG
-                </button>
-            </div>
+            <button onclick="downloadCurrentView()" class="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white px-2 py-3 rounded-lg text-sm font-medium transition-colors">
+                <i data-lucide="download" class="w-4 h-4"></i> Download Current View
+            </button>
         </div>
     </aside>
 
-    <main class="flex-1 flex flex-col relative overflow-hidden bg-black">
-        <div id="modeBadge" class="absolute top-4 left-4 z-10 bg-black/50 text-white text-xs px-3 py-1 rounded backdrop-blur-sm pointer-events-none border border-gray-600">
-            Auto-Snap Mode
-        </div>
+    <main class="flex-1 flex flex-col relative bg-black" id="mainContainer">
         
-        <div class="flex-1 canvas-container flex items-center justify-center p-8 overflow-auto">
-            <canvas id="previewCanvas" class="shadow-2xl max-w-full max-h-full transition-all duration-300"></canvas>
+        <!-- View Tabs -->
+        <div class="absolute top-4 left-1/2 transform -translate-x-1/2 z-30 bg-gray-800 p-1 rounded-lg border border-gray-700 flex gap-1 shadow-lg">
+            <button onclick="setViewMode('2d')" id="tab2d" class="tab-btn px-4 py-1 text-xs rounded font-medium text-gray-400 hover:text-white transition-colors">2D Canvas</button>
+            <button onclick="setViewMode('3d')" id="tab3d" class="tab-btn active px-4 py-1 text-xs rounded font-medium text-white bg-indigo-600">3D View</button>
         </div>
-        
-        <div class="h-8 bg-gray-800 text-gray-500 text-xs flex items-center px-4 border-t border-gray-700 justify-between">
-            <span id="dimsDisplay">Dimensions: 0 x 0</span>
-            <span>Zoom: Fit</span>
+
+        <!-- 3D Container -->
+        <div id="container3D" class="w-full h-full canvas-container">
+            <div class="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10 bg-black/50 text-gray-400 text-[10px] px-3 py-1 rounded backdrop-blur-sm pointer-events-none">
+                Click & Drag to Rotate
+            </div>
         </div>
+
+        <!-- 2D Container (Hidden by default based on tab) -->
+        <div id="container2D" class="w-full h-full hidden flex items-center justify-center p-8 bg-gray-900 canvas-container" style="background-image: radial-gradient(#333 1px, transparent 1px); background-size: 20px 20px;">
+            <canvas id="mainCanvas2D" class="shadow-2xl max-w-full max-h-full"></canvas>
+        </div>
+
     </main>
 
     <script>
         const state = {
+            viewMode: '3d', // '2d' or '3d'
             image: null,
             imageSrc: null,
-            imgRatio: 1, // Width / Height of uploaded image
-            reqRatio: 1, // Calculated required ratio
+            imgRatio: 1,
             aspectRatio: 16/9,
             thickness: 60,
             gap: 0,
-            exposure: 100,
             bgColor: 'transparent',
             mirrorAlternates: true,
             strictMode: false,
-            canvasBaseSize: 1200
+            
+            // Pipe State
+            pipesEnabled: true,
+            outerRadius: 8,
+            innerRadius: 8,
+            pipeOffset: 0,
+            outerPipe: true,
+            innerPipe: true,
+            
+            // Appearance
+            lightIntensity: 1.0,
+            dominantColor: 0xffffff,
+            
+            // Interaction
+            cameraAngleX: 0,
+            cameraAngleY: 0,
+            canvasBaseSize: 1024
         };
 
-        const canvas = document.getElementById('previewCanvas');
-        const ctx = canvas.getContext('2d');
-        const imageInput = document.getElementById('imageInput');
-        const fileNameDisplay = document.getElementById('fileName');
-        const dimsDisplay = document.getElementById('dimsDisplay');
-        const modeBadge = document.getElementById('modeBadge');
-        const validationBox = document.getElementById('validationBox');
-        const reqRatioVal = document.getElementById('reqRatioVal');
-        const imgRatioVal = document.getElementById('imgRatioVal');
-        const fitStatus = document.getElementById('fitStatus');
-        const calcW = document.getElementById('calcW');
-        const calcH = document.getElementById('calcH');
+        // DOM Elements
+        const container3D = document.getElementById('container3D');
+        const container2D = document.getElementById('container2D');
+        const canvas2D = document.getElementById('mainCanvas2D');
+        const ctx2D = canvas2D.getContext('2d');
+        const tab2d = document.getElementById('tab2d');
+        const tab3d = document.getElementById('tab3d');
 
-        // Init Lucide
+        // 3D Globals
+        let scene, camera, renderer, frameMesh, outerPipeMesh, innerPipeMesh, ambientLight, dirLight;
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        const CAMERA_DIST_FACTOR = 1.3;
+
         document.addEventListener('DOMContentLoaded', () => {
-            const loadIcons = () => {
-                if (typeof lucide !== 'undefined') lucide.createIcons();
-                else setTimeout(loadIcons, 100);
-            };
-            loadIcons();
+            initThreeJS();
+            initLucide();
+            loadPlaceholder();
+            setupEventListeners();
         });
 
-        // Common loader function
-        const loadImageFromFile = (file) => {
-            fileNameDisplay.textContent = file.name || "Pasted Image";
-            const reader = new FileReader();
-            reader.onload = (evt) => {
-                const img = new Image();
-                img.onload = () => {
-                    state.image = img;
-                    state.imageSrc = evt.target.result;
-                    state.imgRatio = img.width / img.height;
-                    updateCanvas();
-                };
-                img.src = evt.target.result;
-            };
-            reader.readAsDataURL(file);
-        };
+        function initLucide() { if(typeof lucide !== 'undefined') lucide.createIcons(); else setTimeout(initLucide, 100); }
 
-        // Inputs
-        imageInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) loadImageFromFile(file);
-        });
-
-        // Paste Logic (Button)
-        document.getElementById('pasteBtn').addEventListener('click', async () => {
-            try {
-                const items = await navigator.clipboard.read();
-                let found = false;
-                for (const item of items) {
-                     const imageType = item.types.find(type => type.startsWith('image/'));
-                     if (imageType) {
-                         const blob = await item.getType(imageType);
-                         loadImageFromFile(blob);
-                         found = true;
-                         break;
-                     }
-                }
-                if (!found) {
-                    const btn = document.getElementById('pasteBtn');
-                    const orig = btn.innerHTML;
-                    btn.textContent = "No Image Found";
-                    setTimeout(() => btn.innerHTML = orig, 1500);
-                }
-            } catch (err) {
-                // Fallback UI for permission issues
-                const btn = document.getElementById('pasteBtn');
-                const origText = btn.innerHTML;
-                btn.textContent = "Press Ctrl+V";
-                setTimeout(() => btn.innerHTML = origText, 2000);
+        function setViewMode(mode) {
+            state.viewMode = mode;
+            if(mode === '2d') {
+                container2D.classList.remove('hidden');
+                container3D.classList.add('hidden');
+                tab2d.classList.add('active');
+                tab3d.classList.remove('active');
+                updateAll(); // Redraw 2D
+            } else {
+                container2D.classList.add('hidden');
+                container3D.classList.remove('hidden');
+                tab2d.classList.remove('active');
+                tab3d.classList.add('active');
+                updateAll(); // Trigger 3D update
             }
-        });
+        }
 
-        // Global Paste Listener (Ctrl+V)
-        window.addEventListener('paste', (e) => {
-            const items = e.clipboardData.items;
-            for (let i = 0; i < items.length; i++) {
-                if (items[i].type.indexOf('image') !== -1) {
-                    const blob = items[i].getAsFile();
-                    loadImageFromFile(blob);
-                }
-            }
-        });
+        // --- 3D Engine ---
+        function initThreeJS() {
+            const w = container3D.clientWidth;
+            const h = container3D.clientHeight;
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0f0f0f);
+            camera = new THREE.PerspectiveCamera(45, w/h, 0.1, 5000);
+            updateCameraPosition();
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+            renderer.setSize(w, h);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container3D.appendChild(renderer.domElement);
 
-        // Download Tile
-        document.getElementById('dlTileBtn').addEventListener('click', () => {
-            if(!state.imageSrc) return;
-            const link = document.createElement('a');
-            link.download = `tile-source-${Date.now()}.png`;
-            link.href = state.imageSrc;
-            link.click();
-        });
-
-        // Load Placeholder
-        const placeholderImg = new Image();
-        placeholderImg.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='m4.93 4.93 14.14 14.14'/%3E%3C/svg%3E";
-        placeholderImg.onload = () => {
-            state.image = placeholderImg;
-            state.imageSrc = placeholderImg.src;
-            state.imgRatio = 1;
-            updateCanvas();
-        };
-
-        // Calculator Logic
-        calcW.addEventListener('input', () => {
-            if (!calcW.value) return;
-            const val = parseFloat(calcW.value);
-            // Ratio = W / H  =>  H = W / Ratio
-            calcH.value = Math.round(val / state.reqRatio);
-        });
-
-        calcH.addEventListener('input', () => {
-            if (!calcH.value) return;
-            const val = parseFloat(calcH.value);
-            // Ratio = W / H  =>  W = H * Ratio
-            calcW.value = Math.round(val * state.reqRatio);
-        });
-
-        const bindSlider = (id, key, suffix = '') => {
-            const el = document.getElementById(id);
-            const disp = document.getElementById(id + 'Val');
-            el.addEventListener('input', (e) => {
-                state[key] = parseFloat(e.target.value);
-                disp.textContent = state[key] + suffix;
-                updateCanvas();
+            // Controls
+            container3D.addEventListener('mousedown', (e) => { isDragging = true; previousMousePosition = { x: e.clientX, y: e.clientY }; container3D.classList.add('cursor-grabbing'); });
+            window.addEventListener('mouseup', () => { isDragging = false; container3D.classList.remove('cursor-grabbing'); });
+            container3D.addEventListener('mousemove', (e) => {
+                if(!isDragging) return;
+                const dx = e.clientX - previousMousePosition.x;
+                const dy = e.clientY - previousMousePosition.y;
+                state.cameraAngleX -= dx * 0.01;
+                state.cameraAngleY -= dy * 0.01;
+                state.cameraAngleY = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, state.cameraAngleY));
+                updateCameraPosition();
+                previousMousePosition = { x: e.clientX, y: e.clientY };
             });
-        };
-        bindSlider('thickness', 'thickness', 'px');
-        bindSlider('gap', 'gap', 'px');
-        bindSlider('exposure', 'exposure', '%');
 
-        document.getElementById('mirrorToggle').addEventListener('change', (e) => {
-            state.mirrorAlternates = e.target.checked;
-            updateCanvas();
-        });
+            // Lighting
+            ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+            dirLight.position.set(500, 500, 1000);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 2048; 
+            dirLight.shadow.mapSize.height = 2048;
+            scene.add(dirLight);
 
-        document.getElementById('strictToggle').addEventListener('change', (e) => {
-            state.strictMode = e.target.checked;
-            modeBadge.textContent = state.strictMode ? "Strict Fit Mode" : "Auto-Snap Mode";
-            modeBadge.className = `absolute top-4 left-4 z-10 text-white text-xs px-3 py-1 rounded backdrop-blur-sm pointer-events-none border ${state.strictMode ? 'bg-indigo-900/80 border-indigo-500' : 'bg-black/50 border-gray-600'}`;
-            
-            if (state.strictMode) validationBox.classList.remove('hidden');
-            else validationBox.classList.add('hidden');
-            
-            updateCanvas();
-        });
+            // Back Light for Rim
+            const backLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            backLight.position.set(-500, 0, -500);
+            scene.add(backLight);
 
-        function setRatio(w, h) {
-            state.aspectRatio = w / h;
-            updateCanvas();
+            animate();
         }
 
-        function setBg(color) {
-            state.bgColor = color;
-            updateCanvas();
+        function updateCameraPosition() {
+            const dist = camera.position.length() || 1500;
+            const cx = dist * Math.sin(state.cameraAngleX) * Math.cos(state.cameraAngleY);
+            const cy = dist * Math.sin(state.cameraAngleY);
+            const cz = dist * Math.cos(state.cameraAngleX) * Math.cos(state.cameraAngleY);
+            camera.position.set(cx, cy, cz);
+            camera.lookAt(0, 0, 0);
         }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            if(state.viewMode === '3d') renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            const w = container3D.clientWidth;
+            const h = container3D.clientHeight;
+            camera.aspect = w/h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+            updateAll();
+        });
 
         // --- Core Logic ---
-
-        function updateCanvas() {
+        function updateAll() {
             if (!state.image) return;
 
-            // 1. Calculate Target Dimensions
+            // Dimensions Calc
             let targetW, targetH;
-            if (state.aspectRatio >= 1) {
-                targetW = state.canvasBaseSize;
-                targetH = state.canvasBaseSize / state.aspectRatio;
-            } else {
-                targetH = state.canvasBaseSize;
-                targetW = state.canvasBaseSize * state.aspectRatio;
-            }
+            if (state.aspectRatio >= 1) { targetW = state.canvasBaseSize; targetH = state.canvasBaseSize / state.aspectRatio; } 
+            else { targetH = state.canvasBaseSize; targetW = state.canvasBaseSize * state.aspectRatio; }
 
             let canvasW, canvasH, tileW, tileH;
             const strideRef = state.thickness + state.gap;
 
-            // 2. Branching Logic
             if (state.strictMode) {
-                // STRICT MODE: Fixed Canvas Size, Variable Tile Size
-                canvasW = targetW;
-                canvasH = targetH;
-                
-                // Calculate how many tiles fit closest to desired thickness
-                const countX = Math.max(1, Math.round((canvasW + state.gap) / strideRef));
-                const countY = Math.max(1, Math.round((canvasH + state.gap) / strideRef));
-
-                // Reverse calculate tile dimensions to fit exactly
-                // W = count * (tW + gap) - gap  =>  tW = ((W + gap) / count) - gap
-                tileW = ((canvasW + state.gap) / countX) - state.gap;
-                tileH = ((canvasH + state.gap) / countY) - state.gap;
-
-                // Validation Updates
-                const reqRatio = tileW / tileH;
-                state.reqRatio = reqRatio; // Update state for calculator
-                reqRatioVal.textContent = reqRatio.toFixed(2);
-                imgRatioVal.textContent = state.imgRatio.toFixed(2);
-
-                const ratioDiff = Math.abs(reqRatio - state.imgRatio);
-                if (ratioDiff < 0.05) {
-                    fitStatus.textContent = "Perfect Match";
-                    fitStatus.className = "mt-2 text-center p-1 rounded font-bold bg-green-900/50 text-green-400 border border-green-700";
-                } else if (ratioDiff < 0.2) {
-                    fitStatus.textContent = "Slight Stretch";
-                    fitStatus.className = "mt-2 text-center p-1 rounded font-bold bg-yellow-900/50 text-yellow-400 border border-yellow-700";
-                } else {
-                    fitStatus.textContent = "Significant Distortion";
-                    fitStatus.className = "mt-2 text-center p-1 rounded font-bold bg-red-900/50 text-red-400 border border-red-700";
-                }
-                
-                // Recalculate calculator values if present
-                if (calcW.value) calcW.dispatchEvent(new Event('input'));
-                else if (calcH.value) calcH.dispatchEvent(new Event('input'));
-
+                canvasW = targetW; canvasH = targetH;
+                const cX = Math.max(1, Math.round((canvasW + state.gap) / strideRef));
+                const cY = Math.max(1, Math.round((canvasH + state.gap) / strideRef));
+                tileW = ((canvasW + state.gap) / cX) - state.gap;
+                tileH = ((canvasH + state.gap) / cY) - state.gap;
             } else {
-                // SNAP MODE: Fixed Tile Size (Square), Variable Canvas Size
-                const countX = Math.max(1, Math.round((targetW + state.gap) / strideRef));
-                const countY = Math.max(1, Math.round((targetH + state.gap) / strideRef));
-
-                canvasW = countX * strideRef - state.gap;
-                canvasH = countY * strideRef - state.gap;
-                tileW = state.thickness;
-                tileH = state.thickness;
-                state.reqRatio = 1; // Square
+                const cX = Math.max(1, Math.round((targetW + state.gap) / strideRef));
+                const cY = Math.max(1, Math.round((targetH + state.gap) / strideRef));
+                canvasW = cX * strideRef - state.gap;
+                canvasH = cY * strideRef - state.gap;
+                tileW = state.thickness; tileH = state.thickness;
             }
 
-            // Update Canvas
-            canvas.width = canvasW;
-            canvas.height = canvasH;
-            dimsDisplay.textContent = `Dimensions: ${Math.round(canvasW)} x ${Math.round(canvasH)} px`;
+            // Calculate Required Padding for Outer Pipe (Both 2D & 3D Texture Mapping)
+            let padding = 0;
+            if (state.pipesEnabled && state.outerPipe) {
+                // Ensure padding covers the full stroke width of the outer pipe
+                // Pipe draws with width outerRadius*2. 
+                // To be fully "outside", we shifted it by outerRadius*2 + offset.
+                padding = state.outerRadius * 2 + Math.max(0, state.pipeOffset);
+            }
 
-            renderFrame(ctx, canvasW, canvasH, tileW, tileH, state.gap, state.exposure, state.bgColor);
+            // Update Validation UI
+            const reqRatio = tileW/tileH;
+            const diff = Math.abs(reqRatio - state.imgRatio);
+            const statusBox = document.getElementById('validationBox');
+            if (state.strictMode) {
+                statusBox.classList.remove('hidden');
+                document.getElementById('reqRatioVal').textContent = reqRatio.toFixed(2);
+                document.getElementById('imgRatioVal').textContent = state.imgRatio.toFixed(2);
+                document.getElementById('fitStatus').textContent = diff < 0.05 ? "Perfect Match" : (diff < 0.2 ? "Slight Stretch" : "Distorted");
+                document.getElementById('fitStatus').className = `mt-2 text-center p-1 rounded font-bold border ${diff < 0.05 ? "bg-green-900/50 text-green-400 border-green-700" : (diff < 0.2 ? "bg-yellow-900/50 text-yellow-400 border-yellow-700" : "bg-red-900/50 text-red-400 border-red-700")}`;
+            } else {
+                statusBox.classList.add('hidden');
+            }
+
+            // Render based on mode
+            if (state.viewMode === '2d') {
+                canvas2D.width = canvasW + padding * 2;
+                canvas2D.height = canvasH + padding * 2;
+                render2DScene(ctx2D, canvasW, canvasH, tileW, tileH, padding);
+            } else {
+                // Generate texture for 3D frame
+                const texCanvas = document.createElement('canvas');
+                texCanvas.width = canvasW; texCanvas.height = canvasH;
+                // No padding for texture itself, mapped to plane
+                renderFrameToContext(texCanvas.getContext('2d'), canvasW, canvasH, tileW, tileH, state.gap, state.bgColor, false); 
+                update3DScene(canvasW, canvasH, tileW, tileH, texCanvas);
+            }
         }
 
-        function renderFrame(context, width, height, tW, tH, gap, exposure, bgColor) {
-            context.clearRect(0, 0, width, height);
+        // --- 2D Rendering ---
+        function render2DScene(ctx, w, h, tW, tH, padding) {
+            const fullW = w + padding * 2;
+            const fullH = h + padding * 2;
+            
+            ctx.clearRect(0, 0, fullW, fullH);
+            
+            // Shift context to account for outer pipe padding
+            ctx.save();
+            ctx.translate(padding, padding);
 
-            // Inner Background
-            // Thickness is roughly the average of tW/tH for calculation of inner rect
-            const insetX = tW; 
-            const insetY = tH; 
-
-            if (bgColor && bgColor !== 'transparent') {
-                context.fillStyle = bgColor;
-                context.fillRect(insetX, insetY, width - (insetX * 2), height - (insetY * 2));
-            } else if (bgColor === 'transparent') {
-                context.clearRect(insetX, insetY, width - (insetX * 2), height - (insetY * 2));
+            // 1. Background
+            if (state.bgColor && state.bgColor !== 'transparent') {
+                const insetX = tW; const insetY = tH;
+                ctx.fillStyle = state.bgColor;
+                ctx.fillRect(insetX, insetY, w - (insetX * 2), h - (insetY * 2));
             }
 
-            context.filter = `brightness(${exposure}%)`;
+            // 2. Draw "Pipes" (Lines) UNDER tiles
+            if (state.pipesEnabled) {
+                const off = state.pipeOffset;
+                
+                // Outer Line
+                if (state.outerPipe) {
+                    const r = state.outerRadius;
+                    // Draw strictly OUTSIDE the frame (starting from 0 outwards)
+                    // Box should be expanded by radius*2 + offset
+                    const expansion = r * 2 + off;
+                    // Draw box such that the inner edge of stroke touches the tile border '0'
+                    // Center of stroke is at -expansion/2? No.
+                    // We want the inner edge of the stroke (width 2r) to be at 0 if off=0.
+                    // Stroke extends r in, r out.
+                    // To put inner edge at -off, center must be at -off - r.
+                    // width needs to grow by 2*(off+r)
+                    const bx = -off - r * 2;
+                    const by = -off - r * 2;
+                    const bw = w + (off + r * 2) * 2;
+                    const bh = h + (off + r * 2) * 2;
+                    
+                    drawFake3DLineBox(ctx, bx, by, bw, bh, r);
+                }
+                
+                // Inner Line
+                if (state.innerPipe) {
+                    const r = state.innerRadius;
+                    // Inner hole starts at tW. We want pipe inside hole.
+                    // If offset is positive, move deeper into hole (away from tile)
+                    // Coordinate logic: tW + offset. 
+                    // Stroke width 2r. Center at tW + offset + r.
+                    const ix = tW + off;
+                    const iy = tH + off;
+                    const iw = w - (tW*2) - (off*2);
+                    const ih = h - (tH*2) - (off*2);
+                    
+                    if (iw > 0 && ih > 0) {
+                        drawFake3DLineBox(ctx, ix, iy, iw, ih, r);
+                    }
+                }
+            }
 
+            // 3. Draw Tiles ON TOP
+            renderFrameToContext(ctx, w, h, tW, tH, state.gap, 'transparent', true);
+            
+            ctx.restore();
+        }
+
+        function drawFake3DLineBox(ctx, x, y, w, h, r) {
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Base (Shadow/Edge)
+            ctx.lineWidth = r * 2;
+            ctx.strokeStyle = `rgba(0,0,0,0.8)`; 
+            ctx.beginPath();
+            // Inset rect so stroke sits exactly within w,h boundary
+            ctx.roundRect(x + r, y + r, w - r*2, h - r*2, Math.max(0, r)); 
+            ctx.stroke();
+
+            // Main Color
+            const col = new THREE.Color(state.dominantColor);
+            const rVal = Math.min(255, col.r * 255 * state.lightIntensity);
+            const gVal = Math.min(255, col.g * 255 * state.lightIntensity);
+            const bVal = Math.min(255, col.b * 255 * state.lightIntensity);
+            
+            ctx.lineWidth = r * 1.8;
+            ctx.strokeStyle = `rgb(${rVal},${gVal},${bVal})`;
+            ctx.stroke();
+
+            // Highlight (Center)
+            const highlightAlpha = Math.min(1.0, 0.6 * state.lightIntensity);
+            ctx.lineWidth = r * 0.6;
+            ctx.strokeStyle = `rgba(255,255,255,${highlightAlpha})`;
+            ctx.stroke();
+        }
+
+        // Shared Tile Render Logic
+        function renderFrameToContext(ctx, width, height, tW, tH, gap, bgColor, is2DMain) {
+            if (!is2DMain) {
+                 ctx.clearRect(0,0,width,height);
+                 // For texture generation, handle BG
+                 const insetX = tW; const insetY = tH;
+                 if (bgColor && bgColor !== 'transparent') {
+                    ctx.fillStyle = bgColor;
+                    ctx.fillRect(insetX, insetY, width - insetX*2, height - insetY*2);
+                 } else if (bgColor === 'transparent') {
+                    ctx.clearRect(insetX, insetY, width - insetX*2, height - insetY*2);
+                 }
+            }
+            
             const img = state.image;
             const strideX = tW + gap;
             const strideY = tH + gap;
-            
             const shouldMirror = (i) => state.mirrorAlternates && (i % 2 !== 0);
 
-            // Helpers
             const draw = (x, y, w, h, fh, fv) => {
-                if (!fh && !fv) {
-                    context.drawImage(img, x, y, w, h);
-                    return;
-                }
-                context.save();
-                context.translate(x + w/2, y + h/2);
-                context.scale(fh ? -1 : 1, fv ? -1 : 1);
-                context.drawImage(img, -w/2, -h/2, w, h);
-                context.restore();
+                if(!fh && !fv) { ctx.drawImage(img, x, y, w, h); return; }
+                ctx.save();
+                ctx.translate(x + w/2, y + h/2);
+                ctx.scale(fh ? -1 : 1, fv ? -1 : 1);
+                ctx.drawImage(img, -w/2, -h/2, w, h);
+                ctx.restore();
             }
 
-            // Top
-            const countX = Math.round((width + gap) / strideX);
-            for (let i = 0; i < countX; i++) {
-                draw(i * strideX, 0, tW, tH, shouldMirror(i), false);
-            }
-            // Bottom
-            for (let i = 0; i < countX; i++) {
-                draw(i * strideX, height - tH, tW, tH, shouldMirror(i), false);
-            }
-            // Left
-            const countY = Math.round((height + gap) / strideY);
-            for (let i = 0; i < countY; i++) {
-                draw(0, i * strideY, tW, tH, false, shouldMirror(i));
-            }
-            // Right
-            for (let i = 0; i < countY; i++) {
-                draw(width - tW, i * strideY, tW, tH, false, shouldMirror(i));
-            }
+            const cX = Math.round((width + gap) / strideX);
+            const cY = Math.round((height + gap) / strideY);
 
-            context.filter = 'none';
+            for (let i=0; i<cX; i++) draw(i*strideX, 0, tW, tH, shouldMirror(i), false);
+            for (let i=0; i<cX; i++) draw(i*strideX, height-tH, tW, tH, shouldMirror(i), false);
+            for (let i=0; i<cY; i++) draw(0, i*strideY, tW, tH, false, shouldMirror(i));
+            for (let i=0; i<cY; i++) draw(width-tW, i*strideY, tW, tH, false, shouldMirror(i));
         }
 
-        function downloadPNG() {
-            if (!state.image) return;
+        // --- 3D Update Logic ---
+        function update3DScene(w, h, tW, tH, texCanvas) {
+            // Cleanup
+            if (frameMesh) scene.remove(frameMesh);
+            if (outerPipeMesh) scene.remove(outerPipeMesh);
+            if (innerPipeMesh) scene.remove(innerPipeMesh);
 
-            const TARGET_RES = 3840; 
-            const currentMax = Math.max(canvas.width, canvas.height);
-            const scale = TARGET_RES / currentMax;
+            // 1. Tile Frame
+            const texture = new THREE.CanvasTexture(texCanvas);
+            texture.minFilter = THREE.LinearFilter;
+            // Frame is at Z=0.1 to sit on top of pipes
+            const mat = new THREE.MeshStandardMaterial({ map: texture, transparent: true, side: THREE.DoubleSide, roughness: 0.4, metalness: 0.1 });
+            const geo = new THREE.PlaneGeometry(w, h);
+            frameMesh = new THREE.Mesh(geo, mat);
+            frameMesh.position.z = 0.5; // Slightly forward
+            frameMesh.castShadow = true;
+            scene.add(frameMesh);
 
-            // Recalculate parameters at scale
-            const exportW = canvas.width * scale;
-            const exportH = canvas.height * scale;
-            
-            let tW, tH;
-            const strideRef = state.thickness + state.gap;
-            
-            if (state.strictMode) {
-                 const strideRefX = (state.thickness + state.gap);
-                 const countX = Math.max(1, Math.round((canvas.width + state.gap) / strideRefX));
-                 const countY = Math.max(1, Math.round((canvas.height + state.gap) / strideRefX));
-                 
-                 tW = ((canvas.width + state.gap) / countX - state.gap) * scale;
-                 tH = ((canvas.height + state.gap) / countY - state.gap) * scale;
-            } else {
-                 tW = state.thickness * scale;
-                 tH = state.thickness * scale;
+            const maxDim = Math.max(w, h);
+            camera.position.setLength(maxDim * CAMERA_DIST_FACTOR);
+
+            // 2. Pipes
+            if (state.pipesEnabled) {
+                const pipeColor = new THREE.Color(state.dominantColor);
+                // Metallic Look Material
+                const pipeMat = new THREE.MeshStandardMaterial({
+                    color: pipeColor,
+                    roughness: 0.2, // Smoother
+                    metalness: 0.8, // More metallic
+                    emissive: pipeColor,
+                    emissiveIntensity: 0.1
+                });
+
+                const offset = state.pipeOffset; // + expands outer, shrinks inner
+
+                if (state.outerPipe) {
+                    const r = state.outerRadius;
+                    const cornerR = Math.max(r * 2, 20);
+                    // Ensure the pipe is fully outside. Frame is w, h.
+                    // If offset=0, pipe is exactly adjacent.
+                    // Center of pipe should be at w/2 + r.
+                    // Width should be w + 2*r.
+                    // Add user offset on top.
+                    const extra = r * 2 + offset * 2;
+                    const pw = w + extra; 
+                    const ph = h + extra;
+                    const path = createSmoothRectPath(pw, ph, cornerR);
+                    const geom = new THREE.TubeGeometry(path, 200, r, 16, true);
+                    outerPipeMesh = new THREE.Mesh(geom, pipeMat);
+                    outerPipeMesh.position.z = -r + 0.5; // Behind frame
+                    outerPipeMesh.castShadow = true;
+                    outerPipeMesh.receiveShadow = true;
+                    scene.add(outerPipeMesh);
+                }
+
+                if (state.innerPipe) {
+                    const r = state.innerRadius;
+                    const cornerR = Math.max(r * 2, 20);
+                    // Frame hole is at w - 2tW.
+                    // Offset moves it relative to that edge. 
+                    const iw = w - (tW*2) - (offset*2);
+                    const ih = h - (tH*2) - (offset*2);
+                    if (iw > 20 && ih > 20) {
+                        const path = createSmoothRectPath(iw, ih, cornerR);
+                        const geom = new THREE.TubeGeometry(path, 200, r, 16, true);
+                        innerPipeMesh = new THREE.Mesh(geom, pipeMat);
+                        innerPipeMesh.position.z = -r + 0.5; // Behind frame
+                        innerPipeMesh.castShadow = true;
+                        innerPipeMesh.receiveShadow = true;
+                        scene.add(innerPipeMesh);
+                    }
+                }
             }
-            
-            const scaledGap = state.gap * scale;
 
-            // Check force transparent toggle
-            const forceTransparent = document.getElementById('forceTransparent').checked;
-            const exportBg = forceTransparent ? 'transparent' : state.bgColor;
-
-            const offCanvas = document.createElement('canvas');
-            offCanvas.width = exportW;
-            offCanvas.height = exportH;
-            const offCtx = offCanvas.getContext('2d');
-
-            renderFrame(offCtx, exportW, exportH, tW, tH, scaledGap, state.exposure, exportBg);
-
-            const link = document.createElement('a');
-            link.download = `framed-${state.strictMode ? 'strict' : 'snap'}-${Date.now()}.png`;
-            link.href = offCanvas.toDataURL('image/png', 1.0);
-            link.click();
+            // Light Update
+            ambientLight.intensity = state.lightIntensity * 0.5;
+            dirLight.intensity = state.lightIntensity;
         }
 
-        function downloadSVG() {
-            if (!state.imageSrc) return;
+        function createSmoothRectPath(width, height, r) {
+            const hw = width / 2;
+            const hh = height / 2;
+            const cr = Math.min(r, Math.min(width, height) / 2);
+            const path = new THREE.Path();
+            path.moveTo(0, hh);
+            path.lineTo(hw - cr, hh);
+            path.absarc(hw - cr, hh - cr, cr, Math.PI / 2, 0, true);
+            path.lineTo(hw, -hh + cr);
+            path.absarc(hw - cr, -hh + cr, cr, 0, -Math.PI / 2, true);
+            path.lineTo(-hw + cr, -hh);
+            path.absarc(-hw + cr, -hh + cr, cr, -Math.PI / 2, -Math.PI, true);
+            path.lineTo(-hw, hh - cr);
+            path.absarc(-hw + cr, hh - cr, cr, -Math.PI, -Math.PI * 1.5, true);
+            path.lineTo(0, hh);
+            const points = path.getSpacedPoints(200);
+            if (points.length > 0 && points[0].distanceTo(points[points.length-1]) < 0.1) points.pop();
+            return new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(p.x, p.y, 0)), true);
+        }
 
-            const w = canvas.width;
-            const h = canvas.height;
-            
-            // Calculate tile dimensions
-            let tW, tH;
-            const strideRef = state.thickness + state.gap;
-            
-            if (state.strictMode) {
-                 const countX = Math.max(1, Math.round((w + state.gap) / strideRef));
-                 const countY = Math.max(1, Math.round((h + state.gap) / strideRef));
-                 tW = ((w + state.gap) / countX) - state.gap;
-                 tH = ((h + state.gap) / countY) - state.gap;
+        // --- Helpers ---
+        function extractDominantColor(img) {
+            const c = document.createElement('canvas'); c.width = 50; c.height = 50;
+            c.getContext('2d').drawImage(img, 0, 0, 50, 50);
+            const d = c.getContext('2d').getImageData(0,0,50,50).data;
+            let r=0,g=0,b=0,n=0;
+            for(let i=0; i<d.length; i+=4) { r+=d[i]; g+=d[i+1]; b+=d[i+2]; n++; }
+            return (Math.floor(r/n)<<16)^(Math.floor(g/n)<<8)^Math.floor(b/n);
+        }
+
+        function loadPlaceholder() {
+            const img = new Image();
+            img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect width='24' height='24' fill='%231e1e1e'/%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='m4.93 4.93 14.14 14.14'/%3E%3C/svg%3E";
+            img.onload = () => { state.image = img; state.imageSrc = img.src; state.dominantColor = 0x6366f1; updateAll(); };
+        }
+
+        // --- Events ---
+        function setupEventListeners() {
+            const bind = (id) => document.getElementById(id).addEventListener('input', (e) => {
+                state[e.target.id] = parseFloat(e.target.value);
+                // Handle scales differently
+                if(id==='lightIntensity') state.lightIntensity = parseFloat(e.target.value)/100;
+                // UI Updates
+                const valEl = document.getElementById(id+'Val');
+                if(valEl) valEl.textContent = state[e.target.id] + (id==='lightIntensity' ? '' : 'px');
+                updateAll();
+            });
+            ['thickness','gap','outerRadius','innerRadius','pipeOffset','lightIntensity'].forEach(bind);
+
+            const toggles = ['mirrorToggle','strictToggle','pipeToggle','outerPipeToggle','innerPipeToggle'];
+            toggles.forEach(id => document.getElementById(id).addEventListener('change', (e) => {
+                state[id.replace('Toggle','')] = e.target.checked;
+                // Specific names map
+                if(id === 'mirrorToggle') state.mirrorAlternates = e.target.checked;
+                if(id === 'strictToggle') state.strictMode = e.target.checked;
+                if(id === 'pipeToggle') state.pipesEnabled = e.target.checked;
+                updateAll();
+            }));
+
+            document.getElementById('imageInput').addEventListener('change', e => { if(e.target.files[0]) handleFile(e.target.files[0]); });
+            document.getElementById('pasteBtn').addEventListener('click', async () => { try { const i = await navigator.clipboard.read(); for(const item of i) { const t=item.types.find(x=>x.startsWith('image/')); if(t) handleFile(await item.getType(t)); } } catch(e){ alert("Clipboard access denied"); }});
+            window.addEventListener('paste', e => { if(e.clipboardData.files.length > 0) handleFile(e.clipboardData.files[0]); });
+            document.getElementById('dlTileBtn').addEventListener('click', () => { if(state.imageSrc) { const a=document.createElement('a'); a.download=`tile.png`; a.href=state.imageSrc; a.click(); }});
+        }
+
+        function handleFile(f) {
+            document.getElementById('fileName').textContent = f.name || "Image";
+            const r = new FileReader();
+            r.onload = e => { const i = new Image(); i.onload = () => { state.image = i; state.imageSrc = e.target.result; state.imgRatio = i.width/i.height; state.dominantColor = extractDominantColor(i); updateAll(); }; i.src = e.target.result; };
+            r.readAsDataURL(f);
+        }
+
+        function setRatio(w,h) { state.aspectRatio = w/h; updateAll(); }
+        function setBg(c) { state.bgColor = c; updateAll(); }
+
+        function downloadCurrentView() {
+            if (state.viewMode === '2d') {
+                const link = document.createElement('a');
+                link.download = `2d-border-${Date.now()}.png`;
+                link.href = canvas2D.toDataURL('image/png', 1.0);
+                link.click();
             } else {
-                 tW = state.thickness;
-                 tH = state.thickness;
+                const currentSize = new THREE.Vector2();
+                renderer.getSize(currentSize);
+                renderer.setSize(3840, Math.round(3840 / camera.aspect));
+                renderer.render(scene, camera);
+                const link = document.createElement('a');
+                link.download = `3d-render-${Date.now()}.png`;
+                link.href = renderer.domElement.toDataURL('image/png', 1.0);
+                link.click();
+                renderer.setSize(currentSize.x, currentSize.y);
+                renderer.render(scene, camera);
             }
-
-            const strideX = tW + state.gap;
-            const strideY = tH + state.gap;
-            
-            const imgId = "tile-img";
-            const imgDef = `<image id="${imgId}" href="${state.imageSrc}" width="${tW}" height="${tH}" preserveAspectRatio="none" />`;
-
-            let tiles = "";
-
-            const addTile = (x, y, fh, fv) => {
-                let transform = "";
-                if (fh || fv) {
-                    const cx = x + tW / 2;
-                    const cy = y + tH / 2;
-                    const sx = fh ? -1 : 1;
-                    const sy = fv ? -1 : 1;
-                    transform = `transform="translate(${cx}, ${cy}) scale(${sx}, ${sy}) translate(-${cx}, -${cy})"`;
-                }
-                tiles += `<use href="#${imgId}" x="${x}" y="${y}" ${transform} />`;
-            };
-
-            const shouldMirror = (i) => state.mirrorAlternates && (i % 2 !== 0);
-
-            // Top
-            const countX = Math.round((w + state.gap) / strideX);
-            for (let i = 0; i < countX; i++) addTile(i * strideX, 0, shouldMirror(i), false);
-            
-            // Bottom
-            for (let i = 0; i < countX; i++) addTile(i * strideX, h - tH, shouldMirror(i), false);
-            
-            // Left
-            const countY = Math.round((h + state.gap) / strideY);
-            for (let i = 0; i < countY; i++) addTile(0, i * strideY, false, shouldMirror(i));
-            
-            // Right
-            for (let i = 0; i < countY; i++) addTile(w - tW, i * strideY, false, shouldMirror(i));
-
-            const slope = state.exposure / 100;
-            const filterDef = `
-                <filter id="brightness">
-                    <feComponentTransfer>
-                        <feFuncR type="linear" slope="${slope}"/>
-                        <feFuncG type="linear" slope="${slope}"/>
-                        <feFuncB type="linear" slope="${slope}"/>
-                    </feComponentTransfer>
-                </filter>
-            `;
-            
-            // Check force transparent toggle
-            const forceTransparent = document.getElementById('forceTransparent').checked;
-            const exportBg = forceTransparent ? 'transparent' : state.bgColor;
-
-            let bgRect = "";
-            if (exportBg && exportBg !== 'transparent') {
-                bgRect = `<rect x="${tW}" y="${tH}" width="${w - tW*2}" height="${h - tH*2}" fill="${exportBg}" />`;
-            }
-
-            const svgContent = `
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}">
-                    <defs>
-                        ${filterDef}
-                        ${imgDef}
-                    </defs>
-                    ${bgRect}
-                    <g filter="url(#brightness)">
-                        ${tiles}
-                    </g>
-                </svg>
-            `;
-
-            const blob = new Blob([svgContent], {type: 'image/svg+xml'});
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `framed-${state.strictMode ? 'strict' : 'snap'}-${Date.now()}.svg`;
-            link.click();
         }
     </script>
 </body>

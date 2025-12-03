@@ -2015,7 +2015,16 @@
         
                                 // Check if we should use original color (global setting OR layer specific override)
                                 const globalOriginal = document.getElementById('chk-original-color') && document.getElementById('chk-original-color').checked;
-                                const layerOriginal = opts && opts.useOriginalColor;
+                                let layerOriginal = opts && opts.useOriginalColor;
+                                
+                                // Robust Fallback: Find the layer that uses this asset ID
+                                if (layerOriginal === undefined) {
+                                    const layer = appState.layers.find(l => l.pattern === id);
+                                    if (layer && layer.floralState) {
+                                        layerOriginal = layer.floralState.useOriginalColor;
+                                    }
+                                }
+
                                 const useOriginal = globalOriginal || layerOriginal;
                                 
                                 if (style && !useOriginal) {
@@ -2048,14 +2057,12 @@
                                     sCtx.restore();
                                     
                                     if (ctx.isSVG) {
-                                        // Optimization: Cache tinted versions to avoid embedding unique base64 for every stamp size
+                                        // Optimization: Cache tinted versions
                                         if (!ASSETS[id].svgCache) ASSETS[id].svgCache = {};
-                                        const cacheKey = mat + '_' + bri;
+                                        const cacheKey = (mat||'gold') + '_' + (bri||0);
                                         
                                         let dataUrl = ASSETS[id].svgCache[cacheKey];
                                         if (!dataUrl) {
-                                            // Generate at a fixed resolution (e.g. natural size or max 512)
-                                            // We use the image's natural size to preserve quality, capped at 1024 to prevent massive blobs
                                             const natW = img.naturalWidth || 512;
                                             const natH = img.naturalHeight || 512;
                                             const maxDim = 1024;
@@ -2067,7 +2074,6 @@
                                             temp.width = cW; temp.height = cH;
                                             const tCtx = temp.getContext('2d');
                                             
-                                            // Draw and tint at this fixed resolution
                                             tCtx.drawImage(img, 0, 0, cW, cH);
                                             tCtx.globalCompositeOperation = 'source-in';
                                             tCtx.fillStyle = getMaterialGradient(tCtx, mat, bri, cW, cH);
@@ -2086,7 +2092,44 @@
                                         ctx.drawImage(scratch, 0, 0, s, s, -s/2, -s/2, s, s);
                                     }
                                 } else {
-                                    ctx.drawImage(img, -s/2, -s/2, s, s);
+                                    // Original Color Mode
+                                    if (ctx.isSVG) {
+                                        // Optimization: Cache RESIZED original version to avoid embedding massive original images
+                                        if (!ASSETS[id].svgCache) ASSETS[id].svgCache = {};
+                                        const cacheKey = 'original';
+                                        
+                                        let dataUrl = ASSETS[id].svgCache[cacheKey];
+                                        if (!dataUrl) {
+                                            const natW = img.naturalWidth || 512;
+                                            const natH = img.naturalHeight || 512;
+                                            const maxDim = 1024; // Cap at 1024px for SVG to keep size down
+                                            
+                                            // Only resize if original is larger than maxDim
+                                            if (Math.max(natW, natH) > maxDim) {
+                                                const scale = maxDim / Math.max(natW, natH);
+                                                const cW = Math.floor(natW * scale);
+                                                const cH = Math.floor(natH * scale);
+                                                
+                                                const temp = document.createElement('canvas');
+                                                temp.width = cW; temp.height = cH;
+                                                const tCtx = temp.getContext('2d');
+                                                tCtx.drawImage(img, 0, 0, cW, cH);
+                                                dataUrl = temp.toDataURL();
+                                            } else {
+                                                // Use original if small enough
+                                                dataUrl = img.src;
+                                            }
+                                            ASSETS[id].svgCache[cacheKey] = dataUrl;
+                                        }
+                                        
+                                        try {
+                                            ctx.drawImage({ src: dataUrl, width: s, height: s }, -s/2, -s/2, s, s);
+                                        } catch(e) {
+                                            ctx.drawImage(img, -s/2, -s/2, s, s);
+                                        }
+                                    } else {
+                                        ctx.drawImage(img, -s/2, -s/2, s, s);
+                                    }
                                 }
                             };
         
@@ -2131,7 +2174,9 @@
                             }
 
                             // Apply material/style if provided (masking)
-                            const useOriginal = document.getElementById('chk-original-color') && document.getElementById('chk-original-color').checked;
+                            const globalOriginal = document.getElementById('chk-original-color') && document.getElementById('chk-original-color').checked;
+                            const layerOriginal = opts && opts.useOriginalColor;
+                            const useOriginal = globalOriginal || layerOriginal;
                             
                             if (style && !useOriginal) {
                                 let scratch = document.getElementById('scratch-canvas');
@@ -3582,8 +3627,10 @@
                     }
                     
                     // Check if we should apply material composite
-                    const isCustom = l.pattern && l.pattern.startsWith('custom-');
-                    const useOriginal = document.getElementById('chk-original-color') && document.getElementById('chk-original-color').checked;
+                    const isCustom = l.pattern && (l.pattern.startsWith('custom-') || l.pattern.startsWith('layer-asset-'));
+                    const globalOriginal = document.getElementById('chk-original-color') && document.getElementById('chk-original-color').checked;
+                    const layerOriginal = l.floralState && l.floralState.useOriginalColor;
+                    const useOriginal = globalOriginal || layerOriginal;
                     
                     if (!(isCustom && useOriginal)) {
                         offCtx.globalCompositeOperation = 'source-in';
@@ -4133,7 +4180,7 @@
                     ctx.save(); 
                     ctx.translate(pt.x, pt.y); 
                     ctx.rotate(ang); 
-                    drawShape(ctx, l.pattern, l.size, {...l.floralState, seed: (l.seed||0) + corner.idx}); 
+                    drawShape(ctx, l.pattern, l.size, {...l.floralState, seed: (l.seed||0) + corner.idx, material: l.material, brightness: l.brightness}); 
                     ctx.restore();
                 }
             }
@@ -4217,7 +4264,7 @@
                     ctx.save(); 
                     ctx.translate(x,y); 
                     ctx.rotate(ang); 
-                    drawShape(ctx,l.pattern,l.size, {...l.floralState, seed: (l.seed||0) + seedCounter++}); 
+                    drawShape(ctx,l.pattern,l.size, {...l.floralState, seed: (l.seed||0) + seedCounter++, material: l.material, brightness: l.brightness}); 
                     ctx.restore(); 
                 }
             }
