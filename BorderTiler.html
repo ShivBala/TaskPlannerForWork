@@ -5,13 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TileFrame - Custom Border Generator</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Updated Lucide CDN to a newer version and ensuring it loads -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
         body { font-family: 'Inter', sans-serif; }
         
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #1e1e1e; }
         ::-webkit-scrollbar-thumb { background: #4b5563; border-radius: 4px; }
@@ -28,19 +26,12 @@
             background-color: #1a1a1a;
         }
 
-        /* Toggle Switch */
-        .toggle-checkbox:checked {
-            right: 0;
-            border-color: #6366f1;
-        }
-        .toggle-checkbox:checked + .toggle-label {
-            background-color: #6366f1;
-        }
+        .toggle-checkbox:checked { right: 0; border-color: #6366f1; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #6366f1; }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100 h-screen flex flex-col md:flex-row overflow-hidden">
 
-    <!-- Sidebar Control Panel -->
     <aside class="w-full md:w-80 bg-gray-800 border-r border-gray-700 flex flex-col z-20 shadow-xl overflow-y-auto">
         <div class="p-6 border-b border-gray-700">
             <h1 class="text-xl font-bold flex items-center gap-2 text-indigo-400">
@@ -51,9 +42,8 @@
 
         <div class="p-6 space-y-8 flex-1">
             
-            <!-- Upload Section -->
             <div class="space-y-3">
-                <label class="block text-sm font-semibold text-gray-300">1. Upload Tile (Square PNG)</label>
+                <label class="block text-sm font-semibold text-gray-300">1. Upload Tile</label>
                 <div class="relative group">
                     <input type="file" id="imageInput" accept="image/png, image/jpeg" class="hidden">
                     <label for="imageInput" class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer hover:border-indigo-500 hover:bg-gray-750 transition-all">
@@ -64,12 +54,20 @@
                         </div>
                     </label>
                 </div>
+                
+                <!-- New Action Buttons -->
+                <div class="flex gap-2">
+                    <button id="pasteBtn" class="flex-1 bg-gray-700 hover:bg-gray-600 text-xs py-2 rounded border border-gray-600 transition-colors flex items-center justify-center gap-2" title="Or press Ctrl+V">
+                        <i data-lucide="clipboard-copy" class="w-3 h-3"></i> Paste
+                    </button>
+                    <button id="dlTileBtn" class="flex-1 bg-gray-700 hover:bg-gray-600 text-xs py-2 rounded border border-gray-600 transition-colors flex items-center justify-center gap-2">
+                        <i data-lucide="save" class="w-3 h-3"></i> Save Tile
+                    </button>
+                </div>
             </div>
 
-            <!-- Presets Section -->
             <div class="space-y-3">
-                <label class="block text-sm font-semibold text-gray-300">2. Approx. Aspect Ratio</label>
-                <p class="text-[10px] text-gray-400 mb-2">Canvas will snap to nearest full tile size.</p>
+                <label class="block text-sm font-semibold text-gray-300">2. Canvas Ratio</label>
                 <div class="grid grid-cols-2 gap-2">
                     <button onclick="setRatio(16, 9)" class="preset-btn px-3 py-2 text-xs bg-gray-700 hover:bg-gray-600 rounded border border-gray-600 active:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">YouTube (16:9)</button>
                     <button onclick="setRatio(1, 1)" class="preset-btn px-3 py-2 text-xs bg-gray-700 hover:bg-gray-600 rounded border border-gray-600 active:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors">Square (1:1)</button>
@@ -80,10 +78,65 @@
                 </div>
             </div>
 
-            <!-- Controls Section -->
             <div class="space-y-6">
                 <label class="block text-sm font-semibold text-gray-300">3. Customize</label>
                 
+                <!-- Mode Toggles -->
+                <div class="space-y-4 p-3 bg-gray-750 rounded-lg border border-gray-700">
+                    <!-- Mirror Toggle -->
+                    <div class="flex items-center justify-between">
+                        <label class="text-xs text-gray-300 flex items-center gap-2">
+                            Mirror Alternates
+                        </label>
+                        <div class="relative inline-block w-10 align-middle select-none">
+                            <input type="checkbox" id="mirrorToggle" checked class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300"/>
+                            <label for="mirrorToggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-700 cursor-pointer transition-colors duration-300"></label>
+                        </div>
+                    </div>
+
+                    <!-- Strict Mode Toggle -->
+                    <div class="flex items-center justify-between border-t border-gray-600 pt-3">
+                        <div>
+                            <label class="text-xs text-indigo-300 font-semibold flex items-center gap-2">
+                                Strict Fit (Fixed Canvas)
+                            </label>
+                            <p class="text-[10px] text-gray-400">Forces exact aspect ratio</p>
+                        </div>
+                        <div class="relative inline-block w-10 align-middle select-none">
+                            <input type="checkbox" id="strictToggle" class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer transition-all duration-300"/>
+                            <label for="strictToggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-700 cursor-pointer transition-colors duration-300"></label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Validation Box (Visible only in Strict Mode) -->
+                <div id="validationBox" class="hidden p-3 rounded border text-xs space-y-2 bg-gray-800 border-gray-600">
+                    <div class="font-semibold text-gray-300 border-b border-gray-700 pb-1 mb-1">Fit Validator</div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Required Tile Ratio:</span>
+                        <span id="reqRatioVal" class="font-mono text-indigo-400">1.00</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">Your Image Ratio:</span>
+                        <span id="imgRatioVal" class="font-mono text-gray-300">1.00</span>
+                    </div>
+                    <div id="fitStatus" class="mt-2 text-center p-1 rounded font-bold bg-green-900/50 text-green-400 border border-green-700">
+                        Perfect Match
+                    </div>
+                    
+                    <!-- Pixel Size Calculator -->
+                    <div class="border-t border-gray-700 mt-3 pt-3">
+                        <label class="text-[10px] text-gray-400 block mb-1">Pixel Size Calculator (Helper)</label>
+                        <div class="flex gap-2 items-center">
+                            <input type="number" id="calcW" placeholder="W" class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-indigo-300 focus:outline-none focus:border-indigo-500 placeholder-gray-600">
+                            <span class="text-gray-500 text-xs">x</span>
+                            <input type="number" id="calcH" placeholder="H" class="w-full bg-gray-900 border border-gray-700 rounded px-2 py-1 text-xs text-indigo-300 focus:outline-none focus:border-indigo-500 placeholder-gray-600">
+                        </div>
+                        <p class="text-[9px] text-gray-500 italic mt-1">Enter one value to calculate the other.</p>
+                    </div>
+                </div>
+
+                <!-- Sliders -->
                 <div class="space-y-1">
                     <div class="flex justify-between">
                         <label class="text-xs text-gray-400">Border Thickness</label>
@@ -99,22 +152,10 @@
                     </div>
                     <input type="range" id="gap" min="0" max="100" value="0" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
                 </div>
-                
-                <!-- Mirror Toggle -->
-                <div class="flex items-center justify-between">
-                    <label class="text-xs text-gray-400 flex items-center gap-2">
-                        Mirror Alternates
-                        <i data-lucide="flip-horizontal" class="w-3 h-3 text-gray-500"></i>
-                    </label>
-                    <div class="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
-                        <input type="checkbox" name="toggle" id="mirrorToggle" checked class="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer"/>
-                        <label for="mirrorToggle" class="toggle-label block overflow-hidden h-5 rounded-full bg-gray-700 cursor-pointer"></label>
-                    </div>
-                </div>
 
                 <div class="space-y-1">
                     <div class="flex justify-between">
-                        <label class="text-xs text-gray-400">Exposure (Brightness)</label>
+                        <label class="text-xs text-gray-400">Exposure</label>
                         <span id="exposureVal" class="text-xs text-indigo-400 font-mono">100%</span>
                     </div>
                     <input type="range" id="exposure" min="0" max="200" value="100" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
@@ -147,10 +188,9 @@
         </div>
     </aside>
 
-    <!-- Main Canvas Area -->
     <main class="flex-1 flex flex-col relative overflow-hidden bg-black">
-        <div class="absolute top-4 left-4 z-10 bg-black/50 text-white text-xs px-3 py-1 rounded backdrop-blur-sm pointer-events-none">
-            Preview Mode - Auto Snapped
+        <div id="modeBadge" class="absolute top-4 left-4 z-10 bg-black/50 text-white text-xs px-3 py-1 rounded backdrop-blur-sm pointer-events-none border border-gray-600">
+            Auto-Snap Mode
         </div>
         
         <div class="flex-1 canvas-container flex items-center justify-center p-8 overflow-auto">
@@ -158,73 +198,144 @@
         </div>
         
         <div class="h-8 bg-gray-800 text-gray-500 text-xs flex items-center px-4 border-t border-gray-700 justify-between">
-            <span id="dimsDisplay">Dimensions: 0 x 0 (Snapped)</span>
+            <span id="dimsDisplay">Dimensions: 0 x 0</span>
             <span>Zoom: Fit</span>
         </div>
     </main>
 
     <script>
-        // --- State ---
         const state = {
             image: null,
             imageSrc: null,
+            imgRatio: 1, // Width / Height of uploaded image
+            reqRatio: 1, // Calculated required ratio
             aspectRatio: 16/9,
             thickness: 60,
             gap: 0,
             exposure: 100,
             bgColor: 'transparent',
             mirrorAlternates: true,
-            canvasBaseSize: 1200 // Base size for calculation logic
+            strictMode: false,
+            canvasBaseSize: 1200
         };
 
-        // --- Elements ---
         const canvas = document.getElementById('previewCanvas');
         const ctx = canvas.getContext('2d');
         const imageInput = document.getElementById('imageInput');
         const fileNameDisplay = document.getElementById('fileName');
         const dimsDisplay = document.getElementById('dimsDisplay');
-        const mirrorToggle = document.getElementById('mirrorToggle');
+        const modeBadge = document.getElementById('modeBadge');
+        const validationBox = document.getElementById('validationBox');
+        const reqRatioVal = document.getElementById('reqRatioVal');
+        const imgRatioVal = document.getElementById('imgRatioVal');
+        const fitStatus = document.getElementById('fitStatus');
+        const calcW = document.getElementById('calcW');
+        const calcH = document.getElementById('calcH');
 
-        // --- Icons ---
+        // Init Lucide
         document.addEventListener('DOMContentLoaded', () => {
-            if (typeof lucide !== 'undefined') {
-                lucide.createIcons();
-            } else {
-                const checkLucide = setInterval(() => {
-                    if (typeof lucide !== 'undefined') {
-                        lucide.createIcons();
-                        clearInterval(checkLucide);
-                    }
-                }, 100);
+            const loadIcons = () => {
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+                else setTimeout(loadIcons, 100);
+            };
+            loadIcons();
+        });
+
+        // Common loader function
+        const loadImageFromFile = (file) => {
+            fileNameDisplay.textContent = file.name || "Pasted Image";
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                const img = new Image();
+                img.onload = () => {
+                    state.image = img;
+                    state.imageSrc = evt.target.result;
+                    state.imgRatio = img.width / img.height;
+                    updateCanvas();
+                };
+                img.src = evt.target.result;
+            };
+            reader.readAsDataURL(file);
+        };
+
+        // Inputs
+        imageInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) loadImageFromFile(file);
+        });
+
+        // Paste Logic (Button)
+        document.getElementById('pasteBtn').addEventListener('click', async () => {
+            try {
+                const items = await navigator.clipboard.read();
+                let found = false;
+                for (const item of items) {
+                     const imageType = item.types.find(type => type.startsWith('image/'));
+                     if (imageType) {
+                         const blob = await item.getType(imageType);
+                         loadImageFromFile(blob);
+                         found = true;
+                         break;
+                     }
+                }
+                if (!found) {
+                    const btn = document.getElementById('pasteBtn');
+                    const orig = btn.innerHTML;
+                    btn.textContent = "No Image Found";
+                    setTimeout(() => btn.innerHTML = orig, 1500);
+                }
+            } catch (err) {
+                // Fallback UI for permission issues
+                const btn = document.getElementById('pasteBtn');
+                const origText = btn.innerHTML;
+                btn.textContent = "Press Ctrl+V";
+                setTimeout(() => btn.innerHTML = origText, 2000);
             }
         });
 
-        // --- Initialization ---
+        // Global Paste Listener (Ctrl+V)
+        window.addEventListener('paste', (e) => {
+            const items = e.clipboardData.items;
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    const blob = items[i].getAsFile();
+                    loadImageFromFile(blob);
+                }
+            }
+        });
+
+        // Download Tile
+        document.getElementById('dlTileBtn').addEventListener('click', () => {
+            if(!state.imageSrc) return;
+            const link = document.createElement('a');
+            link.download = `tile-source-${Date.now()}.png`;
+            link.href = state.imageSrc;
+            link.click();
+        });
+
+        // Load Placeholder
         const placeholderImg = new Image();
         placeholderImg.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='m4.93 4.93 14.14 14.14'/%3E%3C/svg%3E";
         placeholderImg.onload = () => {
             state.image = placeholderImg;
             state.imageSrc = placeholderImg.src;
+            state.imgRatio = 1;
             updateCanvas();
         };
 
-        // --- Event Listeners ---
-        imageInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                fileNameDisplay.textContent = file.name;
-                const reader = new FileReader();
-                reader.onload = (evt) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        state.image = img;
-                        state.imageSrc = evt.target.result;
-                        updateCanvas();
-                    };
-                    img.src = evt.target.result;
-                };
-                reader.readAsDataURL(file);
-            }
+        // Calculator Logic
+        calcW.addEventListener('input', () => {
+            if (!calcW.value) return;
+            const val = parseFloat(calcW.value);
+            // Ratio = W / H  =>  H = W / Ratio
+            calcH.value = Math.round(val / state.reqRatio);
+        });
+
+        calcH.addEventListener('input', () => {
+            if (!calcH.value) return;
+            const val = parseFloat(calcH.value);
+            // Ratio = W / H  =>  W = H * Ratio
+            calcW.value = Math.round(val * state.reqRatio);
         });
 
         const bindSlider = (id, key, suffix = '') => {
@@ -236,13 +347,23 @@
                 updateCanvas();
             });
         };
-
         bindSlider('thickness', 'thickness', 'px');
         bindSlider('gap', 'gap', 'px');
         bindSlider('exposure', 'exposure', '%');
 
-        mirrorToggle.addEventListener('change', (e) => {
+        document.getElementById('mirrorToggle').addEventListener('change', (e) => {
             state.mirrorAlternates = e.target.checked;
+            updateCanvas();
+        });
+
+        document.getElementById('strictToggle').addEventListener('change', (e) => {
+            state.strictMode = e.target.checked;
+            modeBadge.textContent = state.strictMode ? "Strict Fit Mode" : "Auto-Snap Mode";
+            modeBadge.className = `absolute top-4 left-4 z-10 text-white text-xs px-3 py-1 rounded backdrop-blur-sm pointer-events-none border ${state.strictMode ? 'bg-indigo-900/80 border-indigo-500' : 'bg-black/50 border-gray-600'}`;
+            
+            if (state.strictMode) validationBox.classList.remove('hidden');
+            else validationBox.classList.add('hidden');
+            
             updateCanvas();
         });
 
@@ -256,11 +377,12 @@
             updateCanvas();
         }
 
-        // --- Core Rendering Logic ---
+        // --- Core Logic ---
+
         function updateCanvas() {
             if (!state.image) return;
 
-            // 1. Calculate Target Dimensions (Ideal World)
+            // 1. Calculate Target Dimensions
             let targetW, targetH;
             if (state.aspectRatio >= 1) {
                 targetW = state.canvasBaseSize;
@@ -270,96 +392,123 @@
                 targetW = state.canvasBaseSize * state.aspectRatio;
             }
 
-            // 2. SNAP LOGIC
-            const stride = state.thickness + state.gap;
-            const countX = Math.max(1, Math.round((targetW + state.gap) / stride));
-            const countY = Math.max(1, Math.round((targetH + state.gap) / stride));
+            let canvasW, canvasH, tileW, tileH;
+            const strideRef = state.thickness + state.gap;
 
-            const w = countX * stride - state.gap;
-            const h = countY * stride - state.gap;
+            // 2. Branching Logic
+            if (state.strictMode) {
+                // STRICT MODE: Fixed Canvas Size, Variable Tile Size
+                canvasW = targetW;
+                canvasH = targetH;
+                
+                // Calculate how many tiles fit closest to desired thickness
+                const countX = Math.max(1, Math.round((canvasW + state.gap) / strideRef));
+                const countY = Math.max(1, Math.round((canvasH + state.gap) / strideRef));
+
+                // Reverse calculate tile dimensions to fit exactly
+                // W = count * (tW + gap) - gap  =>  tW = ((W + gap) / count) - gap
+                tileW = ((canvasW + state.gap) / countX) - state.gap;
+                tileH = ((canvasH + state.gap) / countY) - state.gap;
+
+                // Validation Updates
+                const reqRatio = tileW / tileH;
+                state.reqRatio = reqRatio; // Update state for calculator
+                reqRatioVal.textContent = reqRatio.toFixed(2);
+                imgRatioVal.textContent = state.imgRatio.toFixed(2);
+
+                const ratioDiff = Math.abs(reqRatio - state.imgRatio);
+                if (ratioDiff < 0.05) {
+                    fitStatus.textContent = "Perfect Match";
+                    fitStatus.className = "mt-2 text-center p-1 rounded font-bold bg-green-900/50 text-green-400 border border-green-700";
+                } else if (ratioDiff < 0.2) {
+                    fitStatus.textContent = "Slight Stretch";
+                    fitStatus.className = "mt-2 text-center p-1 rounded font-bold bg-yellow-900/50 text-yellow-400 border border-yellow-700";
+                } else {
+                    fitStatus.textContent = "Significant Distortion";
+                    fitStatus.className = "mt-2 text-center p-1 rounded font-bold bg-red-900/50 text-red-400 border border-red-700";
+                }
+                
+                // Recalculate calculator values if present
+                if (calcW.value) calcW.dispatchEvent(new Event('input'));
+                else if (calcH.value) calcH.dispatchEvent(new Event('input'));
+
+            } else {
+                // SNAP MODE: Fixed Tile Size (Square), Variable Canvas Size
+                const countX = Math.max(1, Math.round((targetW + state.gap) / strideRef));
+                const countY = Math.max(1, Math.round((targetH + state.gap) / strideRef));
+
+                canvasW = countX * strideRef - state.gap;
+                canvasH = countY * strideRef - state.gap;
+                tileW = state.thickness;
+                tileH = state.thickness;
+                state.reqRatio = 1; // Square
+            }
 
             // Update Canvas
-            canvas.width = w;
-            canvas.height = h;
+            canvas.width = canvasW;
+            canvas.height = canvasH;
+            dimsDisplay.textContent = `Dimensions: ${Math.round(canvasW)} x ${Math.round(canvasH)} px`;
 
-            dimsDisplay.textContent = `Dimensions: ${w} x ${h} px (Snapped to Grid)`;
-
-            renderFrame(ctx, w, h, state.thickness, state.gap, state.exposure, state.bgColor);
+            renderFrame(ctx, canvasW, canvasH, tileW, tileH, state.gap, state.exposure, state.bgColor);
         }
 
-        // Helper to draw a single tile with optional flipping
-        function drawTile(ctx, img, x, y, size, flipH, flipV) {
-            if (!flipH && !flipV) {
-                ctx.drawImage(img, x, y, size, size);
-                return;
-            }
-            
-            ctx.save();
-            // Move to center of the tile position to scale around center
-            ctx.translate(x + size/2, y + size/2);
-            // Apply Flip
-            ctx.scale(flipH ? -1 : 1, flipV ? -1 : 1);
-            // Draw image centered at (0,0) in local space
-            ctx.drawImage(img, -size/2, -size/2, size, size);
-            ctx.restore();
-        }
-
-        function renderFrame(context, width, height, thickness, gap, exposure, bgColor) {
+        function renderFrame(context, width, height, tW, tH, gap, exposure, bgColor) {
             context.clearRect(0, 0, width, height);
 
             // Inner Background
+            // Thickness is roughly the average of tW/tH for calculation of inner rect
+            const insetX = tW; 
+            const insetY = tH; 
+
             if (bgColor && bgColor !== 'transparent') {
                 context.fillStyle = bgColor;
-                context.fillRect(thickness, thickness, width - (thickness * 2), height - (thickness * 2));
+                context.fillRect(insetX, insetY, width - (insetX * 2), height - (insetY * 2));
             } else if (bgColor === 'transparent') {
-                context.clearRect(thickness, thickness, width - (thickness * 2), height - (thickness * 2));
+                context.clearRect(insetX, insetY, width - (insetX * 2), height - (insetY * 2));
             }
 
-            // Apply Exposure
             context.filter = `brightness(${exposure}%)`;
 
             const img = state.image;
-            const tileSize = thickness;
-            const stride = tileSize + gap;
+            const strideX = tW + gap;
+            const strideY = tH + gap;
             
-            // Mirror logic helper
-            // We only mirror if enabled AND index is odd
             const shouldMirror = (i) => state.mirrorAlternates && (i % 2 !== 0);
 
-            // TOP EDGE (Horizontal placement)
-            let countX = Math.ceil((width + gap) / stride);
+            // Helpers
+            const draw = (x, y, w, h, fh, fv) => {
+                if (!fh && !fv) {
+                    context.drawImage(img, x, y, w, h);
+                    return;
+                }
+                context.save();
+                context.translate(x + w/2, y + h/2);
+                context.scale(fh ? -1 : 1, fv ? -1 : 1);
+                context.drawImage(img, -w/2, -h/2, w, h);
+                context.restore();
+            }
+
+            // Top
+            const countX = Math.round((width + gap) / strideX);
             for (let i = 0; i < countX; i++) {
-                let x = i * stride;
-                // Flip H if odd
-                drawTile(context, img, x, 0, tileSize, shouldMirror(i), false);
+                draw(i * strideX, 0, tW, tH, shouldMirror(i), false);
             }
-
-            // BOTTOM EDGE (Horizontal placement)
+            // Bottom
             for (let i = 0; i < countX; i++) {
-                let x = i * stride;
-                // Flip H if odd
-                drawTile(context, img, x, height - tileSize, tileSize, shouldMirror(i), false);
+                draw(i * strideX, height - tH, tW, tH, shouldMirror(i), false);
             }
-
-            // LEFT EDGE (Vertical placement)
-            let countY = Math.ceil((height + gap) / stride);
+            // Left
+            const countY = Math.round((height + gap) / strideY);
             for (let i = 0; i < countY; i++) {
-                let y = i * stride;
-                // Flip V if odd
-                drawTile(context, img, 0, y, tileSize, false, shouldMirror(i));
+                draw(0, i * strideY, tW, tH, false, shouldMirror(i));
             }
-
-            // RIGHT EDGE (Vertical placement)
+            // Right
             for (let i = 0; i < countY; i++) {
-                let y = i * stride;
-                // Flip V if odd
-                drawTile(context, img, width - tileSize, y, tileSize, false, shouldMirror(i));
+                draw(width - tW, i * strideY, tW, tH, false, shouldMirror(i));
             }
 
             context.filter = 'none';
         }
-
-        // --- Export Functions ---
 
         function downloadPNG() {
             if (!state.image) return;
@@ -368,10 +517,42 @@
             const currentMax = Math.max(canvas.width, canvas.height);
             const scale = TARGET_RES / currentMax;
 
+            // Recalculate parameters at scale
+            // If Strict Mode: We scale the Exact Canvas Dimensions
+            // If Snap Mode: We scale the Snapped Dimensions
             const exportW = canvas.width * scale;
             const exportH = canvas.height * scale;
             
-            const scaledThickness = state.thickness * scale;
+            // To find tW/tH at scale, we use the ratio from current canvas
+            // tW_scaled = (tW_current / canvasW_current) * exportW
+            // Actually simpler: re-run logic or just pass scaled tileW/tileH?
+            // Re-running logic is safer to avoid float drift, but we need the calculated tW/tH.
+            
+            // We can infer tW/tH from the current canvas context? 
+            // Better: Extract logic. But for simplicity, we scale the current tW/tH.
+            // In Snap Mode: tW = thickness. Strict: tW = calculated.
+            // We need to fetch the *actual* tW/tH used in updateCanvas.
+            // Let's recalculate simply:
+            
+            let tW, tH;
+            const strideRef = state.thickness + state.gap;
+            
+            if (state.strictMode) {
+                 // Recalculate based on current base canvas
+                 // We need to use the exact same logic as updateCanvas but scaled up
+                 // Actually, exportW is just canvas.width * scale. 
+                 // So tileW_export = tileW_current * scale.
+                 const strideRefX = (state.thickness + state.gap); // Approximation for count
+                 const countX = Math.max(1, Math.round((canvas.width + state.gap) / strideRefX));
+                 const countY = Math.max(1, Math.round((canvas.height + state.gap) / strideRefX));
+                 
+                 tW = ((canvas.width + state.gap) / countX - state.gap) * scale;
+                 tH = ((canvas.height + state.gap) / countY - state.gap) * scale;
+            } else {
+                 tW = state.thickness * scale;
+                 tH = state.thickness * scale;
+            }
+            
             const scaledGap = state.gap * scale;
 
             const offCanvas = document.createElement('canvas');
@@ -379,10 +560,10 @@
             offCanvas.height = exportH;
             const offCtx = offCanvas.getContext('2d');
 
-            renderFrame(offCtx, exportW, exportH, scaledThickness, scaledGap, state.exposure, state.bgColor);
+            renderFrame(offCtx, exportW, exportH, tW, tH, scaledGap, state.exposure, state.bgColor);
 
             const link = document.createElement('a');
-            link.download = `framed-mirror-${Date.now()}.png`;
+            link.download = `framed-${state.strictMode ? 'strict' : 'snap'}-${Date.now()}.png`;
             link.href = offCanvas.toDataURL('image/png', 1.0);
             link.click();
         }
@@ -392,54 +573,56 @@
 
             const w = canvas.width;
             const h = canvas.height;
-            const tileSize = state.thickness;
-            const gap = state.gap;
-            const stride = tileSize + gap;
             
-            // Optimization: Define image ONCE in defs
-            // This prevents repeating the base64 string for every single tile
+            // Calculate tile dimensions
+            let tW, tH;
+            const strideRef = state.thickness + state.gap;
+            
+            if (state.strictMode) {
+                 const countX = Math.max(1, Math.round((w + state.gap) / strideRef));
+                 const countY = Math.max(1, Math.round((h + state.gap) / strideRef));
+                 tW = ((w + state.gap) / countX) - state.gap;
+                 tH = ((h + state.gap) / countY) - state.gap;
+            } else {
+                 tW = state.thickness;
+                 tH = state.thickness;
+            }
+
+            const strideX = tW + state.gap;
+            const strideY = tH + state.gap;
+            
             const imgId = "tile-img";
-            const imgDef = `<image id="${imgId}" href="${state.imageSrc}" width="${tileSize}" height="${tileSize}" preserveAspectRatio="none" />`;
+            const imgDef = `<image id="${imgId}" href="${state.imageSrc}" width="${tW}" height="${tH}" preserveAspectRatio="none" />`;
 
             let tiles = "";
 
-            // Helper to generate SVG tile using <use> tag
-            const addTile = (x, y, flipH, flipV) => {
+            const addTile = (x, y, fh, fv) => {
                 let transform = "";
-                // To mirror in SVG around the tile center:
-                // translate(cx, cy) scale(sx, sy) translate(-cx, -cy)
-                if (flipH || flipV) {
-                    const cx = x + tileSize / 2;
-                    const cy = y + tileSize / 2;
-                    const sx = flipH ? -1 : 1;
-                    const sy = flipV ? -1 : 1;
+                if (fh || fv) {
+                    const cx = x + tW / 2;
+                    const cy = y + tH / 2;
+                    const sx = fh ? -1 : 1;
+                    const sy = fv ? -1 : 1;
                     transform = `transform="translate(${cx}, ${cy}) scale(${sx}, ${sy}) translate(-${cx}, -${cy})"`;
                 }
-
-                // Use <use> tag referencing the ID in defs
                 tiles += `<use href="#${imgId}" x="${x}" y="${y}" ${transform} />`;
             };
 
             const shouldMirror = (i) => state.mirrorAlternates && (i % 2 !== 0);
 
             // Top
-            let countX = Math.ceil((w + gap) / stride);
-            for (let i = 0; i < countX; i++) {
-                addTile(i * stride, 0, shouldMirror(i), false);
-            }
+            const countX = Math.round((w + state.gap) / strideX);
+            for (let i = 0; i < countX; i++) addTile(i * strideX, 0, shouldMirror(i), false);
+            
             // Bottom
-            for (let i = 0; i < countX; i++) {
-                addTile(i * stride, h - tileSize, shouldMirror(i), false);
-            }
+            for (let i = 0; i < countX; i++) addTile(i * strideX, h - tH, shouldMirror(i), false);
+            
             // Left
-            let countY = Math.ceil((h + gap) / stride);
-            for (let i = 0; i < countY; i++) {
-                addTile(0, i * stride, false, shouldMirror(i));
-            }
+            const countY = Math.round((h + state.gap) / strideY);
+            for (let i = 0; i < countY; i++) addTile(0, i * strideY, false, shouldMirror(i));
+            
             // Right
-            for (let i = 0; i < countY; i++) {
-                addTile(w - tileSize, i * stride, false, shouldMirror(i));
-            }
+            for (let i = 0; i < countY; i++) addTile(w - tW, i * strideY, false, shouldMirror(i));
 
             const slope = state.exposure / 100;
             const filterDef = `
@@ -454,7 +637,7 @@
             
             let bgRect = "";
             if (state.bgColor && state.bgColor !== 'transparent') {
-                bgRect = `<rect x="${tileSize}" y="${tileSize}" width="${w - tileSize*2}" height="${h - tileSize*2}" fill="${state.bgColor}" />`;
+                bgRect = `<rect x="${tW}" y="${tH}" width="${w - tW*2}" height="${h - tH*2}" fill="${state.bgColor}" />`;
             }
 
             const svgContent = `
@@ -474,10 +657,9 @@
             const url = URL.createObjectURL(blob);
             const link = document.createElement('a');
             link.href = url;
-            link.download = `framed-mirror-${Date.now()}.svg`;
+            link.download = `framed-${state.strictMode ? 'strict' : 'snap'}-${Date.now()}.svg`;
             link.click();
         }
-
     </script>
 </body>
 </html>
