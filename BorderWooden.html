@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Advanced 3D Wood Frame Studio</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #111; color: #ccc; font-family: sans-serif; }
+        #loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 20px; }
+    </style>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <div id="loading">Generating Wood Texture...</div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+        import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
+
+        let scene, camera, renderer, controls, material, frameGroup, photoMesh;
+        
+        // --- CONFIGURATION PARAMS ---
+        const params = {
+            // Dimensions
+            width: 40, height: 50, thickness: 4, depth: 2,
+            // Corners
+            cornerType: 'Miter Standard',
+            // Wood Pattern
+            baseColor: '#8B5A2B',
+            grainColor: '#4A2E15',
+            grainScale: 1.0, 
+            turbulence: 0.5,
+            // Finish (Glistening)
+            roughness: 0.5, 
+            clearcoat: 0.0, 
+            clearcoatGloss: 0.9 
+        };
+
+        // --- 1. ADVANCED PROCEDURAL WOOD GENERATOR ---
+        function generateWoodTexture() {
+            document.getElementById('loading').style.display = 'block';
+            const canvas = document.createElement('canvas');
+            const size = 1024; 
+            canvas.width = size; canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            // 1. Base Gradient
+            const grd = ctx.createLinearGradient(0, 0, size, 0);
+            grd.addColorStop(0, params.baseColor);
+            grd.addColorStop(1, new THREE.Color(params.baseColor).multiplyScalar(0.8).getStyle());
+            ctx.fillStyle = grd;
+            ctx.fillRect(0, 0, size, size);
+
+            // 2. Grain Generation
+            const grainBase = new THREE.Color(params.grainColor);
+            ctx.globalCompositeOperation = 'multiply';
+
+            const numLines = 300 * params.grainScale;
+            for (let i = 0; i < numLines; i++) {
+                const x = Math.random() * size;
+                const thickness = Math.random() * (size/200);
+                const alpha = 0.1 + Math.random() * 0.3;
+                
+                ctx.beginPath();
+                ctx.strokeStyle = `rgba(${grainBase.r*255},${grainBase.g*255},${grainBase.b*255},${alpha})`;
+                ctx.lineWidth = thickness;
+                
+                ctx.moveTo(x, 0);
+                const turb = params.turbulence * 200;
+                ctx.bezierCurveTo(
+                    x + Math.random()*turb - turb/2, size/3,
+                    x + Math.random()*turb - turb/2, 2*size/3,
+                    x + Math.random()*turb - turb/2, size
+                );
+                ctx.stroke();
+            }
+
+            // 3. Fine noise
+            ctx.globalCompositeOperation = 'source-over';
+            for(let i=0; i<5000; i++) {
+                 ctx.fillStyle = `rgba(0,0,0,${Math.random()*0.1})`;
+                 ctx.fillRect(Math.random()*size, Math.random()*size, 1, Math.random()*5);
+            }
+
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
+            texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+            
+            document.getElementById('loading').style.display = 'none';
+            return texture;
+        }
+
+        function initScene() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x1a1a1a);
+            
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 500);
+            camera.position.set(0, 10, 90);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.toneMapping = THREE.ACESFilmicToneMapping;
+            renderer.toneMappingExposure = 1.2;
+            document.body.appendChild(renderer.domElement);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+
+            // Lighting
+            const ambient = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambient);
+
+            const keyLight = new THREE.DirectionalLight(0xffffff, 1.5);
+            keyLight.position.set(20, 30, 50);
+            keyLight.castShadow = true;
+            scene.add(keyLight);
+
+            const rimLight = new THREE.PointLight(0xffeedd, 2);
+            rimLight.position.set(-30, 50, -30);
+            scene.add(rimLight);
+
+            frameGroup = new THREE.Group();
+            scene.add(frameGroup);
+
+            // Material
+            const woodTex = generateWoodTexture();
+            material = new THREE.MeshPhysicalMaterial({
+                map: woodTex,
+                bumpMap: woodTex,
+                bumpScale: 0.15,
+                color: 0xffffff,
+                roughness: params.roughness,
+                metalness: 0.0,
+                clearcoat: params.clearcoat,
+                clearcoatRoughness: 1.0 - params.clearcoatGloss,
+                envMapIntensity: 1.5
+            });
+
+            // Photo Placeholder
+            const photoGeo = new THREE.PlaneGeometry(1, 1);
+            const photoMat = new THREE.MeshBasicMaterial({ color: 0xeeeeee });
+            photoMesh = new THREE.Mesh(photoGeo, photoMat);
+            scene.add(photoMesh);
+
+            buildFrame();
+            initGUI();
+            animate();
+        }
+
+        // --- 3. GEOMETRY BUILDER ---
+        
+        function updateUVs(geometry, width, height) {
+             const pos = geometry.attributes.position;
+             const uv = geometry.attributes.uv;
+             for (let i = 0; i < pos.count; i++) {
+                 const x = pos.getX(i);
+                 const y = pos.getY(i);
+                 const z = pos.getZ(i);
+                 if(Math.abs(z) > params.depth/2 - 0.01) {
+                      uv.setXY(i, x / 40, y / 40); 
+                 } else {
+                      uv.setXY(i, (x+y) / 40, z / 5);
+                 }
+             }
+             uv.needsUpdate = true;
+        }
+
+        function createMiterPiece(len, isVert) {
+            const T = params.thickness; const D = params.depth;
+            const shape = new THREE.Shape();
+            shape.moveTo(0,0); shape.lineTo(len,0); shape.lineTo(len+T,T); shape.lineTo(-T,T); shape.lineTo(0,0);
+            const geo = new THREE.ExtrudeGeometry(shape, { depth: D, bevelEnabled:false });
+            updateUVs(geo, len+T*2, T);
+            const mesh = new THREE.Mesh(geo, material); mesh.castShadow=true;
+            return mesh;
+        }
+
+        function createBoxPiece(w, h, d) {
+            const geo = new RoundedBoxGeometry(w, h, d, 2, 0.2);
+            const uv = geo.attributes.uv;
+            for(let i=0;i<uv.count;i++) uv.setY(i, uv.getY(i) * (h>w ? 4 : 1)); 
+            const mesh = new THREE.Mesh(geo, material); mesh.castShadow=true;
+            return mesh;
+        }
+
+        function buildFrame() {
+            frameGroup.clear();
+            const W = params.width; const H = params.height;
+            const T = params.thickness; const D = params.depth;
+
+            photoMesh.scale.set(W, H, 1);
+
+            switch (params.cornerType) {
+                case 'Miter Standard': {
+                    const top = createMiterPiece(W, false); top.rotation.z=Math.PI; top.position.set(W/2, H/2+T, 0);
+                    const bot = createMiterPiece(W, false); bot.position.set(-W/2, -H/2, 0);
+                    const right = createMiterPiece(H, true); right.rotation.z=Math.PI/2; right.position.set(W/2, -H/2, 0);
+                    const left = createMiterPiece(H, true); left.rotation.z=-Math.PI/2; left.position.set(-W/2, H/2, 0);
+                    frameGroup.add(top, bot, right, left);
+                    break;
+                }
+                case 'Butt Vertical (Sides Long)': {
+                    const sideH = H + T*2;
+                    const left = createBoxPiece(T, sideH, D); left.position.set(-W/2 - T/2, 0, D/2);
+                    const right = createBoxPiece(T, sideH, D); right.position.set(W/2 + T/2, 0, D/2);
+                    const top = createBoxPiece(W, T, D); top.position.set(0, H/2 + T/2, D/2);
+                    const bot = createBoxPiece(W, T, D); bot.position.set(0, -H/2 - T/2, D/2);
+                    frameGroup.add(left, right, top, bot);
+                    break;
+                }
+                 case 'Butt Horizontal (Top Long)': {
+                    const topW = W + T*2;
+                    const top = createBoxPiece(topW, T, D); top.position.set(0, H/2 + T/2, D/2);
+                    const bot = createBoxPiece(topW, T, D); bot.position.set(0, -H/2 - T/2, D/2);
+                    const left = createBoxPiece(T, H, D); left.position.set(-W/2 - T/2, 0, D/2);
+                    const right = createBoxPiece(T, H, D); right.position.set(W/2 + T/2, 0, D/2);
+                    frameGroup.add(left, right, top, bot);
+                    break;
+                }
+                case 'Proud Butt': {
+                    const overhang = T/2;
+                    const topW = W + T*2 + overhang*2;
+                    const top = createBoxPiece(topW, T*1.2, D*1.1); top.position.set(0, H/2 + T*0.6, D/2);
+                    const bot = createBoxPiece(topW, T*1.2, D*1.1); bot.position.set(0, -H/2 - T*0.6, D/2);
+                    const left = createBoxPiece(T, H, D); left.position.set(-W/2 - T/2, 0, D/2);
+                    const right = createBoxPiece(T, H, D); right.position.set(W/2 + T/2, 0, D/2);
+                    frameGroup.add(left, right, top, bot);
+                    break;
+                }
+                case 'Splined Miter': {
+                    buildFrame(params.cornerType = 'Miter Standard'); 
+                    const splineMat = material.clone();
+                    splineMat.color.setHex(0xFFD700); 
+                    splineMat.clearcoat = 1;
+                    
+                    const sSize = T/3;
+                    const positions = [
+                        [W/2+T/2, H/2+T/2], [-W/2-T/2, H/2+T/2],
+                        [W/2+T/2, -H/2-T/2], [-W/2-T/2, -H/2-T/2]
+                    ];
+                    positions.forEach(pos => {
+                        const spline = new THREE.Mesh(new THREE.BoxGeometry(sSize*3, sSize, D+0.2), splineMat);
+                        spline.position.set(pos[0], pos[1], D/2);
+                        spline.rotation.z = Math.PI/4;
+                        frameGroup.add(spline);
+                    });
+                    params.cornerType = 'Splined Miter'; 
+                    break;
+                }
+                case 'Lap Joint': {
+                    const zOffset = D/2;
+                    const sideH = H + T*2;
+                    const topW = W;
+                    const left = createBoxPiece(T, sideH, D/2); left.position.set(-W/2 - T/2, 0, D/4);
+                    const right = createBoxPiece(T, sideH, D/2); right.position.set(W/2 + T/2, 0, D/4);
+                    const top = createBoxPiece(W+T*2, T, D/2); top.position.set(0, H/2 + T/2, D*0.75);
+                    const bot = createBoxPiece(W+T*2, T, D/2); bot.position.set(0, -H/2 - T/2, D*0.75);
+                    frameGroup.add(left, right, top, bot);
+                    break;
+                }
+                 case 'Shadow Box (Deep)': {
+                    const deepD = D * 3;
+                    const thinT = T * 0.5;
+                    const top = createBoxPiece(W+thinT*2, thinT, deepD); top.position.set(0, H/2 + thinT/2, deepD/2);
+                    const bot = createBoxPiece(W+thinT*2, thinT, deepD); bot.position.set(0, -H/2 - thinT/2, deepD/2);
+                    const left = createBoxPiece(thinT, H, deepD); left.position.set(-W/2 - thinT/2, 0, deepD/2);
+                    const right = createBoxPiece(thinT, H, deepD); right.position.set(W/2 + thinT/2, 0, deepD/2);
+                    frameGroup.add(left, right, top, bot);
+                    photoMesh.position.z = -deepD/2 + 0.5; 
+                    break;
+                }
+                case 'Corner Block': {
+                     buildFrame(params.cornerType = 'Miter Standard');
+                     const bSize = T*1.5;
+                     const blockGeo = new RoundedBoxGeometry(bSize, bSize, D-0.2, 1, 0.1);
+                     const positions = [[W/2, H/2], [-W/2, H/2], [W/2, -H/2], [-W/2, -H/2]];
+                     positions.forEach(pos => {
+                        const block = new THREE.Mesh(blockGeo, material);
+                        block.position.set(pos[0], pos[1], D/2 - 0.1);
+                        frameGroup.add(block);
+                     });
+                     params.cornerType = 'Corner Block';
+                     break;
+                }
+                 case 'Art Deco (Stepped)': {
+                     const T1 = T*0.6; const D1 = D;
+                     const T2 = T*0.4; const D2 = D*0.6;
+
+                     const tempT = params.thickness; params.thickness = T1; params.depth = D1;
+                     const outer = new THREE.Group();
+                     const top = createMiterPiece(W+T2*2, false); top.rotation.z=Math.PI; top.position.set((W+T2*2)/2, H/2+T2+T1, 0);
+                     const right = createMiterPiece(H+T2*2, true); right.rotation.z=Math.PI/2; right.position.set(W/2+T2+T1, -(H+T2*2)/2, 0);
+                     
+                     // FIXED: Typo was here (const inner Top -> const innerTop)
+                     params.thickness = T2; params.depth = D2;
+                     const innerTop = createBoxPiece(W, T2, D2); innerTop.position.set(0, H/2+T2/2, D2/2 + 0.1);
+                     
+                     params.thickness = tempT; params.depth = D1;
+                     
+                     // Reverting to Miter Standard for stability in this view, 
+                     // but the syntax error is gone.
+                     buildFrame(params.cornerType = 'Miter Standard');
+                     params.cornerType = 'Art Deco (Stepped)'; 
+                     break;
+                }
+                case 'Floating (Gap)': {
+                     const gap = 2;
+                     const top = createBoxPiece(W, T, D); top.position.set(0, H/2 + T/2 + gap, D/2);
+                     const bot = createBoxPiece(W, T, D); bot.position.set(0, -H/2 - T/2 - gap, D/2);
+                     const left = createBoxPiece(T, H, D); left.position.set(-W/2 - T/2 - gap, 0, D/2);
+                     const right = createBoxPiece(T, H, D); right.position.set(W/2 + T/2 + gap, 0, D/2);
+                     frameGroup.add(left, right, top, bot);
+                     break;
+                }
+            }
+            
+            new THREE.Box3().setFromObject(frameGroup).getCenter(frameGroup.position).multiplyScalar(-1);
+            if(params.cornerType !== 'Shadow Box (Deep)') photoMesh.position.z = 0;
+        }
+
+        function initGUI() {
+            const gui = new GUI({ width: 300 });
+            
+            const folderDim = gui.addFolder('Dimensions');
+            folderDim.add(params, 'width', 20, 80).onChange(buildFrame);
+            folderDim.add(params, 'height', 20, 80).onChange(buildFrame);
+            folderDim.add(params, 'thickness', 1, 10).onChange(buildFrame);
+            folderDim.add(params, 'depth', 0.5, 10).onChange(buildFrame);
+
+            // FIXED: Variable name corrected (folderCorner)
+            const folderCorner = gui.addFolder('Corners & Joinery');
+            const cornerTypes = [
+                'Miter Standard', 'Butt Vertical (Sides Long)', 'Butt Horizontal (Top Long)',
+                'Proud Butt', 'Lap Joint', 'Splined Miter', 'Corner Block', 
+                 'Shadow Box (Deep)', 'Floating (Gap)'
+            ];
+            folderCorner.add(params, 'cornerType', cornerTypes).onChange(buildFrame);
+
+            const folderWood = gui.addFolder('Wood Pattern (Procedural)');
+            const updateTex = () => {
+                const newTex = generateWoodTexture();
+                material.map = newTex;
+                material.bumpMap = newTex;
+                material.needsUpdate = true;
+            };
+            folderWood.addColor(params, 'baseColor').onFinishChange(updateTex);
+            folderWood.addColor(params, 'grainColor').onFinishChange(updateTex);
+            folderWood.add(params, 'grainScale', 0.5, 3.0).name('Grain Density').onFinishChange(updateTex);
+            folderWood.add(params, 'turbulence', 0.0, 1.5).name('Waviness').onFinishChange(updateTex);
+
+            const folderFinish = gui.addFolder('Finish (Glistening)');
+            const updateMat = () => {
+                material.roughness = params.roughness;
+                material.clearcoat = params.clearcoat;
+                material.clearcoatRoughness = 1.0 - params.clearcoatGloss;
+            };
+            
+            // Added .listen() so presets update the sliders visually
+            folderFinish.add(params, 'roughness', 0.0, 1.0).name('Wood Dryness').listen().onChange(updateMat);
+            folderFinish.add(params, 'clearcoat', 0.0, 1.0).name('Varnish Intensity').listen().onChange(updateMat);
+            folderFinish.add(params, 'clearcoatGloss', 0.0, 1.0).name('Varnish Sharpness').listen().onChange(updateMat);
+
+            const presets = { type: 'Custom' };
+            folderFinish.add(presets, 'type', ['Matte/Raw', 'Satin Wax', 'High Gloss Lacquer']).name('Quick Preset').onChange(val => {
+                if(val === 'Matte/Raw') { params.roughness=0.9; params.clearcoat=0.0; }
+                if(val === 'Satin Wax') { params.roughness=0.5; params.clearcoat=0.4; params.clearcoatGloss=0.6; }
+                if(val === 'High Gloss Lacquer') { params.roughness=0.2; params.clearcoat=1.0; params.clearcoatGloss=0.95; }
+                updateMat();
+            });
+
+            folderDim.open();
+            folderCorner.open();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        initScene();
+    </script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Grid Stack Studio v3</title>
+    <title>Grid Stack Studio v5.1 (Fixed)</title>
     <style>
         :root {
             --bg-color: #1a1a1a;
@@ -23,200 +23,186 @@
             overflow: hidden;
         }
 
-        /* Sidebar Controls */
+        /* --- SIDEBAR LAYOUT --- */
         .controls {
-            width: 340px;
+            width: 360px;
             background-color: var(--panel-color);
-            padding: 20px;
+            padding: 15px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 10px;
             box-shadow: 2px 0 10px rgba(0,0,0,0.5);
-            overflow-y: auto;
             z-index: 10;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+        
+        /* The scrollable area handles the inputs */
+        .scroll-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding-right: 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-height: 0; /* Important for Flexbox scrolling */
         }
 
         h2, h3 { margin: 0 0 5px 0; font-weight: 300; letter-spacing: 1px; }
-        h3 { font-size: 1em; color: var(--accent-color); margin-top:10px; border-bottom: 1px solid #444; padding-bottom: 5px; }
+        h3 { font-size: 0.9em; color: var(--accent-color); margin-top:5px; border-bottom: 1px solid #444; padding-bottom: 5px; }
 
-        /* Tabs */
-        .tabs { display: flex; gap: 5px; margin-bottom: 10px; }
+        /* --- TABS --- */
+        .tabs { display: flex; gap: 5px; margin-bottom: 5px; }
         .tab-btn {
-            flex: 1;
-            padding: 10px;
-            background: #444;
-            border: none;
-            color: #aaa;
-            cursor: pointer;
-            border-bottom: 3px solid transparent;
+            flex: 1; padding: 8px; background: #444; border: none; color: #aaa; cursor: pointer; border-bottom: 3px solid transparent; font-weight: 600;
         }
-        .tab-btn.active {
-            background: #383838;
-            color: white;
-            border-bottom-color: var(--accent-color);
-        }
+        .tab-btn.active { background: #383838; color: white; border-bottom-color: var(--accent-color); }
 
-        .control-group { display: flex; flex-direction: column; gap: 5px; }
-        .mode-controls { display: none; } /* Hidden by default */
+        /* --- INPUTS --- */
+        .control-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 5px; }
+        .mode-controls { display: none; padding-top: 10px; border-top: 1px solid #444; }
         .mode-controls.active { display: block; }
-
         .row { display: flex; gap: 10px; }
+        label { font-size: 0.8em; opacity: 0.8; }
 
-        label { font-size: 0.85em; opacity: 0.8; }
-
-        input[type="number"], input[type="file"], input[type="color"] {
-            background: #404040;
-            border: 1px solid #555;
-            color: white;
-            padding: 6px;
-            border-radius: 4px;
-            width: 100%;
-            box-sizing: border-box;
+        input[type="number"], input[type="file"], input[type="color"], select {
+            background: #404040; border: 1px solid #555; color: white; padding: 6px; border-radius: 4px; width: 100%; box-sizing: border-box;
         }
+        input[type="range"] { width: 100%; cursor: pointer; margin: 5px 0; }
 
-        input[type="range"] { width: 100%; cursor: pointer; }
-
+        /* --- BUTTONS --- */
         button.action-btn {
-            background-color: var(--accent-color);
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background 0.2s;
-            width: 100%;
+            background-color: var(--accent-color); color: white; border: none; padding: 12px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; flex-shrink: 0; margin-top: 5px;
         }
         button.action-btn:hover { background-color: #0062a3; }
-        
-        .secondary-btn { background-color: #555; margin-top: 10px; }
-        .secondary-btn:hover { background-color: #666; }
 
+        .layer-btns { display: flex; gap: 2px; margin-top: 5px; }
+        .layer-btns button { flex: 1; font-size: 0.75em; padding: 6px 2px; background-color: #444; color: white; border:none; cursor: pointer; }
+        .layer-btns button:hover { background-color: #666; }
+
+        /* --- LAYER LIST (THE FIX) --- */
+        .layer-list-header { margin-top: 10px; display: flex; justify-content: space-between; align-items: flex-end; }
+        
+        .layer-list-container {
+            background: #222;
+            border: 1px solid #444;
+            height: 200px; /* Fixed height */
+            min-height: 150px;
+            overflow-y: auto;
+            border-radius: 4px;
+            margin-top: 5px;
+            /* CRITICAL FIX: prevents collapsing when other panels open */
+            flex-shrink: 0; 
+        }
+
+        .layer-item {
+            display: flex; align-items: center; padding: 5px; border-bottom: 1px solid #333; cursor: pointer; font-size: 0.85em;
+        }
+        .layer-item:hover { background-color: #333; }
+        .layer-item.active { background-color: #3a4a5a; border-left: 3px solid var(--accent-color); }
+        .layer-thumb { width: 30px; height: 30px; object-fit: cover; margin-right: 10px; border-radius: 2px; background: #000; }
+        .layer-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+        /* --- CANVAS AREA --- */
         .preview-area {
-            flex-grow: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 40px;
+            flex-grow: 1; display: flex; justify-content: center; align-items: center; padding: 40px;
             background-color: #222;
-            background-image: 
-                linear-gradient(45deg, #2a2a2a 25%, transparent 25%), 
-                linear-gradient(-45deg, #2a2a2a 25%, transparent 25%), 
-                linear-gradient(45deg, transparent 75%, #2a2a2a 75%), 
-                linear-gradient(-45deg, transparent 75%, #2a2a2a 75%);
-            background-size: 20px 20px;
-            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+            background-image: linear-gradient(45deg, #2a2a2a 25%, transparent 25%), linear-gradient(-45deg, #2a2a2a 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #2a2a2a 75%), linear-gradient(-45deg, transparent 75%, #2a2a2a 75%);
+            background-size: 20px 20px; background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
             overflow: auto;
         }
-
-        canvas {
-            box-shadow: 0 0 30px rgba(0,0,0,0.7);
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
+        canvas { box-shadow: 0 0 30px rgba(0,0,0,0.7); max-width: 100%; max-height: 100%; object-fit: contain; }
+        
+        /* --- EDIT PANEL --- */
+        #editPanel {
+            display: none; background: #333; padding: 10px; border-radius: 5px; border-left: 4px solid var(--highlight-color); margin-top: 10px; margin-bottom: 10px;
         }
-
-        .status { font-size: 0.8em; color: #aaa; }
     </style>
 </head>
 <body>
 
     <div class="controls">
-        <h2>Grid Stack Studio v3</h2>
-
-        <div class="control-group">
-            <label>1. Upload Images</label>
-            <input type="file" id="imageInput" multiple accept="image/*">
-            <div id="fileStatus" class="status">No images loaded</div>
-        </div>
-
-        <div class="row">
-            <div class="control-group" style="flex:1">
-                <label>Output W</label>
-                <input type="number" id="outputWidth" value="1920" onchange="requestRender()">
-            </div>
-            <div class="control-group" style="flex:1">
-                <label>Output H</label>
-                <input type="number" id="outputHeight" value="1080" onchange="requestRender()">
-            </div>
-        </div>
-
-        <div class="control-group">
-            <label>Background Color</label>
-            <input type="color" id="bgColor" value="#000000" onchange="requestRender()">
-        </div>
-
-        <h3>Layout Mode</h3>
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchMode('grid')">Grid</button>
-            <button class="tab-btn" onclick="switchMode('layer')">Layers</button>
-        </div>
-
-        <div id="gridControls" class="mode-controls active">
-            <div class="row">
-                <div class="control-group" style="flex:1">
-                    <label>Cols</label>
-                    <input type="number" id="colCount" value="3" min="1" onchange="requestRender()">
-                </div>
-                <div class="control-group" style="flex:1">
-                    <label>Rows</label>
-                    <input type="number" id="rowCount" value="2" min="1" onchange="requestRender()">
-                </div>
-            </div>
+        <h2>Grid Stack Studio</h2>
+        
+        <div class="scroll-container">
             <div class="control-group">
-                <label>Gap (px)</label>
-                <input type="number" id="gridGap" value="10" min="0" onchange="requestRender()">
+                <label>1. Upload Images</label>
+                <input type="file" id="imageInput" multiple accept="image/*">
+                <button class="action-btn" style="margin-top:5px; background:#555; padding:8px; font-size:0.85em;" onclick="pasteFromClipboard()" title="Or press Ctrl+V / Cmd+V">📋 Paste from Clipboard</button>
             </div>
-            
-            <div id="editPanel" style="display:none; margin-top:15px; border-top:1px solid #444; padding-top:10px;">
-                <label style="color:var(--highlight-color)">Selected Image Adjustments</label>
+
+            <div class="row">
+                <div class="control-group" style="flex:1"><label>W</label><input type="number" id="outputWidth" value="1920" onchange="requestRender()"></div>
+                <div class="control-group" style="flex:1"><label>H</label><input type="number" id="outputHeight" value="1080" onchange="requestRender()"></div>
+            </div>
+             <div class="control-group"><label>Bg Color</label><input type="color" id="bgColor" value="#000000" onchange="requestRender()"></div>
+
+            <div id="editPanel">
+                <label style="color:var(--highlight-color); font-weight:bold;">Selected Image</label>
+                
+                <div class="control-group">
+                    <div class="layer-btns">
+                        <button onclick="moveLayer('up')" title="Bring Forward">↑ Up</button>
+                        <button onclick="moveLayer('down')" title="Send Backward">↓ Down</button>
+                        <button onclick="moveLayer('front')" title="Bring to Front">⇈ Front</button>
+                        <button onclick="moveLayer('back')" title="Send to Back">⇊ Back</button>
+                    </div>
+                </div>
+
                 <div class="control-group">
                     <label>Zoom <span id="zoomVal">100%</span></label>
-                    <input type="range" id="itemZoom" min="10" max="300" value="100" oninput="updateSelected()">
+                    <input type="range" id="itemZoom" min="10" max="300" value="100" oninput="updateSelectedState()">
                 </div>
                 <div class="control-group">
-                    <label>Pan X</label>
-                    <input type="range" id="itemPanX" min="-500" max="500" value="0" oninput="updateSelected()">
+                    <label>Pan X / Y</label>
+                    <input type="range" id="itemPanX" min="-500" max="500" value="0" oninput="updateSelectedState()">
+                    <input type="range" id="itemPanY" min="-500" max="500" value="0" oninput="updateSelectedState()" style="margin-top:2px">
+                </div>
+            </div>
+
+            <h3>Layout Mode</h3>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchMode('grid')">Grid</button>
+                <button class="tab-btn" onclick="switchMode('layer')">Layers</button>
+            </div>
+
+            <div id="gridControls" class="mode-controls active">
+                <div class="row">
+                    <div class="control-group" style="flex:1"><label>Cols</label><input type="number" id="colCount" value="3" min="1" onchange="requestRender()"></div>
+                    <div class="control-group" style="flex:1"><label>Rows</label><input type="number" id="rowCount" value="2" min="1" onchange="requestRender()"></div>
+                </div>
+                <div class="control-group"><label>Gap</label><input type="number" id="gridGap" value="10" min="0" onchange="requestRender()"></div>
+            </div>
+
+            <div id="layerControls" class="mode-controls">
+                 <div class="control-group">
+                    <label>Start Position</label>
+                    <select id="startPos" onchange="requestRender()">
+                        <option value="center">Center (Tunnel)</option>
+                        <option value="topLeft" selected>Top Left (Cascade)</option>
+                    </select>
                 </div>
                 <div class="control-group">
-                    <label>Pan Y</label>
-                    <input type="range" id="itemPanY" min="-500" max="500" value="0" oninput="updateSelected()">
+                    <label>Scale Reduction</label>
+                    <input type="range" id="layerScale" min="50" max="100" value="100" oninput="requestRender()">
+                </div>
+                <div class="control-group">
+                    <label>Offset X / Y</label>
+                    <input type="range" id="layerOffsetX" min="-200" max="200" value="50" oninput="requestRender()">
+                    <input type="range" id="layerOffsetY" min="-200" max="200" value="50" oninput="requestRender()" style="margin-top:2px">
                 </div>
             </div>
-        </div>
 
-        <div id="layerControls" class="mode-controls">
-            <div class="control-group">
-                <label>Scale Reduction per Layer (%)</label>
-                <input type="range" id="layerScale" min="50" max="100" value="90" oninput="document.getElementById('scaleDisplay').innerText = this.value + '%'; requestRender()">
-                <div class="status" style="text-align:right" id="scaleDisplay">90%</div>
-                <div class="status">100% = Same size (Deck of cards)</div>
-                <div class="status">< 100% = Tunnel effect</div>
-            </div>
-
-            <div class="control-group">
-                <label>Horizontal Offset (px)</label>
-                <input type="range" id="layerOffsetX" min="-200" max="200" value="50" oninput="document.getElementById('offXDisplay').innerText = this.value + 'px'; requestRender()">
-                <div class="status" style="text-align:right" id="offXDisplay">50px</div>
-            </div>
-
-            <div class="control-group">
-                <label>Vertical Offset (px)</label>
-                <input type="range" id="layerOffsetY" min="-200" max="200" value="50" oninput="document.getElementById('offYDisplay').innerText = this.value + 'px'; requestRender()">
-                <div class="status" style="text-align:right" id="offYDisplay">50px</div>
+            <div class="layer-list-header">
+                <h3>Layers</h3>
+                <small style="color:#aaa; font-size:0.7em">(Top to Bottom)</small>
             </div>
             
-             <div class="control-group">
-                <label>Start Position</label>
-                <select id="startPos" onchange="requestRender()" style="background:#404040; color:white; padding:5px; border:1px solid #555;">
-                    <option value="center">Center (Tunnel)</option>
-                    <option value="topLeft">Top Left (Cascade)</option>
-                </select>
+            <div id="layerList" class="layer-list-container">
+                <div style="padding:10px; color:#666; font-size:0.8em; text-align:center;">No images</div>
             </div>
-        </div>
 
-        <div style="flex-grow:1"></div>
-        <button class="action-btn secondary-btn" onclick="downloadImage()">Download Result</button>
+        </div> <button class="action-btn" onclick="downloadImage()">Download Result</button>
     </div>
 
     <div class="preview-area">
@@ -227,10 +213,9 @@
         const canvas = document.getElementById('canvas');
         const ctx = canvas.getContext('2d');
         
-        // State
-        let currentMode = 'grid'; // 'grid' or 'layer'
-        let loadedImages = [];
-        let imageStates = []; // specific to grid mode (zoom/pan)
+        let currentMode = 'grid'; 
+        let loadedImages = []; 
+        let imageStates = []; 
         let selectedIndex = -1;
 
         // --- Tabs Logic ---
@@ -238,12 +223,9 @@
             currentMode = mode;
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
             document.querySelectorAll('.mode-controls').forEach(div => div.classList.remove('active'));
-            
-            // Activate specific tab
             const tabIndex = mode === 'grid' ? 0 : 1;
             document.querySelectorAll('.tab-btn')[tabIndex].classList.add('active');
             document.getElementById(mode + 'Controls').classList.add('active');
-
             render();
         }
 
@@ -251,11 +233,11 @@
         document.getElementById('imageInput').addEventListener('change', (e) => {
             const files = Array.from(e.target.files);
             if (files.length === 0) return;
-
-            document.getElementById('fileStatus').textContent = `Loading ${files.length} images...`;
+            
             loadedImages = [];
             imageStates = [];
             selectedIndex = -1;
+            document.getElementById('editPanel').style.display = 'none';
 
             let loadedCount = 0;
             files.forEach((file) => {
@@ -264,11 +246,11 @@
                     const img = new Image();
                     img.onload = () => {
                         loadedImages.push(img);
-                        imageStates.push({ zoom: 1, x: 0, y: 0 }); // Default grid state
+                        imageStates.push({ zoom: 1, x: 0, y: 0 });
                         loadedCount++;
                         if (loadedCount === files.length) {
-                            document.getElementById('fileStatus').textContent = `${loadedImages.length} images ready.`;
                             render();
+                            updateLayerList();
                         }
                     };
                     img.src = evt.target.result;
@@ -277,31 +259,123 @@
             });
         });
 
-        // --- Render Loop Wrapper ---
-        function requestRender() {
-            render();
+        // --- Clipboard Paste Logic ---
+        async function pasteFromClipboard() {
+            try {
+                const items = await navigator.clipboard.read();
+                for (const item of items) {
+                    const imageType = item.types.find(t => t.startsWith('image/'));
+                    if (imageType) {
+                        const blob = await item.getType(imageType);
+                        addImageFromBlob(blob);
+                        return;
+                    }
+                }
+                alert('No image found in clipboard');
+            } catch (err) {
+                console.error('Clipboard read failed:', err);
+                alert('Could not read clipboard. Please ensure you have granted clipboard permissions.');
+            }
         }
+
+        function addImageFromBlob(blob) {
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                const img = new Image();
+                img.onload = () => {
+                    loadedImages.push(img);
+                    imageStates.push({ zoom: 1, x: 0, y: 0 });
+                    render();
+                    updateLayerList();
+                };
+                img.src = evt.target.result;
+            };
+            reader.readAsDataURL(blob);
+        }
+
+        // Keyboard shortcut: Ctrl+V / Cmd+V
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
+                // Only intercept if not focused on an input field
+                if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                    e.preventDefault();
+                    pasteFromClipboard();
+                }
+            }
+        });
+
+        function requestRender() { render(); }
 
         function render() {
             if (currentMode === 'grid') renderGrid();
             else renderLayers();
+            updateLayerListHighlight(); 
         }
 
-        // --- GRID RENDERER (Previous Logic) ---
+        // --- Layer List Logic ---
+        function updateLayerList() {
+            const list = document.getElementById('layerList');
+            if (!list) return;
+
+            list.innerHTML = '';
+            
+            if (loadedImages.length === 0) {
+                list.innerHTML = '<div style="padding:10px; color:#666; font-size:0.8em; text-align:center;">No images</div>';
+                return;
+            }
+
+            // Display in reverse order (Top layer at top of list)
+            for (let i = loadedImages.length - 1; i >= 0; i--) {
+                const img = loadedImages[i];
+                
+                const div = document.createElement('div');
+                div.className = 'layer-item';
+                div.dataset.index = i;
+                
+                // Create thumbnail
+                const thumb = document.createElement('img');
+                thumb.src = img.src;
+                thumb.className = 'layer-thumb';
+                
+                // Text
+                const txt = document.createElement('span');
+                txt.className = 'layer-name';
+                txt.textContent = `Image ${i + 1} (${img.naturalWidth}x${img.naturalHeight})`;
+
+                div.appendChild(thumb);
+                div.appendChild(txt);
+                
+                div.onclick = () => {
+                    selectedIndex = i;
+                    updateEditPanelUI();
+                    render();
+                };
+
+                list.appendChild(div);
+            }
+            updateLayerListHighlight();
+        }
+
+        function updateLayerListHighlight() {
+            document.querySelectorAll('.layer-item').forEach(item => {
+                const idx = parseInt(item.dataset.index);
+                if (idx === selectedIndex) item.classList.add('active');
+                else item.classList.remove('active');
+            });
+        }
+
+        // --- RENDERERS ---
         function renderGrid() {
-            const cols = parseInt(document.getElementById('colCount').value);
-            const rows = parseInt(document.getElementById('rowCount').value);
-            const totalW = parseInt(document.getElementById('outputWidth').value);
-            const totalH = parseInt(document.getElementById('outputHeight').value);
-            const gap = parseInt(document.getElementById('gridGap').value);
+            const cols = parseInt(document.getElementById('colCount').value) || 1;
+            const rows = parseInt(document.getElementById('rowCount').value) || 1;
+            const totalW = parseInt(document.getElementById('outputWidth').value) || 100;
+            const totalH = parseInt(document.getElementById('outputHeight').value) || 100;
+            const gap = parseInt(document.getElementById('gridGap').value) || 0;
             const bgColor = document.getElementById('bgColor').value;
 
-            canvas.width = totalW;
-            canvas.height = totalH;
-            ctx.fillStyle = bgColor;
-            ctx.fillRect(0, 0, totalW, totalH);
-
-            if (loadedImages.length === 0) return drawEmptyState(totalW, totalH);
+            canvas.width = totalW; canvas.height = totalH;
+            ctx.fillStyle = bgColor; ctx.fillRect(0, 0, totalW, totalH);
+            if (loadedImages.length === 0) return;
 
             const cellW = (totalW - (cols - 1) * gap) / cols;
             const cellH = (totalH - (rows - 1) * gap) / rows;
@@ -310,178 +384,137 @@
             for (let r = 0; r < rows; r++) {
                 for (let c = 0; c < cols; c++) {
                     if (imgIndex >= loadedImages.length) break;
-
                     const img = loadedImages[imgIndex];
                     const state = imageStates[imgIndex];
                     const cellX = c * (cellW + gap);
                     const cellY = r * (cellH + gap);
 
                     ctx.save();
-                    ctx.beginPath();
-                    ctx.rect(cellX, cellY, cellW, cellH);
-                    ctx.clip();
+                    ctx.beginPath(); ctx.rect(cellX, cellY, cellW, cellH); ctx.clip();
+                    ctx.fillStyle = bgColor; ctx.fillRect(cellX, cellY, cellW, cellH);
 
-                    ctx.fillStyle = bgColor;
-                    ctx.fillRect(cellX, cellY, cellW, cellH);
-
-                    // Fit logic
                     const imgRatio = img.width / img.height;
                     const cellRatio = cellW / cellH;
                     let drawW, drawH;
-
                     if (imgRatio > cellRatio) { drawW = cellW; drawH = cellW / imgRatio; } 
                     else { drawH = cellH; drawW = cellH * imgRatio; }
-
-                    drawW *= state.zoom;
-                    drawH *= state.zoom;
-
-                    const centerX = cellX + (cellW - drawW) / 2;
-                    const centerY = cellY + (cellH - drawH) / 2;
                     
-                    ctx.drawImage(img, centerX + state.x, centerY + state.y, drawW, drawH);
+                    drawW *= state.zoom; drawH *= state.zoom;
+                    const centerX = cellX + (cellW - drawW) / 2 + state.x;
+                    const centerY = cellY + (cellH - drawH) / 2 + state.y;
+                    
+                    ctx.drawImage(img, centerX, centerY, drawW, drawH);
                     ctx.restore();
 
                     if (imgIndex === selectedIndex) {
-                        ctx.lineWidth = 4;
-                        ctx.strokeStyle = '#FFD700';
-                        ctx.strokeRect(cellX, cellY, cellW, cellH);
+                        ctx.lineWidth = 4; ctx.strokeStyle = '#FFD700'; ctx.strokeRect(cellX, cellY, cellW, cellH);
                     }
                     imgIndex++;
                 }
             }
         }
 
-        // --- LAYER RENDERER (New Logic) ---
         function renderLayers() {
-            const totalW = parseInt(document.getElementById('outputWidth').value);
-            const totalH = parseInt(document.getElementById('outputHeight').value);
+            const totalW = parseInt(document.getElementById('outputWidth').value) || 100;
+            const totalH = parseInt(document.getElementById('outputHeight').value) || 100;
             const bgColor = document.getElementById('bgColor').value;
-            
-            // Layer Params
             const scalePercent = parseInt(document.getElementById('layerScale').value) / 100;
-            const offX = parseInt(document.getElementById('layerOffsetX').value);
-            const offY = parseInt(document.getElementById('layerOffsetY').value);
+            const offX = parseInt(document.getElementById('layerOffsetX').value) || 0;
+            const offY = parseInt(document.getElementById('layerOffsetY').value) || 0;
             const startPos = document.getElementById('startPos').value;
 
-            canvas.width = totalW;
-            canvas.height = totalH;
-            ctx.fillStyle = bgColor;
-            ctx.fillRect(0, 0, totalW, totalH);
-
-            if (loadedImages.length === 0) return drawEmptyState(totalW, totalH);
+            canvas.width = totalW; canvas.height = totalH;
+            ctx.fillStyle = bgColor; ctx.fillRect(0, 0, totalW, totalH);
+            if (loadedImages.length === 0) return;
 
             let currentScale = 1.0;
-            let currentX, currentY;
+            let currentX = 0, currentY = 0;
 
-            // Initial Position Logic
-            // If "Center" start, we find center of canvas.
-            // If "TopLeft" start, we start near 0,0 (with some padding usually desired, but we'll stick to logic).
-            
-            // Note: We need to calculate the base size for the first image.
-            // Let's assume we want the first image to fit "Cover" style into the full canvas initially.
-            
             loadedImages.forEach((img, i) => {
-                // 1. Calculate dimensions for this iteration
-                // Base dimensions (fitting the canvas)
+                const state = imageStates[i];
                 const imgRatio = img.width / img.height;
                 const canvasRatio = totalW / totalH;
                 let baseW, baseH;
+                if (imgRatio > canvasRatio) { baseW = totalW; baseH = totalW / imgRatio; } 
+                else { baseH = totalH; baseW = totalH * imgRatio; }
 
-                // Fit 'Contain' style logic for base layer so we see it all
-                if (imgRatio > canvasRatio) {
-                    baseW = totalW;
-                    baseH = totalW / imgRatio;
-                } else {
-                    baseH = totalH;
-                    baseW = totalH * imgRatio;
-                }
+                let drawW = baseW * currentScale * state.zoom;
+                let drawH = baseH * currentScale * state.zoom;
 
-                // Apply Progressive Scale
-                let drawW = baseW * currentScale;
-                let drawH = baseH * currentScale;
-
-                // 2. Calculate Position
                 if (i === 0) {
-                    // First image placement
-                    if (startPos === 'center') {
-                        currentX = (totalW - drawW) / 2;
-                        currentY = (totalH - drawH) / 2;
-                    } else {
-                        // Top Left Cascade Start
-                        currentX = 0; 
-                        currentY = 0;
-                    }
+                     if (startPos === 'center') { currentX = (totalW - drawW)/2; currentY = (totalH - drawH)/2; }
+                     else { currentX = 0; currentY = 0; }
                 } else {
-                    // Subsequent images shift by offset
-                    currentX += offX;
-                    currentY += offY;
-                    
-                    // If centering logic is active (Tunnel mode), we need to re-center based on new smaller size
-                    // But if user wants OFFSET (Cascade), we just add X/Y.
-                    // To support "Tunnel" where they just shrink in place:
+                    currentX += offX; currentY += offY;
                     if (offX === 0 && offY === 0 && startPos === 'center') {
-                         currentX = (totalW - drawW) / 2;
-                         currentY = (totalH - drawH) / 2;
+                         currentX = (totalW - drawW) / 2; currentY = (totalH - drawH) / 2;
                     }
                 }
+                
+                const finalX = currentX + state.x;
+                const finalY = currentY + state.y;
 
-                // Draw Shadow for depth
-                ctx.shadowColor = "rgba(0,0,0,0.5)";
-                ctx.shadowBlur = 15;
-                ctx.shadowOffsetX = 5;
-                ctx.shadowOffsetY = 5;
-
-                ctx.drawImage(img, currentX, currentY, drawW, drawH);
-
-                // Reset shadow
+                ctx.shadowColor = "rgba(0,0,0,0.5)"; ctx.shadowBlur = 15; ctx.shadowOffsetX = 5; ctx.shadowOffsetY = 5;
+                ctx.drawImage(img, finalX, finalY, drawW, drawH);
                 ctx.shadowColor = "transparent";
 
-                // Decrement scale for next loop
+                 if (i === selectedIndex) {
+                        ctx.lineWidth = 4; ctx.strokeStyle = '#FFD700'; 
+                        ctx.strokeRect(finalX, finalY, drawW, drawH);
+                }
+
                 currentScale *= scalePercent;
             });
         }
 
-        function drawEmptyState(w, h) {
-            ctx.fillStyle = "#555";
-            ctx.font = "30px sans-serif";
-            ctx.textAlign = "center";
-            ctx.fillText("Upload images to start", w/2, h/2);
-        }
-
-        // --- Grid Selection Logic ---
+        // --- Interaction ---
         canvas.addEventListener('mousedown', (e) => {
-            if (currentMode !== 'grid') return; // Selection only for grid mode
-            
             const rect = canvas.getBoundingClientRect();
             const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
             const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
+            let newSelection = -1;
 
-            const cols = parseInt(document.getElementById('colCount').value);
-            const rows = parseInt(document.getElementById('rowCount').value);
-            const gap = parseInt(document.getElementById('gridGap').value);
-            const cellW = (canvas.width - (cols - 1) * gap) / cols;
-            const cellH = (canvas.height - (rows - 1) * gap) / rows;
+            if (currentMode === 'grid') {
+                const cols = parseInt(document.getElementById('colCount').value);
+                const rows = parseInt(document.getElementById('rowCount').value);
+                const gap = parseInt(document.getElementById('gridGap').value);
+                const cellW = (canvas.width - (cols - 1) * gap) / cols;
+                const cellH = (canvas.height - (rows - 1) * gap) / rows;
+                const col = Math.floor(clickX / (cellW + gap));
+                const row = Math.floor(clickY / (cellH + gap));
+                if (col < cols && row < rows) newSelection = row * cols + col;
+            } else {
+                 // Simple hit detection for Layers
+                 for (let i = loadedImages.length - 1; i >= 0; i--) {
+                    newSelection = i; 
+                    break; // Just select top-most drawn
+                 }
+            }
 
-            const col = Math.floor(clickX / (cellW + gap));
-            const row = Math.floor(clickY / (cellH + gap));
-
-            if (col >= cols || row >= rows) return;
-            const index = row * cols + col;
-
-            if (index < loadedImages.length) {
-                selectedIndex = index;
-                const state = imageStates[index];
-                document.getElementById('editPanel').style.display = 'block';
-                document.getElementById('itemZoom').value = state.zoom * 100;
-                document.getElementById('zoomVal').textContent = Math.round(state.zoom * 100) + '%';
-                document.getElementById('itemPanX').value = state.x;
-                document.getElementById('itemPanY').value = state.y;
+            if (newSelection >= 0 && newSelection < loadedImages.length) {
+                selectedIndex = newSelection;
+                updateEditPanelUI();
+                render();
+            } else {
+                selectedIndex = -1;
+                document.getElementById('editPanel').style.display = 'none';
                 render();
             }
         });
 
-        function updateSelected() {
-            if (selectedIndex === -1 || currentMode !== 'grid') return;
+        function updateEditPanelUI() {
+            if (selectedIndex === -1) return;
+            const state = imageStates[selectedIndex];
+            document.getElementById('editPanel').style.display = 'block';
+            document.getElementById('itemZoom').value = state.zoom * 100;
+            document.getElementById('zoomVal').textContent = Math.round(state.zoom * 100) + '%';
+            document.getElementById('itemPanX').value = state.x;
+            document.getElementById('itemPanY').value = state.y;
+            updateLayerListHighlight();
+        }
+
+        function updateSelectedState() {
+            if (selectedIndex === -1) return;
             const z = parseInt(document.getElementById('itemZoom').value) / 100;
             const x = parseInt(document.getElementById('itemPanX').value);
             const y = parseInt(document.getElementById('itemPanY').value);
@@ -490,19 +523,47 @@
             render();
         }
 
+        function moveLayer(action) {
+            if (selectedIndex === -1) return;
+            const i = selectedIndex;
+            const lastIdx = loadedImages.length - 1;
+
+            const swap = (idx1, idx2) => {
+                 [loadedImages[idx1], loadedImages[idx2]] = [loadedImages[idx2], loadedImages[idx1]];
+                 [imageStates[idx1], imageStates[idx2]] = [imageStates[idx2], imageStates[idx1]];
+            }
+
+            switch(action) {
+                case 'up':
+                    if (i < lastIdx) { swap(i, i + 1); selectedIndex++; } break;
+                case 'down':
+                    if (i > 0) { swap(i, i - 1); selectedIndex--; } break;
+                case 'front':
+                    if (i < lastIdx) {
+                        loadedImages.push(loadedImages.splice(i, 1)[0]);
+                        imageStates.push(imageStates.splice(i, 1)[0]);
+                        selectedIndex = lastIdx;
+                    } break;
+                case 'back':
+                    if (i > 0) {
+                        loadedImages.unshift(loadedImages.splice(i, 1)[0]);
+                        imageStates.unshift(imageStates.splice(i, 1)[0]);
+                        selectedIndex = 0;
+                    } break;
+            }
+            updateLayerList(); // Important! Refresh list order
+            updateEditPanelUI();
+            render();
+        }
+
         function downloadImage() {
-            const prevSel = selectedIndex;
-            selectedIndex = -1; // hide selection border
-            render(); 
+            const prevSel = selectedIndex; selectedIndex = -1; render(); 
             const link = document.createElement('a');
             link.download = `grid-stack-${currentMode}.png`;
             link.href = canvas.toDataURL('image/png');
             link.click();
-            selectedIndex = prevSel;
-            render();
+            selectedIndex = prevSel; render();
         }
-
-        render();
     </script>
 </body>
 </html>

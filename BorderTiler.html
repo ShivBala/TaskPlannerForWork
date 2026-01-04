@@ -23,7 +23,6 @@
             position: relative;
         }
         
-        /* 3D Cursor */
         .cursor-grab { cursor: grab; }
         .cursor-grabbing { cursor: grabbing; }
 
@@ -88,6 +87,16 @@
                         <label for="mirrorToggle" class="toggle-label block overflow-hidden h-4 rounded-full bg-gray-700 cursor-pointer transition-colors duration-300"></label>
                     </div>
                 </div>
+
+                <!-- Corner Strategy Dropdown -->
+                <div class="flex items-center justify-between border-t border-gray-600 pt-2 mt-2">
+                    <label class="text-xs text-gray-300">Corner Strategy</label>
+                    <select id="cornerStrategy" class="bg-gray-700 text-xs text-white border border-gray-600 rounded px-2 py-1 focus:outline-none focus:border-indigo-500">
+                        <option value="round">Overlap / Round</option>
+                        <option value="miter">Miter Join (45°)</option>
+                    </select>
+                </div>
+
                 <div class="flex items-center justify-between border-t border-gray-600 pt-2">
                     <label class="text-xs text-indigo-300 font-semibold">Strict Fit Mode</label>
                     <div class="relative inline-block w-8 align-middle select-none">
@@ -152,19 +161,28 @@
                     </label>
                 </div>
 
-                <div class="space-y-1">
-                    <div class="flex justify-between"><label class="text-xs text-gray-400">Outer Radius</label><span id="outerRadiusVal" class="text-xs text-indigo-400">8px</span></div>
-                    <input type="range" id="outerRadius" min="1" max="50" value="8" class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                <!-- Split Radius -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <div class="flex justify-between"><label class="text-[10px] text-gray-400">Outer Radius</label><span id="outerRadiusVal" class="text-[10px] text-indigo-400">8px</span></div>
+                        <input type="range" id="outerRadius" min="1" max="50" value="8" class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                    </div>
+                    <div class="space-y-1">
+                        <div class="flex justify-between"><label class="text-[10px] text-gray-400">Inner Radius</label><span id="innerRadiusVal" class="text-[10px] text-indigo-400">8px</span></div>
+                        <input type="range" id="innerRadius" min="1" max="50" value="8" class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                    </div>
                 </div>
 
-                <div class="space-y-1">
-                    <div class="flex justify-between"><label class="text-xs text-gray-400">Inner Radius</label><span id="innerRadiusVal" class="text-xs text-indigo-400">8px</span></div>
-                    <input type="range" id="innerRadius" min="1" max="50" value="8" class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
-                </div>
-
-                <div class="space-y-1">
-                    <div class="flex justify-between"><label class="text-xs text-gray-400">Border Offset</label><span id="offsetVal" class="text-xs text-indigo-400">0px</span></div>
-                    <input type="range" id="pipeOffset" min="-50" max="50" value="0" class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                <!-- Split Offset -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="space-y-1">
+                        <div class="flex justify-between"><label class="text-[10px] text-gray-400">Outer Offset</label><span id="outerOffsetVal" class="text-[10px] text-indigo-400">0px</span></div>
+                        <input type="range" id="outerOffset" min="-50" max="100" value="0" class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                    </div>
+                    <div class="space-y-1">
+                        <div class="flex justify-between"><label class="text-[10px] text-gray-400">Inner Offset</label><span id="innerOffsetVal" class="text-[10px] text-indigo-400">0px</span></div>
+                        <input type="range" id="innerOffset" min="-100" max="50" value="0" class="w-full h-1 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                    </div>
                 </div>
 
                 <div class="space-y-1">
@@ -176,7 +194,7 @@
         </div>
 
         <div class="p-6 border-t border-gray-700 bg-gray-850">
-            <label class="block text-sm font-semibold text-gray-300 mb-3">5. Export</label>
+            <label class="block text-sm font-semibold text-gray-300 mb-3">5. Export (4K)</label>
             <div class="flex items-center gap-2 mb-3">
                  <input type="checkbox" id="forceTransparent" class="w-4 h-4 rounded bg-gray-700 border-gray-600 text-indigo-500">
                  <label for="forceTransparent" class="text-xs text-gray-400">Transparent BG</label>
@@ -202,7 +220,7 @@
             </div>
         </div>
 
-        <!-- 2D Container (Hidden by default based on tab) -->
+        <!-- 2D Container -->
         <div id="container2D" class="w-full h-full hidden flex items-center justify-center p-8 bg-gray-900 canvas-container" style="background-image: radial-gradient(#333 1px, transparent 1px); background-size: 20px 20px;">
             <canvas id="mainCanvas2D" class="shadow-2xl max-w-full max-h-full"></canvas>
         </div>
@@ -211,7 +229,7 @@
 
     <script>
         const state = {
-            viewMode: '3d', // '2d' or '3d'
+            viewMode: '3d',
             image: null,
             imageSrc: null,
             imgRatio: 1,
@@ -221,16 +239,18 @@
             bgColor: 'transparent',
             mirrorAlternates: true,
             strictMode: false,
+            cornerStrategy: 'round', // 'round' (Overlap) or 'miter'
             
-            // Pipe State
+            // Pipe Config
             pipesEnabled: true,
-            outerRadius: 8,
-            innerRadius: 8,
-            pipeOffset: 0,
             outerPipe: true,
             innerPipe: true,
+            outerRadius: 8,
+            innerRadius: 8,
+            outerOffset: 0,
+            innerOffset: 0,
             
-            // Appearance
+            // Look & Feel
             lightIntensity: 1.0,
             dominantColor: 0xffffff,
             
@@ -270,13 +290,13 @@
                 container3D.classList.add('hidden');
                 tab2d.classList.add('active');
                 tab3d.classList.remove('active');
-                updateAll(); // Redraw 2D
+                updateAll();
             } else {
                 container2D.classList.add('hidden');
                 container3D.classList.remove('hidden');
                 tab2d.classList.remove('active');
                 tab3d.classList.add('active');
-                updateAll(); // Trigger 3D update
+                updateAll();
             }
         }
 
@@ -295,7 +315,6 @@
             renderer.shadowMap.type = THREE.PCFSoftShadowMap;
             container3D.appendChild(renderer.domElement);
 
-            // Controls
             container3D.addEventListener('mousedown', (e) => { isDragging = true; previousMousePosition = { x: e.clientX, y: e.clientY }; container3D.classList.add('cursor-grabbing'); });
             window.addEventListener('mouseup', () => { isDragging = false; container3D.classList.remove('cursor-grabbing'); });
             container3D.addEventListener('mousemove', (e) => {
@@ -309,7 +328,6 @@
                 previousMousePosition = { x: e.clientX, y: e.clientY };
             });
 
-            // Lighting
             ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
             scene.add(ambientLight);
             dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
@@ -319,7 +337,7 @@
             dirLight.shadow.mapSize.height = 2048;
             scene.add(dirLight);
 
-            // Back Light for Rim
+            // Rim Light
             const backLight = new THREE.DirectionalLight(0xffffff, 0.5);
             backLight.position.set(-500, 0, -500);
             scene.add(backLight);
@@ -350,43 +368,52 @@
             updateAll();
         });
 
-        // --- Core Logic ---
-        function updateAll() {
-            if (!state.image) return;
-
-            // Dimensions Calc
+        // --- Core Render Logic (Parametrized for Export) ---
+        function calculateDims(config) {
             let targetW, targetH;
-            if (state.aspectRatio >= 1) { targetW = state.canvasBaseSize; targetH = state.canvasBaseSize / state.aspectRatio; } 
-            else { targetH = state.canvasBaseSize; targetW = state.canvasBaseSize * state.aspectRatio; }
+            if (config.aspectRatio >= 1) { 
+                targetW = config.canvasBaseSize; 
+                targetH = config.canvasBaseSize / config.aspectRatio; 
+            } else { 
+                targetH = config.canvasBaseSize; 
+                targetW = config.canvasBaseSize * config.aspectRatio; 
+            }
 
             let canvasW, canvasH, tileW, tileH;
-            const strideRef = state.thickness + state.gap;
+            const strideRef = config.thickness + config.gap;
 
-            if (state.strictMode) {
+            if (config.strictMode) {
                 canvasW = targetW; canvasH = targetH;
-                const cX = Math.max(1, Math.round((canvasW + state.gap) / strideRef));
-                const cY = Math.max(1, Math.round((canvasH + state.gap) / strideRef));
-                tileW = ((canvasW + state.gap) / cX) - state.gap;
-                tileH = ((canvasH + state.gap) / cY) - state.gap;
+                const cX = Math.max(1, Math.round((canvasW + config.gap) / strideRef));
+                const cY = Math.max(1, Math.round((canvasH + config.gap) / strideRef));
+                tileW = ((canvasW + config.gap) / cX) - config.gap;
+                tileH = ((canvasH + config.gap) / cY) - config.gap;
             } else {
-                const cX = Math.max(1, Math.round((targetW + state.gap) / strideRef));
-                const cY = Math.max(1, Math.round((targetH + state.gap) / strideRef));
-                canvasW = cX * strideRef - state.gap;
-                canvasH = cY * strideRef - state.gap;
-                tileW = state.thickness; tileH = state.thickness;
+                const cX = Math.max(1, Math.round((targetW + config.gap) / strideRef));
+                const cY = Math.max(1, Math.round((targetH + config.gap) / strideRef));
+                canvasW = cX * strideRef - config.gap;
+                canvasH = cY * strideRef - config.gap;
+                tileW = config.thickness; tileH = config.thickness;
             }
-
-            // Calculate Required Padding for Outer Pipe (Both 2D & 3D Texture Mapping)
+            
+            // Calculate Padding needed for Outer Pipe so it doesn't get clipped in 2D
             let padding = 0;
-            if (state.pipesEnabled && state.outerPipe) {
-                // Ensure padding covers the full stroke width of the outer pipe
-                // Pipe draws with width outerRadius*2. 
-                // To be fully "outside", we shifted it by outerRadius*2 + offset.
-                padding = state.outerRadius * 2 + Math.max(0, state.pipeOffset);
+            if (config.pipesEnabled && config.outerPipe) {
+                // Pipe extends outwards by (outerRadius * 2) + offset
+                // We add a little safety margin
+                const extension = (config.outerRadius * 2) + Math.max(0, config.outerOffset);
+                padding = Math.ceil(extension + 2); 
             }
 
-            // Update Validation UI
-            const reqRatio = tileW/tileH;
+            return { canvasW, canvasH, tileW, tileH, padding };
+        }
+
+        function updateAll() {
+            if (!state.image) return;
+            const dims = calculateDims(state);
+
+            // Validation UI
+            const reqRatio = dims.tileW/dims.tileH;
             const diff = Math.abs(reqRatio - state.imgRatio);
             const statusBox = document.getElementById('validationBox');
             if (state.strictMode) {
@@ -395,129 +422,118 @@
                 document.getElementById('imgRatioVal').textContent = state.imgRatio.toFixed(2);
                 document.getElementById('fitStatus').textContent = diff < 0.05 ? "Perfect Match" : (diff < 0.2 ? "Slight Stretch" : "Distorted");
                 document.getElementById('fitStatus').className = `mt-2 text-center p-1 rounded font-bold border ${diff < 0.05 ? "bg-green-900/50 text-green-400 border-green-700" : (diff < 0.2 ? "bg-yellow-900/50 text-yellow-400 border-yellow-700" : "bg-red-900/50 text-red-400 border-red-700")}`;
-            } else {
-                statusBox.classList.add('hidden');
-            }
+            } else { statusBox.classList.add('hidden'); }
 
-            // Render based on mode
             if (state.viewMode === '2d') {
-                canvas2D.width = canvasW + padding * 2;
-                canvas2D.height = canvasH + padding * 2;
-                render2DScene(ctx2D, canvasW, canvasH, tileW, tileH, padding);
+                // Resize DOM canvas
+                const totalW = dims.canvasW + dims.padding * 2;
+                const totalH = dims.canvasH + dims.padding * 2;
+                canvas2D.width = totalW;
+                canvas2D.height = totalH;
+                render2DScene(ctx2D, dims.canvasW, dims.canvasH, dims.tileW, dims.tileH, dims.padding, state);
             } else {
-                // Generate texture for 3D frame
+                // 3D Texture Gen
                 const texCanvas = document.createElement('canvas');
-                texCanvas.width = canvasW; texCanvas.height = canvasH;
-                // No padding for texture itself, mapped to plane
-                renderFrameToContext(texCanvas.getContext('2d'), canvasW, canvasH, tileW, tileH, state.gap, state.bgColor, false); 
-                update3DScene(canvasW, canvasH, tileW, tileH, texCanvas);
+                texCanvas.width = dims.canvasW; 
+                texCanvas.height = dims.canvasH;
+                renderFrameToContext(texCanvas.getContext('2d'), dims.canvasW, dims.canvasH, dims.tileW, dims.tileH, state.gap, state.bgColor, false, state);
+                update3DScene(dims.canvasW, dims.canvasH, dims.tileW, dims.tileH, texCanvas, state);
             }
         }
 
-        // --- 2D Rendering ---
-        function render2DScene(ctx, w, h, tW, tH, padding) {
+        // --- 2D Renderer ---
+        function render2DScene(ctx, w, h, tW, tH, padding, config) {
             const fullW = w + padding * 2;
             const fullH = h + padding * 2;
             
             ctx.clearRect(0, 0, fullW, fullH);
-            
-            // Shift context to account for outer pipe padding
             ctx.save();
             ctx.translate(padding, padding);
 
-            // 1. Background
-            if (state.bgColor && state.bgColor !== 'transparent') {
+            // BG
+            if (config.bgColor && config.bgColor !== 'transparent') {
                 const insetX = tW; const insetY = tH;
-                ctx.fillStyle = state.bgColor;
+                ctx.fillStyle = config.bgColor;
                 ctx.fillRect(insetX, insetY, w - (insetX * 2), h - (insetY * 2));
             }
 
-            // 2. Draw "Pipes" (Lines) UNDER tiles
-            if (state.pipesEnabled) {
-                const off = state.pipeOffset;
+            // Pipes (Below)
+            if (config.pipesEnabled) {
+                const cornerR = config.cornerStrategy === 'miter' ? 0 : Math.max(config.outerRadius * 2, 20); // Use 0 radius for miter
                 
-                // Outer Line
-                if (state.outerPipe) {
-                    const r = state.outerRadius;
-                    // Draw strictly OUTSIDE the frame (starting from 0 outwards)
-                    // Box should be expanded by radius*2 + offset
-                    const expansion = r * 2 + off;
-                    // Draw box such that the inner edge of stroke touches the tile border '0'
-                    // Center of stroke is at -expansion/2? No.
-                    // We want the inner edge of the stroke (width 2r) to be at 0 if off=0.
-                    // Stroke extends r in, r out.
-                    // To put inner edge at -off, center must be at -off - r.
-                    // width needs to grow by 2*(off+r)
-                    const bx = -off - r * 2;
-                    const by = -off - r * 2;
-                    const bw = w + (off + r * 2) * 2;
-                    const bh = h + (off + r * 2) * 2;
-                    
-                    drawFake3DLineBox(ctx, bx, by, bw, bh, r);
+                if (config.outerPipe) {
+                    const r = config.outerRadius;
+                    const off = config.outerOffset;
+                    const bx = -off - r*2;
+                    const by = -off - r*2;
+                    const bw = w + (off + r*2)*2;
+                    const bh = h + (off + r*2)*2;
+                    drawFake3DLineBox(ctx, bx, by, bw, bh, r, cornerR, config);
                 }
                 
-                // Inner Line
-                if (state.innerPipe) {
-                    const r = state.innerRadius;
-                    // Inner hole starts at tW. We want pipe inside hole.
-                    // If offset is positive, move deeper into hole (away from tile)
-                    // Coordinate logic: tW + offset. 
-                    // Stroke width 2r. Center at tW + offset + r.
+                if (config.innerPipe) {
+                    const r = config.innerRadius;
+                    const off = config.innerOffset;
                     const ix = tW + off;
                     const iy = tH + off;
                     const iw = w - (tW*2) - (off*2);
                     const ih = h - (tH*2) - (off*2);
-                    
                     if (iw > 0 && ih > 0) {
-                        drawFake3DLineBox(ctx, ix, iy, iw, ih, r);
+                        drawFake3DLineBox(ctx, ix, iy, iw, ih, r, cornerR, config);
                     }
                 }
             }
 
-            // 3. Draw Tiles ON TOP
-            renderFrameToContext(ctx, w, h, tW, tH, state.gap, 'transparent', true);
-            
+            // Tiles (Above)
+            renderFrameToContext(ctx, w, h, tW, tH, config.gap, 'transparent', true, config);
             ctx.restore();
         }
 
-        function drawFake3DLineBox(ctx, x, y, w, h, r) {
-            ctx.lineCap = 'round';
-            ctx.lineJoin = 'round';
+        function drawFake3DLineBox(ctx, x, y, w, h, r, cr, config) {
+            ctx.lineCap = config.cornerStrategy === 'miter' ? 'square' : 'round';
+            ctx.lineJoin = config.cornerStrategy === 'miter' ? 'miter' : 'round';
+            const intensity = config.lightIntensity;
 
-            // Base (Shadow/Edge)
+            // Helper to draw path
+            const trace = () => {
+                ctx.beginPath();
+                if (cr > 0) ctx.roundRect(x + r, y + r, w - r*2, h - r*2, Math.max(0, cr));
+                else ctx.rect(x + r, y + r, w - r*2, h - r*2);
+            };
+
+            // Shadow/Base
             ctx.lineWidth = r * 2;
-            ctx.strokeStyle = `rgba(0,0,0,0.8)`; 
-            ctx.beginPath();
-            // Inset rect so stroke sits exactly within w,h boundary
-            ctx.roundRect(x + r, y + r, w - r*2, h - r*2, Math.max(0, r)); 
+            ctx.strokeStyle = `rgba(0,0,0,${0.5 * intensity})`; 
+            trace();
             ctx.stroke();
 
             // Main Color
-            const col = new THREE.Color(state.dominantColor);
-            const rVal = Math.min(255, col.r * 255 * state.lightIntensity);
-            const gVal = Math.min(255, col.g * 255 * state.lightIntensity);
-            const bVal = Math.min(255, col.b * 255 * state.lightIntensity);
+            const col = new THREE.Color(config.dominantColor);
+            const rVal = Math.min(255, col.r * 255 * (0.5 + 0.5*intensity));
+            const gVal = Math.min(255, col.g * 255 * (0.5 + 0.5*intensity));
+            const bVal = Math.min(255, col.b * 255 * (0.5 + 0.5*intensity));
             
             ctx.lineWidth = r * 1.8;
             ctx.strokeStyle = `rgb(${rVal},${gVal},${bVal})`;
+            trace();
             ctx.stroke();
 
-            // Highlight (Center)
-            const highlightAlpha = Math.min(1.0, 0.6 * state.lightIntensity);
-            ctx.lineWidth = r * 0.6;
-            ctx.strokeStyle = `rgba(255,255,255,${highlightAlpha})`;
-            ctx.stroke();
+            // Highlight
+            const hAlpha = Math.max(0, Math.min(0.8, (intensity - 0.2))); 
+            if (hAlpha > 0.01) {
+                ctx.lineWidth = r * 0.5;
+                ctx.strokeStyle = `rgba(255,255,255,${hAlpha})`;
+                trace();
+                ctx.stroke();
+            }
         }
 
-        // Shared Tile Render Logic
-        function renderFrameToContext(ctx, width, height, tW, tH, gap, bgColor, is2DMain) {
+        function renderFrameToContext(ctx, width, height, tW, tH, gap, bgColor, is2DMain, config) {
             if (!is2DMain) {
                  ctx.clearRect(0,0,width,height);
-                 // For texture generation, handle BG
                  const insetX = tW; const insetY = tH;
                  if (bgColor && bgColor !== 'transparent') {
-                    ctx.fillStyle = bgColor;
-                    ctx.fillRect(insetX, insetY, width - insetX*2, height - insetY*2);
+                    ctx.fillStyle = bgColor; ctx.fillRect(insetX, insetY, width - insetX*2, height - insetY*2);
                  } else if (bgColor === 'transparent') {
                     ctx.clearRect(insetX, insetY, width - insetX*2, height - insetY*2);
                  }
@@ -526,108 +542,137 @@
             const img = state.image;
             const strideX = tW + gap;
             const strideY = tH + gap;
-            const shouldMirror = (i) => state.mirrorAlternates && (i % 2 !== 0);
+            const shouldMirror = (i) => config.mirrorAlternates && (i % 2 !== 0);
 
             const draw = (x, y, w, h, fh, fv) => {
                 if(!fh && !fv) { ctx.drawImage(img, x, y, w, h); return; }
-                ctx.save();
-                ctx.translate(x + w/2, y + h/2);
-                ctx.scale(fh ? -1 : 1, fv ? -1 : 1);
-                ctx.drawImage(img, -w/2, -h/2, w, h);
-                ctx.restore();
+                ctx.save(); ctx.translate(x + w/2, y + h/2); ctx.scale(fh ? -1 : 1, fv ? -1 : 1);
+                ctx.drawImage(img, -w/2, -h/2, w, h); ctx.restore();
             }
 
             const cX = Math.round((width + gap) / strideX);
             const cY = Math.round((height + gap) / strideY);
 
+            // Miter Clipping Logic
+            const useMiter = config.cornerStrategy === 'miter';
+
+            // Top
+            ctx.save();
+            if(useMiter) {
+                ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(width,0); 
+                ctx.lineTo(width-tW, tH); ctx.lineTo(tW, tH); ctx.closePath(); ctx.clip();
+            }
             for (let i=0; i<cX; i++) draw(i*strideX, 0, tW, tH, shouldMirror(i), false);
+            ctx.restore();
+
+            // Bottom
+            ctx.save();
+            if(useMiter) {
+                ctx.beginPath(); ctx.moveTo(0, height); ctx.lineTo(width, height); 
+                ctx.lineTo(width-tW, height-tH); ctx.lineTo(tW, height-tH); ctx.closePath(); ctx.clip();
+            }
             for (let i=0; i<cX; i++) draw(i*strideX, height-tH, tW, tH, shouldMirror(i), false);
+            ctx.restore();
+
+            // Left
+            ctx.save();
+            if(useMiter) {
+                ctx.beginPath(); ctx.moveTo(0,0); ctx.lineTo(tW, tH); 
+                ctx.lineTo(tW, height-tH); ctx.lineTo(0, height); ctx.closePath(); ctx.clip();
+            }
             for (let i=0; i<cY; i++) draw(0, i*strideY, tW, tH, false, shouldMirror(i));
+            ctx.restore();
+
+            // Right
+            ctx.save();
+            if(useMiter) {
+                ctx.beginPath(); ctx.moveTo(width, 0); ctx.lineTo(width, height); 
+                ctx.lineTo(width-tW, height-tH); ctx.lineTo(width-tW, tH); ctx.closePath(); ctx.clip();
+            }
             for (let i=0; i<cY; i++) draw(width-tW, i*strideY, tW, tH, false, shouldMirror(i));
+            ctx.restore();
         }
 
-        // --- 3D Update Logic ---
-        function update3DScene(w, h, tW, tH, texCanvas) {
-            // Cleanup
+        function update3DScene(w, h, tW, tH, texCanvas, config) {
             if (frameMesh) scene.remove(frameMesh);
             if (outerPipeMesh) scene.remove(outerPipeMesh);
             if (innerPipeMesh) scene.remove(innerPipeMesh);
 
-            // 1. Tile Frame
             const texture = new THREE.CanvasTexture(texCanvas);
             texture.minFilter = THREE.LinearFilter;
-            // Frame is at Z=0.1 to sit on top of pipes
             const mat = new THREE.MeshStandardMaterial({ map: texture, transparent: true, side: THREE.DoubleSide, roughness: 0.4, metalness: 0.1 });
             const geo = new THREE.PlaneGeometry(w, h);
             frameMesh = new THREE.Mesh(geo, mat);
-            frameMesh.position.z = 0.5; // Slightly forward
-            frameMesh.castShadow = true;
+            frameMesh.position.z = 0.5; frameMesh.castShadow = true;
             scene.add(frameMesh);
 
             const maxDim = Math.max(w, h);
-            camera.position.setLength(maxDim * CAMERA_DIST_FACTOR);
+            if (config.canvasBaseSize <= 1024) {
+               camera.position.setLength(maxDim * CAMERA_DIST_FACTOR);
+            }
 
-            // 2. Pipes
-            if (state.pipesEnabled) {
-                const pipeColor = new THREE.Color(state.dominantColor);
-                // Metallic Look Material
-                const pipeMat = new THREE.MeshStandardMaterial({
-                    color: pipeColor,
-                    roughness: 0.2, // Smoother
-                    metalness: 0.8, // More metallic
-                    emissive: pipeColor,
-                    emissiveIntensity: 0.1
-                });
+            if (config.pipesEnabled) {
+                const pipeColor = new THREE.Color(config.dominantColor);
+                const pipeMat = new THREE.MeshStandardMaterial({ color: pipeColor, roughness: 0.2, metalness: 0.8, emissive: pipeColor, emissiveIntensity: 0.1 * config.lightIntensity });
 
-                const offset = state.pipeOffset; // + expands outer, shrinks inner
+                const useMiter = config.cornerStrategy === 'miter';
 
-                if (state.outerPipe) {
-                    const r = state.outerRadius;
-                    const cornerR = Math.max(r * 2, 20);
-                    // Ensure the pipe is fully outside. Frame is w, h.
-                    // If offset=0, pipe is exactly adjacent.
-                    // Center of pipe should be at w/2 + r.
-                    // Width should be w + 2*r.
-                    // Add user offset on top.
-                    const extra = r * 2 + offset * 2;
-                    const pw = w + extra; 
-                    const ph = h + extra;
-                    const path = createSmoothRectPath(pw, ph, cornerR);
+                if (config.outerPipe) {
+                    const r = config.outerRadius;
+                    const offset = config.outerOffset;
+                    const cornerR = useMiter ? 0 : Math.max(r * 2, 20); // 0 radius for miter (sharp)
+                    
+                    const extra = r*2 + offset*2; 
+                    const pw = w + extra; const ph = h + extra;
+                    
+                    // Choose path function
+                    const path = useMiter ? createRectPath(pw, ph) : createSmoothRectPath(pw, ph, cornerR);
+                    
                     const geom = new THREE.TubeGeometry(path, 200, r, 16, true);
                     outerPipeMesh = new THREE.Mesh(geom, pipeMat);
-                    outerPipeMesh.position.z = -r + 0.5; // Behind frame
-                    outerPipeMesh.castShadow = true;
-                    outerPipeMesh.receiveShadow = true;
+                    outerPipeMesh.position.z = -r + 0.5; 
+                    outerPipeMesh.castShadow = true; outerPipeMesh.receiveShadow = true;
                     scene.add(outerPipeMesh);
                 }
 
-                if (state.innerPipe) {
-                    const r = state.innerRadius;
-                    const cornerR = Math.max(r * 2, 20);
-                    // Frame hole is at w - 2tW.
-                    // Offset moves it relative to that edge. 
+                if (config.innerPipe) {
+                    const r = config.innerRadius;
+                    const offset = config.innerOffset;
+                    const cornerR = useMiter ? 0 : Math.max(r * 2, 20);
                     const iw = w - (tW*2) - (offset*2);
                     const ih = h - (tH*2) - (offset*2);
                     if (iw > 20 && ih > 20) {
-                        const path = createSmoothRectPath(iw, ih, cornerR);
+                        const path = useMiter ? createRectPath(iw, ih) : createSmoothRectPath(iw, ih, cornerR);
                         const geom = new THREE.TubeGeometry(path, 200, r, 16, true);
                         innerPipeMesh = new THREE.Mesh(geom, pipeMat);
-                        innerPipeMesh.position.z = -r + 0.5; // Behind frame
-                        innerPipeMesh.castShadow = true;
-                        innerPipeMesh.receiveShadow = true;
+                        innerPipeMesh.position.z = -r + 0.5; 
+                        innerPipeMesh.castShadow = true; innerPipeMesh.receiveShadow = true;
                         scene.add(innerPipeMesh);
                     }
                 }
             }
 
-            // Light Update
-            ambientLight.intensity = state.lightIntensity * 0.5;
-            dirLight.intensity = state.lightIntensity;
+            ambientLight.intensity = config.lightIntensity * 0.5;
+            dirLight.intensity = config.lightIntensity;
+        }
+
+        // New helper for Sharp Rect (Miter)
+        function createRectPath(width, height) {
+            const hw = width / 2; const hh = height / 2;
+            const path = new THREE.CurvePath();
+            // Top
+            path.add(new THREE.LineCurve3(new THREE.Vector3(-hw, hh, 0), new THREE.Vector3(hw, hh, 0)));
+            // Right
+            path.add(new THREE.LineCurve3(new THREE.Vector3(hw, hh, 0), new THREE.Vector3(hw, -hh, 0)));
+            // Bottom
+            path.add(new THREE.LineCurve3(new THREE.Vector3(hw, -hh, 0), new THREE.Vector3(-hw, -hh, 0)));
+            // Left
+            path.add(new THREE.LineCurve3(new THREE.Vector3(-hw, -hh, 0), new THREE.Vector3(-hw, hh, 0)));
+            return path;
         }
 
         function createSmoothRectPath(width, height, r) {
-            const hw = width / 2;
-            const hh = height / 2;
+            const hw = width / 2; const hh = height / 2;
             const cr = Math.min(r, Math.min(width, height) / 2);
             const path = new THREE.Path();
             path.moveTo(0, hh);
@@ -645,7 +690,6 @@
             return new THREE.CatmullRomCurve3(points.map(p => new THREE.Vector3(p.x, p.y, 0)), true);
         }
 
-        // --- Helpers ---
         function extractDominantColor(img) {
             const c = document.createElement('canvas'); c.width = 50; c.height = 50;
             c.getContext('2d').drawImage(img, 0, 0, 50, 50);
@@ -661,28 +705,30 @@
             img.onload = () => { state.image = img; state.imageSrc = img.src; state.dominantColor = 0x6366f1; updateAll(); };
         }
 
-        // --- Events ---
         function setupEventListeners() {
             const bind = (id) => document.getElementById(id).addEventListener('input', (e) => {
                 state[e.target.id] = parseFloat(e.target.value);
-                // Handle scales differently
                 if(id==='lightIntensity') state.lightIntensity = parseFloat(e.target.value)/100;
-                // UI Updates
                 const valEl = document.getElementById(id+'Val');
                 if(valEl) valEl.textContent = state[e.target.id] + (id==='lightIntensity' ? '' : 'px');
                 updateAll();
             });
-            ['thickness','gap','outerRadius','innerRadius','pipeOffset','lightIntensity'].forEach(bind);
+            ['thickness','gap','outerRadius','innerRadius','outerOffset','innerOffset','lightIntensity'].forEach(bind);
 
             const toggles = ['mirrorToggle','strictToggle','pipeToggle','outerPipeToggle','innerPipeToggle'];
             toggles.forEach(id => document.getElementById(id).addEventListener('change', (e) => {
                 state[id.replace('Toggle','')] = e.target.checked;
-                // Specific names map
                 if(id === 'mirrorToggle') state.mirrorAlternates = e.target.checked;
                 if(id === 'strictToggle') state.strictMode = e.target.checked;
                 if(id === 'pipeToggle') state.pipesEnabled = e.target.checked;
                 updateAll();
             }));
+
+            // Add listener for new dropdown
+            document.getElementById('cornerStrategy').addEventListener('change', (e) => {
+                state.cornerStrategy = e.target.value;
+                updateAll();
+            });
 
             document.getElementById('imageInput').addEventListener('change', e => { if(e.target.files[0]) handleFile(e.target.files[0]); });
             document.getElementById('pasteBtn').addEventListener('click', async () => { try { const i = await navigator.clipboard.read(); for(const item of i) { const t=item.types.find(x=>x.startsWith('image/')); if(t) handleFile(await item.getType(t)); } } catch(e){ alert("Clipboard access denied"); }});
@@ -701,22 +747,65 @@
         function setBg(c) { state.bgColor = c; updateAll(); }
 
         function downloadCurrentView() {
+            // High Resolution Export Logic
+            const targetRes = 3840; // 4K Width
+            const scaleFactor = targetRes / state.canvasBaseSize; // approx 3.75x if base is 1024
+            
+            // Create a temporary export configuration
+            const exportConfig = { ...state };
+            exportConfig.canvasBaseSize = targetRes;
+            // Scale all pixel-based metrics
+            exportConfig.thickness *= scaleFactor;
+            exportConfig.gap *= scaleFactor;
+            exportConfig.outerRadius *= scaleFactor;
+            exportConfig.innerRadius *= scaleFactor;
+            exportConfig.outerOffset *= scaleFactor;
+            exportConfig.innerOffset *= scaleFactor;
+            
+            // Handle Transparency force logic
+            const forceTrans = document.getElementById('forceTransparent').checked;
+            if(forceTrans) exportConfig.bgColor = 'transparent';
+
             if (state.viewMode === '2d') {
+                // 2D: Render to offscreen canvas
+                const dims = calculateDims(exportConfig);
+                const offCanvas = document.createElement('canvas');
+                offCanvas.width = dims.canvasW + dims.padding * 2;
+                offCanvas.height = dims.canvasH + dims.padding * 2;
+                const offCtx = offCanvas.getContext('2d');
+                render2DScene(offCtx, dims.canvasW, dims.canvasH, dims.tileW, dims.tileH, dims.padding, exportConfig);
+                
                 const link = document.createElement('a');
-                link.download = `2d-border-${Date.now()}.png`;
-                link.href = canvas2D.toDataURL('image/png', 1.0);
+                link.download = `2d-4k-${Date.now()}.png`;
+                link.href = offCanvas.toDataURL('image/png', 1.0);
                 link.click();
             } else {
+                // 3D: Momentarily upgrade scene to High Res
                 const currentSize = new THREE.Vector2();
                 renderer.getSize(currentSize);
-                renderer.setSize(3840, Math.round(3840 / camera.aspect));
+                
+                // 1. Resize Renderer
+                renderer.setSize(targetRes, Math.round(targetRes / camera.aspect));
+                
+                // 2. Generate High Res Texture and Rebuild Scene Meshes
+                const dims = calculateDims(exportConfig);
+                const texCanvas = document.createElement('canvas');
+                texCanvas.width = dims.canvasW; texCanvas.height = dims.canvasH;
+                renderFrameToContext(texCanvas.getContext('2d'), dims.canvasW, dims.canvasH, dims.tileW, dims.tileH, exportConfig.gap, exportConfig.bgColor, false, exportConfig);
+                update3DScene(dims.canvasW, dims.canvasH, dims.tileW, dims.tileH, texCanvas, exportConfig);
+                
+                // 3. Render
                 renderer.render(scene, camera);
+                
+                // 4. Save
                 const link = document.createElement('a');
-                link.download = `3d-render-${Date.now()}.png`;
+                link.download = `3d-4k-${Date.now()}.png`;
                 link.href = renderer.domElement.toDataURL('image/png', 1.0);
                 link.click();
+                
+                // 5. Restore
                 renderer.setSize(currentSize.x, currentSize.y);
-                renderer.render(scene, camera);
+                updateAll(); // Restores original state meshes
             }
         }
     </script>
